@@ -26,6 +26,11 @@ namespace CatTang
         public bool Slowed => Time.time < slowUntil;
         public float AttackSpeedMul => Time.time < atkDownUntil ? 1f - atkDown : 1f;
         public int MarkStacks => Time.time < markUntil ? marks : 0;
+        public bool Burning => Time.time < burnUntil;
+        public bool DefDowned => Time.time < defDownUntil;
+        public bool AtkDowned => Time.time < atkDownUntil;
+        /// <summary>상태 이상 (정지 · 둔화 · 가둠 · 화상 · 표식) 중 하나라도 걸려 있음</summary>
+        public bool HasStatus => Stunned || Slowed || Burning || MarkStacks > 0;
         public bool IsBoss { get; set; }
         public static float GlobalStopUntil;
         bool GlobalStop => !isPlayer && Time.time < GlobalStopUntil;
@@ -70,6 +75,7 @@ namespace CatTang
                 var p = PlayerController.Instance;
                 if (UnityEngine.Random.value < p.DodgeChance) { OnChanceDodge?.Invoke(); return; }
                 dmg *= p.DamageTakenMul;
+                if (p.Defense > 0.5f) FxBurst.Spawn(transform.position + Vector3.up * 0.9f, 1.4f + p.Defense * 0.01f, FxBurst.Kind.Shield, Color.white);
             }
             if (Time.time < defDownUntil) dmg *= 1f + defDown;
             if (MarkStacks > 0) dmg *= 1f + markAmp * MarkStacks;

@@ -54,7 +54,7 @@ ENUMS = {
         ("MemoryMark", "추억 표식 1개, 표식당 그 적에게 주는 피해 +Value (최대 Value2개)"), ("MarkBurst", "표식을 터뜨려 피해 Value"),
         ("DodgeChance", "피해를 Value 확률로 회피 (지속 Duration, 0이면 상시)"), ("BulletRefund", "이 칸의 탄을 다시 장전 (Value발)"),
         ("Execute", "일반 적 처형, 보스는 피해 +Value"), ("HeatGain", "열기 +Value칸"), ("JustDodgeWindowAdd", "저스트 회피 판정 +Value"),
-        ("CritNextShots", "다음 Value발 치명타"), ("CritChance", "치명타 확률 +Value"), ("ControlDurationAdd", "정지 · 둔화 지속 +Value"),
+        ("CritNextShots", "다음 Value발 치명타"), ("CritChance", "치명타 확률 +Value"), ("CritChanceAdd", "[능력치] 치명타 확률 +Value"), ("CritDamageAdd", "[능력치] 치명타 피해 +Value"), ("DefenseAdd", "[능력치] 방어력 +Value"), ("ProcChanceAdd", "[능력치] 효과 발동 확률 +Value (배율)"), ("MoveSpeedAdd", "[능력치] 이동 속도 +Value"), ("BossDamageAdd", "보스에게 주는 피해 +Value"), ("AreaDamageAdd", "폭발 · 범위 피해 +Value"), ("StatusDamageAdd", "상태 이상(정지 · 둔화 · 가둠 · 화상 · 표식) 적에게 주는 피해 +Value"), ("ControlDurationAdd", "정지 · 둔화 지속 +Value"),
         ("DamageVsStoppedAdd", "정지된 적에게 피해 +Value"), ("UnawakenedDamageAdd", "깨어나지 못한 탄 공격력 +Value"),
         ("AwakenedDamageAdd", "깨어난 탄 공격력 +Value"), ("UnawakenedTraitCount", "깨어나지 못한 탄도 특성 Value개 켜짐"),
         ("NextBulletAttackSpeedAdd", "다음 탄 연사 속도 +Value"), ("TrailSilhouetteShot", "맞은 자리에 궤적이 남고 Duration초 뒤 실루엣이 그 궤적으로 1발 (피해 Value)"),
@@ -66,7 +66,7 @@ ENUMS = {
         ("DamageByDistance", "거리 1m당 피해 +Value (최대 Value2)"), ("DamageAddStack", "누적될 때마다 피해 +Value"),
         ("DamageTakenAdd", "받는 피해 +Value"), ("MaxHpAdd", "최대 체력 +Value (비율)"), ("GrantRandomOp", "무작위 연산 Value개 지급"),
         ("GrantBullet", "탄 Value(Id) 지급"), ("OpDropRateAdd", "연산 드랍 +Value"), ("TraitThresholdReduce", "특성 6단계 필요 수 -Value"),
-        ("MemoryShardGainAdd", "기억 조각 획득 +Value"), ("Slot12BonusMul", "12시 칸 강화 배율 ×Value"),
+        ("MemoryShardGainAdd", "시간의 조각 획득 +Value"), ("DodgeCooldown", "대시 충전 시간 +Value (비율, 음수 = 빨라짐)"),
     ],
     "OpType": [("Add", "더하기"), ("Sub", "빼기"), ("Mul", "곱하기"), ("Div", "나누기 (반올림, .5는 0에서 먼 쪽)")],
     "SkillAction": [
@@ -173,6 +173,20 @@ eff(9246, "OnReload", "ReverseCylinder", 1, desc="깨어나 있으면 다음 장
 eff(9247, "OnChanceDodge", "BulletRefund", 1, chance=0.5, desc="확률 회피 성공 시 50% 확률로 현재 칸 탄 재장전")
 eff(9248, "OnKill", "PermanentDamageGrowth", 1, 30, cond="TargetTimeLocked", desc="시간에 갇힌 적을 처치하면 런 동안 이 탄 공격력 +1 (최대 30)")
 eff(9249, "OnHit", "TimeLock", 0.0, dur=1.0, chance=0.12, target="HitTarget", desc="12% 확률로 1초 시간에 가둠")
+# 능력치 · 피해 유형 탄 (9250~): 깨어나 있으면 전역 능력치로 더해짐
+eff(9250, "Passive", "CritChanceAdd", 0.06, desc="치명타 확률 +6%")
+eff(9251, "Passive", "DefenseAdd", 6, desc="방어력 +6")
+eff(9252, "Passive", "ProcChanceAdd", 0.10, desc="효과 발동 확률 +10%")
+eff(9253, "Passive", "CritDamageAdd", 0.30, desc="치명타 피해 +30%")
+eff(9254, "Passive", "BossDamageAdd", 0.25, desc="보스에게 주는 피해 +25%")
+eff(9255, "Passive", "MoveSpeedAdd", 0.10, desc="이동 속도 +10%")
+eff(9256, "Passive", "AreaDamageAdd", 0.35, desc="폭발 · 범위 피해 +35%")
+eff(9257, "OnKill", "Explosion", 0.6, 2.5, desc="처치하면 그 자리에 폭죽처럼 폭발 (피해 60%, 반경 2.5)")
+eff(9258, "Passive", "StatusDamageAdd", 0.30, desc="정지 · 둔화 · 가둠 · 화상 · 표식이 있는 적에게 피해 +30%")
+eff(9259, "Passive", "CritChanceAdd", 0.12, desc="치명타 확률 +12%")
+eff(9260, "Passive", "CritDamageAdd", 0.50, desc="치명타 피해 +50%")
+eff(9261, "Passive", "DefenseAdd", 15, desc="방어력 +15")
+eff(9262, "OnJustDodge", "HeatGain", 0.5, desc="저스트 회피하면 열기 +0.5칸")
 
 # 총 고유 효과 (9301~)
 eff(9301, "Passive", "DamageAdd", 0.20, target="OwnBullets", cond="JudgeEven", desc="판정 시각이 짝수인 탄 피해 +20%")
@@ -183,8 +197,13 @@ eff(9305, "Passive", "DamageAdd", 0.35, target="OwnBullets", cond="JudgeOver", c
 eff(9306, "OnHit", "DamageByDistance", 0.02, 0.4, target="OwnBullets", desc="이 총의 탄은 멀리 있는 적일수록 피해 증가 (1m당 +2%, 최대 +40%)")
 eff(9307, "OnFire", "SilhouetteShot", 0.5, chance=0.10, target="OwnBullets", desc="이 총의 탄을 쏠 때 10% 확률로 실루엣이 1발 더 (피해 50%)")
 eff(9308, "OnSkill", "HeatGain", 0.5, desc="[전역] 스킬을 쓰면 열기 +0.5칸")
-eff(9309, "Passive", "DamageAdd", 0.50, target="OwnBullets", cond="Slot12", desc="12시 칸 탄 피해 +50%")
 eff(9310, "OnPerfectReload", "Stun", 0, 6.0, 0.5, target="Area", desc="[전역] 완벽 장전 때 반경 6 적 0.5초 정지")
+eff(9311, "OnHit", "Knockback", 1.2, target="OwnBullets", desc="이 총의 탄에 맞은 적을 크게 밀쳐냄")
+eff(9312, "Passive", "DodgeCooldown", -0.20, desc="[전역] 대시 충전 시간 -20%")
+eff(9313, "Passive", "Ricochet", 1, target="OwnBullets", desc="이 총의 탄이 1번 튕김")
+eff(9314, "OnReload", "ReverseCylinder", 0, desc="[전역] 장전할 때마다 사격 순서를 뒤집음 (1→12 ↔ 12→1)")
+eff(9315, "OnHit", "Pierce", 1, target="OwnBullets", desc="이 총의 탄이 적 1명 관통")
+eff(9316, "OnHit", "TimeLock", 0.3, dur=1.0, chance=0.10, target="OwnBullets", desc="이 총의 탄이 10% 확률로 적을 1초 시간에 가둠")
 
 # 코스튬 효과 (9401~)
 eff(9401, "Passive", "AttackSpeedAdd", 0.15, desc="연사 속도 +15%")
@@ -199,9 +218,8 @@ eff(9409, "Passive", "DamageAdd", 0.25, target="AllBullets", cond="JudgeAtMost",
 eff(9410, "RunStart", "GrantBullet", 1018, desc="런 시작 때 '개기일식' 지급")
 eff(9411, "Passive", "TraitThresholdReduce", 1, desc="특성 6단계가 5개로 켜짐")
 eff(9412, "Passive", "MaxHpAdd", -0.15, desc="최대 체력 -15%")
-eff(9413, "Passive", "MemoryShardGainAdd", 0.50, desc="기억 조각 획득 +50%")
+eff(9413, "Passive", "MemoryShardGainAdd", 0.50, desc="시간의 조각 획득 +50%")
 eff(9414, "Passive", "DamageTakenAdd", 0.20, desc="받는 피해 +20%")
-eff(9415, "Passive", "Slot12BonusMul", 2.0, desc="12시 칸 강화 2배")
 
 # ---------------------------------------------------------------- 특성
 TRAIT = [
@@ -272,6 +290,17 @@ blt(1033, "여름의 지속", "Legendary", 16, "Negative", 0, L, T, 1, 9242, 924
 blt(1034, "마지막 페이지", "Legendary", 18, "Exact", 12, D_, U, 2, 9244, 9245, desc="이야기의 마지막 장")
 blt(1035, "변혁의 총탄", "Legendary", 16, "Prime", 0, W, L, 1, 9246, 9247, desc="시간을 거꾸로 돌리는 한 발")
 blt(1036, "레테의 물결", "Legendary", 16, "Odd", 0, O, F, 2, 9248, 9249, desc="건너면 모든 것을 잊는 강")
+# 능력치 · 피해 유형 탄 10 (일반 3 · 희귀 3 · 영웅 2 · 전설 2)
+blt(1037, "회중시계의 눈금", "Common", 10, "MultipleOf", 2, F, D_, 1, 9250, desc="눈금 하나까지 놓치지 않는 눈")
+blt(1038, "낡은 회색 코트", "Common", 10, "Odd", 0, T, W, 2, 9251, desc="수많은 겨울을 버틴 코트 자락")
+blt(1039, "네잎클로버 책갈피", "Common", 10, "Prime", 0, M, F, 1, 9252, desc="책 사이에 끼워 둔 행운")
+blt(1040, "정오의 결투", "Rare", 12, "Exact", 6, D_, R, 1, 9253, desc="그림자가 사라지는 순간 먼저 뽑는 자")
+blt(1041, "철길 위의 동전", "Rare", 12, "Even", 0, L, D_, 2, 9254, desc="기차가 지나간 뒤 납작해진 동전")
+blt(1042, "바람개비", "Rare", 12, "GreaterThan", 3, W, R, 1, 9255, desc="달리면 더 빨리 도는 종이 바람개비")
+blt(1043, "불꽃놀이 마지막 발", "Epic", 14, "MultipleOf", 3, L, M, 1, 9256, 9257, desc="축제가 끝나기 전 가장 큰 불꽃")
+blt(1044, "멈춘 맥박", "Epic", 14, "LessThan", 6, O, D_, 2, 9258, desc="멈춰 선 것들에게 더 깊이 박힌다")
+blt(1045, "운명의 동전 던지기", "Legendary", 17, "Exact", 7, F, D_, 1, 9259, 9260, desc="앞면이면 치명, 뒷면이어도 치명")
+blt(1046, "녹슬지 않는 갑주", "Legendary", 16, "Negative", 0, T, W, 2, 9261, 9262, desc="시간이 비켜 간 낡은 갑옷 조각")
 
 # ---------------------------------------------------------------- 연산
 OP = [
@@ -297,15 +326,16 @@ SKILL = [
 
 # ---------------------------------------------------------------- 총 (8)
 GUN = [
-    # Id, Name, Grade, DamageMul, FireInterval, ReloadTime, Range, SkillId, Effect1, Effect2, IconKey, Desc
-    (2001, "보안관의 리볼버", "Common", 1.00, 0.30, 1.2, 12.0, 6001, 0, 0, "gun_2001", "영웅이 처음 쥔 기본 총"),
-    (2002, "녹슨 콜트", "Common", 1.30, 0.42, 1.4, 12.0, 6002, 9301, 0, "gun_2002", "무겁고 느리지만 묵직한 한 발"),
-    (2003, "쌍둥이 데린저", "Rare", 0.75, 0.18, 1.0, 9.0, 6003, 9302, 0, "gun_2003", "작고 빠른 쌍둥이 권총"),
-    (2004, "은빛 메아리", "Rare", 1.00, 0.30, 1.2, 12.0, 6004, 9303, 0, "gun_2004", "튕길수록 커지는 은빛 메아리"),
-    (2005, "백투더 퓨처", "Rare", 1.00, 0.32, 1.3, 11.0, 6005, 9304, 0, "gun_2005", "손잡이 속 모래가 거꾸로 흐른다"),
-    (2006, "지평선", "Epic", 1.80, 0.65, 1.8, 18.0, 6006, 9305, 9306, "gun_2006", "지평선 끝까지 닿는 긴 총신"),
-    (2007, "동경", "Epic", 1.10, 0.28, 1.2, 12.0, 6007, 9307, 9308, "gun_2007", "노인이 동경한 영웅의 그림자가 따라 쏜다"),
-    (2008, "마지막 종소리", "Legendary", 1.20, 0.30, 1.0, 13.0, 6008, 9309, 9310, "gun_2008", "당기면 마지막 종이 울리고 시간이 멈춘다"),
+    # Id, Name, Grade, DamageMul, FireInterval, ReloadTime, Range, SkillId, RightEffect1, RightEffect2, LeftEffect1, LeftEffect2, IconKey, Desc, CritChance, CritDamage
+    # 오른손 = 홀수 칸 · 공격, 왼손 = 짝수 칸 · 보조 (손별 효과 수치는 임시)
+    (2001, "보안관의 리볼버", "Common", 1.00, 0.30, 1.2, 12.0, 6001, 0, 0, 0, 0, "gun_2001", "영웅이 처음 쥔 기본 총", 0.00, 0.00),
+    (2002, "녹슨 콜트", "Common", 1.30, 0.42, 1.4, 12.0, 6002, 9301, 0, 9311, 0, "gun_2002", "무겁고 느리지만 묵직한 한 발", 0.05, 0.30),
+    (2003, "쌍둥이 데린저", "Rare", 0.75, 0.18, 1.0, 9.0, 6003, 9302, 0, 9312, 0, "gun_2003", "작고 빠른 쌍둥이 권총", 0.10, 0.10),
+    (2004, "은빛 메아리", "Rare", 1.00, 0.30, 1.2, 12.0, 6004, 9303, 0, 9313, 0, "gun_2004", "튕길수록 커지는 은빛 메아리", 0.06, 0.15),
+    (2005, "백투더 퓨처", "Rare", 1.00, 0.32, 1.3, 11.0, 6005, 9304, 0, 9314, 0, "gun_2005", "손잡이 속 모래가 거꾸로 흐른다", 0.06, 0.15),
+    (2006, "지평선", "Epic", 1.80, 0.65, 1.8, 18.0, 6006, 9305, 9306, 9315, 0, "gun_2006", "지평선 끝까지 닿는 긴 총신", 0.08, 0.45),
+    (2007, "동경", "Epic", 1.10, 0.28, 1.2, 12.0, 6007, 9307, 0, 9308, 0, "gun_2007", "노인이 동경한 영웅의 그림자가 따라 쏜다", 0.10, 0.25),
+    (2008, "마지막 종소리", "Legendary", 1.20, 0.30, 1.0, 13.0, 6008, 9316, 0, 9310, 0, "gun_2008", "당기면 마지막 종이 울리고 시간이 멈춘다", 0.12, 0.35),
 ]
 
 # ---------------------------------------------------------------- 코스튬 (8)
@@ -318,7 +348,7 @@ COSTUME = [
     (4005, "거울 망토", "PerfectReloadCount", 100, 50, 9407, 9408, 0, "costume_mirror", "모든 탄이 한 번 튕긴다"),
     (4006, "모래 순례자 로브", "KillBoss", 2, 50, 9409, 9410, 0, "costume_pilgrim", "0시 이하의 시간을 걷는 자"),
     (4007, "기억의 스카프", "TraitTier6", 1, 80, 9411, 9412, 0, "costume_scarf", "특성 6단계가 하나 빨리 켜진다"),
-    (4008, "노인의 잠옷", "ClearZone", 5, 120, 9413, 9414, 9415, "costume_pajama", "현실에서 온 옷. 12시 칸이 두 배로 강해진다"),
+    (4008, "노인의 잠옷", "ClearZone", 5, 120, 9413, 9414, 0, "costume_pajama", "현실에서 온 옷. 시간의 조각을 더 모은다"),
 ]
 
 # ---------------------------------------------------------------- 시트 정의
@@ -332,7 +362,8 @@ SHEETS = [
                 "Value:float", "Value2:float", "Duration:float", "Desc:string"], E),
     ("Op", ["Id:int", "Name:string", "OpType:enum", "Operand:int", "DropWeight:int"], OP),
     ("Gun", ["Id:int", "Name:string", "Grade:enum", "DamageMul:float", "FireInterval:float", "ReloadTime:float", "Range:float",
-             "SkillId:int", "Effect1:int", "Effect2:int", "IconKey:string", "Desc:string"], GUN),
+             "SkillId:int", "RightEffect1:int", "RightEffect2:int", "LeftEffect1:int", "LeftEffect2:int", "IconKey:string", "Desc:string",
+             "CritChance:float", "CritDamage:float"], GUN),
     ("Skill", ["Id:int", "Name:string", "Action:enum", "Cooldown:float", "Value:float", "Value2:float", "Duration:float", "Desc:string"], SKILL),
     ("Costume", ["Id:int", "Name:string", "UnlockType:enum", "UnlockValue:int", "Cost:int", "Effect1:int", "Effect2:int", "Effect3:int",
                  "ModelKey:string", "Desc:string"], COSTUME),
@@ -342,13 +373,13 @@ def validate():
     eids = {e[0] for e in E}
     enum = {k: {v[0] for v in vals} for k, vals in ENUMS.items()}
     errs = []
-    assert len(B) == 37 and len(GUN) == 8 and len(COSTUME) == 8 and len(TRAIT) == 9
+    assert len(B) == 47 and len(GUN) == 8 and len(COSTUME) == 8 and len(TRAIT) == 9
     for b in B:
         if b[2] not in enum["Grade"] or b[4] not in enum["PlaceCond"]: errs.append(f"enum {b}")
         for e in (b[9], b[10]):
             if e and e not in eids: errs.append(f"bullet {b[0]} effect {e}")
     for g in GUN:
-        for e in (g[8], g[9]):
+        for e in g[8:12]:
             if e and e not in eids: errs.append(f"gun {g[0]} effect {e}")
     for c in COSTUME:
         for e in c[5:8]:

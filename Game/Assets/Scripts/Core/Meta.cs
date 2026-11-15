@@ -1,5 +1,5 @@
 // 판이 끝나도 남는 것 (PlayerPrefs 저장)
-// - 기억 조각, 기억(성장 노드) 단계
+// - 시간의 조각, 기억(성장 노드) 단계
 // - 챕터 클리어, 마을 시설 해금 · 레벨
 // - 총포상: 해금한 총 · 시작 총 / 탄약 공방: 탄 풀 / 의상실: 해금 코스튬 · 선택
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ namespace CatTang
     {
         const string P = "cattang.";
 
-        // ---------- 기억 조각 ----------
+        // ---------- 시간의 조각 ----------
         public static int Shards
         {
             get => PlayerPrefs.GetInt(P + "shards", 0);

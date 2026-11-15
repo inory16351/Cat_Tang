@@ -31,6 +31,7 @@ namespace CatTang
         public bool IsBossRoom => stageIndex >= Stages;
         public int RoomCount => layout != null ? layout.rooms.Count : 1;
         public Vector3 RoomCenter => current != null ? current.center : Vector3.zero;
+        public Transform StageRoot => layout != null ? layout.root : null;
 
         RoomBuilder.StageLayout layout;
         RoomBuilder.RoomInfo current;
@@ -153,7 +154,33 @@ namespace CatTang
             if (layout.rooms.Any(r => !r.cleared)) { ui?.Toast("다음 방으로"); return; }
             stageDone = true;
             if (IsBossRoom) { ui?.ShowRewardPick("최종 보상 — 하나 고르기", BossOptions(), ChapterClear); return; }
+            if (pendingReward == RewardKind.Gold || pendingReward == RewardKind.Shard || pendingReward == RewardKind.Armor) { GrantFixed(pendingReward); AfterReward(); return; }
             ui?.ShowRewardPick($"스테이지 보상 — {RoomDoor.NameOf(pendingReward)}", Options(pendingReward), AfterReward);
+        }
+
+        /// <summary>골드 · 시간의 조각 방: 고르기 없이 확정 지급. 양은 스테이지 진행도(챕터 · 스테이지)에 비례 (수치 임시)</summary>
+        public int FixedAmount(RewardKind k)
+        {
+            float scale = (1 + 0.5f * stageIndex) * (1 + 0.3f * (chapter - 1));
+            return Mathf.RoundToInt((k == RewardKind.Gold ? 40f : 6f) * scale);
+        }
+
+        void GrantFixed(RewardKind k)
+        {
+            if (k == RewardKind.Armor)
+            {
+                // 방어구 단계 +1: 단계표대로 최대 체력 · 방어력이 오르고 오른 체력만큼 회복
+                player.armorLevel++;
+                player.health.maxHp = player.MaxHp;
+                player.health.Heal(PlayerController.ArmorHpPerLevel);
+                FxBurst.Spawn(player.transform.position + Vector3.up, 2.4f, FxBurst.Kind.Gold, new Color(0.7f, 0.85f, 1f));
+                ui?.Toast($"방어구 강화 — {player.armorLevel}단계 (체력 +{PlayerController.ArmorHpPerLevel:0} · 방어력 +{PlayerController.ArmorDefPerLevel:0})");
+                return;
+            }
+            int n = FixedAmount(k);
+            if (k == RewardKind.Gold) player.inv.gold += n; else shardsThisRun += n;
+            FxBurst.Spawn(player.transform.position + Vector3.up, 2.2f, FxBurst.Kind.Gold, k == RewardKind.Gold ? new Color(1f, 0.82f, 0.3f) : new Color(0.6f, 0.85f, 1f));
+            ui?.Toast($"스테이지 보상 — {RoomDoor.NameOf(k)} +{n}");
         }
 
         void AfterReward()
@@ -167,7 +194,6 @@ namespace CatTang
         List<RewardOption> Options(RewardKind k)
         {
             var list = new List<RewardOption>();
-            int g = 40 + 10 * chapter, s = 5 + 2 * chapter;
             switch (k)
             {
                 case RewardKind.Bullet:
@@ -178,17 +204,6 @@ namespace CatTang
                     break;
                 case RewardKind.Gun:
                     foreach (var gun in Distinct(() => RandomGun(), 3)) { var gg = gun; list.Add(ItemOption(Item.Of(gg))); }
-                    break;
-                case RewardKind.Shard:
-                    list.Add(new RewardOption { label = $"기억 조각 +{s}", desc = "마을에서 영구 강화에 쓴다", icon = UIKit.Spr("shard"), apply = () => shardsThisRun += s });
-                    list.Add(new RewardOption { label = $"기억 조각 +{s / 2}\n체력 회복 30%", desc = "조각을 덜 받고 숨을 고른다", icon = UIKit.Spr("shard"), apply = () => { shardsThisRun += s / 2; player.health.Heal(player.health.maxHp * 0.3f); } });
-                    list.Add(new RewardOption { label = $"기억 조각 +{s / 2}\n골드 +{g / 2}", desc = "조각과 골드를 반씩", icon = UIKit.Spr("coin"), apply = () => { shardsThisRun += s / 2; player.inv.gold += g / 2; } });
-                    break;
-                default:
-                    list.Add(new RewardOption { label = $"골드 +{g}", desc = "상인에게 물건을 살 수 있다 (판이 끝나면 사라짐)", icon = UIKit.Spr("coin"), apply = () => player.inv.gold += g });
-                    list.Add(new RewardOption { label = $"골드 +{g / 2}\n체력 회복 30%", desc = "골드를 덜 받고 숨을 고른다", icon = UIKit.Spr("coin"), apply = () => { player.inv.gold += g / 2; player.health.Heal(player.health.maxHp * 0.3f); } });
-                    var op = PlayerController.RandomOp();
-                    list.Add(new RewardOption { label = $"골드 +{g / 2}\n연산 {op.Name}", desc = "골드 반 + 총탄 강화 하나", icon = UIKit.Spr("op_token"), apply = () => { player.inv.gold += g / 2; Give(Item.Of(op)); } });
                     break;
             }
             return list;
@@ -204,7 +219,7 @@ namespace CatTang
             var guns = Tables.Guns.Values.Where(g => g.Grade != "Common").ToList();
             list.Add(ItemOption(Item.Of(guns[Random.Range(0, guns.Count)])));
             int s = 20 + 10 * chapter;
-            list.Add(new RewardOption { label = $"기억 조각 +{s}", desc = "마을에서 영구 강화에 쓴다", icon = UIKit.Spr("shard"), apply = () => shardsThisRun += s });
+            list.Add(new RewardOption { label = $"시간의 조각 +{s}", desc = "마을에서 영구 강화에 쓴다", icon = UIKit.Spr("shard"), apply = () => shardsThisRun += s });
             return list;
         }
 
@@ -214,8 +229,7 @@ namespace CatTang
             {
                 ItemKind.Bullet => $"{UIKit.GradeKo(it.bullet.Grade)} · 공격 {it.bullet.Damage} · 조건 {UIKit.CondKo(it.bullet)}\n" +
                                    string.Join("\n", new[] { it.bullet.Effect1, it.bullet.Effect2 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? e.Desc : "")),
-                ItemKind.Gun => $"{UIKit.GradeKo(it.gun.Grade)} · 공격 ×{it.gun.DamageMul:0.00} · 연사 {it.gun.FireInterval:0.00}초\n" +
-                                string.Join("\n", new[] { it.gun.Effect1, it.gun.Effect2 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? e.Desc : "")),
+                ItemKind.Gun => $"{UIKit.GradeKo(it.gun.Grade)} · 공격 ×{it.gun.DamageMul:0.00} · 연사 {it.gun.FireInterval:0.00}초\n" + UIKit.GunHandText(it.gun),
                 _ => "탄에 끼워 판정 시각을 바꾼다"
             };
             var icon = it.kind switch { ItemKind.Bullet => UIKit.BulletIcon(it.bullet), ItemKind.Gun => UIKit.GunIcon(it.gun), _ => UIKit.Spr("op_token") };
@@ -235,6 +249,7 @@ namespace CatTang
 
         void Give(Item it)
         {
+            if (it.kind == ItemKind.Gun) { ui?.ShowGunPick(it.gun, null); return; }   // 총은 보관함에 안 들어감: 교체 창
             bool ok = player.inv.Add(it);
             ui?.Toast(ok ? $"{it.Name} — 보관함에 넣음 (Tab으로 배치)" : $"보관함이 가득 차 {it.Name}을(를) 골드로 바꿈");
         }
@@ -258,7 +273,7 @@ namespace CatTang
             if (stageIndex == Stages - 1) kinds.Add(RewardKind.Boss);
             else
             {
-                var pool = new List<(RewardKind k, float w)> { (RewardKind.Gold, 3), (RewardKind.Bullet, 3.2f), (RewardKind.Op, 2.5f), (RewardKind.Shard, 2), (RewardKind.Gun, 1.3f) };
+                var pool = new List<(RewardKind k, float w)> { (RewardKind.Gold, 3), (RewardKind.Bullet, 3.2f), (RewardKind.Op, 2.5f), (RewardKind.Shard, 2), (RewardKind.Gun, 1.3f), (RewardKind.Armor, 1.8f) };
                 int n = Random.value < 0.5f ? 2 : 3;
                 while (kinds.Count < n)
                 {
@@ -327,7 +342,7 @@ namespace CatTang
         public static GunDef RandomGun()
         {
             var weights = new Dictionary<string, float> { { "Common", 55 }, { "Rare", 30 }, { "Epic", 12 }, { "Legendary", 3 } };
-            var pool = Tables.Guns.Values.ToList();
+            var pool = Tables.Guns.Values.Where(g => g.Id != 2001).ToList();      // 기본 총(효과 없음)은 드랍 안 함
             float total = pool.Sum(g => weights[g.Grade]), r = Random.value * total;
             foreach (var g in pool) { r -= weights[g.Grade]; if (r <= 0) return g; }
             return pool[0];

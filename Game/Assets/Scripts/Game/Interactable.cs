@@ -55,6 +55,6 @@ namespace CatTang
         }
     }
 
-    public enum RewardKind { Gold, Gun, Bullet, Op, Shard, Boss }
+    public enum RewardKind { Gold, Gun, Bullet, Op, Shard, Boss, Armor }
 
 }

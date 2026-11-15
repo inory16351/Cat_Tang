@@ -11,14 +11,14 @@ namespace CatTang
 
         public static string IconOf(RewardKind k) => k switch
         {
-            RewardKind.Gold => "UI/coin", RewardKind.Shard => "UI/shard", RewardKind.Op => "UI/op_token",
+            RewardKind.Gold => "UI/coin", RewardKind.Shard => "UI/shard", RewardKind.Op => "UI/op_token", RewardKind.Armor => "UI/armor",
             RewardKind.Gun => "Icons/guns/gun_2001", RewardKind.Bullet => "Icons/bullets/bullet_1013", _ => "UI/close"
         };
 
         public static string NameOf(RewardKind k) => k switch
         {
             RewardKind.Gold => "골드", RewardKind.Gun => "총", RewardKind.Bullet => "총탄", RewardKind.Op => "총탄 강화",
-            RewardKind.Shard => "기억 조각", _ => "최종 보스"
+            RewardKind.Shard => "시간의 조각", RewardKind.Armor => "방어구 강화", _ => "최종 보스"
         };
 
         public override void Interact(PlayerController p) => RunManager.Instance.EnterDoor(this);

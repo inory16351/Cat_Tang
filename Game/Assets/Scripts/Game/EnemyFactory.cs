@@ -23,6 +23,8 @@ namespace CatTang
             h.maxHp = hp;
             var e = go.AddComponent<Enemy>();
             e.kind = kind;
+            if (kind != Enemy.Kind.Boss) EnemyHpBar.Attach(h, height + 0.45f);
+            StatusFx.Attach(h, height);
             return e;
         }
 

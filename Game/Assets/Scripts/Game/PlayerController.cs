@@ -26,6 +26,9 @@ namespace CatTang
         public bool combatEnabled = true;
 
         public Revolver rev = new Revolver();
+        public int armorLevel;                       // 방어구 단계 (방어구 강화 방에서 +1)
+        public KataPoser poser;
+        Animator anim;
         public Inventory inv = new Inventory();
         public Health health;
         public event Action<int, bool> OnFired;
@@ -57,10 +60,23 @@ namespace CatTang
             health.OnJustDodge += JustDodge;
             health.OnChanceDodge += ChanceDodge;
             Tables.Load();
+            if (model) { poser = model.GetComponent<KataPoser>(); anim = model.GetComponentInChildren<Animator>(); }
         }
 
         // ---------- 능력치 ----------
-        public float MaxHp => (baseMaxHp + Meta.Stat("MaxHp")) * (1 + CostumeStat("MaxHpAdd"));
+        // 방어구 단계표 (단계마다): 최대 체력 +15, 방어력 +4
+        public const float ArmorHpPerLevel = 15f, ArmorDefPerLevel = 4f;
+        public float MaxHp => (baseMaxHp + Meta.Stat("MaxHp") + armorLevel * ArmorHpPerLevel) * (1 + CostumeStat("MaxHpAdd"));
+        public float Defense => Mathf.Max(0, armorLevel * ArmorDefPerLevel + Meta.Stat("Defense") + Effects.GlobalPassive(this, "DefenseAdd"));
+        /// <summary>치명타 확률 = 기본 5% + 양손 총 합 + 효과 + 기억</summary>
+        public float CritChance => 0.05f + (rev.rightGun != null ? rev.rightGun.CritChance : 0) + (rev.leftGun != null ? rev.leftGun.CritChance : 0)
+                                   + Effects.GlobalPassive(this, "CritChanceAdd") + Meta.Stat("CritChance");
+        /// <summary>치명타 피해 배율 = 기본 150% + 양손 총 합 + 효과 + 기억</summary>
+        public float CritDamage => 1.5f + (rev.rightGun != null ? rev.rightGun.CritDamage : 0) + (rev.leftGun != null ? rev.leftGun.CritDamage : 0)
+                                   + Effects.GlobalPassive(this, "CritDamageAdd") + Meta.Stat("CritDamage");
+        /// <summary>확률형 효과 발동률 배율</summary>
+        public float ProcMul => 1 + Effects.GlobalPassive(this, "ProcChanceAdd") + Meta.Stat("ProcChance");
+        public float MoveSpeedMul => Mathf.Max(0.3f, 1 + Effects.GlobalPassive(this, "MoveSpeedAdd") + Meta.Stat("MoveSpeed"));
         public float DamageMul => 1 + Meta.Stat("DamageMul");
         public float AttackSpeedBonus => CostumeStat("AttackSpeedAdd");
         public float ReloadTime
@@ -71,9 +87,9 @@ namespace CatTang
                 return Mathf.Max(a, b) * (1 + Meta.Stat("ReloadTime"));
             }
         }
-        public float DashRechargeTime => dashRecharge * (1 + Meta.Stat("DodgeCooldown"));
+        public float DashRechargeTime => dashRecharge * Mathf.Max(0.3f, 1 + Meta.Stat("DodgeCooldown") + Effects.GlobalPassive(this, "DodgeCooldown"));
         public float HeatPerHit => (1f / 12f) * (1 + Meta.Stat("HeatGain"));
-        public float DamageTakenMul => 1 + CostumeStat("DamageTakenAdd");
+        public float DamageTakenMul => (1 + CostumeStat("DamageTakenAdd")) * 100f / (100f + Defense);
         public float DodgeChance => Mathf.Clamp01(Effects.GlobalPassive(this, "DodgeChance") + (Time.time < tempDodgeUntil ? tempDodge : 0));
         public float ControlDurationMul => 1 + Effects.GlobalPassive(this, "ControlDurationAdd");
         public float JustDodgeWindow => 0.08f + Effects.GlobalPassive(this, "JustDodgeWindowAdd");
@@ -96,6 +112,7 @@ namespace CatTang
                 leftGun = Tables.Guns.TryGetValue(Meta.StartGunLeft, out var g2) ? g2 : Tables.Guns[2001]
             };
             inv = new Inventory();
+            armorLevel = 0;
             var basic = Tables.Bullets.TryGetValue(1000, out var bb) ? bb : null;
             for (int i = 1; i <= 12; i++) rev.slots[i].bullet = basic;
             if (Tables.Costumes.TryGetValue(Meta.SelectedCostume, out var c))
@@ -163,11 +180,13 @@ namespace CatTang
             var mv = new Vector3((kb.dKey.isPressed ? 1 : 0) - (kb.aKey.isPressed ? 1 : 0), 0, (kb.wKey.isPressed ? 1 : 0) - (kb.sKey.isPressed ? 1 : 0));
             if (mv.sqrMagnitude > 1) mv.Normalize();
             var faceDir = combatEnabled ? aimDir : (mv.sqrMagnitude > 0.01f ? mv : (model ? model.forward : aimDir));
-            if (model && faceDir.sqrMagnitude > 0.001f) model.rotation = Quaternion.Slerp(model.rotation, Quaternion.LookRotation(faceDir), 20f * Time.deltaTime);
+            if (model && !ultimateActive && faceDir.sqrMagnitude > 0.001f) model.rotation = Quaternion.Slerp(model.rotation, Quaternion.LookRotation(faceDir), 20f * Time.deltaTime);
 
+            if (anim) anim.SetFloat("Speed", dashing ? 1f : mv.magnitude);
+            if (poser && !ultimateActive) poser.SetAimWeight(combatEnabled ? 1f : 0f);
             if (!dashing)
             {
-                cc.Move((mv * moveSpeed + Vector3.down * 9f) * Time.deltaTime);
+                cc.Move((mv * moveSpeed * MoveSpeedMul + Vector3.down * 9f) * Time.deltaTime);
                 if (kb.spaceKey.wasPressedThisFrame && dashCharges >= 1)
                     StartCoroutine(Dash(mv.sqrMagnitude > 0.01f ? mv.normalized : faceDir));
             }
@@ -290,7 +309,6 @@ namespace CatTang
             add += Effects.Passive(this, s, "DamagePerUnawakened") * rev.UnawakenedCount();
             if (judge < 0) add += Effects.Passive(this, s, "DamageByNegativeJudge") * -judge;
             float dmg = ((b != null ? b.Damage : 8) + slot.permanentBonus) * (gun != null ? gun.DamageMul : 1f) * DamageMul * (1 + add);
-            if (s == 12) dmg *= 1.5f + CostumeStat("Slot12BonusMul");
             return dmg;
         }
 
@@ -308,9 +326,9 @@ namespace CatTang
                 nextShotDamageAdd = 0;
                 if (perfectBuff) { dmg *= 1.5f; perfectBuff = false; }
             }
-            bool crit = Effects.Passive(this, s, "CritChance") > UnityEngine.Random.value || (!ghost && critShots > 0);
+            bool crit = CritChance + Effects.Passive(this, s, "CritChance") > UnityEngine.Random.value || (!ghost && critShots > 0);
             if (!ghost && critShots > 0) critShots--;
-            if (crit) dmg *= 2f;
+            if (crit) dmg *= CritDamage;
 
             Vector3 basePos = fromPos ?? transform.position;
             Vector3 origin = muzzle && !fromPos.HasValue ? muzzle.position : basePos + Vector3.up * 0.9f;
@@ -351,7 +369,7 @@ namespace CatTang
             int pierce = 0, ricochet = 0;
             int judge = rev.JudgeTime(s);
             foreach (var e in Effects.For(this, s, "OnHit")) { if (e.Type == "Pierce") pierce += Mathf.RoundToInt(e.Value); if (e.Type == "Ricochet") ricochet += Mathf.RoundToInt(e.Value); if (e.Type == "RicochetByJudgeTime" && Mathf.Abs(judge) >= e.Value) ricochet += 1; }
-            foreach (var e in Effects.For(this, s, "Passive")) if (e.Type == "Ricochet") ricochet += Mathf.RoundToInt(e.Value);
+            foreach (var e in Effects.For(this, s, "Passive")) if (e.Type == "Ricochet" && (!e.Borrowed || Effects.Roll(e))) ricochet += Mathf.RoundToInt(e.Value);
             bool homing = Effects.Passive(this, s, "Homing") > 0;
             float range = gun != null ? gun.Range : 12f;
 
@@ -391,9 +409,18 @@ namespace CatTang
                 end = h.point;
                 if (pierced >= pierce) break;
                 pierced++;
+                FxBurst.Spawn(h.point, 1.0f, FxBurst.Kind.Spark, col);          // 관통 불꽃
                 foreach (var e in Effects.For(this, s, "OnPierce")) if (e.Type == "PierceDamageGrowth") dmg *= 1 + e.Value;
             }
-            Tracer.Spawn(origin, end, col, BulletLook.Width(b, awake) * (ghost ? 0.7f : 1f), awake && b != null && b.Grade == "Legendary");
+            bool resonance = !ghost && awake && b != null && b.Id != 1000;
+            Tracer.Spawn(origin, end, col, BulletLook.Width(b, awake) * (ghost ? 0.7f : resonance ? 1.6f : 1f), resonance || (awake && b != null && b.Grade == "Legendary"));
+            if (resonance)
+            {
+                // 공명 사격: 금빛 섬광 + 맞은 자리 탄 색 폭발(피해 30%) + 화면 흔들림
+                FxBurst.Spawn(origin + dir * 0.5f, 1.8f, FxBurst.Kind.Gold, col);
+                if (hitSet.Count > 0) Effects.Explosion(end, 2f, dmg * 0.3f, col);
+                CameraFollow.Shake(b.Grade == "Legendary" ? 0.22f : b.Grade == "Epic" ? 0.16f : 0.1f);
+            }
 
             // 튕김: 맞은 자리에서 가장 가까운 다른 적으로
             Vector3 from = end;
@@ -405,6 +432,7 @@ namespace CatTang
                 foreach (var e in Effects.For(this, s, "OnRicochet")) if (e.Type == "DamageAddStack") stack += e.Value;
                 var to = next.transform.position + Vector3.up * 0.9f;
                 Tracer.Spawn(from, to, col, BulletLook.Width(b, awake) * 0.8f, false);
+                FxBurst.Spawn(from, 0.9f, FxBurst.Kind.Spark, col);
                 hitSet.Add(next.health);
                 ApplyHit(s, next.health, dmg * (1 + stack), to, Vector3.Distance(transform.position, to), (to - from).normalized, col, crit);
                 from = to;
@@ -426,10 +454,14 @@ namespace CatTang
                 if (e.Type == "DamageByDistance") dmg *= 1 + Mathf.Min(e.Value * dist, e.Value2 > 0 ? e.Value2 : 1f);
             }
             if (target.Stunned) dmg *= 1 + Effects.Passive(this, s, "DamageVsStoppedAdd");
+            // 피해 유형별 증폭 (탄 고유 효과)
+            if (target.IsBoss) dmg *= 1 + Effects.GlobalPassive(this, "BossDamageAdd");
+            if (target.HasStatus) dmg *= 1 + Effects.GlobalPassive(this, "StatusDamageAdd");
             bool wasLocked = target.TimeLocked;
             target.TakeDamage(dmg);
             rev.AddHeat(HeatPerHit);
             FxBurst.Spawn(point, crit ? 1.6f : 1.1f, FxBurst.Kind.Hit, col);
+            if (crit) { FxBurst.Spawn(point + Vector3.up * 0.2f, 1.5f, FxBurst.Kind.Crit, Color.white); CameraFollow.Shake(0.05f); }
             bool killed = !target.Alive;
             var en = target.GetComponent<Enemy>();
 
@@ -450,16 +482,18 @@ namespace CatTang
                     case "Burn": target.ApplyBurn(Mathf.Max(1f, dmg * e.Value * 4f), Mathf.Max(1f, e.Duration)); break;
                     case "DefenseDown": target.ApplyDefenseDown(e.Value, Mathf.Max(1f, e.Duration)); break;
                     case "EnemyAttackSpeedDown": target.ApplyAttackSpeedDown(e.Value, Mathf.Max(1f, e.Duration) * ctl); break;
-                    case "Knockback": target.Knockback(dir * Mathf.Max(0.3f, e.Value) * 2f); break;
+                    case "Knockback": target.Knockback(dir * Mathf.Max(0.3f, e.Value) * 2f); FxBurst.Spawn(target.transform.position + Vector3.up * 0.3f, 1.2f, FxBurst.Kind.Dust, Color.white); break;
                     case "MemoryMark": target.AddMark(e.Value, e.Value2 > 0 ? (int)e.Value2 : 10); break;
                     case "MarkBurst":
                         Effects.Explosion(target.transform.position, 2f, dmg * e.Value, new Color(1f, 0.55f, 0.85f));
                         target.ClearMarks();
                         break;
                     case "Execute":
+                        FxBurst.Spawn(target.transform.position + Vector3.up * 0.9f, 2.2f, FxBurst.Kind.Slash, Color.white); CameraFollow.Shake(0.1f);
                         if (target.Alive) { target.TakeDamage(target.hp + 1); foreach (var x in Effects.Global(this, "OnExecute")) if (x.Type == "HeatGain") rev.AddHeat(x.Value); }
                         break;
                     case "DelayedDamage":
+                        FxBurst.Spawn(target.transform.position + Vector3.up * 0.9f, e.Value2 > 0 ? e.Value2 * 1.4f : 1.6f, FxBurst.Kind.Converge, Color.white, Mathf.Max(0.2f, e.Duration));
                         if (e.Value2 > 0) StartCoroutine(DelayedBlast(target.transform.position, e.Value2, dmg * e.Value, Mathf.Max(0.2f, e.Duration)));
                         else target.AddDelayed(dmg * e.Value, Mathf.Max(0.2f, e.Duration));
                         break;
@@ -608,34 +642,95 @@ namespace CatTang
             }
         }
 
-        // ---------- 궁극기: 불릿 파티 ----------
+        // ---------- 궁극기: 불릿 파티 (건카타) ----------
+        // 랫키호테 쌍총 사냥꾼 · 사미라 궁 느낌: 12발 동안 건카타 8자세 사이를 홱홱 끊어 넘어가며 좌우로 튐.
+        // 자세가 바뀔 때마다 방금 자세가 금빛 실루엣으로 남아 같이 쏘고, 두 총구가 각자 가리키는 쪽으로 쏨.
+        static readonly int[] KataSeq = { 0, 3, 1, 5, 2, 4, 6, 7, 0, 3, 1, 7 };
+
         IEnumerator BulletParty()
         {
             ultimateActive = true;
             rev.heat = 0;
             health.invulnerable = true;
             OnUltimate?.Invoke();
-            Time.timeScale = 0.5f;
-            var start = transform.position;
-            for (int s = 1; s <= 12; s++)
+            Time.timeScale = 0.35f;
+            CameraFollow.Zoom(0.42f);
+            float sideSign = 1;
+            var gold = new Color(1f, 0.8f, 0.32f, 0.9f);
+            for (int i = 0; i < 12; i++)
             {
-                Enemy target = Effects.Nearest(transform.position, 16f);
-                float best = target ? Vector3.Distance(target.transform.position, transform.position) : 8f;
-                var dir = target ? (target.transform.position - transform.position) : Quaternion.Euler(0, s * 30, 0) * Vector3.forward;
-                dir.y = 0;
-                dir.Normalize();
-                if (model) model.rotation = Quaternion.LookRotation(dir);
+                int s = i + 1;
+                var foes = new List<Enemy>();
+                foreach (var en in Enemy.All) if (en && en.health.Alive && Effects.Flat(en.transform.position - transform.position).magnitude < 16f) foes.Add(en);
+                foes.Sort((x, y) => Effects.Flat(x.transform.position - transform.position).sqrMagnitude.CompareTo(Effects.Flat(y.transform.position - transform.position).sqrMagnitude));
+                Enemy target = foes.Count > 0 ? foes[i % foes.Count] : null;
+                Vector3 toT = target ? Effects.Flat(target.transform.position - transform.position).normalized : Quaternion.Euler(0, i * 47, 0) * Vector3.forward;
+                if (toT.sqrMagnitude < 0.01f) toT = Vector3.forward;
+                float dist = target ? Effects.Flat(target.transform.position - transform.position).magnitude : 8f;
+
+                // 방금 자세는 금빛 실루엣으로 남아 대상에게 한 발
+                var oldPos = transform.position;
+                if (i > 0 && model)
+                {
+                    Afterimage.SpawnAt(model, oldPos, gold, 0.75f);
+                    if (rev.slots[s].bullet != null)
+                        Shoot(s, toT, null, 0.5f, -1, true, oldPos);
+                }
+                // 좌우로 튐
+                var side = Vector3.Cross(Vector3.up, toT).normalized * sideSign * 1.6f;
+                sideSign = -sideSign;
+                cc.Move(side);
+
+                int k = KataSeq[i];
+                bool back = KataPoser.KataBackFacing[k];
+                if (model) model.rotation = Quaternion.LookRotation(back ? -toT : toT);
+                if (poser) poser.Snap(k, 0.04f);
+                if (k == 7 && model) StartCoroutine(SpinModel(0.14f));
+                yield return new WaitForSecondsRealtime(0.04f);      // 자세가 잡힌 뒤 쏨
+
                 if (rev.slots[s].bullet != null)
                 {
-                    Shoot(s, dir, s % 2 == 1 ? rightMuzzle : leftMuzzle, 1.6f, best, true);
-                    Afterimage.SpawnAt(model, start, new Color(1f, 0.85f, 0.4f, 0.6f), 0.4f);        // 금빛 잔상도 함께 쏨
-                    Shoot(s, Effects.Flat((target ? target.transform.position : start + dir * 6) - start).normalized, null, 0.6f, -1, true, start);
+                    bool rightFirst = s % 2 == 1;
+                    var mainMz = rightFirst ? rightMuzzle : leftMuzzle;
+                    var subMz = rightFirst ? leftMuzzle : rightMuzzle;
+                    Shoot(s, toT, mainMz, 1.6f, dist, true);
+                    // 다른 손 총: 총구가 가리키는 쪽 (가까운 적이 그쪽 40° 안에 있으면 그 적에게)
+                    var d2 = poser ? poser.BarrelDir(!rightFirst) : -toT;
+                    foreach (var f in foes)
+                    {
+                        var df = Effects.Flat(f.transform.position - transform.position).normalized;
+                        if (Vector3.Angle(df, d2) < 40f) { d2 = df; break; }
+                    }
+                    Shoot(s, d2, subMz, 0.9f, -1, true);
+                    CameraFollow.Shake(0.07f);
                 }
-                yield return new WaitForSecondsRealtime(0.07f);
+                yield return new WaitForSecondsRealtime(0.11f);                  // 자세를 잠깐 멈춰 보여 줌 (절도)
             }
+            // 마무리: 제자리 회전하며 금빛 실루엣 링
+            if (model)
+            {
+                for (int r = 0; r < 6; r++) Afterimage.SpawnAt(model, transform.position, gold, 0.6f);
+                StartCoroutine(SpinModel(0.2f));
+            }
+            yield return new WaitForSecondsRealtime(0.2f);
+            if (poser) poser.Release(0.15f);
+            CameraFollow.Zoom(1f);
             Time.timeScale = 1f;
             health.invulnerable = false;
             ultimateActive = false;
+        }
+
+        IEnumerator SpinModel(float dur)
+        {
+            float t = 0;
+            var start = model.rotation;
+            while (t < dur && model)
+            {
+                t += Time.unscaledDeltaTime;
+                model.rotation = start * Quaternion.Euler(0, 360f * Mathf.Clamp01(t / dur), 0);
+                if (t % 0.035f < Time.unscaledDeltaTime) Afterimage.Spawn(model, new Color(1f, 0.8f, 0.35f, 0.45f), 0.3f);
+                yield return null;
+            }
         }
 
         void OnDestroy()

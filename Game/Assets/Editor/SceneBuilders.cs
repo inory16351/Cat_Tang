@@ -107,6 +107,18 @@ namespace CatTang.EditorTools
             cc.radius = 0.45f; cc.height = 1.6f; cc.center = new Vector3(0, 0.8f, 0);
             player.AddComponent<Health>();
             var pc = player.AddComponent<PlayerController>();
+            // Tripo 고양이 프리팹이 있으면 그걸 씀
+            var heroPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CatHeroBuilder.PrefabPath);
+            if (heroPrefab)
+            {
+                var hero = (GameObject)PrefabUtility.InstantiatePrefab(heroPrefab, player.transform);
+                hero.name = "Model";
+                var poser = hero.GetComponent<KataPoser>();
+                pc.model = hero.transform;
+                pc.rightMuzzle = poser.muzzleR;
+                pc.leftMuzzle = poser.muzzleL;
+                return pc;
+            }
             var model = new GameObject("Model").transform;
             model.SetParent(player.transform, false);
             Prim(PrimitiveType.Capsule, "Body", model, new Vector3(0, 0.55f, 0), new Vector3(0.8f, 0.5f, 0.7f), coatM, false);

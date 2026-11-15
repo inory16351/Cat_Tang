@@ -1,4 +1,4 @@
-// 화면 UI 총괄: 상단 HUD(체력 바 · 대시 · 골드 · 기억 조각 · 방) + 하단 탄환 시계 HUD + 화면들
+// 화면 UI 총괄: 상단 HUD(체력 바 · 대시 · 골드 · 시간의 조각 · 방) + 하단 탄환 시계 HUD + 화면들
 // 화면: 인벤토리(Tab) · 상인 · 판 결과 · 챕터 선택 · 마을 시설(기억의 방 · 총포상 · 탄약 공방 · 의상실)
 using System.Collections;
 using System.Collections.Generic;
@@ -56,6 +56,34 @@ namespace CatTang
             toastText = UIKit.Label("Toast", root, new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1200, 60), 38, TextAnchor.MiddleCenter, true, UIKit.Gold);
         }
 
+        GameObject bossBar;
+        Image bossFill, bossTrail;
+        Text bossName;
+        float bossShown = 1, bossTrailV = 1, bossLastHp, bossHold;
+        Health bossHealth;
+
+        void UpdateBossBar()
+        {
+            if (!bossBar) return;
+            if (!bossHealth || !bossHealth.Alive)
+            {
+                bossHealth = null;
+                foreach (var en in Enemy.All) if (en && en.health && en.health.IsBoss && en.health.Alive) { bossHealth = en.health; bossShown = bossTrailV = 1; bossLastHp = en.health.hp; break; }
+            }
+            bossBar.SetActive(bossHealth);
+            if (!bossHealth) return;
+            var rm = RunManager.Instance;
+            bossName.text = rm && rm.Chapter != null ? rm.Chapter.BossName : "보스";
+            float v = bossHealth.maxHp > 0 ? Mathf.Clamp01(bossHealth.hp / bossHealth.maxHp) : 0;
+            bossShown = Mathf.MoveTowards(bossShown, v, Time.unscaledDeltaTime * 3f);
+            if (bossHealth.hp < bossLastHp - 0.01f) bossHold = 0.4f;
+            bossLastHp = bossHealth.hp;
+            if (bossHold > 0) bossHold -= Time.unscaledDeltaTime; else bossTrailV = Mathf.MoveTowards(bossTrailV, v, Time.unscaledDeltaTime * 0.6f);
+            if (bossTrailV < v) bossTrailV = v;
+            bossFill.rectTransform.sizeDelta = new Vector2(952 * bossShown, 30);
+            bossTrail.rectTransform.sizeDelta = new Vector2(952 * bossTrailV, 30);
+        }
+
         void BuildTop()
         {
             // 체력 바 (이미지: 틀 + 안쪽 채움)
@@ -75,7 +103,7 @@ namespace CatTang
                 dash[i] = UIKit.Img("Dash" + i, hudRoot, "dash_full", new Vector2(0, 1), new Vector2(120 + i * 78, -205), new Vector2(76, 76));
                 dash[i].rectTransform.pivot = new Vector2(0.5f, 0.5f);
             }
-            // 골드 · 기억 조각 (오른쪽 위)
+            // 골드 · 시간의 조각 (오른쪽 위)
             var coin = UIKit.Img("Coin", hudRoot, "coin", new Vector2(1, 1), new Vector2(-300, -60), new Vector2(64, 64));
             coin.rectTransform.pivot = new Vector2(0.5f, 0.5f);
             goldText = UIKit.Label("Gold", hudRoot, new Vector2(1, 1), new Vector2(-180, -60), new Vector2(170, 50), 34, TextAnchor.MiddleLeft, true, UIKit.Gold);
@@ -84,6 +112,17 @@ namespace CatTang
             shard.rectTransform.pivot = new Vector2(0.5f, 0.5f);
             shardText = UIKit.Label("Shards", hudRoot, new Vector2(1, 1), new Vector2(-180, -130), new Vector2(170, 50), 30, TextAnchor.MiddleLeft, true, UIKit.Blue);
             shardText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            // 보스 체력 바 (화면 위쪽 가운데, 보스 방에서만)
+            bossBar = UIKit.MakeRect("BossBar", hudRoot, new Vector2(0.5f, 1), new Vector2(0, -118), new Vector2(980, 86)).gameObject;
+            var bFrame = UIKit.Img("Frame", bossBar.transform, "panel_plain", new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(980, 50), true, 1.4f);
+            bFrame.color = new Color(0.12f, 0.07f, 0.1f, 0.95f);
+            bossTrail = UIKit.Img("Trail", bossBar.transform, "hp_fill", new Vector2(0, 0.5f), new Vector2(14, -10), new Vector2(952, 30), true, 1.6f);
+            bossTrail.rectTransform.pivot = new Vector2(0, 0.5f);
+            bossTrail.color = new Color(1f, 0.95f, 0.85f);
+            bossFill = UIKit.Img("Fill", bossBar.transform, "hp_fill", new Vector2(0, 0.5f), new Vector2(14, -10), new Vector2(952, 30), true, 1.6f);
+            bossFill.rectTransform.pivot = new Vector2(0, 0.5f);
+            bossName = UIKit.Label("Name", bossBar.transform, new Vector2(0.5f, 1), new Vector2(0, 6), new Vector2(900, 40), 30, TextAnchor.MiddleCenter, true, UIKit.Gold);
+            bossBar.SetActive(false);
             roomText = UIKit.Label("Room", hudRoot, new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(900, 44), 28, TextAnchor.MiddleCenter, true, UIKit.Cream);
             nextText = UIKit.Label("Next", hudRoot, new Vector2(0.5f, 0), new Vector2(0, 285), new Vector2(1000, 36), 22, TextAnchor.MiddleCenter);
             heatText = UIKit.Label("Heat", hudRoot, new Vector2(0.5f, 0), new Vector2(390, 40), new Vector2(260, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Gold);
@@ -112,6 +151,7 @@ namespace CatTang
 
         void Update()
         {
+            UpdateBossBar();
             if (!player) player = PlayerController.Instance;
             if (!player) return;
             var kb = Keyboard.current;
@@ -243,13 +283,15 @@ namespace CatTang
                     foreach (var t in new[] { nm, ds }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
                     var btn = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(60, 40), new Vector2(260, 70), m.sold[i] ? "판매됨" : $"{price} 골드", () =>
                     {
-                        if (m.sold[idx] || player.inv.gold < price || !player.inv.HasSpace) return;
+                        bool isGun = it.kind == ItemKind.Gun;
+                        if (m.sold[idx] || player.inv.gold < price || (!isGun && !player.inv.HasSpace)) return;
                         player.inv.gold -= price;
-                        player.inv.Add(it);
                         m.sold[idx] = true;
+                        if (isGun) { ShowGunPick(it.gun, () => OpenShop(m)); return; }   // 총은 교체 창 → 상점으로 돌아옴
+                        player.inv.Add(it);
                         Redraw();
                     }, 24);
-                    UIKit.SetInteractable(btn, !m.sold[i] && player.inv.gold >= price && player.inv.HasSpace);
+                    UIKit.SetInteractable(btn, !m.sold[i] && player.inv.gold >= price && (it.kind == ItemKind.Gun || player.inv.HasSpace));
                 }
                 var heal = UIKit.MakeButton("CardHeal", panel.transform, new Vector2(0.5f, 0), new Vector2(-260, 70), new Vector2(420, 80), $"체력 회복 40%  ({Merchant.HealCost} 골드)", () =>
                 {
@@ -296,11 +338,64 @@ namespace CatTang
                 foreach (var t in new[] { nm, ds }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
                 UIKit.MakeButton("Pick", card.transform, new Vector2(0.5f, 0), new Vector2(0, 56), new Vector2(280, 76), "고르기", () =>
                 {
-                    o.apply?.Invoke();
                     CloseAll();
+                    o.apply?.Invoke();          // 총이면 여기서 교체 창이 열림
                     onDone?.Invoke();
                 }, 26);
             }
+        }
+
+        // ---------- 총 줍기: 오른손 교체 · 왼손 교체 · 버리기 ----------
+        // 총은 양손 2자루만. 손에서 빠진 총 · 버린 총은 바닥에 떨어져 다시 주울 수 있다.
+        public void ShowGunPick(GunDef g, System.Action after)
+        {
+            if (g == null || player == null) { after?.Invoke(); return; }
+            var go = OpenScreen("GunPick");
+            UIKit.Dim(go.transform, 0.8f);
+            UIKit.Banner($"총을 주웠다 — {g.Name}", go.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 380), 860);
+            var rev = player.rev;
+            var brown = new Color(0.3f, 0.18f, 0.1f);
+            var body = new Color(0.32f, 0.22f, 0.14f);
+
+            void Finish(GunDef dropped)
+            {
+                if (dropped != null) GunPickup.Drop(dropped, player.transform.position);
+                CloseAll();
+                after?.Invoke();
+            }
+
+            GameObject GunCard(string name, Vector2 pos, GunDef gun, string head, Color headCol, string text)
+            {
+                var card = UIKit.Panel(name, go.transform, new Vector2(0.5f, 0.5f), pos, new Vector2(500, 560), false, "tooltip", 1.8f);
+                UIKit.Label("Head", card.transform, new Vector2(0.5f, 1), new Vector2(0, -42), new Vector2(460, 40), 24, TextAnchor.MiddleCenter, true, headCol).text = head;
+                var frame = UIKit.Img("Frame", card.transform, "slot", new Vector2(0.5f, 1), new Vector2(0, -140), new Vector2(140, 140));
+                frame.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                var ic = UIKit.MakeRect("Icon", frame.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110, 110)).gameObject.AddComponent<Image>();
+                ic.sprite = UIKit.GunIcon(gun); ic.preserveAspect = true; ic.raycastTarget = false;
+                var nm = UIKit.Label("Name", card.transform, new Vector2(0.5f, 1), new Vector2(0, -232), new Vector2(460, 40), 26, TextAnchor.MiddleCenter, true, brown);
+                nm.text = gun != null ? $"{gun.Name}  <size=18>{UIKit.GradeKo(gun.Grade)} · ×{gun.DamageMul:0.00} · {gun.FireInterval:0.00}초</size>" : "-";
+                var ds = UIKit.Label("Desc", card.transform, new Vector2(0.5f, 1), new Vector2(0, -268), new Vector2(450, 190), 18, TextAnchor.UpperLeft, false, body);
+                ds.rectTransform.pivot = new Vector2(0.5f, 1);
+                ds.supportRichText = true;
+                ds.text = text;
+                foreach (var t in new[] { nm, ds }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
+                return card.gameObject;
+            }
+
+            string Swap(GunDef cur, bool right) =>
+                $"<b>지금</b>  {(cur != null ? UIKit.HandEffectLine(cur, right) : "-")}\n\n<color=#B8862B><b>바꾸면</b>  {UIKit.HandEffectLine(g, right)}</color>";
+
+            // 왼쪽 = 왼손, 가운데 = 새 총, 오른쪽 = 오른손 (화면 배치 = 손 위치)
+            var lc = GunCard("CardLeft", new Vector2(-540, -20), rev.leftGun, "왼손 · 짝수 칸", UIKit.Blue, Swap(rev.leftGun, false));
+            var nc = GunCard("CardNew", new Vector2(0, -20), g, "새 총", UIKit.Gold, UIKit.GunHandText(g) + $"\n\n<i>{g.Desc}</i>");
+            var rc = GunCard("CardRight", new Vector2(540, -20), rev.rightGun, "오른손 · 홀수 칸", UIKit.Gold, Swap(rev.rightGun, true));
+
+            UIKit.MakeButton("TakeLeft", lc.transform, new Vector2(0.5f, 0), new Vector2(0, 56), new Vector2(340, 76), "왼손에 쥐기", () =>
+            { var old = rev.leftGun; rev.leftGun = g; Toast(old != null ? $"{old.Name}을(를) 바닥에 내려놓음" : $"{g.Name} — 왼손"); Finish(old); }, 24);
+            UIKit.MakeButton("TakeRight", rc.transform, new Vector2(0.5f, 0), new Vector2(0, 56), new Vector2(340, 76), "오른손에 쥐기", () =>
+            { var old = rev.rightGun; rev.rightGun = g; Toast(old != null ? $"{old.Name}을(를) 바닥에 내려놓음" : $"{g.Name} — 오른손"); Finish(old); }, 24);
+            UIKit.MakeButton("Leave", nc.transform, new Vector2(0.5f, 0), new Vector2(0, 56), new Vector2(340, 76), "버리기 (바닥에 둠)", () =>
+            { Toast($"{g.Name}을(를) 바닥에 둠 — 다시 주울 수 있음"); Finish(g); }, 22);
         }
 
         // ---------- 판 결과 ----------
@@ -317,7 +412,7 @@ namespace CatTang
                 for (int f = 0; f < 4; f++)
                     if (Meta.FacilityUnlockChapter[f] == chapter) unlock = $"\n\n<color=#FFD54A>마을에 '{Meta.FacilityName[f]}'이(가) 열렸다</color>";
             t.text = (win ? $"{Tables.Chapter(chapter)?.BossName}을(를) 넘었다." : "다시 여관 2층에서 눈을 뜬다.") +
-                     $"\n\n기억 조각 +{shards}  (보유 {Meta.Shards})\n골드는 사라진다.{unlock}";
+                     $"\n\n시간의 조각 +{shards}  (보유 {Meta.Shards})\n골드는 사라진다.{unlock}";
             UIKit.MakeButton("Village", panel.transform, new Vector2(0.5f, 0), new Vector2(0, 90), new Vector2(380, 90), "마을로", () =>
             {
                 resultsOpen = false;
@@ -372,7 +467,7 @@ namespace CatTang
             {
                 for (int c = content.childCount - 1; c >= 0; c--) Destroy(content.GetChild(c).gameObject);
                 int lv = Meta.FacilityLevel(f);
-                head.text = $"시설 {lv}/{Meta.FacilityMaxLevel}단계  ·  기억 조각 {Meta.Shards}";
+                head.text = $"시설 {lv}/{Meta.FacilityMaxLevel}단계  ·  시간의 조각 {Meta.Shards}";
                 var up = UIKit.MakeButton("Upgrade", content, new Vector2(1, 1), new Vector2(0, 100), new Vector2(380, 76),
                     lv >= Meta.FacilityMaxLevel ? "최대 단계" : $"시설 강화 ({Meta.FacilityUpgradeCost(f)} 조각)", () => { if (Meta.TryUpgradeFacility(f)) { Toast("시설이 넓어졌다"); Redraw(); } }, 22);
                 up.GetComponent<RectTransform>().pivot = new Vector2(1, 0.5f);
@@ -437,8 +532,9 @@ namespace CatTang
                 }
                 else
                 {
-                    var r = UIKit.MakeButton("R", card.transform, new Vector2(0.5f, 0), new Vector2(-62, 46), new Vector2(124, 60), Meta.StartGunRight == g.Id ? "오른 ✓" : "오른손", () => { Meta.StartGunRight = gun.Id; redraw(); }, 18);
-                    var l = UIKit.MakeButton("L", card.transform, new Vector2(0.5f, 0), new Vector2(62, 46), new Vector2(124, 60), Meta.StartGunLeft == g.Id ? "왼 ✓" : "왼손", () => { Meta.StartGunLeft = gun.Id; redraw(); }, 18);
+                    // 시작 총은 한 자루: 고른 손에 들고 반대 손은 기본 총
+                    var r = UIKit.MakeButton("R", card.transform, new Vector2(0.5f, 0), new Vector2(-62, 46), new Vector2(124, 60), Meta.StartGunRight == g.Id ? "오른 ✓" : "오른손", () => { Meta.StartGunRight = gun.Id; Meta.StartGunLeft = 2001; redraw(); }, 18);
+                    var l = UIKit.MakeButton("L", card.transform, new Vector2(0.5f, 0), new Vector2(62, 46), new Vector2(124, 60), Meta.StartGunLeft == g.Id ? "왼 ✓" : "왼손", () => { Meta.StartGunLeft = gun.Id; Meta.StartGunRight = 2001; redraw(); }, 18);
                 }
                 i++;
             }

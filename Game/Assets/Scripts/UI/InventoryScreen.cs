@@ -183,7 +183,7 @@ namespace CatTang
             {
                 SlotPlace.Cylinder => it.kind == ItemKind.Bullet,
                 SlotPlace.GunRight or SlotPlace.GunLeft => it.kind == ItemKind.Gun,
-                SlotPlace.Storage or SlotPlace.EnhanceStore => true,
+                SlotPlace.Storage or SlotPlace.EnhanceStore => it.kind != ItemKind.Gun,      // 총은 양손에만 (2자루)
                 _ => false
             };
         }
@@ -254,6 +254,7 @@ namespace CatTang
                 return;
             }
             var bItem = ItemAt(dst);
+            if (a.kind == ItemKind.Gun && dst.place != SlotPlace.GunLeft && dst.place != SlotPlace.GunRight) { Gui?.Toast("총은 양손에만 든다 — 왼손 · 오른손 칸끼리 끌어 바꾸기"); return; }
             if (!Accepts(dst.place, a) || !Accepts(src.place, bItem)) { Gui?.Toast("거기에는 놓을 수 없음"); return; }
             if (a.kind == ItemKind.Gun && bItem == null && (src.place == SlotPlace.GunLeft || src.place == SlotPlace.GunRight)) { Gui?.Toast("손을 비울 수는 없음"); return; }
             Put(dst, a);
@@ -402,15 +403,15 @@ namespace CatTang
             var rev = p.rev;
             infoIcon.sprite = UIKit.Spr("hp_frame");
             infoTitle.text = "능력치";
-            string Gun(GunDef g) => g == null ? "-" : $"{g.Name}  ×{g.DamageMul:0.00} · {1f / (g.FireInterval / Mathf.Max(0.2f, 1 + p.AttackSpeedBonus)):0.0}발/초";
+            string Gun(GunDef g, bool right) => g == null ? "-" : $"{g.Name}  ×{g.DamageMul:0.00} · {1f / (g.FireInterval / Mathf.Max(0.2f, 1 + p.AttackSpeedBonus)):0.0}발/초\n   <size=17>{UIKit.HandEffectLine(g, right)}</size>";
             var lines = new List<string>
             {
                 $"<b>체력</b>  {Mathf.CeilToInt(p.health.hp)} / {Mathf.CeilToInt(p.health.maxHp)}",
                 $"<b>공격력</b>  ×{p.DamageMul:0.00}",
                 $"<b>장전</b>  {p.ReloadTime:0.00}초   <b>대시</b>  {p.dashMax}칸 · {p.DashRechargeTime:0.0}초",
                 $"<b>회피 확률</b>  {p.DodgeChance * 100:0}%   <b>열기</b>  1발 {p.HeatPerHit:0.00}칸",
-                $"<b>오른손</b>  {Gun(rev.rightGun)}",
-                $"<b>왼손</b>  {Gun(rev.leftGun)}",
+                $"<b>오른손</b>  {Gun(rev.rightGun, true)}",
+                $"<b>왼손</b>  {Gun(rev.leftGun, false)}",
                 $"<b>깨어난 탄</b>  {12 - rev.UnawakenedCount()} / 12",
                 "",
                 "<b>특성</b>"
@@ -432,7 +433,7 @@ namespace CatTang
             if (statsTab && w == null) { ShowStats(); return; }
             if (w) statsTab = false;
             var it = w ? ItemAt(w) : null;
-            if (w && w.place == SlotPlace.Sell) { SetTip(UIKit.Spr("coin"), "팔기", "탄 · 연산 · 총을 여기로 끌어 오면 절반 값에 판다."); return; }
+            if (w && w.place == SlotPlace.Sell) { SetTip(UIKit.Spr("coin"), "팔기", "탄 · 연산을 여기로 끌어 오면 절반 값에 판다. 총은 팔 수 없다 (주울 때 바꾸거나 버린다)."); return; }
             if (it == null) { SetTip(UIKit.Spr("slot_round"), "탄환 시계", "오른손 총이 홀수 칸, 왼손 총이 짝수 칸을 쏜다. 발사 순서는 1 → 12.\n\n탄은 판정 시각이 자리 조건에 맞으면 깨어나 특성 · 고유 효과가 켜진다 (금빛 칸).\n탄을 클릭하면 강화 창에서 연산을 끼워 판정 시각을 바꿀 수 있다.\n\n처음 든 '탄환'은 효과가 없는 기본 탄."); return; }
             switch (it.kind)
             {
@@ -447,8 +448,8 @@ namespace CatTang
                     break;
                 case ItemKind.Gun:
                     var g = it.gun;
-                    string geff = string.Join("\n", new[] { g.Effect1, g.Effect2 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? "· " + e.Desc : ""));
-                    SetTip(UIKit.GunIcon(g), g.Name, $"{UIKit.GradeKo(g.Grade)}\n공격 ×{g.DamageMul:0.00} · 연사 {g.FireInterval:0.00}초 · 장전 {g.ReloadTime:0.0}초 · 사거리 {g.Range:0}m\n\n{geff}\n\n<i>{g.Desc}</i>");
+                    int hand = w.place == SlotPlace.GunRight ? 1 : w.place == SlotPlace.GunLeft ? 2 : 0;
+                    SetTip(UIKit.GunIcon(g), g.Name, $"{UIKit.GradeKo(g.Grade)}\n공격 ×{g.DamageMul:0.00} · 연사 {g.FireInterval:0.00}초 · 장전 {g.ReloadTime:0.0}초 · 사거리 {g.Range:0}m\n\n{UIKit.GunHandText(g, hand)}\n\n<i>{g.Desc}</i>\n\n<size=16>왼손 · 오른손 칸끼리 끌면 좌우를 바꾼다</size>");
                     break;
                 default:
                     SetTip(UIKit.Spr("op_token"), "연산 " + it.op.Name, $"탄에 끼우면 판정 시각에 {it.op.Name}.\n위 칸부터 계산한다. 12를 넘거나 0 이하가 되어도 값을 그대로 둔다.");

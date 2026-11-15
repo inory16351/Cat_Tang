@@ -77,6 +77,14 @@ EffectType,HeatGain,열기 +Value칸
 EffectType,JustDodgeWindowAdd,저스트 회피 판정 +Value
 EffectType,CritNextShots,다음 Value발 치명타
 EffectType,CritChance,치명타 확률 +Value
+EffectType,CritChanceAdd,[능력치] 치명타 확률 +Value
+EffectType,CritDamageAdd,[능력치] 치명타 피해 +Value
+EffectType,DefenseAdd,[능력치] 방어력 +Value
+EffectType,ProcChanceAdd,[능력치] 효과 발동 확률 +Value (배율)
+EffectType,MoveSpeedAdd,[능력치] 이동 속도 +Value
+EffectType,BossDamageAdd,보스에게 주는 피해 +Value
+EffectType,AreaDamageAdd,폭발 · 범위 피해 +Value
+EffectType,StatusDamageAdd,상태 이상(정지 · 둔화 · 가둠 · 화상 · 표식) 적에게 주는 피해 +Value
 EffectType,ControlDurationAdd,정지 · 둔화 지속 +Value
 EffectType,DamageVsStoppedAdd,정지된 적에게 피해 +Value
 EffectType,UnawakenedDamageAdd,깨어나지 못한 탄 공격력 +Value
@@ -102,8 +110,8 @@ EffectType,GrantRandomOp,무작위 연산 Value개 지급
 EffectType,GrantBullet,탄 Value(Id) 지급
 EffectType,OpDropRateAdd,연산 드랍 +Value
 EffectType,TraitThresholdReduce,특성 6단계 필요 수 -Value
-EffectType,MemoryShardGainAdd,기억 조각 획득 +Value
-EffectType,Slot12BonusMul,12시 칸 강화 배율 ×Value
+EffectType,MemoryShardGainAdd,시간의 조각 획득 +Value
+EffectType,DodgeCooldown,"대시 충전 시간 +Value (비율, 음수 = 빨라짐)"
 OpType,Add,더하기
 OpType,Sub,빼기
 OpType,Mul,곱하기

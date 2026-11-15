@@ -198,6 +198,26 @@ namespace CatTang
 
         public static string GradeKo(string g) => g switch { "Common" => "일반", "Rare" => "희귀", "Epic" => "영웅", "Legendary" => "전설", _ => g };
 
+        /// <summary>한 손 효과 줄 (없으면 "효과 없음")</summary>
+        public static string HandEffectLine(GunDef g, bool right)
+        {
+            var parts = new List<string>();
+            foreach (var id in g.HandEffects(right))
+                if (id != 0 && Tables.Effects.TryGetValue(id, out var e)) parts.Add(e.Desc);
+            return parts.Count == 0 ? "효과 없음" : string.Join(" / ", parts);
+        }
+
+        /// <summary>총 손별 효과 글. hand: 0 = 강조 없음, 1 = 오른손에 든 상태, 2 = 왼손에 든 상태 (든 손은 금색, 반대 손은 흐리게)</summary>
+        public static string GunHandText(GunDef g, int hand = 0)
+        {
+            if (g == null) return "";
+            string R = $"<b>오른손 (홀수 칸)</b>  {HandEffectLine(g, true)}";
+            string L = $"<b>왼손 (짝수 칸)</b>  {HandEffectLine(g, false)}";
+            if (hand == 1) { R = $"<color=#F2C14E>{R}</color>"; L = $"<color=#8A8296>{L}</color>"; }
+            if (hand == 2) { L = $"<color=#F2C14E>{L}</color>"; R = $"<color=#8A8296>{R}</color>"; }
+            return R + "\n" + L;
+        }
+
         public static string CondKo(BulletDef b) => b.CondType switch
         {
             "Odd" => "홀수 시각", "Even" => "짝수 시각", "Exact" => $"{b.CondValue}시", "GreaterThan" => $"{b.CondValue}시 초과",

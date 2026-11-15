@@ -5,7 +5,8 @@ namespace CatTang
 {
     public class FxBurst : MonoBehaviour
     {
-        public enum Kind { Muzzle, Hit, Explosion, Gold }
+        public enum Kind { Muzzle, Hit, Explosion, Gold, Crit, Slash, Spark, Dust, Shield, Converge }
+        public static float ModeOf(Kind k) => k switch { Kind.Gold => 2, Kind.Crit => 11, Kind.Slash => 9, Kind.Spark => 14, Kind.Dust => 13, Kind.Shield => 12, Kind.Converge => 10, _ => 0 };
         static Material baseMat;
         static readonly int ProgressId = Shader.PropertyToID("_Progress");
         static readonly int ModeId = Shader.PropertyToID("_Mode");
@@ -19,7 +20,10 @@ namespace CatTang
         public static void Spawn(Vector3 pos, float size, Kind kind) => Spawn(pos, size, kind, Color.white);
 
         /// <summary>tint: 탄 색 (흰색이면 원래 색)</summary>
-        public static void Spawn(Vector3 pos, float size, Kind kind, Color tint)
+        public static void Spawn(Vector3 pos, float size, Kind kind, Color tint) => Spawn(pos, size, kind, tint, -1f);
+
+        /// <summary>life &lt; 0 이면 종류별 기본 길이</summary>
+        public static void Spawn(Vector3 pos, float size, Kind kind, Color tint, float life)
         {
             if (baseMat == null)
             {
@@ -37,10 +41,10 @@ namespace CatTang
             f.mr.sharedMaterial = baseMat;
             f.mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             f.mpb = new MaterialPropertyBlock();
-            f.mpb.SetFloat(ModeId, kind == Kind.Gold ? 2f : 0f);
+            f.mpb.SetFloat(ModeId, ModeOf(kind));
             f.mpb.SetFloat(SeedId, Random.Range(0f, 100f));
             f.mpb.SetColor(TintId, tint);
-            f.life = kind switch { Kind.Muzzle => 0.18f, Kind.Hit => 0.3f, Kind.Explosion => 0.55f, _ => 0.5f };
+            f.life = life > 0 ? life : kind switch { Kind.Muzzle => 0.18f, Kind.Hit => 0.3f, Kind.Explosion => 0.55f, Kind.Crit => 0.32f, Kind.Slash => 0.45f, Kind.Spark => 0.22f, Kind.Dust => 0.4f, Kind.Shield => 0.35f, _ => 0.5f };
             f.born = Time.time;
             f.Face();
         }

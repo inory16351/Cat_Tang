@@ -8,6 +8,7 @@ namespace CatTang
     {
         static Material baseMat;
         readonly List<MeshRenderer> rends = new();
+        readonly List<Mesh> baked = new();
         MaterialPropertyBlock mpb;
         float born, life;
         Color color;
@@ -20,7 +21,7 @@ namespace CatTang
         public static void SpawnAt(Transform model, Vector3 pos, Color c, float life)
         {
             if (!model) return;
-            if (!baseMat) baseMat = new Material(Shader.Find("Sprites/Default")) { renderQueue = 3050 };
+            if (!baseMat) { var sh = Shader.Find("CatTang/Silhouette") ?? Shader.Find("Sprites/Default"); baseMat = new Material(sh) { renderQueue = 3050 }; }
             var root = new GameObject("Afterimage");
             root.transform.SetPositionAndRotation(pos + (model.position - model.parent.position) * 0, model.rotation);
             var a = root.AddComponent<Afterimage>();
@@ -44,6 +45,23 @@ namespace CatTang
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 a.rends.Add(r);
             }
+            // 스킨 메시(고양이 모델): 지금 자세를 그대로 구워서 복제
+            foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (!smr.enabled || !smr.sharedMesh) continue;
+                var baked = new Mesh();
+                smr.BakeMesh(baked, true);
+                var g = new GameObject("Skin");
+                g.transform.SetParent(root.transform, false);
+                g.transform.localPosition = model.InverseTransformPoint(smr.transform.position);
+                g.transform.localRotation = Quaternion.Inverse(model.rotation) * smr.transform.rotation;
+                g.AddComponent<MeshFilter>().sharedMesh = baked;
+                var r = g.AddComponent<MeshRenderer>();
+                r.sharedMaterial = baseMat;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                a.rends.Add(r);
+                a.baked.Add(baked);
+            }
             // 모델이 플레이어 발밑 기준이면 위치 보정
             root.transform.position = pos + (model.position - model.root.position);
             a.Apply(1);
@@ -62,5 +80,7 @@ namespace CatTang
             Apply(1 - t);
             transform.localScale = Vector3.one * (1 + 0.08f * t);
         }
+
+        void OnDestroy() { foreach (var m in baked) if (m) Destroy(m); }
     }
 }

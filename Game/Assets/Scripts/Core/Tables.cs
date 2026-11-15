@@ -18,13 +18,17 @@ namespace CatTang
     public class GunDef
     {
         public int Id; public string Name; public string Grade; public float DamageMul, FireInterval, ReloadTime, Range;
-        public int SkillId, Effect1, Effect2; public string Desc;
+        public int SkillId, RightEffect1, RightEffect2, LeftEffect1, LeftEffect2; public string Desc;
+        public float CritChance, CritDamage;      // 치명타 확률 · 피해 (양손 합산, 전역)
+        /// <summary>손별 효과 (오른손 = 홀수 칸, 왼손 = 짝수 칸)</summary>
+        public int[] HandEffects(bool right) => right ? new[] { RightEffect1, RightEffect2 } : new[] { LeftEffect1, LeftEffect2 };
     }
 
     public class EffectDef
     {
         public int Id; public string Trigger, Cond; public int CondValue; public float Chance;
         public string Target, Type; public float Value, Value2, Duration; public string Desc;
+        public bool Borrowed;          // 다른 깨어난 탄에서 빌려 온 효과 (Chance = 빌림 확률)
     }
 
     public class OpDef { public int Id; public string Name, OpType; public int Operand, DropWeight; }
@@ -75,8 +79,10 @@ namespace CatTang
                 Guns[I(r, "Id")] = new GunDef
                 {
                     Id = I(r, "Id"), Name = r["Name"], Grade = r["Grade"], DamageMul = F(r, "DamageMul"), FireInterval = F(r, "FireInterval"),
-                    ReloadTime = F(r, "ReloadTime"), Range = F(r, "Range"), SkillId = I(r, "SkillId"), Effect1 = I(r, "Effect1"),
-                    Effect2 = I(r, "Effect2"), Desc = r["Desc"]
+                    ReloadTime = F(r, "ReloadTime"), Range = F(r, "Range"), SkillId = I(r, "SkillId"),
+                    RightEffect1 = I(r, "RightEffect1"), RightEffect2 = I(r, "RightEffect2"),
+                    LeftEffect1 = I(r, "LeftEffect1"), LeftEffect2 = I(r, "LeftEffect2"), Desc = r["Desc"],
+                    CritChance = F(r, "CritChance"), CritDamage = F(r, "CritDamage")
                 };
             foreach (var r in Read("Effect"))
                 Effects[I(r, "Id")] = new EffectDef

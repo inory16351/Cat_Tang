@@ -74,6 +74,19 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9247,OnChanceDodge,None,0,0.5,Self,BulletRefund,1,0.0,0.0,확률 회피 성공 시 50% 확률로 현재 칸 탄 재장전
 9248,OnKill,TargetTimeLocked,0,1.0,Self,PermanentDamageGrowth,1,30,0.0,시간에 갇힌 적을 처치하면 런 동안 이 탄 공격력 +1 (최대 30)
 9249,OnHit,None,0,0.12,HitTarget,TimeLock,0.0,0.0,1.0,12% 확률로 1초 시간에 가둠
+9250,Passive,None,0,1.0,Self,CritChanceAdd,0.06,0.0,0.0,치명타 확률 +6%
+9251,Passive,None,0,1.0,Self,DefenseAdd,6,0.0,0.0,방어력 +6
+9252,Passive,None,0,1.0,Self,ProcChanceAdd,0.1,0.0,0.0,효과 발동 확률 +10%
+9253,Passive,None,0,1.0,Self,CritDamageAdd,0.3,0.0,0.0,치명타 피해 +30%
+9254,Passive,None,0,1.0,Self,BossDamageAdd,0.25,0.0,0.0,보스에게 주는 피해 +25%
+9255,Passive,None,0,1.0,Self,MoveSpeedAdd,0.1,0.0,0.0,이동 속도 +10%
+9256,Passive,None,0,1.0,Self,AreaDamageAdd,0.35,0.0,0.0,폭발 · 범위 피해 +35%
+9257,OnKill,None,0,1.0,Self,Explosion,0.6,2.5,0.0,"처치하면 그 자리에 폭죽처럼 폭발 (피해 60%, 반경 2.5)"
+9258,Passive,None,0,1.0,Self,StatusDamageAdd,0.3,0.0,0.0,정지 · 둔화 · 가둠 · 화상 · 표식이 있는 적에게 피해 +30%
+9259,Passive,None,0,1.0,Self,CritChanceAdd,0.12,0.0,0.0,치명타 확률 +12%
+9260,Passive,None,0,1.0,Self,CritDamageAdd,0.5,0.0,0.0,치명타 피해 +50%
+9261,Passive,None,0,1.0,Self,DefenseAdd,15,0.0,0.0,방어력 +15
+9262,OnJustDodge,None,0,1.0,Self,HeatGain,0.5,0.0,0.0,저스트 회피하면 열기 +0.5칸
 9301,Passive,JudgeEven,0,1.0,OwnBullets,DamageAdd,0.2,0.0,0.0,판정 시각이 짝수인 탄 피해 +20%
 9302,Passive,JudgeAtMost,6,1.0,OwnBullets,AttackSpeedAdd,0.15,0.0,0.0,판정 시각 6 이하 탄 연사 +15%
 9303,OnRicochet,None,0,1.0,OwnBullets,DamageAddStack,0.1,0.0,0.0,이 총의 탄이 튕길 때마다 피해 +10%
@@ -82,8 +95,13 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9306,OnHit,None,0,1.0,OwnBullets,DamageByDistance,0.02,0.4,0.0,"이 총의 탄은 멀리 있는 적일수록 피해 증가 (1m당 +2%, 최대 +40%)"
 9307,OnFire,None,0,0.1,OwnBullets,SilhouetteShot,0.5,0.0,0.0,이 총의 탄을 쏠 때 10% 확률로 실루엣이 1발 더 (피해 50%)
 9308,OnSkill,None,0,1.0,Self,HeatGain,0.5,0.0,0.0,[전역] 스킬을 쓰면 열기 +0.5칸
-9309,Passive,Slot12,0,1.0,OwnBullets,DamageAdd,0.5,0.0,0.0,12시 칸 탄 피해 +50%
 9310,OnPerfectReload,None,0,1.0,Area,Stun,0,6.0,0.5,[전역] 완벽 장전 때 반경 6 적 0.5초 정지
+9311,OnHit,None,0,1.0,OwnBullets,Knockback,1.2,0.0,0.0,이 총의 탄에 맞은 적을 크게 밀쳐냄
+9312,Passive,None,0,1.0,Self,DodgeCooldown,-0.2,0.0,0.0,[전역] 대시 충전 시간 -20%
+9313,Passive,None,0,1.0,OwnBullets,Ricochet,1,0.0,0.0,이 총의 탄이 1번 튕김
+9314,OnReload,None,0,1.0,Self,ReverseCylinder,0,0.0,0.0,[전역] 장전할 때마다 사격 순서를 뒤집음 (1→12 ↔ 12→1)
+9315,OnHit,None,0,1.0,OwnBullets,Pierce,1,0.0,0.0,이 총의 탄이 적 1명 관통
+9316,OnHit,None,0,0.1,OwnBullets,TimeLock,0.3,0.0,1.0,이 총의 탄이 10% 확률로 적을 1초 시간에 가둠
 9401,Passive,None,0,1.0,Self,AttackSpeedAdd,0.15,0.0,0.0,연사 속도 +15%
 9402,Passive,None,0,1.0,Self,DamageTakenAdd,0.15,0.0,0.0,받는 피해 +15%
 9403,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.5,0.0,0.0,깨어나지 못한 탄 공격력 +50%
@@ -96,6 +114,5 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9410,RunStart,None,0,1.0,Self,GrantBullet,1018,0.0,0.0,런 시작 때 '개기일식' 지급
 9411,Passive,None,0,1.0,Self,TraitThresholdReduce,1,0.0,0.0,특성 6단계가 5개로 켜짐
 9412,Passive,None,0,1.0,Self,MaxHpAdd,-0.15,0.0,0.0,최대 체력 -15%
-9413,Passive,None,0,1.0,Self,MemoryShardGainAdd,0.5,0.0,0.0,기억 조각 획득 +50%
+9413,Passive,None,0,1.0,Self,MemoryShardGainAdd,0.5,0.0,0.0,시간의 조각 획득 +50%
 9414,Passive,None,0,1.0,Self,DamageTakenAdd,0.2,0.0,0.0,받는 피해 +20%
-9415,Passive,None,0,1.0,Self,Slot12BonusMul,2.0,0.0,0.0,12시 칸 강화 2배
