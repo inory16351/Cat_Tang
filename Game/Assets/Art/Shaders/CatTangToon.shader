@@ -1,0 +1,370 @@
+// Cat_Tang 툰 셰이더 (URP)
+// - 명암 3단: 밝은 면 / 1차 그림자 / 2차 그림자 (경계는 _ShadeSoftness로 딱 끊기게)
+// - 림 라이트: 빛 받는 쪽 가장자리에만
+// - 외곽선: 뒤집은 겹(inverted hull), 화면 기준 픽셀 굵기 유지
+Shader "CatTang/Toon"
+{
+    Properties
+    {
+        [MainTexture] _BaseMap ("Base Map (손으로 칠한 텍스처)", 2D) = "white" {}
+        [MainColor] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
+
+        [Header(Shade)]
+        _ShadeColor ("1st Shade Color", Color) = (0.62, 0.55, 0.72, 1)
+        _ShadeThreshold ("1st Shade Threshold", Range(0, 1)) = 0.45
+        _SecondShadeColor ("2nd Shade Color", Color) = (0.38, 0.32, 0.5, 1)
+        _SecondShadeThreshold ("2nd Shade Threshold", Range(0, 1)) = 0.12
+        _ShadeSoftness ("Shade Softness", Range(0.001, 0.2)) = 0.015
+        _AmbientStrength ("Ambient Strength", Range(0, 1)) = 0.25
+
+        [Header(Rim)]
+        _RimColor ("Rim Color", Color) = (1, 0.78, 0.35, 1)
+        _RimPower ("Rim Power", Range(0.5, 8)) = 3
+        _RimThreshold ("Rim Threshold", Range(0, 1)) = 0.55
+        _RimStrength ("Rim Strength", Range(0, 2)) = 0.8
+
+        [Header(Ink and Hatching)]
+        _InkColor ("Ink Color", Color) = (0.12, 0.07, 0.14, 1)
+        _InkWidth ("Terminator Ink Width", Range(0, 0.2)) = 0.0
+        _InkStrength ("Terminator Ink Strength", Range(0, 1)) = 0.0
+        _HatchStrength ("Hatch Strength", Range(0, 1)) = 0.0
+        _HatchDensity ("Hatch Density", Range(1, 80)) = 28
+        _HatchWidth ("Hatch Line Width", Range(0.05, 0.6)) = 0.28
+
+        [Header(Outline)]
+        _OutlineColor ("Outline Color", Color) = (0.08, 0.05, 0.08, 1)
+        _OutlineWidth ("Outline Width (px)", Range(0, 10)) = 2.5
+        [Toggle] _OutlineVertexAlpha ("Vertex Alpha = Width", Float) = 0
+    }
+
+    SubShader
+    {
+        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "Queue" = "Geometry" }
+
+        HLSLINCLUDE
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+        TEXTURE2D(_BaseMap);
+        SAMPLER(sampler_BaseMap);
+
+        CBUFFER_START(UnityPerMaterial)
+            float4 _BaseMap_ST;
+            half4 _BaseColor;
+            half4 _ShadeColor;
+            half _ShadeThreshold;
+            half4 _SecondShadeColor;
+            half _SecondShadeThreshold;
+            half _ShadeSoftness;
+            half _AmbientStrength;
+            half4 _RimColor;
+            half _RimPower;
+            half _RimThreshold;
+            half _RimStrength;
+            half4 _InkColor;
+            half _InkWidth;
+            half _InkStrength;
+            half _HatchStrength;
+            half _HatchDensity;
+            half _HatchWidth;
+            half4 _OutlineColor;
+            half _OutlineWidth;
+            half _OutlineVertexAlpha;
+        CBUFFER_END
+        ENDHLSL
+
+        // ---------- 1. 본체 ----------
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS _ADDITIONAL_LIGHTS_VERTEX
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile _ _FORWARD_PLUS _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 positionWS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+                float fogFactor : TEXCOORD3;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings vert(Attributes v)
+            {
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+                VertexPositionInputs p = GetVertexPositionInputs(v.positionOS.xyz);
+                o.positionCS = p.positionCS;
+                o.positionWS = p.positionWS;
+                o.normalWS = TransformObjectToWorldNormal(v.normalOS);
+                o.uv = TRANSFORM_TEX(v.uv, _BaseMap);
+                o.fogFactor = ComputeFogFactor(p.positionCS.z);
+                return o;
+            }
+
+            // 빛의 세기(0~1)를 3단 명암 색으로 바꾼다
+            half3 ToonShade(half3 albedo, half light)
+            {
+                half s = _ShadeSoftness;
+                half lit = smoothstep(_ShadeThreshold - s, _ShadeThreshold + s, light);
+                half deep = smoothstep(_SecondShadeThreshold - s, _SecondShadeThreshold + s, light);
+                half3 shade1 = albedo * _ShadeColor.rgb;
+                half3 shade2 = albedo * _SecondShadeColor.rgb;
+                return lerp(shade2, lerp(shade1, albedo, lit), deep);
+            }
+
+            half4 frag(Varyings i) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(i);
+                half4 tex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor;
+                half3 albedo = tex.rgb;
+                float3 N = normalize(i.normalWS);
+                float3 V = GetWorldSpaceNormalizeViewDir(i.positionWS);
+
+                // 주 광원
+                Light mainLight = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
+                half ndl = saturate(dot(N, mainLight.direction));
+                // 그림자도 딱 끊기게 (부드러운 그림자 가장자리의 줄무늬 방지)
+                half shadow = smoothstep(0.45h, 0.55h, mainLight.shadowAttenuation);
+                half light = ndl * shadow;
+                half3 color = ToonShade(albedo, light) * mainLight.color;
+
+                // 명암 경계선에 잉크 띠 (손으로 그은 듯한 경계)
+                half inkBand = 1.0h - smoothstep(0.0h, max(_InkWidth, 1e-3h), abs(light - _ShadeThreshold));
+                color = lerp(color, _InkColor.rgb * mainLight.color, inkBand * _InkStrength * step(1e-4h, _InkWidth));
+
+                // 깊은 그림자 안에만 사선 해칭 (월드 공간이라 카메라가 움직여도 미끄러지지 않음)
+                half deepShade = 1.0h - smoothstep(_SecondShadeThreshold - _ShadeSoftness, _ShadeThreshold, light);
+                half hatchCoord = (i.positionWS.x + i.positionWS.y * 0.6h - i.positionWS.z) * _HatchDensity;
+                half hatchLine = step(frac(hatchCoord), _HatchWidth);
+                color = lerp(color, _InkColor.rgb, hatchLine * deepShade * _HatchStrength);
+
+                // 환경광 (아주 약하게, 그림자가 새까매지지 않게)
+                color += albedo * SampleSH(N) * _AmbientStrength;
+
+                // 추가 광원 (등불 등): 같은 명암 규칙으로 더한다
+                #if defined(_ADDITIONAL_LIGHTS)
+                InputData inputData = (InputData)0;
+                inputData.positionWS = i.positionWS;
+                inputData.normalWS = N;
+                inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS);
+                uint lightCount = GetAdditionalLightsCount();
+                LIGHT_LOOP_BEGIN(lightCount)
+                    Light l = GetAdditionalLight(lightIndex, i.positionWS, half4(1, 1, 1, 1));
+                    half al = saturate(dot(N, l.direction)) * l.distanceAttenuation * l.shadowAttenuation;
+                    half step1 = smoothstep(_ShadeThreshold - _ShadeSoftness, _ShadeThreshold + _ShadeSoftness, al);
+                    color += albedo * l.color * step1;
+                LIGHT_LOOP_END
+                #endif
+
+                // 림 라이트: 빛을 받는 쪽 가장자리만
+                half fresnel = pow(1.0h - saturate(dot(N, V)), _RimPower);
+                half rim = smoothstep(_RimThreshold - 0.02h, _RimThreshold + 0.02h, fresnel) * step(0.05h, light);
+                color += _RimColor.rgb * rim * _RimStrength;
+
+                color = MixFog(color, i.fogFactor);
+                return half4(color, 1);
+            }
+            ENDHLSL
+        }
+
+        // ---------- 2. 외곽선 (뒤집은 겹) ----------
+        Pass
+        {
+            Name "Outline"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+            Cull Front
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                half4 color : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float fogFactor : TEXCOORD0;
+            };
+
+            Varyings vert(Attributes v)
+            {
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(v);
+                float4 posCS = TransformObjectToHClip(v.positionOS.xyz);
+                float3 nWS = TransformObjectToWorldNormal(v.normalOS);
+                float2 nCS = mul((float3x3)UNITY_MATRIX_VP, nWS).xy;
+                float len = length(nCS);
+                float2 dir = len > 1e-5 ? nCS / len : float2(0, 0);
+                half width = _OutlineWidth * (_OutlineVertexAlpha > 0.5 ? v.color.a : 1.0h);
+                // 화면 픽셀 기준 굵기: 카메라 거리와 상관없이 같은 두께
+                posCS.xy += dir * width * 2.0 * posCS.w / _ScreenParams.xy;
+                o.positionCS = posCS;
+                o.fogFactor = ComputeFogFactor(posCS.z);
+                return o;
+            }
+
+            half4 frag(Varyings i) : SV_Target
+            {
+                return half4(MixFog(_OutlineColor.rgb, i.fogFactor), 1);
+            }
+            ENDHLSL
+        }
+
+        // ---------- 3. 그림자 만들기 ----------
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+            #pragma multi_compile_instancing
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            float3 _LightDirection;
+            float3 _LightPosition;
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            float4 vert(Attributes v) : SV_POSITION
+            {
+                UNITY_SETUP_INSTANCE_ID(v);
+                float3 posWS = TransformObjectToWorld(v.positionOS.xyz);
+                float3 nWS = TransformObjectToWorldNormal(v.normalOS);
+                #if defined(_CASTING_PUNCTUAL_LIGHT_SHADOW)
+                    float3 lightDir = normalize(_LightPosition - posWS);
+                #else
+                    float3 lightDir = _LightDirection;
+                #endif
+                float4 posCS = TransformWorldToHClip(ApplyShadowBias(posWS, nWS, lightDir));
+                #if UNITY_REVERSED_Z
+                    posCS.z = min(posCS.z, UNITY_NEAR_CLIP_VALUE);
+                #else
+                    posCS.z = max(posCS.z, UNITY_NEAR_CLIP_VALUE);
+                #endif
+                return posCS;
+            }
+
+            half4 frag() : SV_Target { return 0; }
+            ENDHLSL
+        }
+
+        // ---------- 4. 깊이 ----------
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+            ZWrite On
+            ColorMask R
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_instancing
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            float4 vert(Attributes v) : SV_POSITION
+            {
+                UNITY_SETUP_INSTANCE_ID(v);
+                return TransformObjectToHClip(v.positionOS.xyz);
+            }
+
+            half4 frag() : SV_Target { return 0; }
+            ENDHLSL
+        }
+
+        // ---------- 5. 깊이 + 법선 (SSAO 등) ----------
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+            ZWrite On
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_instancing
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS : TEXCOORD0;
+            };
+
+            Varyings vert(Attributes v)
+            {
+                Varyings o;
+                UNITY_SETUP_INSTANCE_ID(v);
+                o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
+                o.normalWS = TransformObjectToWorldNormal(v.normalOS);
+                return o;
+            }
+
+            half4 frag(Varyings i) : SV_Target
+            {
+                return half4(NormalizeNormalPerPixel(i.normalWS), 0);
+            }
+            ENDHLSL
+        }
+    }
+
+    FallBack "Hidden/Universal Render Pipeline/FallbackError"
+}

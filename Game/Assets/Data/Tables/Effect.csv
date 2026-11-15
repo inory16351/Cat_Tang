@@ -1,0 +1,101 @@
+Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,Value:float,Value2:float,Duration:float,Desc:string
+9101,OnFire,None,0,0.1,Self,SilhouetteShot,0.5,0.0,0.0,탄을 쏠 때 10% 확률로 고양이 실루엣이 같은 방향으로 1발 (피해 50%)
+9102,OnFire,None,0,0.2,Self,SilhouetteShot,0.5,0.0,0.0,실루엣 확률 20%
+9103,OnSilhouette,None,0,1.0,Self,SilhouetteFollow,0.0,0.0,3.0,실루엣이 3초 동안 남아 내 사격을 따라 함
+9111,OnHit,None,0,1.0,HitTarget,MemoryMark,0.03,10,0.0,"맞힐 때마다 추억 표식, 표식당 그 적에게 피해 +3% (최대 10개)"
+9112,OnHit,None,0,1.0,HitTarget,MemoryMark,0.05,10,0.0,표식당 +5%
+9113,OnHit,MarkStacksAtLeast,10,1.0,HitTarget,MarkBurst,3.0,0.0,0.0,표식 10개인 적을 맞히면 표식을 터뜨려 피해 300%
+9121,OnHit,None,0,0.08,HitTarget,TimeLock,0.3,0.0,1.0,"8% 확률로 시간 속에 가둠: 1초 정지, 받는 피해 +30%"
+9122,OnHit,None,0,0.15,HitTarget,TimeLock,0.3,0.0,1.0,확률 15%
+9123,OnTimeLockEnd,None,0,1.0,Area,Explosion,1.0,3.0,0.0,"갇힌 적이 풀릴 때 시간 파편 폭발 (피해 100%, 반경 3)"
+9131,Passive,None,0,1.0,Self,DodgeChance,0.08,0.0,0.0,피해를 8% 확률로 회피 (잠깐 되감기는 연출)
+9132,Passive,None,0,1.0,Self,DodgeChance,0.15,0.0,0.0,회피 15%
+9133,OnChanceDodge,None,0,1.0,Self,BulletRefund,1,0.0,0.0,확률 회피에 성공하면 현재 칸 탄을 다시 장전
+9141,OnHit,TargetHpBelow,20,0.05,HitTarget,Execute,1.0,0.0,0.0,"체력 20% 이하 일반 적을 5% 확률로 처형, 보스에게는 그 확률로 피해 +100%"
+9142,OnHit,TargetHpBelow,20,0.1,HitTarget,Execute,1.0,0.0,0.0,확률 10%
+9143,OnExecute,None,0,1.0,Self,HeatGain,1,0.0,0.0,처형하면 열기 1칸
+9151,OnHit,None,0,1.0,HitTarget,DelayedDamage,0.3,0.0,1.0,1초 뒤 피해 30% 한 번 더
+9152,OnHit,None,0,1.0,HitTarget,DelayedDamage,0.6,0.0,1.0,1초 뒤 피해 60%
+9153,OnHit,None,0,1.0,HitTarget,DelayedDamage,0.6,2.5,1.0,1초 뒤 피해 60%가 반경 2.5로 퍼짐
+9161,Passive,None,0,1.0,Self,JustDodgeWindowAdd,0.2,0.0,0.0,저스트 회피 판정 +20%
+9162,Passive,None,0,1.0,Self,JustDodgeWindowAdd,0.4,0.0,0.0,판정 +40%
+9163,OnJustDodge,None,0,1.0,Self,CritNextShots,3,0.0,0.0,저스트 회피 후 다음 3발 치명타
+9171,Passive,None,0,1.0,Self,ControlDurationAdd,0.2,0.0,0.0,정지 · 둔화 지속 +20%
+9172,Passive,None,0,1.0,Self,ControlDurationAdd,0.4,0.0,0.0,지속 +40%
+9173,Passive,None,0,1.0,Self,DamageVsStoppedAdd,1.0,0.0,0.0,정지된 적에게 주는 피해 2배
+9181,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.15,0.0,0.0,깨어나지 못한 탄 공격력 +15%
+9182,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.3,0.0,0.0,+30%
+9183,Passive,None,0,1.0,Self,UnawakenedTraitCount,1,0.0,0.0,깨어나지 못한 탄도 첫 번째 특성이 켜짐
+9201,OnHit,None,0,1.0,HitTarget,Knockback,0.5,0.0,0.0,맞은 적을 살짝 밀쳐냄
+9202,OnFire,None,0,1.0,Self,ExtraShot,1,0.3,0.0,옆으로 1발 더 (피해 30%)
+9203,OnHit,None,0,1.0,Self,Ricochet,1,0.0,0.0,1번 튕김
+9204,OnHit,None,0,1.0,HitTarget,Slow,0.2,0.0,1.5,"둔화 20%, 1.5초"
+9205,OnHit,None,0,1.0,HitTarget,DefenseDown,0.1,0.0,3.0,"맞은 적 방어력 -10%, 3초"
+9206,OnHit,None,0,1.0,Self,Split,2,0.4,0.0,맞으면 조각 2개로 갈라짐 (피해 40%)
+9207,OnHit,None,0,1.0,HitTarget,Burn,0.05,0.0,3.0,3초 동안 초당 피해 5%
+9208,OnFire,None,0,1.0,NextBullet,DamageAdd,0.2,0.0,0.0,다음 탄 피해 +20%
+9209,OnHit,None,0,1.0,Self,Pierce,1,0.0,0.0,1명 관통
+9210,OnReload,None,0,1.0,Self,HeatGain,0.1,0.0,0.0,장전할 때 깨어나 있으면 열기 +0.1칸
+9211,OnKill,None,0,1.0,Area,Explosion,0.5,2.0,0.0,"처치하면 꽃잎 폭발 (피해 50%, 반경 2)"
+9212,OnHit,None,0,1.0,HitTarget,EnemyAttackSpeedDown,0.2,0.0,2.0,"적 공격 속도 -20%, 2초"
+9213,OnFire,None,0,1.0,NextBullet,NextBulletAttackSpeedAdd,0.3,0.0,0.0,다음 탄 연사 속도 +30%
+9214,OnHit,None,0,0.25,HitTarget,TimeLock,0.0,0.0,0.5,25% 확률로 0.5초 시간에 가둠
+9215,OnHit,None,0,1.0,Self,RicochetByJudgeTime,6,0.0,0.0,판정 시각 절댓값만큼 튕김 (최대 6)
+9216,OnFire,None,0,1.0,Area,Stun,0,3.0,0.5,"쏠 때 종소리, 반경 3 적 0.5초 경직"
+9217,Passive,None,0,1.0,Self,Homing,1,0.0,0.0,가장 가까운 적을 따라감
+9218,OnHit,None,0,1.0,Area,Explosion,1.5,3.0,0.0,"큰 폭발 (피해 150%, 반경 3)"
+9219,OnHit,TargetMarked,0,1.0,HitTarget,DamageAdd,0.25,0.0,0.0,추억 표식이 있는 적에게 피해 +25%
+9220,OnHit,TargetSlowed,0,0.3,HitTarget,TimeLock,0.0,0.0,1.0,둔화된 적을 30% 확률로 1초 시간에 가둠
+9221,OnFire,None,0,1.0,Self,DodgeChance,0.1,0.0,2.0,쏜 뒤 2초 동안 회피 +10%
+9222,OnKill,None,0,1.0,Self,HeatGain,0.25,0.0,0.0,처치하면 열기 +0.25칸
+9223,Passive,Slot12,0,1.0,Self,CritChance,1.0,0.0,0.0,12시 칸에 있으면 치명타 확정
+9224,OnHit,TargetBoss,0,1.0,HitTarget,DamageAdd,0.3,0.0,0.0,보스에게 피해 +30%
+9225,OnHit,None,0,1.0,Self,TrailSilhouetteShot,1.0,0.0,1.5,"맞은 자리에 탄 궤적이 남고, 1.5초 뒤 실루엣이 그 궤적으로 1발 더 (피해 100%)"
+9227,OnFire,None,0,0.35,Self,SilhouetteShot,1.0,0.0,0.0,35% 확률로 실루엣이 이 탄을 그대로 한 번 더 쏨
+9228,Passive,None,0,1.0,Self,TraitCountBonus,1,3001,0.0,회상 특성을 1개 더 셈
+9229,OnHit,None,0,1.0,Self,Pierce,2,0.0,0.0,2명 관통
+9230,OnPierce,None,0,1.0,Self,PierceDamageGrowth,0.25,0.0,0.0,관통할 때마다 피해 +25%
+9231,Passive,None,0,1.0,Neighbors,JudgeTimeAdd,1,0.0,0.0,양옆 칸 탄의 판정 시각 +1
+9232,OnFire,None,0,0.25,Self,BulletRefund,1,0.0,0.0,25% 확률로 이 탄을 소모하지 않음
+9233,OnJustDodge,None,0,1.0,Self,InstantReload,1,0.0,0.0,저스트 회피하면 즉시 장전
+9234,OnHit,None,0,1.0,HitTarget,DelayedDamage,1.0,0.0,2.0,2초 뒤 피해 100% 한 번 더
+9235,OnKill,KilledByDelayed,0,1.0,Area,Explosion,0.8,3.0,0.0,"지연 피해로 처치하면 기적 소리와 함께 폭발 (피해 80%, 반경 3)"
+9236,Passive,None,0,1.0,AllBullets,ControlDurationAdd,0.5,0.0,0.0,실린더의 모든 탄 정지 · 둔화 지속 +50%
+9237,OnReload,None,0,1.0,Area,TimeSlowField,0.5,4.0,2.0,"장전할 때 반경 4 시간 감속 50%, 2초"
+9238,OnFire,None,0,1.0,Self,GlobalTimeStop,0,20,1.0,쏘면 1초 동안 모든 적의 시간이 멈춤 (재사용 대기 20초)
+9239,Passive,None,0,1.0,Self,DamageVsStoppedAdd,0.5,0.0,0.0,정지된 적에게 피해 +50%
+9240,OnReload,None,0,1.0,Self,ClockBurst,0.5,0.0,0.0,"장전할 때 시계의 12방향으로 1발씩 사방 발사, 각 방향은 그 시각 칸의 탄으로 (피해 50%)"
+9241,Passive,None,0,1.0,Self,TraitCountBonus,1,3001,0.0,회상 특성을 1개 더 셈
+9242,Passive,None,0,1.0,Self,DamageByNegativeJudge,0.1,0.0,0.0,판정 시각이 0보다 1 낮을 때마다 피해 +10%
+9243,OnHit,None,0,1.0,HitTarget,Slow,0.4,0.0,2.0,"둔화 40%, 2초"
+9244,OnHit,None,0,1.0,Self,HeatGain,1,0.0,0.0,맞히면 열기 1칸
+9245,Passive,Slot12,0,1.0,Self,DamagePerUnawakened,0.15,0.0,0.0,12시 칸에 있으면 깨어나지 못한 탄 1개당 피해 +15%
+9246,OnReload,None,0,1.0,Self,ReverseCylinder,1,0.0,0.0,깨어나 있으면 다음 장전은 12 → 1 역순으로 발사
+9247,OnChanceDodge,None,0,0.5,Self,BulletRefund,1,0.0,0.0,확률 회피 성공 시 50% 확률로 현재 칸 탄 재장전
+9248,OnKill,TargetTimeLocked,0,1.0,Self,PermanentDamageGrowth,1,30,0.0,시간에 갇힌 적을 처치하면 런 동안 이 탄 공격력 +1 (최대 30)
+9249,OnHit,None,0,0.12,HitTarget,TimeLock,0.0,0.0,1.0,12% 확률로 1초 시간에 가둠
+9301,Passive,JudgeEven,0,1.0,OwnBullets,DamageAdd,0.2,0.0,0.0,판정 시각이 짝수인 탄 피해 +20%
+9302,Passive,JudgeAtMost,6,1.0,OwnBullets,AttackSpeedAdd,0.15,0.0,0.0,판정 시각 6 이하 탄 연사 +15%
+9303,OnRicochet,None,0,1.0,OwnBullets,DamageAddStack,0.1,0.0,0.0,이 총의 탄이 튕길 때마다 피해 +10%
+9304,Passive,JudgeNegative,0,1.0,OwnBullets,DamageAdd,0.3,0.0,0.0,판정 시각이 음수인 탄 피해 +30%
+9305,Passive,JudgeOver,12,1.0,OwnBullets,DamageAdd,0.35,0.0,0.0,판정 시각 12 초과 탄 피해 +35%
+9306,OnHit,None,0,1.0,OwnBullets,DamageByDistance,0.02,0.4,0.0,"이 총의 탄은 멀리 있는 적일수록 피해 증가 (1m당 +2%, 최대 +40%)"
+9307,OnFire,None,0,0.1,OwnBullets,SilhouetteShot,0.5,0.0,0.0,이 총의 탄을 쏠 때 10% 확률로 실루엣이 1발 더 (피해 50%)
+9308,OnSkill,None,0,1.0,Self,HeatGain,0.5,0.0,0.0,[전역] 스킬을 쓰면 열기 +0.5칸
+9309,Passive,Slot12,0,1.0,OwnBullets,DamageAdd,0.5,0.0,0.0,12시 칸 탄 피해 +50%
+9310,OnPerfectReload,None,0,1.0,Area,Stun,0,6.0,0.5,[전역] 완벽 장전 때 반경 6 적 0.5초 정지
+9401,Passive,None,0,1.0,Self,AttackSpeedAdd,0.15,0.0,0.0,연사 속도 +15%
+9402,Passive,None,0,1.0,Self,DamageTakenAdd,0.15,0.0,0.0,받는 피해 +15%
+9403,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.5,0.0,0.0,깨어나지 못한 탄 공격력 +50%
+9404,Passive,None,0,1.0,Self,AwakenedDamageAdd,-0.1,0.0,0.0,깨어난 탄 공격력 -10%
+9405,RunStart,None,0,1.0,Self,GrantRandomOp,1,0.0,0.0,런 시작 때 무작위 연산 1개
+9406,Passive,None,0,1.0,Self,OpDropRateAdd,0.3,0.0,0.0,연산 드랍 +30%
+9407,Passive,None,0,1.0,AllBullets,Ricochet,1,0.0,0.0,모든 탄 1번 튕김
+9408,Passive,None,0,1.0,Self,MaxHpAdd,-0.2,0.0,0.0,최대 체력 -20%
+9409,Passive,JudgeAtMost,0,1.0,AllBullets,DamageAdd,0.25,0.0,0.0,판정 시각 0 이하 탄 공격력 +25%
+9410,RunStart,None,0,1.0,Self,GrantBullet,1018,0.0,0.0,런 시작 때 '개기일식' 지급
+9411,Passive,None,0,1.0,Self,TraitThresholdReduce,1,0.0,0.0,특성 6단계가 5개로 켜짐
+9412,Passive,None,0,1.0,Self,MaxHpAdd,-0.15,0.0,0.0,최대 체력 -15%
+9413,Passive,None,0,1.0,Self,MemoryShardGainAdd,0.5,0.0,0.0,기억 조각 획득 +50%
+9414,Passive,None,0,1.0,Self,DamageTakenAdd,0.2,0.0,0.0,받는 피해 +20%
+9415,Passive,None,0,1.0,Self,Slot12BonusMul,2.0,0.0,0.0,12시 칸 강화 2배

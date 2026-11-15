@@ -1,0 +1,124 @@
+Enum:string,Key:string,Desc:string
+Grade,Common,일반
+Grade,Rare,희귀
+Grade,Epic,영웅
+Grade,Legendary,전설
+PlaceCond,Odd,판정 시각이 홀수
+PlaceCond,Even,짝수
+PlaceCond,MultipleOf,CondValue의 배수 (0 · 음수 포함)
+PlaceCond,Prime,소수 (2 · 3 · 5 · 7 · 11 · 13 …)
+PlaceCond,Negative,음수
+PlaceCond,Zero,0시
+PlaceCond,Exact,CondValue와 같음
+PlaceCond,GreaterThan,CondValue 초과
+PlaceCond,LessThan,CondValue 미만
+PlaceCond,None,조건 없음 (깨어나지 않는 기본 탄)
+Trigger,Passive,깨어나 있는 동안 항상
+Trigger,RunStart,런 시작 때 1번
+Trigger,OnFire,이 탄을 쏠 때
+Trigger,OnHit,이 탄이 맞았을 때
+Trigger,OnKill,이 탄으로 처치했을 때
+Trigger,OnReload,장전할 때
+Trigger,OnPerfectReload,완벽 장전 때
+Trigger,OnChanceDodge,확률 회피에 성공했을 때
+Trigger,OnJustDodge,저스트 회피 때
+Trigger,OnSkill,총 스킬을 쓸 때
+Trigger,OnSilhouette,회상 실루엣이 나타날 때
+Trigger,OnTimeLockEnd,시간에 갇힌 적이 풀릴 때
+Trigger,OnExecute,처형했을 때
+Trigger,OnRicochet,탄이 튕길 때
+Trigger,OnPierce,탄이 관통할 때
+EffectCond,None,조건 없음
+EffectCond,Slot12,12시 칸에 있을 때
+EffectCond,TargetMarked,대상에 추억 표식이 있음
+EffectCond,MarkStacksAtLeast,대상의 추억 표식이 CondValue개 이상
+EffectCond,TargetSlowed,대상이 둔화 상태
+EffectCond,TargetTimeLocked,대상이 시간에 갇힘
+EffectCond,TargetBoss,대상이 보스
+EffectCond,TargetHpBelow,대상 체력이 CondValue% 이하
+EffectCond,JudgeEven,판정 시각이 짝수
+EffectCond,JudgeNegative,판정 시각이 음수
+EffectCond,JudgeOver,판정 시각이 CondValue 초과
+EffectCond,JudgeAtMost,판정 시각이 CondValue 이하
+EffectCond,KilledByDelayed,지연 피해로 처치
+Target,Self,자신(플레이어)
+Target,HitTarget,맞은 적
+Target,Area,주변 적 (반경 = Value2)
+Target,NextBullet,다음 차례 탄
+Target,Neighbors,양옆 칸 탄
+Target,AllBullets,실린더의 모든 탄
+Target,OwnBullets,이 총이 담당하는 칸의 탄
+EffectType,DamageAdd,피해 +Value (비율)
+EffectType,AttackSpeedAdd,연사 속도 +Value
+EffectType,Knockback,밀쳐냄 (거리 Value)
+EffectType,ExtraShot,탄 Value발 추가 (피해 Value2)
+EffectType,Ricochet,Value번 튕김
+EffectType,RicochetByJudgeTime,판정 시각 절댓값만큼 튕김 (최대 Value)
+EffectType,Pierce,Value명 관통
+EffectType,PierceDamageGrowth,관통할 때마다 피해 +Value
+EffectType,Split,Value개로 갈라짐 (피해 Value2)
+EffectType,Slow,둔화 Value (지속 Duration)
+EffectType,Stun,"경직 (반경 Value2, 지속 Duration)"
+EffectType,TimeLock,"시간에 가둠: 정지 Duration, 받는 피해 +Value"
+EffectType,Burn,초당 피해 Value (지속 Duration)
+EffectType,DefenseDown,방어력 -Value (지속 Duration)
+EffectType,EnemyAttackSpeedDown,적 공격 속도 -Value (지속 Duration)
+EffectType,Explosion,폭발 피해 Value (반경 Value2)
+EffectType,DelayedDamage,Duration초 뒤 피해 Value (Value2 > 0이면 그 반경으로 퍼짐)
+EffectType,Homing,적을 따라감
+EffectType,SilhouetteShot,고양이 실루엣이 1발 더 (피해 Value)
+EffectType,SilhouetteFollow,실루엣이 Duration초 동안 사격을 따라 함
+EffectType,MemoryMark,"추억 표식 1개, 표식당 그 적에게 주는 피해 +Value (최대 Value2개)"
+EffectType,MarkBurst,표식을 터뜨려 피해 Value
+EffectType,DodgeChance,"피해를 Value 확률로 회피 (지속 Duration, 0이면 상시)"
+EffectType,BulletRefund,이 칸의 탄을 다시 장전 (Value발)
+EffectType,Execute,"일반 적 처형, 보스는 피해 +Value"
+EffectType,HeatGain,열기 +Value칸
+EffectType,JustDodgeWindowAdd,저스트 회피 판정 +Value
+EffectType,CritNextShots,다음 Value발 치명타
+EffectType,CritChance,치명타 확률 +Value
+EffectType,ControlDurationAdd,정지 · 둔화 지속 +Value
+EffectType,DamageVsStoppedAdd,정지된 적에게 피해 +Value
+EffectType,UnawakenedDamageAdd,깨어나지 못한 탄 공격력 +Value
+EffectType,AwakenedDamageAdd,깨어난 탄 공격력 +Value
+EffectType,UnawakenedTraitCount,깨어나지 못한 탄도 특성 Value개 켜짐
+EffectType,NextBulletAttackSpeedAdd,다음 탄 연사 속도 +Value
+EffectType,TrailSilhouetteShot,맞은 자리에 궤적이 남고 Duration초 뒤 실루엣이 그 궤적으로 1발 (피해 Value)
+EffectType,TraitCountBonus,특성 Value2를 Value개 더 셈
+EffectType,JudgeTimeAdd,판정 시각 +Value
+EffectType,InstantReload,즉시 장전
+EffectType,TimeSlowField,"주변 시간 감속 Value (반경 Value2, 지속 Duration)"
+EffectType,GlobalTimeStop,모든 적 정지 Duration초 (재사용 대기 Value2초)
+EffectType,ClockBurst,"시계 12방향으로 1발씩, 각 방향은 그 시각 칸의 탄 (피해 Value)"
+EffectType,DamageByNegativeJudge,판정 시각이 0보다 1 낮을 때마다 피해 +Value
+EffectType,DamagePerUnawakened,깨어나지 못한 탄 1개당 피해 +Value
+EffectType,ReverseCylinder,다음 장전은 12 → 1 역순 발사
+EffectType,PermanentDamageGrowth,런 동안 이 탄 공격력 +Value (최대 Value2)
+EffectType,DamageByDistance,거리 1m당 피해 +Value (최대 Value2)
+EffectType,DamageAddStack,누적될 때마다 피해 +Value
+EffectType,DamageTakenAdd,받는 피해 +Value
+EffectType,MaxHpAdd,최대 체력 +Value (비율)
+EffectType,GrantRandomOp,무작위 연산 Value개 지급
+EffectType,GrantBullet,탄 Value(Id) 지급
+EffectType,OpDropRateAdd,연산 드랍 +Value
+EffectType,TraitThresholdReduce,특성 6단계 필요 수 -Value
+EffectType,MemoryShardGainAdd,기억 조각 획득 +Value
+EffectType,Slot12BonusMul,12시 칸 강화 배율 ×Value
+OpType,Add,더하기
+OpType,Sub,빼기
+OpType,Mul,곱하기
+OpType,Div,"나누기 (반올림, .5는 0에서 먼 쪽)"
+SkillAction,BackstepShot,뒤로 도약하며 조준 방향으로 사격
+SkillAction,TurnShot,앞을 쏘고 홱 돌아 뒤를 쏨
+SkillAction,VaultShot,적을 뛰어넘으며 아래로 사격
+SkillAction,Parry,적 투사체를 쏴서 튕겨 냄
+SkillAction,SlowField,모래 장판
+SkillAction,ChargeShot,모아서 관통 1발
+SkillAction,SummonSilhouette,실루엣 소환
+SkillAction,TimeStop,범위 시간 정지
+UnlockType,Default,처음부터
+UnlockType,ClearZone,구역 CondValue 첫 클리어
+UnlockType,ExecuteCount,누적 처형 수
+UnlockType,PerfectReloadCount,누적 완벽 장전 수
+UnlockType,KillBoss,구역 Value 보스 처치
+UnlockType,TraitTier6,특성 6단계 달성 횟수
