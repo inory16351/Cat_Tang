@@ -114,7 +114,7 @@ namespace CatTang
                 if (rollT < 1f) return;
                 // 구른 뒤 바로 한 발
                 var d = Effects.Flat(p.transform.position - transform.position).normalized;
-                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, d, OutlawBulletSpeed, projectileDamage);
+                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, d, OutlawBulletSpeed, projectileDamage, 0, EnemyProjectile.Style.Revolver);
                 GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + d * 0.8f, d, 0.6f);
                 act = Act.Move;
                 nextAttack = Mathf.Max(nextAttack, Time.time + 0.8f);
@@ -135,7 +135,7 @@ namespace CatTang
             {
                 Face(lockDir);
                 if (Time.time < actUntil) return;
-                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + lockDir * 0.7f, lockDir, OutlawBulletSpeed, projectileDamage);
+                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + lockDir * 0.7f, lockDir, OutlawBulletSpeed, projectileDamage, 0, EnemyProjectile.Style.Revolver);
                 GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + lockDir * 0.8f, lockDir, 0.6f);
                 act = Act.Move;
                 nextAttack = Time.time + shootInterval / AtkMul;

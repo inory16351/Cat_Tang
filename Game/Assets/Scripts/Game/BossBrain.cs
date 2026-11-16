@@ -140,10 +140,10 @@ namespace CatTang
 
         protected float Dist() => P ? Effects.Flat(P.transform.position - transform.position).magnitude : 99f;
 
-        protected void Shoot(Vector3 dir, float speed, float dmg, float height = 1.4f, float range = 0)
+        protected void Shoot(Vector3 dir, float speed, float dmg, float height = 1.4f, float range = 0, EnemyProjectile.Style style = EnemyProjectile.Style.Orb, int hour = 0)
         {
             dir.y = 0;
-            EnemyProjectile.Spawn(transform.position + Vector3.up * height + dir.normalized * 1.4f, dir, speed, dmg, range);
+            EnemyProjectile.Spawn(transform.position + Vector3.up * height + dir.normalized * 1.4f, dir, speed, dmg, range, style, hour);
         }
 
         /// <summary>플레이어가 원 안이면 피해</summary>

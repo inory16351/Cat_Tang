@@ -149,7 +149,7 @@ namespace CatTang
             Telegraph.Sector(transform.position, d, 7f, 30f, T(0.45f), Telegraph.Danger);
             float end = Time.time + T(0.45f);
             while (Time.time < end) { Face(d, 14f); yield return null; }
-            for (int i = 0; i < 5; i++) Shoot(Quaternion.Euler(0, -30 + 15 * i, 0) * d, 14f, 5f * self.chapterDmg, 1.2f, 7f);
+            for (int i = 0; i < 5; i++) Shoot(Quaternion.Euler(0, -30 + 15 * i, 0) * d, 14f, 5f * self.chapterDmg, 1.2f, 7f, EnemyProjectile.Style.Pellet);
             GunkataFx.MuzzleFlash(transform.position + Vector3.up * 1.2f + d * 1.4f, d, 1.2f);
             yield return Wait(T(0.35f));
         }
@@ -166,8 +166,8 @@ namespace CatTang
                 float a = a0 + 540f * i / shots;
                 transform.rotation = Quaternion.Euler(0, a, 0);
                 var f = transform.forward;
-                Shoot(f, 9f, 8f * self.chapterDmg, 1.2f);
-                Shoot(-f, 9f, 8f * self.chapterDmg, 1.2f);
+                Shoot(f, 9f, 8f * self.chapterDmg, 1.2f, 0, EnemyProjectile.Style.Revolver);
+                Shoot(-f, 9f, 8f * self.chapterDmg, 1.2f, 0, EnemyProjectile.Style.Revolver);
                 yield return Wait(step);
             }
         }
@@ -181,7 +181,7 @@ namespace CatTang
             while (Time.time < end) { d = ToPlayer(); t.SetDir(d); Face(d, 14f); yield return null; }
             t.SetColor(Telegraph.Danger);
             yield return Wait(T(0.4f));
-            Shoot(d, 28f, 15f * self.chapterDmg, 1.3f);
+            Shoot(d, 28f, 15f * self.chapterDmg, 1.3f, 0, EnemyProjectile.Style.Sniper);
             GunkataFx.MuzzleFlash(transform.position + Vector3.up * 1.3f + d * 1.4f, d, 1f);
             yield return Wait(T(0.3f));
         }
@@ -286,7 +286,7 @@ namespace CatTang
             if (Time.time >= nextSecond)
             {
                 secondAngle += 30f;
-                Shoot(Quaternion.Euler(0, secondAngle, 0) * Vector3.forward, 9f, 10f * self.chapterDmg, 2.2f);
+                Shoot(Quaternion.Euler(0, secondAngle, 0) * Vector3.forward, 9f, 10f * self.chapterDmg, 2.2f, 0, EnemyProjectile.Style.Needle);
                 nextSecond = Time.time + T(1f);
             }
             if (hand && !busy) hand.localRotation = Quaternion.Slerp(hand.localRotation, Quaternion.Euler(0, secondAngle, 0), 8f * Time.deltaTime);
@@ -401,7 +401,7 @@ namespace CatTang
             {
                 if (face) face.text = h.ToString();
                 if (hand) hand.localRotation = Quaternion.Euler(0, h * 30f, 0);
-                Shoot(Quaternion.Euler(0, h * 30f, 0) * Vector3.forward, 8f, 15f * self.chapterDmg, 1.6f);
+                Shoot(Quaternion.Euler(0, h * 30f, 0) * Vector3.forward, 8f, 15f * self.chapterDmg, 1.6f, 0, EnemyProjectile.Style.Numeral, h);
                 yield return Wait(T(0.1f));
             }
             if (face) face.text = "";
