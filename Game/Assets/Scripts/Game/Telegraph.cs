@@ -77,7 +77,9 @@ namespace CatTang
         public void SetDir(Vector3 dir) { dir.y = 0; if (dir.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(dir.normalized); }
         public void SetColor(Color c) => col = c;
 
-        bool grow;
+        bool grow, glint = true, glinted;
+        /// <summary>끝나기 직전 예고 섬광을 띄우지 않음 (공격이 아닌 표시: 폭탄병 착지 조준 등)</summary>
+        public Telegraph NoGlint() { glint = false; return this; }
         /// <summary>원 자체가 작게 시작해 끝날 때 반경까지 커짐 (폭탄병 점멸: 다 커지는 순간 폭발). 깜빡임도 점점 빨라짐</summary>
         public Telegraph Grow() { grow = true; Redraw(0); return this; }
 
@@ -119,6 +121,12 @@ namespace CatTang
             float k = Mathf.Clamp01((Time.time - born) / Mathf.Max(0.01f, life));
             if (follow) transform.position = follow.position;
             Redraw(k);
+            // 공격 직전 예고 섬광 (젠레스 존 제로식 주황 십자 반짝임): 끝나기 0.15초 전 = 이때 회피하면 극한 회피
+            if (glint && !glinted && life > 0.25f && life - (Time.time - born) <= 0.15f)
+            {
+                glinted = true;
+                GunkataFx.WarnGlint(transform.position + Vector3.up * 1.6f);
+            }
             if (Time.time - born >= life) Destroy(gameObject);
         }
 

@@ -215,6 +215,9 @@ namespace CatTang
         public static void HitImpact(Vector3 p, Vector3 dir, Color col, bool crit, float scale = 1f, bool small = false)
         {
             if (!Init()) return;
+            // 에디터에서 만든 프리팹(블렌더 메시: 만화 충격 별 · 튀는 왕관 · 파편 · 관통 가시 · 반짝임)이 있으면 그걸 꺼냄
+            var look = Quaternion.LookRotation(dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward, Vector3.up);
+            if (FxEffect.Spawn(crit ? "FX_HitCrit" : "FX_Hit", p, look, scale * (small ? 0.55f : 1f), col)) return;
             dir = dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward;
             float s = scale * (small ? 0.6f : 1f) * (crit ? 1.35f : 1f);
             var back = -dir;
@@ -251,6 +254,7 @@ namespace CatTang
         public static void DodgeBurst(Vector3 feet, Color col, bool big)
         {
             if (!Init()) return;
+            if (FxEffect.Spawn("FX_DodgePerfect", feet, Quaternion.identity, big ? 1f : 0.65f, col)) return;   // 에디터 프리팹 (블렌더 메시)
             float s = big ? 1f : 0.65f;
             var up = Vector3.up;
             var body = feet + up * 0.9f;
@@ -294,6 +298,25 @@ namespace CatTang
                     new Vector3(w, w, Random.Range(0.7f, 1.4f) * s), Random.Range(0.18f, 0.28f), Random.Range(0f, 0.04f), d * Random.Range(2f, 4f) * s, FxMesh.Kind.Spike)?.Tint(col);
             }
         }
+
+        /// <summary>탄 특성별 타격 (FX_Trait_*, 아이콘 없이 터지는 모양 · 움직임으로 개성): 회상 = 잔상 타격이 두 번 더 메아리 ·
+        /// 추억 = 꽃잎처럼 퍼지는 파편 + 오래 남는 자국 · 망각 = 얼음 가시가 박혀 멈춤 · 되감기 = 파편이 안으로 빨려 든 뒤 터짐 ·
+        /// 종말 = X자 베기 + 위에서 떨어지는 칼날 + 굵은 관통 · 지연 = 작게 맞고 0.35초 뒤 위에서 떨어져 크게 · 예지 = 가늘고 긴 관통 + 십자 반짝임 ·
+        /// 영원 = 파편이 공중에 멈춘 듯 떠 있음 · 미련 = 타격 뒤 불씨가 피어오름. 깨어난 탄은 크게. 프리팹이 있으면 true</summary>
+        public static bool TraitHit(int trait, Vector3 p, Vector3 dir, Color col, bool awake)
+        {
+            string n = trait switch
+            {
+                3001 => "Recall", 3002 => "Memory", 3003 => "Oblivion", 3004 => "Rewind", 3005 => "Doom",
+                3006 => "Delay", 3007 => "Foresight", 3008 => "Eternity", 3009 => "Lingering", _ => null
+            };
+            if (n == null) return false;
+            var look = Quaternion.LookRotation(dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward, Vector3.up);
+            return FxEffect.Spawn("FX_Trait_" + n, p, look, awake ? 1.1f : 0.8f, col);
+        }
+
+        /// <summary>적 공격 예고 섬광 (젠레스 존 제로식 주황 십자 반짝임): 맞기 직전 이 순간에 회피하라는 신호</summary>
+        public static void WarnGlint(Vector3 p, float scale = 1f) => FxEffect.Spawn("FX_WarnGlint", p, Quaternion.identity, scale);
 
         /// <summary>수평 방향 d를 좌우 ±yaw° · 위아래 y 성분(lo~hi)만큼 무작위로 흔든 단위 벡터</summary>
         static Vector3 Jitter(Vector3 d, float yaw, float lo, float hi)
@@ -497,15 +520,27 @@ namespace CatTang
         }
     }
 
-    /// <summary>코드로 구운 3D 이펙트 메시 (처음 쓸 때 한 번 만들어 공유)</summary>
+    /// <summary>3D 이펙트 메시. 블렌더로 만든 메시(Resources/FX/Meshes/fx_*, Art/tools/blender_fx.py)를 먼저 쓰고,
+    /// 없으면 코드로 구운 메시 (처음 쓸 때 한 번 만들어 공유)</summary>
     public static class FxMeshes
     {
         static Mesh[] flames, balls, spikes;
         static Mesh torus;
+        static readonly System.Collections.Generic.Dictionary<string, Mesh> lib = new();
+
+        /// <summary>블렌더 메시 (Resources/FX/Meshes/name). 없으면 null</summary>
+        public static Mesh Lib(string name)
+        {
+            if (lib.TryGetValue(name, out var m) && m) return m;
+            m = Resources.Load<Mesh>("FX/Meshes/" + name);
+            lib[name] = m;
+            return m;
+        }
 
         /// <summary>충격 고리: XY 평면의 도넛 (축 = +z), 반지름 0.5 · 굵기 0.06. 둘레가 조금씩 울퉁불퉁</summary>
         public static Mesh Torus()
         {
+            var bl = Lib("fx_ring"); if (bl) return bl;
             if (torus) return torus;
             const int A = 40, B = 10;
             const float R0 = 0.5f, r0 = 0.06f;
@@ -540,6 +575,7 @@ namespace CatTang
         /// 단면은 4~5갈래 별 모양 → 어느 방향에서 봐도 날이 선 실루엣</summary>
         public static Mesh Spike(int v)
         {
+            var bl = Lib("fx_spike_" + Mathf.Abs(v) % 3); if (bl) return bl;
             if (spikes == null || !spikes[0]) { spikes = new Mesh[3]; for (int i = 0; i < 3; i++) spikes[i] = BuildSpike(53 + i * 11); }
             return spikes[Mathf.Abs(v) % 3];
         }
@@ -587,6 +623,7 @@ namespace CatTang
         /// <summary>불꽃 원뿔: 원점(총구)에서 +z로 뻗음. 좁은 뿌리 → 넓게 퍼지다 끝이 가시 꽃잎으로 갈라짐. 길이 1, 반지름 약 0.5</summary>
         public static Mesh Flame(int v)
         {
+            var bl = Lib("fx_flame_" + Mathf.Abs(v) % 3); if (bl) return bl;
             if (flames == null || !flames[0]) { flames = new Mesh[3]; for (int i = 0; i < 3; i++) flames[i] = BuildFlame(101 + i * 17); }
             return flames[Mathf.Abs(v) % 3];
         }
@@ -594,6 +631,7 @@ namespace CatTang
         /// <summary>울퉁불퉁한 불덩이: 지름 약 1</summary>
         public static Mesh Ball(int v)
         {
+            var bl = Lib("fx_ball_" + Mathf.Abs(v) % 3); if (bl) return bl;
             if (balls == null || !balls[0]) { balls = new Mesh[3]; for (int i = 0; i < 3; i++) balls[i] = BuildBall(7 + i * 13); }
             return balls[Mathf.Abs(v) % 3];
         }
@@ -698,15 +736,7 @@ namespace CatTang
         /// 어두운 탄 색도 불꽃처럼 보이게 밝기를 끌어올림</summary>
         public FxMesh Tint(Color c)
         {
-            Color.RGBToHSV(c, out float h, out float s, out float v);
-            v = Mathf.Max(v, 0.85f);
-            mpb.SetColor(ColCoreId, Color.HSVToRGB(h, s * 0.3f, 1f));
-            mpb.SetColor(ColHotId, Color.HSVToRGB(h, s * 0.7f, 1f));
-            mpb.SetFloat(IntensityId, 1.45f);                 // 흰빛으로 날아가지 않게 (기본 가시 재질 2.2)
-            mpb.SetColor(ColMidId, Color.HSVToRGB(h, s, v));
-            mpb.SetColor(ColEdgeId, Color.HSVToRGB(h, Mathf.Min(1f, s * 1.1f), v * 0.62f));
-            mpb.SetColor(ColAshId, Color.HSVToRGB(h, s * 0.6f, v * 0.28f));
-            mpb.SetColor(OutlineColId, Color.HSVToRGB(h, s * 0.7f, 0.13f));
+            FxTint.Apply(mpb, c);
             mr.SetPropertyBlock(mpb);
             return this;
         }

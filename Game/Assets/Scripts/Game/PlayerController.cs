@@ -57,9 +57,9 @@ namespace CatTang
         // 실루엣 색 (주인공 붉은 스카프에 맞춘 붉은 계열): 대시 잔상 · 분신 사격 = 진홍, 대시 끝 · 백스텝 = 밝은 붉은빛, 닷지 = 분홍빛 붉은색
         static readonly Color SilCrimson = new Color(0.92f, 0.16f, 0.2f, 0.75f);
         static readonly Color SilHot = new Color(1f, 0.42f, 0.28f, 1f);
-        static readonly Color SilDodge = new Color(1f, 0.32f, 0.42f, 0.85f);
+        static readonly Color SilDodge = new Color(0.45f, 0.75f, 1f, 0.85f);     // 극한 회피 잔상: 젠레스 존 제로식 파란빛
         // 닷지 액션: 적의 공격을 대시로 직접 피하면 → 주변 시간이 느려지고(0.2배, 실시간 0.3초 + 0.3초 동안 회복) 짧은 시간 치명타 보정
-        public const float DodgeCritMul = 1.5f, DodgeCritTime = 2.5f, DodgeSlowScale = 0.2f, DodgeSlowHold = 0.3f, DodgeSlowRecover = 0.3f;
+        public const float DodgeCritMul = 1.5f, DodgeCritTime = 2.5f, DodgeSlowScale = 0.2f, DodgeSlowHold = 0.45f, DodgeSlowRecover = 0.35f;
         float dodgeCritUntil;
         public float DodgeCritLeft => Mathf.Max(0, dodgeCritUntil - Time.time);
 
@@ -272,7 +272,9 @@ namespace CatTang
         {
             if (Time.time - lastJustDodge < 0.5f) return;
             lastJustDodge = Time.time;
-            GunkataFx.DodgeBurst(transform.position, new Color(0.72f, 0.5f, 1f), true);   // 닷지 액션: 바닥 고리 두 겹 · 몸 감싸는 고리 · 사방 빛살 (3D)
+            // 닷지 액션 (젠레스 존 제로 극한 회피 참고): 순간 파란 섬광 → 화면이 회색으로 빠지며 슬로우, 몸 주위로 파란 반짝임이 차례로 터짐
+            GunkataFx.DodgeBurst(transform.position, new Color(0.45f, 0.75f, 1f), true);
+            ScreenFx.PerfectDodge(ultimateActive ? 0.25f : DodgeSlowHold, DodgeSlowRecover);
             // 닷지 액션: 치명타 보정 + 주변 시간 느려짐
             dodgeCritUntil = Time.time + DodgeCritTime;
             Afterimage.Spawn(model, SilDodge);
@@ -518,7 +520,9 @@ namespace CatTang
             target.TakeDamage(dmg);
             rev.AddHeat(HeatPerHit);
             // 타격 이펙트 (3D 툰 불꽃, 탄 색): 섬광 덩어리 + 튀는 가시 + 충격 고리, 치명타는 금빛 네 갈래 별 + 큰 고리
-            GunkataFx.HitImpact(point, dir, col, crit);
+            // 특성 있는 탄은 특성별 타격(FX_Trait_*), 없으면 일반 타격. 치명타는 금빛 치명타를 겹침
+            bool traited = slotBullet != null && slotBullet.Trait1 != 0 && GunkataFx.TraitHit(slotBullet.Trait1, point, dir, col, rev.Awakened(s));
+            if (!traited || crit) GunkataFx.HitImpact(point, dir, col, crit, traited ? 0.85f : 1f);
             if (crit) CameraFollow.Shake(0.07f);
             bool killed = !target.Alive;
             var en = target.GetComponent<Enemy>();

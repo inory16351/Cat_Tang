@@ -295,7 +295,7 @@ namespace CatTang
                 act = Act.Windup;
                 actUntil = Time.time + BomberCrouch / AtkMul;
                 Anim("Special");                              // 점프 클립: 웅크림 → 이륙 → 공중 → 착지
-                tele = Telegraph.Ring(leapTo, 0.6f, (actUntil - Time.time) + BomberAir, Telegraph.Aim);
+                tele = Telegraph.Ring(leapTo, 0.6f, (actUntil - Time.time) + BomberAir, Telegraph.Aim).NoGlint();
             }
         }
 
