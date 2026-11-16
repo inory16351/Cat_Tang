@@ -253,7 +253,7 @@ namespace CatTang
 
         void AfterReward()
         {
-            bool merchant = Random.value < 0.35f || (!merchantSeen && stageIndex == Stages - 2);
+            bool merchant = Random.value < 0.15f || (!merchantSeen && stageIndex == Stages - 2);   // 상인 15% · 챕터당 최소 1번 (1장 기획서)
             if (merchant) SpawnMerchant();
             SpawnDoors();
         }

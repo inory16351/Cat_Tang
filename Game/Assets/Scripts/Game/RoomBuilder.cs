@@ -155,25 +155,29 @@ namespace CatTang
                 var next = i < cells.Count - 1 ? cells[i + 1] - c : (Vector2Int?)null;
                 info.farSide = next.HasValue ? new Vector3(next.Value.x, 0, next.Value.y) : (prev.HasValue ? new Vector3(-prev.Value.x, 0, -prev.Value.y) : Vector3.forward);
                 float hw = roomSize.x / 2, hd = roomSize.y / 2;
-                Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(roomSize.x, 0.2f, roomSize.y), floor);
-                Prim(PrimitiveType.Cylinder, "FloorClock", info.root, new Vector3(0, 0.005f, 0), new Vector3(roomSize.y * 0.55f, 0.01f, roomSize.y * 0.55f), ring, false);
-                Prim(PrimitiveType.Cylinder, "FloorClockIn", info.root, new Vector3(0, 0.012f, 0), new Vector3(roomSize.y * 0.5f, 0.01f, roomSize.y * 0.5f), floor, false);
+                var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(roomSize.x, 0.2f, roomSize.y), floor);
+                if (!Kit.TileFloor(ch, info.root, roomSize, floorGo, seed + i))
+                {
+                    Prim(PrimitiveType.Cylinder, "FloorClock", info.root, new Vector3(0, 0.005f, 0), new Vector3(roomSize.y * 0.55f, 0.01f, roomSize.y * 0.55f), ring, false);
+                    Prim(PrimitiveType.Cylinder, "FloorClockIn", info.root, new Vector3(0, 0.012f, 0), new Vector3(roomSize.y * 0.5f, 0.01f, roomSize.y * 0.5f), floor, false);
+                }
                 foreach (var side in new[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
                 {
                     bool open = (prev.HasValue && prev.Value == side) || (next.HasValue && next.Value == side);
                     bool horizontal = side.y != 0;
                     float len = horizontal ? roomSize.x : roomSize.y;
                     var pos = new Vector3(side.x * hw, 1.25f, side.y * hd);
+                    var inward = new Vector3(-side.x, 0, -side.y);
                     if (!open)
                     {
-                        Prim(PrimitiveType.Cube, "Wall", info.root, pos, horizontal ? new Vector3(len, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, len), wall);
+                        Kit.TileWall(ch, Prim(PrimitiveType.Cube, "Wall", info.root, pos, horizontal ? new Vector3(len, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, len), wall), inward);
                         continue;
                     }
                     float seg = len / 2 - 2.3f;
                     for (int k = -1; k <= 1; k += 2)
                     {
                         var off = horizontal ? new Vector3(k * (2.3f + seg / 2), 0, 0) : new Vector3(0, 0, k * (2.3f + seg / 2));
-                        Prim(PrimitiveType.Cube, "Wall", info.root, pos + off, horizontal ? new Vector3(seg, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, seg), wall);
+                        Kit.TileWall(ch, Prim(PrimitiveType.Cube, "Wall", info.root, pos + off, horizontal ? new Vector3(seg, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, seg), wall), inward);
                     }
                     var gate = Prim(PrimitiveType.Cube, "Gate", info.root, pos, horizontal ? new Vector3(4.6f, 2.5f, 0.5f) : new Vector3(0.5f, 2.5f, 4.6f), gateM);
                     gate.SetActive(false);
@@ -193,6 +197,7 @@ namespace CatTang
                         }
                     }
                 }
+                if (KitProps(ch, info.root, hw, hd, rnd, boss)) { layout.rooms.Add(info); continue; }
                 int props = boss ? 8 : 7;
                 for (int k = 0; k < props; k++)
                 {
@@ -205,6 +210,57 @@ namespace CatTang
                 layout.rooms.Add(info);
             }
             return layout;
+        }
+
+        /// <summary>
+        /// 키트 소품 배치 (1장 기획서): 화약통 방마다 2~4개 · 부서지는 엄폐물(마차 · 상자 · 울타리) · 녹은 시계 장식(벽 쪽).
+        /// 후보 자리 중 일부에만 놓음 (가운데 · 문 앞 통로는 비움). 키트가 없으면 false
+        /// </summary>
+        static bool KitProps(ChapterDef ch, Transform root, float hw, float hd, System.Random rnd, bool boss)
+        {
+            if (!Kit.Has(ch, "Keg")) return false;
+            var spots = new List<Vector3>();
+            for (float x = -hw + 3f; x <= hw - 3f; x += 3f)
+                for (float z = -hd + 3f; z <= hd - 3f; z += 3f)
+                {
+                    if (Mathf.Abs(x) < 3.2f && Mathf.Abs(z) < 3.2f) continue;            // 가운데 비움
+                    if (Mathf.Abs(x) < 2.6f || Mathf.Abs(z) < 2.6f) continue;            // 문 앞 통로 비움
+                    spots.Add(new Vector3(x, 0, z));
+                }
+            for (int i = spots.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); (spots[i], spots[j]) = (spots[j], spots[i]); }
+            int si = 0;
+            Vector3 Next() => si < spots.Count ? spots[si++] + new Vector3((float)rnd.NextDouble() - 0.5f, 0, (float)rnd.NextDouble() - 0.5f) : Vector3.zero;
+
+            int kegs = boss ? 0 : rnd.Next(2, 5);
+            for (int k = 0; k < kegs; k++)
+            {
+                var go = Kit.Place(ch, "Keg", root, Next(), rnd.Next(360));
+                if (go) PowderKeg.Make(go);
+            }
+            int cover = boss ? 2 : rnd.Next(3, 6);
+            string[] kinds = { "Wagon", "Crates", "Fence" };
+            for (int k = 0; k < cover; k++)
+            {
+                string kind = kinds[rnd.Next(kinds.Length)];
+                var go = Kit.Place(ch, kind, root, Next(), rnd.Next(4) * 90 + rnd.Next(-10, 10));
+                if (go) Breakable.Make(go, kind == "Wagon" ? 90 : kind == "Crates" ? 45 : 30);
+            }
+            // 보스 광장: 네 모서리에 녹아내린 시계탑
+            if (boss && Kit.Has(ch, "ClockTower"))
+                for (int sx = -1; sx <= 1; sx += 2)
+                    for (int sz = -1; sz <= 1; sz += 2)
+                        Kit.Place(ch, "ClockTower", root, new Vector3(sx * (hw - 2.2f), 0, sz * (hd - 2.2f)), Quaternion.LookRotation(new Vector3(-sx, 0, -sz)).eulerAngles.y);
+            // 녹은 시계 장식: 벽 가까이 1~2개 (장식 · 부서지지 않음)
+            int clocks = rnd.Next(1, 3);
+            for (int k = 0; k < clocks; k++)
+            {
+                bool ns = rnd.NextDouble() < 0.5;
+                float sgn = rnd.NextDouble() < 0.5 ? -1 : 1;
+                var p = ns ? new Vector3((float)(rnd.NextDouble() * 2 - 1) * (hw - 4), 0, sgn * (hd - 1.4f)) : new Vector3(sgn * (hw - 1.4f), 0, (float)(rnd.NextDouble() * 2 - 1) * (hd - 4));
+                var inward = ns ? new Vector3(0, 0, -sgn) : new Vector3(-sgn, 0, 0);
+                Kit.Place(ch, "MeltClock", root, p, Quaternion.LookRotation(inward).eulerAngles.y);
+            }
+            return true;
         }
 
         /// <summary>보상 문: 나무 문 그림 + 위에 보상 아이콘 + 이름</summary>
@@ -234,6 +290,16 @@ namespace CatTang
             var go = new GameObject("Merchant");
             go.transform.SetParent(root, false);
             go.transform.localPosition = pos;
+            // 1장: 한쪽 바닥에서 술집 카운터가 솟아오르며 상인 등장 (키트가 있을 때)
+            var rm = RunManager.Instance;
+            if (rm && Kit.Has(rm.Chapter, "BarCounter"))
+            {
+                var dir = Effects.Flat(-pos).normalized;
+                Kit.Place(rm.Chapter, "BarCounter", go.transform, Vector3.zero, Quaternion.LookRotation(dir.sqrMagnitude > 0 ? dir : Vector3.forward).eulerAngles.y);
+                go.AddComponent<RiseUp>();
+                Interactable.WorldIcon(go.transform, "UI/coin", new Vector3(0, 3.3f, 0), 0.8f);
+                return go;
+            }
             Prim(PrimitiveType.Capsule, "Body", go.transform, new Vector3(0, 0.9f, 0), new Vector3(0.9f, 0.9f, 0.9f), Mat(new Color(0.4f, 0.55f, 0.45f), 5), true);
             Prim(PrimitiveType.Sphere, "Head", go.transform, new Vector3(0, 2.0f, 0), Vector3.one * 0.7f, Mat(new Color(0.9f, 0.78f, 0.62f), 5), false);
             Prim(PrimitiveType.Cylinder, "Hat", go.transform, new Vector3(0, 2.35f, 0), new Vector3(1.4f, 0.04f, 1.4f), Mat(new Color(0.35f, 0.25f, 0.18f), 5), false);

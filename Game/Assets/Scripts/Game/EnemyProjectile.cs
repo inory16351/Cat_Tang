@@ -40,7 +40,9 @@ namespace CatTang
             if (Physics.Raycast(transform.position, dir, out var hit, step + 0.2f, ~0, QueryTriggerInteraction.Ignore))
             {
                 var hp = hit.collider.GetComponentInParent<Health>();
-                if (hp == null) { Destroy(gameObject); return; }            // 벽
+                if (hp == null) { Destroy(gameObject); return; }
+                // 엄폐물 · 화약통은 적 탄을 막음 (맞으면 깎임)
+                if (!hp.isPlayer && !hp.GetComponent<Enemy>()) { hp.TakeDamage(damage); Destroy(gameObject); return; }            // 벽
             }
             transform.position += dir * step;
             rangeLeft -= step;
