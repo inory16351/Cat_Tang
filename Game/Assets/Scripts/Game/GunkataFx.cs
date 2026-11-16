@@ -1,9 +1,9 @@
 // 건카타 총구 폭발 연출 (2D + 3D 섞음)
 // - 2D 섬광(flash_0~2): 총구 앞에서 한 순간 번쩍이는 날카로운 가시 별 (잉크 외곽선, docs/tools/fx_flash.py)
-// - 3D 불꽃 원뿔(FxMeshes.Flame): 총열 방향으로 쭉 뻗는 가시 꽃잎 불꽃. CatTang/ToonFire 셰이더로 4단 툰 색 + 잉크 외곽선,
-//   식으며(흰 → 노랑 → 붉음 → 그을음) 3D 노이즈 구멍으로 녹아 사라짐
-// - 3D 불덩이(FxMeshes.Ball): 원뿔 끝에서 울퉁불퉁 부풀었다 식는 폭발 구름
-// - 빛줄기 · 붉은 흩뿌림(선) · 회색 연기(2D) · 몸 주위 소용돌이(선)
+// - 건카타 발사 섬광은 전부 3D 메시 (CatTang/ToonFire 셰이더: 툰 색 + 가는 잉크 외곽선, 노이즈 구멍으로 녹아 사라짐)
+//   총구 섬광 덩어리(Core) · 총열 방향 긴 가시(Spike) · 양옆 십자 가시 · 날아가는 탄도 가시(Tracer) · 충격 고리(Torus)
+// - 회색 연기(2D) · 몸 주위 소용돌이(선)
+// - 3D 불꽃 원뿔(Flame) · 불덩이(Ball)는 평소 사격 · 장전 불꽃에서 씀
 // 메시는 처음 쓸 때 코드로 한 번 구워서 공유함 (변형 3개씩)
 using UnityEngine;
 
@@ -12,10 +12,8 @@ namespace CatTang
     public static class GunkataFx
     {
         static Material[] smokeMats, flashMats;
-        static Material lineMat, fireMat;
+        static Material lineMat, fireMat, spikeMat, muzzleMat;
         internal static Mesh quad;
-        static readonly Color Ray = new Color(1f, 0.97f, 0.82f);
-        static readonly Color Spray = new Color(1f, 0.36f, 0.2f, 0.9f);
         static readonly Color SwirlCol = new Color(0.22f, 0.13f, 0.11f, 0.85f);
 
         static bool inited;
@@ -30,6 +28,24 @@ namespace CatTang
             var fm = Resources.Load<Material>("FX/ToonFire");
             if (fm) fireMat = fm;
             else { var fire = Shader.Find("CatTang/ToonFire"); if (fire) fireMat = new Material(fire); }
+            // 건카타 발사 섬광용: 외곽선을 가늘게 (가는 가시가 검은 막대처럼 보이지 않게) · 더 밝게
+            // 색은 ToonFire 기본 (흰 심지 → 노랑 → 주황 → 빨강 테). 궁 분신 실루엣이 이 색에 맞춤 (PlayerController.UltGhost)
+            if (fireMat)
+            {
+                spikeMat = new Material(fireMat) { name = "ToonFireSpike" };
+                spikeMat.SetFloat("_OutlineWidth", 1.2f);
+                spikeMat.SetFloat("_Intensity", 2.2f);
+                // 일반 사격 총구 섬광용: 빨강 (2026-11-16 사용자). 작은 따뜻한 흰 심지 → 다홍 → 빨강 → 짙은 빨강 테, 분홍으로 날아가지 않게 밝기 낮게
+                muzzleMat = new Material(fireMat) { name = "ToonFireMuzzleRed" };
+                muzzleMat.SetFloat("_OutlineWidth", 1.0f);
+                muzzleMat.SetFloat("_Intensity", 1.2f);
+                muzzleMat.SetColor("_ColCore", new Color(1f, 0.86f, 0.72f));
+                muzzleMat.SetColor("_ColHot", new Color(1f, 0.38f, 0.18f));
+                muzzleMat.SetColor("_ColMid", new Color(0.95f, 0.14f, 0.1f));
+                muzzleMat.SetColor("_ColEdge", new Color(0.6f, 0.04f, 0.05f));
+                muzzleMat.SetColor("_ColAsh", new Color(0.26f, 0.05f, 0.05f));
+                muzzleMat.SetColor("_OutlineColor", new Color(0.18f, 0.02f, 0.03f));
+            }
             quad = new Mesh { name = "FxQuad" };
             quad.vertices = new[] { new Vector3(-0.5f, -0.5f, 0), new Vector3(0.5f, -0.5f, 0), new Vector3(-0.5f, 0.5f, 0), new Vector3(0.5f, 0.5f, 0) };
             quad.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 1), new Vector2(1, 1) };
@@ -73,40 +89,136 @@ namespace CatTang
             }
             else
             {
-                // 3D 방식 (사용자 선택): 2D 가시 섬광 + 3D 가시 꽃잎 불꽃 원뿔 + (본체) 3D 불덩이 2개
-                if (flashMats.Length > 0)
-                    FxSprite.Spawn(flashMats[Random.Range(0, flashMats.Length)], p + d * 0.3f * scale, 1.7f * scale, 0.07f, 0, Vector3.zero, FxSprite.Style.Flash, d);
-                FxMesh.Spawn(FxMeshes.Flame(Random.Range(0, 3)), fireMat, p, rot, new Vector3(0.5f, 0.5f, 1.5f) * scale, 0.18f, 0, d * 0.8f * scale, FxMesh.Kind.Flame);
-                int n = full ? 2 : 0;
-                var side = Vector3.Cross(Vector3.up, d).normalized;
-                for (int i = 0; i < n; i++)
+                // 3D 방식 (2026-11-16 개편: 촛불 같은 꽃잎 원뿔 → 날카로운 발사 섬광, 전부 3D 메시)
+                // 대칭 없이 변칙적으로: 매 발 섬광 덩어리 찌그러짐 · 주 가시 길이와 빗나감 · 곁가시 수와 각도 · 길이 · 지연이 제각각
+                var squash = Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f));
+                FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), spikeMat, p + d * Random.Range(0.08f, 0.22f) * scale, squash,
+                    new Vector3(Random.Range(0.5f, 0.75f), Random.Range(0.42f, 0.68f), Random.Range(0.32f, 0.5f)) * scale, Random.Range(0.15f, 0.21f), 0, d * 1.2f * scale, FxMesh.Kind.Core);
+                // 주 가시: 총열에서 살짝 빗나가고 길이 · 굵기 제각각
+                var md = Jitter(d, 7f, -0.05f, 0.08f);
+                float mw = Random.Range(0.34f, 0.5f);
+                FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, p, Quaternion.LookRotation(md, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
+                    new Vector3(mw, mw, Random.Range(1.7f, 2.9f)) * scale, Random.Range(0.2f, 0.28f), 0, md * 2.5f * scale, FxMesh.Kind.Spike);
+                // 곁가시: 1~4개, 아무 쪽으로나 (앞쪽일수록 길게) · 조금씩 늦게
+                int nSide = full ? Random.Range(2, 5) : Random.Range(1, 3);
+                for (int k = 0; k < nSide; k++)
                 {
-                    var pos = p + d * (0.9f + 0.55f * i) * scale + side * Random.Range(-0.2f, 0.2f) * scale + Vector3.up * Random.Range(-0.05f, 0.2f);
-                    float size = (0.55f - 0.15f * i) * scale * Random.Range(0.9f, 1.1f);
-                    FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), fireMat, pos, Random.rotation, Vector3.one * size, 0.32f, 0.02f + i * 0.03f, d * 1.4f * scale + Vector3.up * 0.5f, FxMesh.Kind.Ball);
+                    float a = Random.Range(18f, 115f) * (Random.value < 0.5f ? -1f : 1f);
+                    var sd = Jitter(Quaternion.AngleAxis(a, Vector3.up) * d, 0f, -0.15f, 0.25f);
+                    float sw = Random.Range(0.13f, 0.27f);
+                    float sl = Random.Range(0.45f, 1.5f) * (1.2f - Mathf.Abs(a) / 150f);
+                    FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, p + d * Random.Range(0.05f, 0.25f) * scale,
+                        Quaternion.LookRotation(sd, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
+                        new Vector3(sw, sw, sl) * scale, Random.Range(0.13f, 0.22f), Random.Range(0f, 0.035f), sd * Random.Range(0.4f, 1.6f) * scale, FxMesh.Kind.Spike);
                 }
             }
-            // 하얀 빛줄기: 총구에서 바깥으로 쭉
-            FxLine.Ray(p, d, 3.0f * scale, 0.12f * scale, Ray, 0.07f);
+            // 탄도: 가는 3D 가시가 살짝 빗나가며 쏜살같이 날아감
+            var td = Jitter(d, 4f, -0.03f, 0.03f);
+            FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, p + d * 0.3f * scale, Quaternion.LookRotation(td, Vector3.up),
+                new Vector3(0.11f, 0.11f, Random.Range(1.4f, 2.1f)) * scale, Random.Range(0.17f, 0.23f), 0, td * Random.Range(17f, 24f) * scale, FxMesh.Kind.Tracer);
+            // 충격 고리: 가끔 빠지고, 기울기 · 크기 제각각
+            if (Random.value < 0.7f)
+                FxMesh.Spawn(FxMeshes.Torus(), spikeMat, p + d * Random.Range(0.35f, 0.7f) * scale,
+                    Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(Random.Range(-25f, 25f), Random.Range(-25f, 25f), 0),
+                    Vector3.one * (full ? 1.25f : 0.85f) * Random.Range(0.7f, 1.25f) * scale, Random.Range(0.2f, 0.3f), Random.Range(0f, 0.02f), d * 2f * scale, FxMesh.Kind.Ring);
             if (!full) return;
-            // 붉은 흩뿌림: 부채꼴 가는 선
-            for (int k = 0; k < 4; k++)
+            // 불똥 탄도: 2~5개, 한쪽으로 쏠리기도 하는 작은 3D 가시
+            int nSpark = Random.Range(2, 6);
+            float bias = Random.Range(-15f, 15f);
+            for (int k = 0; k < nSpark; k++)
             {
-                var dd = Quaternion.AngleAxis(Random.Range(-22f, 22f), Vector3.up) * d;
-                dd.y = Random.Range(-0.08f, 0.12f);
-                FxLine.Ray(p + dd * 0.4f * scale, dd.normalized, Random.Range(2.2f, 3.6f) * scale, 0.035f * scale, Spray, 0.13f);
+                var dd = Jitter(Quaternion.AngleAxis(bias + Random.Range(-28f, 28f), Vector3.up) * d, 0f, -0.06f, 0.12f);
+                FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, p + dd * 0.3f * scale, Quaternion.LookRotation(dd, Vector3.up),
+                    new Vector3(0.06f, 0.06f, Random.Range(0.5f, 1.1f)) * scale, Random.Range(0.18f, 0.3f), Random.Range(0f, 0.05f), dd * Random.Range(11f, 20f) * scale, FxMesh.Kind.Tracer);
             }
         }
 
-        /// <summary>평소 사격 총구 화염 (작게): 손 그림 섬광 4프레임 + 아주 작은 3D 원뿔</summary>
-        public static void MuzzleFlash(Vector3 p, Vector3 d, float scale)
+        /// <summary>수평 방향 d를 좌우 ±yaw° · 위아래 y 성분(lo~hi)만큼 무작위로 흔든 단위 벡터</summary>
+        static Vector3 Jitter(Vector3 d, float yaw, float lo, float hi)
+        {
+            var v = Quaternion.AngleAxis(Random.Range(-yaw, yaw), Vector3.up) * d;
+            v.y += Random.Range(lo, hi);
+            return v.normalized;
+        }
+
+        /// <summary>일반 사격 총구 섬광 (리볼버, 2026-11-16 개편): 전부 가는 빨간 3D (muzzleMat).
+        /// - 총구: 작은 섬광 덩어리 + 총열 방향 길고 가는 바늘 + 앞쪽으로 비스듬한 가는 곁가시 2개(좌우 각도 다름) + 얇은 고리 + 아주 가는 탄도
+        /// - 리볼버 강조 (gun을 주면): 실린더와 총열 틈에서 양옆으로 칙 새는 가스 가시(리볼버만의 특징) · 실린더 둘레 작은 고리 · 공이 자리 불티
+        /// - 총구에 남는 가는 연기 한 줄기</summary>
+        public static void MuzzleFlash(Vector3 p, Vector3 d, float scale, Transform gun = null)
         {
             if (!Init()) return;
+            var mat = muzzleMat ? muzzleMat : fireMat;
             d = d.sqrMagnitude > 1e-4f ? d.normalized : Vector3.forward;
-            if (!FxFlipbook.Spawn("flash", p, d, 1.5f * scale * Random.Range(0.9f, 1.1f), 0.12f, true))
-                if (flashMats.Length > 0) FxSprite.Spawn(flashMats[Random.Range(0, flashMats.Length)], p + d * 0.2f * scale, 0.8f * scale, 0.06f, 0, Vector3.zero, FxSprite.Style.Flash, d);
-            var rot = Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f));
-            FxMesh.Spawn(FxMeshes.Flame(Random.Range(0, 3)), fireMat, p, rot, new Vector3(0.18f, 0.18f, 0.5f) * scale, 0.07f, 0, d * 0.5f * scale, FxMesh.Kind.Flame);
+            // 총구 섬광 덩어리 (작게)
+            FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), mat, p + d * 0.06f * scale, Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
+                new Vector3(0.2f, 0.2f, 0.16f) * scale * Random.Range(0.9f, 1.1f), 0.09f, 0, d * 0.3f * scale, FxMesh.Kind.Core);
+            // 주 바늘: 가늘고 길게
+            var md = Jitter(d, 3f, -0.02f, 0.03f);
+            FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), mat, p, Quaternion.LookRotation(md, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
+                new Vector3(0.085f, 0.085f, Random.Range(1.0f, 1.35f)) * scale, Random.Range(0.1f, 0.13f), 0, md * 1.6f * scale, FxMesh.Kind.Spike);
+            // 곁가시 2개: 앞쪽으로 비스듬히, 좌우 각도 · 길이 다르게
+            for (int s = -1; s <= 1; s += 2)
+            {
+                var sd = Jitter(Quaternion.AngleAxis(s * Random.Range(22f, 42f), Vector3.up) * d, 0f, -0.05f, 0.12f);
+                FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), mat, p + d * 0.05f * scale, Quaternion.LookRotation(sd, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
+                    new Vector3(0.04f, 0.04f, Random.Range(0.3f, 0.5f)) * scale, Random.Range(0.08f, 0.11f), Random.Range(0f, 0.015f), sd * 0.6f * scale, FxMesh.Kind.Spike);
+            }
+            // 얇은 고리
+            FxMesh.Spawn(FxMeshes.Torus(), mat, p + d * 0.22f * scale, Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(Random.Range(-12f, 12f), Random.Range(-12f, 12f), 0),
+                new Vector3(0.38f, 0.38f, 0.35f) * scale, 0.13f, 0, d * 1.2f * scale, FxMesh.Kind.Ring);
+            // 탄도: 아주 가는 바늘이 쏜살같이
+            FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), mat, p + d * 0.2f * scale, Quaternion.LookRotation(d, Vector3.up),
+                new Vector3(0.035f, 0.035f, Random.Range(0.9f, 1.3f)) * scale, 0.12f, 0.01f, d * 26f * scale, FxMesh.Kind.Tracer);
+
+            if (gun)
+            {
+                // 총 기준 좌표 (원점 = 손잡이, +z = 총구 쪽, +y = 윗면): 총구까지 거리로 실린더 · 공이 자리를 짐작
+                var mz = gun.InverseTransformPoint(p);
+                var up = gun.up; var side = gun.right; var fwd = gun.forward;
+                // 실린더-총열 틈 가스: 틈에서 작게 번쩍 + 양옆으로 칙 새는 가시 2~3개씩 (리볼버만의 모습이라 잘 보이게)
+                var gap = gun.TransformPoint(new Vector3(0, mz.y * 0.85f, mz.z * 0.42f));
+                FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), mat, gap, Random.rotation, new Vector3(0.12f, 0.09f, 0.12f) * scale, 0.07f, 0, up * 0.2f * scale, FxMesh.Kind.Core);
+                for (int s = -1; s <= 1; s += 2)
+                    for (int j = 0, nj = Random.Range(2, 4); j < nj; j++)
+                    {
+                        var gd = (side * s + up * Random.Range(0.05f, 0.55f) + fwd * Random.Range(-0.2f, 0.3f)).normalized;
+                        FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), mat, gap, Quaternion.LookRotation(gd, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
+                            new Vector3(0.065f, 0.065f, Random.Range(0.3f, 0.5f)) * scale, Random.Range(0.09f, 0.13f), Random.Range(0f, 0.015f), gd * 0.7f * scale, FxMesh.Kind.Spike);
+                    }
+                // 실린더 둘레 작은 고리 (철컥 돌아간 느낌)
+                var cyl = gun.TransformPoint(new Vector3(0, mz.y * 0.7f, mz.z * 0.3f));
+                FxMesh.Spawn(FxMeshes.Torus(), mat, cyl, Quaternion.LookRotation(fwd, up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
+                    new Vector3(0.2f, 0.2f, 0.45f) * scale, 0.12f, 0.02f, Vector3.zero, FxMesh.Kind.Ring);
+                // 공이 자리 불티 (실린더 뒤 위)
+                var hammer = gun.TransformPoint(new Vector3(0, mz.y * 0.95f, mz.z * 0.08f));
+                FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), mat, hammer, Random.rotation, Vector3.one * 0.07f * scale, 0.07f, 0, up * 0.4f * scale, FxMesh.Kind.Core);
+            }
+            // 총구에 남는 가는 연기 한 줄기
+            Smoke(p + d * 0.25f * scale + Vector3.up * 0.05f, 0.45f * scale, 0.55f);
+        }
+
+        public const float ImpactLife = 0.4f;           // = Editor/FxImpactBaker.Duration
+        public const float ImpactWorldSize = 2.4f;      // = Editor/FxImpactBaker.WorldSize
+
+        /// <summary>바닥 탄착 한 번: 3D로 조립해 구운 플립북(FX/anim/hit0~2, Cat_Tang/Bake Impact FX)을 재생. p = 바닥 점.
+        /// 구운 그림은 게임 카메라 각도에서 본 모습이라 카메라 정면 판에 그대로 붙임. 그림이 없으면 false</summary>
+        public static bool Impact(Vector3 p, float scale)
+        {
+            string set = "hit" + Random.Range(0, 3);
+            if (FxFlipbook.Count(set) == 0) return false;
+            float size = ImpactWorldSize * scale;
+            var pos = p;
+            var cam = Camera.main;
+            if (cam)
+            {
+                // 판 아래쪽이 바닥에 묻혀 잘리지 않게 카메라 쪽으로 당기고, 가까워진 만큼 작게 해 화면 크기는 그대로
+                const float pull = 1.2f;
+                float dist = Vector3.Distance(cam.transform.position, p);
+                pos = p - cam.transform.forward * pull;
+                if (dist > pull * 2) size *= (dist - pull) / dist;
+            }
+            return FxFlipbook.Spawn(set, pos, Vector3.zero, size, ImpactLife, false);
         }
 
         /// <summary>회색 연기 뭉치</summary>
@@ -226,7 +338,88 @@ namespace CatTang
     /// <summary>코드로 구운 3D 이펙트 메시 (처음 쓸 때 한 번 만들어 공유)</summary>
     public static class FxMeshes
     {
-        static Mesh[] flames, balls;
+        static Mesh[] flames, balls, spikes;
+        static Mesh torus;
+
+        /// <summary>충격 고리: XY 평면의 도넛 (축 = +z), 반지름 0.5 · 굵기 0.06. 둘레가 조금씩 울퉁불퉁</summary>
+        public static Mesh Torus()
+        {
+            if (torus) return torus;
+            const int A = 40, B = 10;
+            const float R0 = 0.5f, r0 = 0.06f;
+            var verts = new Vector3[A * B];
+            for (int a = 0; a < A; a++)
+            {
+                float u = a * Mathf.PI * 2 / A;
+                float rr = r0 * (1 + 0.35f * Mathf.Sin(u * 5) * Mathf.Sin(u * 3 + 1.3f));
+                var c = new Vector3(Mathf.Cos(u), Mathf.Sin(u), 0);
+                for (int b = 0; b < B; b++)
+                {
+                    float v = b * Mathf.PI * 2 / B;
+                    verts[a * B + b] = c * (R0 + Mathf.Cos(v) * rr) + Vector3.forward * Mathf.Sin(v) * rr;
+                }
+            }
+            var tris = new System.Collections.Generic.List<int>();
+            for (int a = 0; a < A; a++)
+                for (int b = 0; b < B; b++)
+                {
+                    int i0 = a * B + b, i1 = ((a + 1) % A) * B + b, i2 = a * B + (b + 1) % B, i3 = ((a + 1) % A) * B + (b + 1) % B;
+                    tris.Add(i0); tris.Add(i2); tris.Add(i1);
+                    tris.Add(i1); tris.Add(i2); tris.Add(i3);
+                }
+            torus = new Mesh { name = "FxTorus", vertices = verts, triangles = tris.ToArray() };
+            torus.RecalculateNormals();
+            torus.RecalculateBounds();
+            return torus;
+        }
+
+        /// <summary>바늘 가시: 원점(총구)에서 +z로 뻗음. 뿌리 바로 앞이 가장 굵고(반지름 약 0.5) 끝(z=1)은 바늘처럼 뾰족.
+        /// 단면은 4~5갈래 별 모양 → 어느 방향에서 봐도 날이 선 실루엣</summary>
+        public static Mesh Spike(int v)
+        {
+            if (spikes == null) { spikes = new Mesh[3]; for (int i = 0; i < 3; i++) spikes[i] = BuildSpike(53 + i * 11); }
+            return spikes[Mathf.Abs(v) % 3];
+        }
+
+        public static Mesh BuildSpike(int seed)
+        {
+            var rng = new System.Random(seed);
+            float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+            const int U = 16, K = 40;
+            int ridges = 4 + rng.Next(2);
+            float phase = R(0, Mathf.PI * 2);
+            var verts = new Vector3[(U + 1) * K + 1];
+            for (int k = 0; k < K; k++)
+            {
+                float th = k * Mathf.PI * 2 / K;
+                float pa = (th + phase) / (Mathf.PI * 2) * ridges;
+                float peak = 1 - Mathf.Abs(pa - Mathf.Floor(pa) - 0.5f) * 2;   // 0(골) ~ 1(날)
+                float star = Mathf.Lerp(0.72f, 1f, Mathf.Pow(peak, 1.6f));   // 둥근 몸통에 날이 살짝 선 단면
+                for (int u = 0; u <= U; u++)
+                {
+                    float t = u / (float)U;
+                    // 뿌리에서 0.18까지 부드럽게 굵어졌다가 끝으로 곧게 가늘어짐 (부피 있는 창끝)
+                    float prof = t < 0.18f ? Mathf.Lerp(0.55f, 1f, Mathf.SmoothStep(0, 1, t / 0.18f)) : Mathf.Pow(1 - (t - 0.18f) / 0.82f, 1.15f);
+                    float r = 0.5f * prof * star * (1 + 0.06f * Mathf.Sin(th * 3 + t * 7 + phase));   // 살짝 일렁이는 표면
+                    verts[u * K + k] = new Vector3(Mathf.Cos(th) * r, Mathf.Sin(th) * r, t);
+                }
+            }
+            int baseIdx = (U + 1) * K;
+            verts[baseIdx] = new Vector3(0, 0, -0.02f);
+            var tris = new System.Collections.Generic.List<int>();
+            for (int u = 0; u < U; u++)
+                for (int k = 0; k < K; k++)
+                {
+                    int a = u * K + k, b = u * K + (k + 1) % K, c = (u + 1) * K + k, d = (u + 1) * K + (k + 1) % K;
+                    tris.Add(a); tris.Add(b); tris.Add(c);
+                    tris.Add(b); tris.Add(d); tris.Add(c);
+                }
+            for (int k = 0; k < K; k++) { tris.Add(baseIdx); tris.Add((k + 1) % K); tris.Add(k); }
+            var m = new Mesh { name = "FxSpike" + seed, vertices = verts, triangles = tris.ToArray() };
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
 
         /// <summary>불꽃 원뿔: 원점(총구)에서 +z로 뻗음. 좁은 뿌리 → 넓게 퍼지다 끝이 가시 꽃잎으로 갈라짐. 길이 1, 반지름 약 0.5</summary>
         public static Mesh Flame(int v)
@@ -326,8 +519,8 @@ namespace CatTang
     /// <summary>3D 불꽃 메시 하나: 확 뻗거나 부풀고 → 식으며 → 노이즈 구멍으로 녹아 사라짐</summary>
     public class FxMesh : MonoBehaviour
     {
-        public enum Kind { Flame, Ball }
-        static readonly int HeatId = Shader.PropertyToID("_Heat"), DissolveId = Shader.PropertyToID("_Dissolve"), SeedId = Shader.PropertyToID("_Seed");
+        public enum Kind { Flame, Ball, Spike, Core, Tracer, Ring }
+        public static readonly int HeatId = Shader.PropertyToID("_Heat"), DissolveId = Shader.PropertyToID("_Dissolve"), SeedId = Shader.PropertyToID("_Seed");
         MeshRenderer mr;
         MaterialPropertyBlock mpb;
         float born, life, delay, spin;
@@ -337,7 +530,7 @@ namespace CatTang
         public static void Spawn(Mesh mesh, Material mat, Vector3 pos, Quaternion rot, Vector3 size, float life, float delay, Vector3 drift, Kind kind)
         {
             if (!mesh || !mat) return;
-            var go = new GameObject(kind == Kind.Flame ? "FxFlame" : "FxBall");
+            var go = new GameObject("Fx" + kind);
             go.transform.SetPositionAndRotation(pos, rot);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var f = go.AddComponent<FxMesh>();
@@ -348,8 +541,9 @@ namespace CatTang
             f.mpb = new MaterialPropertyBlock();
             f.mpb.SetFloat(SeedId, Random.Range(0f, 100f));
             f.born = Time.time; f.life = life; f.delay = delay; f.size = size; f.drift = drift; f.kind = kind;
-            f.spin = kind == Kind.Flame ? Random.Range(-240f, 240f) : Random.Range(-120f, 120f);
-            f.spinAxis = kind == Kind.Flame ? Vector3.forward : Random.onUnitSphere;
+            // 바늘 가시는 돌지 않음 (일렁임 없이 곧게 찌름)
+            f.spin = kind == Kind.Flame ? Random.Range(-240f, 240f) : kind == Kind.Ball ? Random.Range(-120f, 120f) : 0f;
+            f.spinAxis = kind == Kind.Ball ? Random.onUnitSphere : Vector3.forward;
             f.Pose(-1);
         }
 
@@ -360,7 +554,7 @@ namespace CatTang
             if (t >= 0)
             {
                 transform.position += drift * Time.deltaTime;
-                drift *= Mathf.Exp(-6f * Time.deltaTime);
+                if (kind != Kind.Tracer) drift *= Mathf.Exp(-6f * Time.deltaTime);   // 탄도는 감속 없이 쭉
                 transform.rotation = transform.rotation * Quaternion.AngleAxis(spin * Time.deltaTime, spinAxis);
             }
             Pose(t);
@@ -370,8 +564,54 @@ namespace CatTang
         {
             mr.enabled = t >= 0;
             if (t < 0) { transform.localScale = Vector3.zero; return; }
-            Vector3 sc; float heat, dis;
-            if (kind == Kind.Flame)
+            Evaluate(kind, size, t, out var sc, out float heat, out float dis);
+            transform.localScale = sc;
+            mpb.SetFloat(HeatId, heat);
+            mpb.SetFloat(DissolveId, dis);
+            mr.SetPropertyBlock(mpb);
+        }
+
+        /// <summary>수명 비율 t(0~1)에서의 크기 · 열(_Heat) · 녹음(_Dissolve). 스프라이트로 구울 때도 같은 곡선을 씀 (Editor/FxImpactBaker)</summary>
+        public static void Evaluate(Kind kind, Vector3 size, float t, out Vector3 sc, out float heat, out float dis)
+        {
+            if (kind == Kind.Core)
+            {
+                // 총구 섬광 덩어리: 0.3 동안 펑 부풀고(0.25 → 1.1) 하얗게 타다 오그라들며 천천히 녹음
+                float e = Mathf.Clamp01(t / 0.3f);
+                float pop = t < 0.3f ? Mathf.Lerp(0.25f, 1.1f, Mathf.Sin(e * Mathf.PI * 0.5f)) : Mathf.Lerp(1.1f, 0.65f, (t - 0.3f) / 0.7f);
+                sc = size * pop;
+                heat = 1 - Mathf.Clamp01((t - 0.35f) / 0.65f);
+                dis = Mathf.SmoothStep(0, 1, Mathf.Clamp01((t - 0.4f) / 0.6f));
+            }
+            else if (kind == Kind.Tracer)
+            {
+                // 탄도: 앞 15% 동안 쭉 늘어나며 나와서 날아가며 점점 가늘어지고 뒤 절반에 녹음
+                float e = Mathf.Clamp01(t / 0.15f); e = 1 - (1 - e) * (1 - e);
+                sc = new Vector3(size.x * (1 - 0.5f * t), size.y * (1 - 0.5f * t), size.z * (Mathf.Lerp(0.3f, 0.9f, e) + 0.3f * t));
+                heat = 1 - Mathf.Clamp01((t - 0.45f) / 0.55f);
+                dis = Mathf.SmoothStep(0, 1, Mathf.Clamp01((t - 0.5f) / 0.5f));
+            }
+            else if (kind == Kind.Ring)
+            {
+                // 충격 고리: 퍼지고(0.2 → 1) 굵기(z)는 얇아지며 뒤 절반에 녹음
+                float e = 1 - Mathf.Pow(1 - t, 3);
+                float r = Mathf.Lerp(0.2f, 1f, e);
+                sc = new Vector3(size.x * r, size.y * r, size.z * Mathf.Lerp(1f, 0.3f, t));
+                heat = 1 - Mathf.Clamp01((t - 0.35f) / 0.65f);
+                dis = Mathf.SmoothStep(0, 1, Mathf.Clamp01((t - 0.45f) / 0.55f));
+            }
+            else if (kind == Kind.Spike)
+            {
+                // 앞 20% 동안 총구에서 쭉 뻗어 나오고(0.3 → 1) 잠깐 하얗게 버틴 뒤,
+                // 굵기는 계속 줄며 더 날카로워지고 뒤 절반에 천천히 식으며 녹음
+                float e = Mathf.Clamp01(t / 0.2f); e = 1 - (1 - e) * (1 - e) * (1 - e);
+                float len = Mathf.Lerp(0.3f, 1f, e) + 0.12f * t;
+                float wid = Mathf.Lerp(0.6f, 1f, e) * Mathf.Lerp(1f, 0.35f, t);
+                sc = new Vector3(size.x * wid, size.y * wid, size.z * len);
+                heat = 1 - Mathf.Clamp01((t - 0.4f) / 0.6f);
+                dis = Mathf.SmoothStep(0, 1, Mathf.Clamp01((t - 0.48f) / 0.52f));
+            }
+            else if (kind == Kind.Flame)
             {
                 // 0.25 동안 확 뻗고(길이 0.25 → 1.1, 굵기 0.5 → 1) 조금 더 늘어나며 식고 녹음
                 float e = Mathf.Clamp01(t / 0.25f); e = 1 - (1 - e) * (1 - e) * (1 - e);
@@ -390,10 +630,6 @@ namespace CatTang
                 heat = 1 - Mathf.Clamp01((t - 0.25f) / 0.6f);
                 dis = Mathf.SmoothStep(0, 1, Mathf.Clamp01((t - 0.35f) / 0.65f));
             }
-            transform.localScale = sc;
-            mpb.SetFloat(HeatId, heat);
-            mpb.SetFloat(DissolveId, dis);
-            mr.SetPropertyBlock(mpb);
         }
     }
 

@@ -32,11 +32,23 @@ namespace CatTang
         public Transform gunR, gunL, muzzleR, muzzleL;
         [Range(0, 1)] public float aimWeight = 1f;
         /// <summary>총 원점(손잡이)을 주먹 기준으로 얼마나 옮길지 (총 기준 좌표, m). 음수 y = 총을 아래로 → 손잡이가 주먹 안으로</summary>
-        public Vector3 gripOffset = new Vector3(0, -0.09f, -0.02f);      // 평소 조준 자세 세기
+        // 총 원점(손잡이 가운데)을 주먹 중심에서 총 기준으로 옮기는 양 (m, 모델 크기 비례). y = 아래로, z = 총구 쪽으로.
+        // 2026-11-16: z가 -0.02라 주먹이 실린더 위에 얹히고 손잡이가 주먹 뒤로 삐져나왔음 → 총을 앞으로 당겨 주먹이 손잡이 윗부분을 감싸게
+        public Vector3 gripOffset = new Vector3(0, -0.09f, 0.09f);
         public float snapTime = 0.05f;                  // 자세 전환 시간 (절도 있게 짧게)
 
         Transform hips, spine, head, rUp, rLo, rHand, lUp, lLo, lHand, rTh, rSh, rFoot, lTh, lSh, lFoot;
         Transform rIndex, rThumb, lIndex, lThumb;      // 주먹 중심 · 엄지 방향 (총 쥐는 자세)
+        // 손 · 손가락 뼈의 기본(모델링) 자세 회전. 자세를 덧입힐 땐 애니메이션의 손목 꺾임 · 손가락 움직임을 지우고 이 자세로 되돌림.
+        // 걷기 애니메이션이 손을 돌리면 엄지 위치가 바뀌어 Roll이 아래팔을 다른 각으로 비틀고, 아래팔에 붙은 주먹 메시가 축 둘레로 돌아
+        // 늘 같은 자리에 놓이는 총과 따로 놀았음 (2026-11-16 걸을 때 총이 손에서 떨어지는 문제)
+        Transform[] handBonesR, handBonesL;
+        Quaternion[] handRestR, handRestL;
+        // 상체(허리 · 가슴 · 쇄골)의 기본(모델링, 좌우 대칭) 자세 회전. 자세를 덧입힐 땐 이 자세로 되돌린 뒤 비틀기 · 기울기를 얹음.
+        // 기본 애니메이션의 상체 비틀림이 남으면 왼어깨가 오른어깨보다 8cm 바깥 · 4cm 아래에 놓여, 같은 방향으로 뻗은 두 팔과 총이
+        // 서로 다른 자리에서 나와 어색했음 (2026-11-16)
+        Transform[] torsoBones;
+        Quaternion[] torsoRest;
         KataPose from, to, cur;
         float t = 1, weight, weightTarget;
         float scale = 1;
@@ -91,7 +103,25 @@ namespace CatTang
                 rIndex = anim.GetBoneTransform(HumanBodyBones.RightIndexProximal); rThumb = anim.GetBoneTransform(HumanBodyBones.RightThumbProximal);
                 lIndex = anim.GetBoneTransform(HumanBodyBones.LeftIndexProximal); lThumb = anim.GetBoneTransform(HumanBodyBones.LeftThumbProximal);
                 lTh = anim.GetBoneTransform(HumanBodyBones.LeftUpperLeg); lSh = anim.GetBoneTransform(HumanBodyBones.LeftLowerLeg); lFoot = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
+                // 아바타에 손가락이 안 잡혀 있으면 (CatHero는 오른 엄지가 빠져 있음) 이름으로 찾음.
+                // 엄지가 없으면 Roll이 아예 안 돌아 오른 아래팔 비틀림이 애니메이션 그대로 → 주먹과 총이 어긋났음
+                if (!rThumb) rThumb = FindFinger(rHand, "Thumb");
+                if (!lThumb) lThumb = FindFinger(lHand, "Thumb");
+                if (!rIndex) rIndex = FindFinger(rHand, "Index");
+                if (!lIndex) lIndex = FindFinger(lHand, "Index");
                 scale = Mathf.Max(0.1f, (head.position - hips.position).magnitude / 0.36f);
+                // Awake 시점 = 애니메이터가 돌기 전이라 뼈가 모델링 자세 그대로
+                CaptureRest(rHand, out handBonesR, out handRestR);
+                CaptureRest(lHand, out handBonesL, out handRestL);
+                var torso = new System.Collections.Generic.List<Transform>();
+                foreach (var b in new[] { HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest, HumanBodyBones.LeftShoulder, HumanBodyBones.RightShoulder })
+                {
+                    var t = anim.GetBoneTransform(b);
+                    if (t) torso.Add(t);
+                }
+                torsoBones = torso.ToArray();
+                torsoRest = new Quaternion[torsoBones.Length];
+                for (int i = 0; i < torsoBones.Length; i++) torsoRest[i] = torsoBones[i].localRotation;
             }
             from = to = cur = Aim;
             weight = weightTarget = aimWeight;
@@ -143,6 +173,13 @@ namespace CatTang
             return Quaternion.AngleAxis(RecoilArm * Curve(r), axis.normalized) * dir;
         }
 
+        // ---------- 몸 반동 ----------
+        const float KickLean = 14f, KickHips = 0.035f, KickDecay = 6f;   // 상체가 뒤로 젖혀지는 각 · 골반이 꺼지는 높이 · 돌아오는 속도(1/초)
+        float bodyKick;
+
+        /// <summary>쏠 때 호출: 상체가 뒤로 확 젖혀지고 골반이 살짝 꺼졌다가 돌아옴</summary>
+        public void BodyKick(float power = 1f) => bodyKick = Mathf.Max(bodyKick, Mathf.Clamp01(power));
+
         public void SetAimWeight(float w) { aimWeight = w; if (to.Equals(Aim) || IsAim) weightTarget = w; }
         bool IsAim => to.rArm == Aim.rArm && to.lArm == Aim.lArm;
 
@@ -159,12 +196,27 @@ namespace CatTang
             var root = transform;
             Vector3 W(Vector3 local) => root.TransformDirection(local).normalized;
 
+            // 몸 반동 (사격)
+            bodyKick = Mathf.MoveTowards(bodyKick, 0, Time.deltaTime * KickDecay);
+            float kick = Curve(bodyKick);
+            // 상체는 좌우 대칭인 기본 자세로 (애니메이션 비틀림 지움) → 그 위에 자세의 비틀기 · 기울기
+            RestoreRest(torsoBones, torsoRest, weight);
+            // 기본 자세 자체도 살짝 기울어 있어(왼어깨가 7cm 높음) 어깨선을 몸 기준 수평 · 정면에 직각으로 맞춤 → 두 팔이 거울처럼 같은 자리에서 나옴
+            if (spine && rUp && lUp)
+            {
+                var sv = lUp.position - rUp.position;
+                if (sv.sqrMagnitude > 1e-6f)
+                    spine.rotation = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(sv.normalized, -root.right), weight) * spine.rotation;
+                // 어깨 가운데가 몸 가운데(루트)에서 옆으로 치우친 만큼 골반을 옮겨 가운데 맞춤 (애니메이션 골반이 3.5cm쯤 비껴 있음)
+                float side = root.InverseTransformPoint((lUp.position + rUp.position) * 0.5f).x;
+                hips.position -= root.right * side * weight;
+            }
             // 골반 높이
-            hips.position += root.up * cur.hips * scale * weight;
-            // 허리 비틀기 · 기울기
+            hips.position += root.up * (cur.hips - KickHips * kick) * scale * weight;
+            // 허리 비틀기 · 기울기 (+ 반동으로 뒤로 젖힘)
             if (spine)
             {
-                var q = Quaternion.AngleAxis(cur.twist * weight, root.up) * Quaternion.AngleAxis(cur.lean * weight, root.right) * Quaternion.AngleAxis(-cur.side * weight, root.forward);
+                var q = Quaternion.AngleAxis(cur.twist * weight, root.up) * Quaternion.AngleAxis((cur.lean - KickLean * kick) * weight, root.right) * Quaternion.AngleAxis(-cur.side * weight, root.forward);
                 spine.rotation = q * spine.rotation;
             }
             if (head && Mathf.Abs(cur.headYaw) > 0.1f) head.rotation = Quaternion.AngleAxis(cur.headYaw * 0.6f * weight, root.up) * head.rotation;
@@ -182,10 +234,36 @@ namespace CatTang
             var ra = Kick(W(cur.rArm), recoilR); var la = Kick(W(cur.lArm), recoilL);
             Point(rUp, rLo, ra, weight); Point(rLo, rHand, ra, weight);
             Point(lUp, lLo, la, weight); Point(lLo, lHand, la, weight);
+            // 손목 · 손가락은 모델링 자세로 (애니메이션마다 달라지면 아래 Roll 각과 주먹 자리가 흔들림)
+            RestoreRest(handBonesR, handRestR, weight);
+            RestoreRest(handBonesL, handRestL, weight);
             // 아래팔을 팔 축으로 비틀어 엄지(= 총 윗면)가 위를 향하게
             Roll(rLo, rHand, rIndex, rThumb, weight);
             Roll(lLo, lHand, lIndex, lThumb, weight);
             AlignGuns();
+        }
+
+        /// <summary>손 아래에서 이름에 key(Thumb · Index)가 든 첫 마디 뼈 (손 바로 아래 자식 우선)</summary>
+        static Transform FindFinger(Transform hand, string key)
+        {
+            if (!hand) return null;
+            foreach (Transform c in hand) if (c.name.Contains(key)) return c;
+            foreach (var c in hand.GetComponentsInChildren<Transform>(true)) if (c != hand && c.name.Contains(key)) return c;
+            return null;
+        }
+
+        static void CaptureRest(Transform hand, out Transform[] bones, out Quaternion[] rest)
+        {
+            bones = hand ? hand.GetComponentsInChildren<Transform>(true) : new Transform[0];
+            rest = new Quaternion[bones.Length];
+            for (int i = 0; i < bones.Length; i++) rest[i] = bones[i].localRotation;
+        }
+
+        static void RestoreRest(Transform[] bones, Quaternion[] rest, float w)
+        {
+            if (bones == null) return;
+            for (int i = 0; i < bones.Length; i++)
+                if (bones[i]) bones[i].localRotation = Quaternion.Slerp(bones[i].localRotation, rest[i], w);
         }
 
         static void Point(Transform bone, Transform child, Vector3 dir, float w)
