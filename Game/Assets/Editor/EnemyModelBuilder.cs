@@ -41,12 +41,27 @@ namespace CatTang.EditorTools
             ("Kit_Cliff", 4f, 0f, 'w', KitDir, "Cliff"),
             ("Kit_Floor", 4f, 0f, 'w', KitDir, "Floor"),
             ("Kit_ClockTower", 7f, 0f, 'h', KitDir, "ClockTower"),
-            ("Kit_Keg", 1.1f, 0f, 'h', KitDir, "Keg"),
+            // 화약통 · 상자 · 울타리는 Codex 도형 모델(블렌더 +Y 앞 → yaw 180), Tripo 토큰 절약 (2026-11-16 사용자)
+            ("Kit_Keg", 1.1f, 180f, 'h', KitDir, "Keg"),
             ("Kit_Wagon", 1.9f, 0f, 'h', KitDir, "Wagon"),
-            ("Kit_Crates", 1.6f, 0f, 'h', KitDir, "Crates"),
-            ("Kit_Fence", 1.2f, 0f, 'h', KitDir, "Fence"),
+            ("Kit_Crates", 1.6f, 180f, 'h', KitDir, "Crates"),
+            ("Kit_Fence", 1.2f, 180f, 'h', KitDir, "Fence"),
             ("Kit_MeltClock", 2.8f, 0f, 'h', KitDir, "MeltClock"),
             ("Kit_BarCounter", 1.3f, 0f, 'h', KitDir, "BarCounter"),
+            // 저디테일 맵 조각 — Codex가 블렌더 스크립트로 도형 모델링 (Art/tools/blender_kit_simple.py)
+            ("Kit_PlankWall", 4f, 180f, 'w', KitDir, "PlankWall"),
+            ("Kit_Boardwalk", 4f, 180f, 'w', KitDir, "Boardwalk"),
+            ("Kit_Sandbags", 2.2f, 180f, 'w', KitDir, "Sandbags"),
+            ("Kit_BarrelStack", 1.6f, 180f, 'h', KitDir, "BarrelStack"),
+            ("Kit_HitchPost", 2f, 180f, 'w', KitDir, "HitchPost"),
+            ("Kit_Trough", 1.6f, 180f, 'w', KitDir, "Trough"),
+            ("Kit_Signpost", 2.4f, 180f, 'h', KitDir, "Signpost"),
+            ("Kit_LampPost", 3f, 180f, 'h', KitDir, "LampPost"),
+            ("Kit_Rock_0", 1.4f, 0f, 'w', KitDir, "Rock_0"),
+            ("Kit_Rock_1", 1.0f, 0f, 'w', KitDir, "Rock_1"),
+            ("Kit_Rock_2", 1.8f, 0f, 'w', KitDir, "Rock_2"),
+            ("Kit_Railing", 4f, 180f, 'w', KitDir, "Railing"),
+            ("Kit_SaloonDoor", 2.4f, 180f, 'h', KitDir, "SaloonDoor"),
         };
 
         // 애니메이터 구성: 공격 클립 키워드 · 공격 재생 시간(초) · 특수 클립 키워드 · 특수 시간 · 공격 반복 여부
@@ -336,7 +351,9 @@ namespace CatTang.EditorTools
                 if (src.HasProperty(prop) && src.GetTexture(prop)) { tex = src.GetTexture(prop); break; }
             if (!tex) tex = src.mainTexture;
             m.SetTexture("_BaseMap", tex);
-            m.SetColor("_BaseColor", Color.white);
+            // 텍스처 없는 도형 모델(Codex 블렌더 스크립트, 재질 색만 있음)은 원본 재질 색을 그대로
+            Color flat = src.HasProperty("_BaseColor") ? src.GetColor("_BaseColor") : src.HasProperty("_Color") ? src.color : Color.white;
+            m.SetColor("_BaseColor", tex ? Color.white : flat);
             // 1장 팔레트: 황혼 보라 그림자 + 금빛 테두리
             m.SetColor("_ShadeColor", new Color(0.72f, 0.58f, 0.66f));
             m.SetColor("_SecondShadeColor", new Color(0.45f, 0.34f, 0.46f));
