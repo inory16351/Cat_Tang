@@ -77,6 +77,10 @@ namespace CatTang
         public void SetDir(Vector3 dir) { dir.y = 0; if (dir.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(dir.normalized); }
         public void SetColor(Color c) => col = c;
 
+        bool grow;
+        /// <summary>원 자체가 작게 시작해 끝날 때 반경까지 커짐 (폭탄병 점멸: 다 커지는 순간 폭발). 깜빡임도 점점 빨라짐</summary>
+        public Telegraph Grow() { grow = true; Redraw(0); return this; }
+
         void Init()
         {
             born = Time.time;
@@ -120,7 +124,8 @@ namespace CatTang
 
         void Redraw(float k)
         {
-            float pulse = 0.65f + 0.35f * Mathf.Sin((Time.time - born) * 28f);
+            float age = Time.time - born;
+            float pulse = 0.65f + 0.35f * Mathf.Sin(grow ? age * Mathf.Lerp(18f, 60f, k) : age * 28f);
             var edge = col * (0.55f + 0.45f * k * pulse); edge.a = 1;
             var inner = col * (0.25f + 0.35f * k); inner.a = 1;
             outer.startColor = outer.endColor = edge;
@@ -128,12 +133,14 @@ namespace CatTang
             Vector3 o = transform.position + Vector3.up * 0.05f;
             if (shape == Shape.Ring)
             {
-                float rf = Mathf.Max(0.05f, radius * k);
+                // 커지기: 바깥 원이 반경의 15%에서 끝에 100%로 (처음엔 빠르게, 끝에서 살짝 느려지며 꽉 참), 안쪽 선이 바로 뒤를 따라옴
+                float ro = grow ? radius * Mathf.Lerp(0.15f, 1f, 1 - (1 - k) * (1 - k)) : radius;
+                float rf = grow ? Mathf.Max(0.05f, ro * Mathf.Lerp(0.5f, 0.92f, k)) : Mathf.Max(0.05f, radius * k);
                 for (int i = 0; i < 40; i++)
                 {
                     float a = i / 40f * Mathf.PI * 2;
                     var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                    outer.SetPosition(i, o + d * radius);
+                    outer.SetPosition(i, o + d * ro);
                     fill.SetPosition(i, o + d * rf);
                 }
             }

@@ -1,7 +1,8 @@
 // 적 (1장 기획서 기준 '시간의 하수인' 3종) · 보스(챕터별 패턴)
 // - 태엽 무법자(Outlaw): 6~9m 거리를 두고, 2초마다 조준선 0.5초 예고 후 리볼버 1발
 // - 시계추 깡패(Brute): 따라오다 7m 안이면 멈춰 0.6초 돌진 경로 예고 → 일직선 돌진, 부딪히면 피해
-// - 모래시계 폭탄병(Bomber): 빠르게 달려와 붙으면 0.8초 점멸(반경 2m 예고) 후 자폭
+// - 모래시계 폭탄병(Bomber): 빠르게 달려와 사거리 안이면 웅크렸다가 고양이가 있던 자리로 뛰어올라 착지,
+//   그 자리에서 0.8초 점멸(반경 2m 예고) 후 자폭. 예고 원은 웅크릴 때부터 착지 자리에 깔림
 // 보스 패턴: Spiral(12방향 + 바늘) · Ring(24방향 고리 엇갈림) · Mirror(거울 분신 소환) · Gear(쌍바늘 + 8방향) · Master(전부 섞음)
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,6 +30,8 @@ namespace CatTang
         public const float OutlawAimTime = 0.5f, OutlawBulletSpeed = 9f;
         public const float BruteWindup = 0.6f, BruteChargeSpeed = 13f, BruteChargeDist = 8f, BruteRange = 7f, BruteCooldown = 2.2f, BruteRecover = 0.7f;
         public const float BomberFuse = 0.8f, BomberRadius = 2f, BomberTrigger = 1.3f;
+        // 도약: 사거리 · 웅크림(예고) · 체공 시간 · 최고 높이. 점프 클립(Ch1_BomberJump)의 웅크림 → 이륙 → 착지 시점과 맞춤
+        public const float BomberLeapRange = 7f, BomberCrouch = 0.35f, BomberAir = 0.55f, BomberLeapHeight = 2.4f;
         // 강화형 (1장 기획서): 무법자+ 회피 사격 4초 쿨 · 3m / 깡패+ 회전 휘두르기 예고 0.7 · 반경 2.5 · 피해 12 / 폭탄병+ 모래 장판 반경 2 · 3초 · 이속 30% 감소
         public const float RollCooldown = 4f, RollDist = 3f, SpinWindup = 0.7f, SpinRadius = 2.5f, SandLife = 3f, SandSlow = 0.3f;
         float nextRoll, nextSpin;
@@ -42,7 +45,7 @@ namespace CatTang
         bool dead;
 
         // 일반 적 공격 상태
-        enum Act { Move, Windup, Charge, Recover, Fuse, Roll, Spin }
+        enum Act { Move, Windup, Charge, Recover, Fuse, Roll, Spin, Leap }
         Act act = Act.Move;
         float actUntil, charged;
         Vector3 lockDir;
@@ -99,7 +102,7 @@ namespace CatTang
         void CancelAct()
         {
             if (tele) tele.Kill();
-            if (act == Act.Fuse) return;                      // 폭탄병 점멸은 기절해도 이어짐 (불붙은 심지)
+            if (act == Act.Fuse || act == Act.Leap) return;   // 폭탄병 점멸 · 공중 도약은 기절해도 이어짐 (불붙은 심지)
             act = Act.Move;
         }
 
@@ -172,7 +175,7 @@ namespace CatTang
                     if (rm) transform.position = rm.ClampToRoom(transform.position, 1.2f);
                     float moved = (transform.position - before).magnitude;
                     charged += step;
-                    if (!chargeHit && Effects.Flat(p.transform.position - transform.position).magnitude < 1.3f)
+                    if (!chargeHit && Effects.Flat(p.transform.position - transform.position).magnitude < 1.5f)   // 몸이 커져(반지름 0.95) 판정도 넓힘
                     {
                         chargeHit = true;
                         p.health.TakeDamage(contactDamage);
@@ -207,7 +210,7 @@ namespace CatTang
                 tele = Telegraph.Ring(transform.position, SpinRadius, actUntil - Time.time, Telegraph.Danger, transform);
                 return;
             }
-            if (dist > 1.2f) transform.position += dir * Mathf.Min(spd * Time.deltaTime, dist - 1.2f);
+            if (dist > 1.5f) transform.position += dir * Mathf.Min(spd * Time.deltaTime, dist - 1.5f);
             Face(dir);
             if (Time.time >= nextAttack && dist < BruteRange)
             {
@@ -220,27 +223,79 @@ namespace CatTang
         }
 
         // ---------- 모래시계 폭탄병 ----------
+        Vector3 leapFrom, leapTo;
+        float leapT;
+
         void BomberUpdate(PlayerController p, Vector3 dir, float dist, float spd)
         {
-            if (act == Act.Fuse)
+            switch (act)
             {
-                float left = actUntil - Time.time;
-                // 점멸: 점점 빨라지는 깜빡임 (몸을 부풀렸다 줄임)
-                float blink = Mathf.Sin((BomberFuse - left) * Mathf.Lerp(18f, 60f, 1 - left / BomberFuse));
-                if (model) model.localScale = modelScale * (1f + 0.12f * Mathf.Max(0, blink));
-                if (left > 0) return;
-                Explode(p);
-                return;
+                case Act.Fuse:
+                {
+                    float left = actUntil - Time.time;
+                    // 점멸: 점점 빨라지는 깜빡임 (몸을 부풀렸다 줄임)
+                    float blink = Mathf.Sin((BomberFuse - left) * Mathf.Lerp(18f, 60f, 1 - left / BomberFuse));
+                    if (model) model.localScale = modelScale * (1f + 0.12f * Mathf.Max(0, blink));
+                    if (left > 0) return;
+                    Explode(p);
+                    return;
+                }
+                case Act.Windup:
+                {
+                    // 웅크림: 몸을 낮추고 옆으로 납작해짐 (애니메이터가 있으면 점프 클립이 자세를 맡고 납작함만 더함)
+                    Face(Effects.Flat(leapTo - transform.position));
+                    float k = 1 - Mathf.Clamp01((actUntil - Time.time) / BomberCrouch);
+                    if (model) model.localScale = Vector3.Scale(modelScale, new Vector3(1 + 0.12f * k, 1 - 0.18f * k, 1 + 0.12f * k));
+                    if (Time.time < actUntil) return;
+                    act = Act.Leap;
+                    leapT = 0;
+                    leapFrom = transform.position;
+                    return;
+                }
+                case Act.Leap:
+                {
+                    // 포물선 도약: 수평은 일정하게, 높이는 sin 곡선 (멀리 뛸수록 높게). 공중에선 세로로 늘어남
+                    leapT += Time.deltaTime / BomberAir;
+                    float t = Mathf.Clamp01(leapT);
+                    float h = Mathf.Sin(t * Mathf.PI) * BomberLeapHeight * Mathf.Clamp01(Vector3.Distance(leapFrom, leapTo) / 3f + 0.4f);
+                    transform.position = Vector3.Lerp(leapFrom, leapTo, t);
+                    if (model)
+                    {
+                        model.localPosition = Vector3.up * h;
+                        float stretch = Mathf.Sin(t * Mathf.PI) * 0.15f;
+                        model.localScale = Vector3.Scale(modelScale, new Vector3(1 - stretch * 0.5f, 1 + stretch, 1 - stretch * 0.5f));
+                        // 리깅 없는 모델은 공중에서 앞으로 한 바퀴 구름
+                        if (!anim) model.localRotation = Quaternion.Euler(360f * t, 0, 0) * modelBaseRot;
+                    }
+                    if (t < 1f) return;
+                    // 착지: 먼지 · 화면 흔들림, 그 자리에서 점멸 시작
+                    transform.position = leapTo;
+                    if (model) { model.localPosition = Vector3.zero; model.localRotation = modelBaseRot; model.localScale = Vector3.Scale(modelScale, new Vector3(1.2f, 0.75f, 1.2f)); }
+                    FxBurst.Spawn(transform.position + Vector3.up * 0.15f, 1.3f, FxBurst.Kind.Dust, new Color(0.92f, 0.8f, 0.55f));
+                    CameraFollow.Shake(0.08f);
+                    act = Act.Fuse;
+                    actUntil = Time.time + BomberFuse;
+                    AnimBusy(true);
+                    Anim("Attack");
+                    // 착지 자리에서 예고 원이 작게 시작해 점멸 동안 폭발 반경까지 커짐 → 다 커지는 순간 폭발
+                    if (tele) tele.Kill();
+                    tele = Telegraph.Ring(transform.position, BomberRadius, BomberFuse, Telegraph.Danger).Grow();
+                    return;
+                }
             }
             if (dist > 0.9f) transform.position += dir * Mathf.Min(spd * Time.deltaTime, dist - 0.9f);
             Face(dir);
-            if (dist < BomberTrigger)
+            if (dist < BomberLeapRange && Time.time >= nextAttack)
             {
-                act = Act.Fuse;
-                actUntil = Time.time + BomberFuse;
-                AnimBusy(true);
-                Anim("Attack");
-                tele = Telegraph.Ring(transform.position, BomberRadius, BomberFuse, Telegraph.Danger, transform);
+                // 착지 자리 = 지금 고양이 자리 (사거리까지만, 방 안으로). 웅크리는 순간부터 그 자리에 작은 조준 표시
+                var target = transform.position + dir * Mathf.Min(dist, BomberLeapRange);
+                var rm = RunManager.Instance;
+                leapTo = rm ? rm.ClampToRoom(target, 1.2f) : target;
+                leapTo.y = transform.position.y;
+                act = Act.Windup;
+                actUntil = Time.time + BomberCrouch / AtkMul;
+                Anim("Special");                              // 점프 클립: 웅크림 → 이륙 → 공중 → 착지
+                tele = Telegraph.Ring(leapTo, 0.6f, (actUntil - Time.time) + BomberAir, Telegraph.Aim);
             }
         }
 
@@ -273,6 +328,12 @@ namespace CatTang
         {
             if (!model) return;
             if (!modelScaleSet) { modelScale = model.localScale; modelScaleSet = true; }
+            // 폭탄병 웅크림 · 도약은 BomberUpdate가 모델 위치 · 크기 · 기울기를 직접 잡음
+            if (act == Act.Leap || (kind == Kind.Bomber && act == Act.Windup))
+            {
+                if (anim) anim.SetFloat("Speed", 0);
+                return;
+            }
             if (anim)
             {
                 // 애니메이터가 걷기 · 동작을 맡음. 돌진 중엔 앞으로 살짝 숙이기만
@@ -380,9 +441,10 @@ namespace CatTang
             if (dead) return;
             dead = true;
             if (tele) tele.Kill();
-            if (kind == Kind.Bomber && selfDestruct) FxBurst.Spawn(transform.position + Vector3.up * 0.5f, BomberRadius * 1.4f, FxBurst.Kind.Explosion);
+            bool blew = kind == Kind.Bomber && selfDestruct;
+            if (blew) GunkataFx.Explosion(transform.position, BomberRadius, true);   // 3D 자폭 폭발 (모래 먼지 · 파편)
             if (Mathf.Approximately(health.lastDamageWasDelayed, Time.time)) PlayerController.Instance?.DelayedKill(transform.position);
-            FxBurst.Spawn(transform.position + Vector3.up, kind == Kind.Boss ? 6f : 2.2f, FxBurst.Kind.Explosion);
+            if (!blew) FxBurst.Spawn(transform.position + Vector3.up, kind == Kind.Boss ? 6f : 2.2f, FxBurst.Kind.Explosion);
             RunManager.Instance?.OnEnemyKilled(this);
             Destroy(gameObject);
         }

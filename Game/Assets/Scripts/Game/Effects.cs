@@ -132,20 +132,20 @@ namespace CatTang
         {
             var pl = PlayerController.Instance;
             if (pl) dmg *= 1 + GlobalPassive(pl, "AreaDamageAdd");
-            FxBurst.Spawn(at + Vector3.up * 0.8f, radius * 1.6f, FxBurst.Kind.Explosion, tint);
+            GunkataFx.Explosion(at, radius, false, tint);   // 3D 탄 색 폭발
             foreach (var en in Enemy.All.ToArray())
                 if (en && en.health.Alive && Flat(en.transform.position - at).magnitude < radius) en.health.TakeDamage(dmg);
         }
 
         public static void AreaStun(Vector3 at, float radius, float dur)
         {
-            FxBurst.Spawn(at + Vector3.up, radius * 1.4f, FxBurst.Kind.Gold, new Color(1f, 0.9f, 0.5f));
+            GunkataFx.Flare(at + Vector3.up, radius * 1.4f, new Color(1f, 0.9f, 0.5f));
             foreach (var en in Enemy.All) if (en && Flat(en.transform.position - at).magnitude < radius) en.health.ApplyStun(dur);
         }
 
         public static void AreaSlow(Vector3 at, float radius, float amount, float dur)
         {
-            FxBurst.Spawn(at + Vector3.up, radius * 1.8f, FxBurst.Kind.Gold, new Color(0.55f, 0.75f, 1f));
+            GunkataFx.Flare(at + Vector3.up, radius * 1.8f, new Color(0.55f, 0.75f, 1f));
             foreach (var en in Enemy.All) if (en && Flat(en.transform.position - at).magnitude < radius) en.health.ApplySlow(amount, dur);
         }
 

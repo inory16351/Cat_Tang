@@ -21,16 +21,21 @@ namespace CatTang.EditorTools
         const string KitDir = "Assets/Resources/Kit/Ch1/";
 
         // 원본 이름 · 목표 크기(m) · 정면 보정 yaw(도) · 크기 기준(높이 h / 가로 w) · 출력 폴더 · 출력 이름
+        // 적 키 (2026-11-16 측정, 사용자: 신체 비율에 맞게): 머리 크기를 고양이 머리(목~정수리 0.80m, 고양이 키 2.17m · 2.7등신)에 맞추고
+        // 몸은 모델 원래 비율대로. 고양이 머리 대비 배율 × 모델 등신 = 키
+        //   폭탄병 0.9 × 2.5등신 = 1.8 · 폭탄병+ 0.98 × 2.8 = 2.2 · 무법자 1.0 × 3.4 = 2.7 · 무법자+ 1.1 × 3.4 = 3.0
+        //   깡패 1.25 × 2.8 = 2.8 (어깨 0.62m, 고양이 0.33m의 약 2배) · 깡패+ 는 머리가 작아(4.6등신) 어깨 기준: 어깨 0.92m → 3.2
+        //   중간 보스 1.45 × 3.4 = 3.9 · 보스 2.1 × 3.8 = 6.5 (어깨 2m) · 정면 보정 yaw(도) · 크기 기준(높이 h / 가로 w) · 출력 폴더 · 출력 이름
         static readonly (string name, float size, float yaw, char fit, string outDir, string outName)[] Models =
         {
-            ("Ch1_Outlaw", 1.75f, 0f, 'h', OutDir, "Ch1_Outlaw"),
-            ("Ch1_Brute", 2.3f, 0f, 'h', OutDir, "Ch1_Brute"),
-            ("Ch1_Bomber", 1.35f, 0f, 'h', OutDir, "Ch1_Bomber"),
-            ("Ch1_Outlaw_Plus", 1.95f, 0f, 'h', OutDir, "Ch1_Outlaw_Plus"),
-            ("Ch1_Brute_Plus", 2.6f, 0f, 'h', OutDir, "Ch1_Brute_Plus"),
-            ("Ch1_Bomber_Plus", 1.5f, 0f, 'h', OutDir, "Ch1_Bomber_Plus"),
-            ("Ch1_MidBoss", 3.0f, 0f, 'h', OutDir, "Ch1_MidBoss"),
-            ("Ch1_Boss", 5.5f, 0f, 'h', OutDir, "Ch1_Boss"),
+            ("Ch1_Outlaw", 2.7f, 0f, 'h', OutDir, "Ch1_Outlaw"),
+            ("Ch1_Brute", 2.8f, 0f, 'h', OutDir, "Ch1_Brute"),
+            ("Ch1_Bomber", 1.8f, 0f, 'h', OutDir, "Ch1_Bomber"),
+            ("Ch1_Outlaw_Plus", 3.0f, 0f, 'h', OutDir, "Ch1_Outlaw_Plus"),
+            ("Ch1_Brute_Plus", 3.2f, 0f, 'h', OutDir, "Ch1_Brute_Plus"),
+            ("Ch1_Bomber_Plus", 2.2f, 0f, 'h', OutDir, "Ch1_Bomber_Plus"),
+            ("Ch1_MidBoss", 3.9f, 0f, 'h', OutDir, "Ch1_MidBoss"),
+            ("Ch1_Boss", 6.5f, 0f, 'h', OutDir, "Ch1_Boss"),
             // 맵 타일 · 소품 키트 (Kit.cs가 Resources/Kit/Ch1/이름으로 불러 조립)
             ("Kit_Wall", 4f, 0f, 'w', KitDir, "Wall"),
             ("Kit_Cliff", 4f, 0f, 'w', KitDir, "Cliff"),
@@ -51,8 +56,9 @@ namespace CatTang.EditorTools
             { "Ch1_Outlaw_Plus", ("revolver", 0.9f, null, 0, false) },
             { "Ch1_Brute", ("charges", 1.0f, "swings", 0.8f, false) },
             { "Ch1_Brute_Plus", ("charges", 0.9f, "swings", 0.7f, false) },
-            { "Ch1_Bomber", ("shakes", 0.8f, null, 0, true) },
-            { "Ch1_Bomber_Plus", ("shakes", 0.7f, null, 0, true) },
+            // 폭탄병 Special = 점프(웅크림 0.35 → 체공 0.55 → 착지). 클립은 MakeJumpClip이 근육 커브로 만듦 (Enemy.BomberCrouch · BomberAir와 맞춤)
+            { "Ch1_Bomber", ("shakes", 0.8f, "bomberjump", 1.0f, true) },
+            { "Ch1_Bomber_Plus", ("shakes", 0.7f, "bomberjump", 1.0f, true) },
             { "Ch1_MidBoss", ("shotgun", 1.0f, "revolver", 1.2f, false) },
             { "Ch1_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
         };
@@ -62,6 +68,7 @@ namespace CatTang.EditorTools
         {
             Directory.CreateDirectory(OutDir);
             Directory.CreateDirectory(KitDir);
+            MakeJumpClip();
             int made = 0;
             foreach (var m in Models)
                 if (Build(m.name, m.size, m.yaw, m.fit, m.outDir, m.outName)) made++;
@@ -182,7 +189,88 @@ namespace CatTang.EditorTools
             foreach (var guid in AssetDatabase.FindAssets("t:Model", dirs))
                 foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)))
                     if (o is AnimationClip c && !c.name.StartsWith("__preview") && c.name.ToLower().Contains(key) && c.isHumanMotion) return c;
+            // 에디터에서 만든 .anim (MakeJumpClip 등)
+            foreach (var guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { SrcDir.TrimEnd('/') }))
+            {
+                var p = AssetDatabase.GUIDToAssetPath(guid);
+                if (!p.EndsWith(".anim")) continue;
+                var c = AssetDatabase.LoadAssetAtPath<AnimationClip>(p);
+                if (c && c.name.ToLower().Contains(key)) return c;
+            }
             return null;
+        }
+
+        // ---------- 점프 클립 (휴머노이드 근육 커브로 직접 만듦) ----------
+        const string JumpPath = SrcDir + "Anim/Ch1_BomberJump.anim";
+
+        // 시각(초) 별 자세. 0~0.35 웅크림 · 0.38 이륙(다리 쭉, 팔 위로) · 0.5~0.75 공중 웅크림(무릎 당김) · 0.9 착지 웅크림 · 1.0 유지
+        // 값: 윗다리 앞뒤(+ = 앞으로 굽힘) · 아랫다리 펴기(+ = 쭉) · 발(+ = 발끝 듦) · 척추 앞뒤(+ = 숙임) · 팔 위아래(+ = 위) · 팔 앞뒤(+ = 앞) · 팔꿈치 펴기 · 몸 높이 변화(RootT.y)
+        static readonly (float t, float uLeg, float lLeg, float foot, float spine, float armUp, float armFwd, float fore, float dy)[] JumpKeys =
+        {
+            (0.00f, 0.60f,  0.90f,  0.10f,  0.05f, -0.40f,  0.25f, 0.65f,  0.00f),
+            (0.30f, 1.05f, -0.45f,  0.45f,  0.55f, -0.75f, -0.55f, 0.55f, -0.22f),   // 깊이 웅크리고 팔을 뒤로
+            (0.35f, 1.05f, -0.45f,  0.45f,  0.55f, -0.75f, -0.60f, 0.55f, -0.22f),
+            (0.42f, 0.10f,  1.10f, -0.70f, -0.15f,  0.80f,  0.60f, 0.85f,  0.08f),   // 이륙: 몸을 쭉 펴고 팔을 머리 위로
+            (0.55f, 1.20f, -0.75f,  0.25f,  0.45f,  0.35f,  0.55f, 0.25f,  0.05f),   // 공중: 무릎을 가슴으로 당겨 몸을 공처럼
+            (0.75f, 1.15f, -0.65f,  0.25f,  0.40f,  0.45f,  0.50f, 0.30f,  0.05f),
+            (0.86f, 0.55f,  0.60f, -0.25f,  0.10f,  0.60f,  0.30f, 0.70f,  0.00f),   // 착지 직전: 다리를 뻗어 바닥을 찾음
+            (0.92f, 1.05f, -0.50f,  0.45f,  0.60f, -0.30f,  0.40f, 0.50f, -0.24f),   // 착지: 쿵 웅크림
+            (1.00f, 0.95f, -0.30f,  0.40f,  0.50f, -0.35f,  0.35f, 0.55f, -0.18f),
+        };
+
+        [MenuItem("CatTang/폭탄병 점프 클립 만들기")]
+        public static AnimationClip MakeJumpClip()
+        {
+            // 바탕 자세 = 고양이 idle 첫 프레임 (손가락 · 머리 · 발 IK 등 나머지 커브를 그대로 채움)
+            AnimationClip idle = null;
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
+                if (o is AnimationClip c && c.name == "idle") idle = c;
+            if (!idle) { Debug.LogWarning("[EnemyModelBuilder] 고양이 idle 클립 없음 — 점프 클립 못 만듦"); return null; }
+            Directory.CreateDirectory(SrcDir + "Anim");
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(JumpPath);
+            if (!clip) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, JumpPath); }
+            clip.ClearCurves();
+            clip.name = "Ch1_BomberJump";
+            float end = JumpKeys[JumpKeys.Length - 1].t;
+            foreach (var b in AnimationUtility.GetCurveBindings(idle))
+            {
+                float v0 = AnimationUtility.GetEditorCurve(idle, b).Evaluate(0.3f);
+                var curve = KeysFor(b.propertyName, v0);
+                if (curve == null) curve = new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
+                AnimationUtility.SetEditorCurve(clip, b, curve);
+            }
+            var s = new AnimationClipSettings { loopTime = false, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end };
+            AnimationUtility.SetAnimationClipSettings(clip, s);
+            EditorUtility.SetDirty(clip);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[EnemyModelBuilder] {JumpPath} ({end}초)");
+            return clip;
+        }
+
+        /// <summary>근육 이름에 맞는 키 곡선 (해당 없으면 null → 바탕 자세 유지). 좌우는 같게, 팔 · 다리 비대칭은 조금만</summary>
+        static AnimationCurve KeysFor(string prop, float baseV)
+        {
+            System.Func<(float t, float uLeg, float lLeg, float foot, float spine, float armUp, float armFwd, float fore, float dy), float> pick = null;
+            bool left = prop.StartsWith("Left");
+            if (prop.EndsWith("Upper Leg Front-Back")) pick = k => k.uLeg + (left ? 0.05f : -0.05f);
+            else if (prop.EndsWith("Lower Leg Stretch")) pick = k => k.lLeg;
+            else if (prop.EndsWith("Foot Up-Down")) pick = k => k.foot;
+            else if (prop == "Spine Front-Back") pick = k => k.spine * 0.5f;
+            else if (prop == "Chest Front-Back") pick = k => k.spine * 0.35f;
+            else if (prop == "UpperChest Front-Back") pick = k => k.spine * 0.25f;
+            else if (prop == "Head Nod Down-Up") pick = k => -k.spine * 0.4f;      // 숙여도 고개는 앞을 봄
+            else if (prop.EndsWith("Arm Down-Up")) pick = k => k.armUp;
+            else if (prop.EndsWith("Arm Front-Back")) pick = k => k.armFwd;
+            else if (prop.EndsWith("Forearm Stretch")) pick = k => k.fore;
+            else if (prop.EndsWith("Shoulder Down-Up")) pick = k => k.armUp > 0.3f ? 0.3f : -0.2f;
+            else if (prop == "RootT.y") pick = k => baseV + k.dy;
+            if (pick == null) return null;
+            var keys = new Keyframe[JumpKeys.Length];
+            for (int i = 0; i < JumpKeys.Length; i++) keys[i] = new Keyframe(JumpKeys[i].t, pick(JumpKeys[i]));
+            var c = new AnimationCurve(keys);
+            for (int i = 0; i < keys.Length; i++) AnimationUtility.SetKeyLeftTangentMode(c, i, AnimationUtility.TangentMode.ClampedAuto);
+            for (int i = 0; i < keys.Length; i++) AnimationUtility.SetKeyRightTangentMode(c, i, AnimationUtility.TangentMode.ClampedAuto);
+            return c;
         }
 
         static AnimatorController MakeController(string outName, (string atk, float atkDur, string sp, float spDur, bool atkLoop) spec)
@@ -252,7 +340,7 @@ namespace CatTang.EditorTools
             // 1장 팔레트: 황혼 보라 그림자 + 금빛 테두리
             m.SetColor("_ShadeColor", new Color(0.72f, 0.58f, 0.66f));
             m.SetColor("_SecondShadeColor", new Color(0.45f, 0.34f, 0.46f));
-            if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", 2.5f);
+            if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", 4f);   // 2026-11-16 사용자: 외곽선 두껍게
             if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.5f);
             EditorUtility.SetDirty(m);
             return m;

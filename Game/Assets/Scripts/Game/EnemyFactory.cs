@@ -74,6 +74,9 @@ namespace CatTang
             e.name += "_Plus";
             e.GetComponent<Health>().maxHp *= 1.5f;
             var model = e.transform.Find("Model");
+            // 강화형 모델은 기본보다 10~20% 큼 (EnemyModelBuilder 키 표) → 몸 판정도 같이
+            var col = e.GetComponent<CapsuleCollider>();
+            if (col) { col.radius *= 1.15f; col.height *= 1.15f; col.center = new Vector3(0, col.height / 2, 0); }
             if (plusModel || !model) return;
             model.localScale *= 1.12f;
             foreach (var r in model.GetComponentsInChildren<Renderer>())
@@ -88,7 +91,7 @@ namespace CatTang
         // 태엽 무법자: 원거리 · 이속 2.6 · 2초마다 1발(예고 0.5초) · 피해 8 · 내구 24
         public static Enemy Outlaw(Vector3 pos, ChapterDef ch, bool elite = false)
         {
-            var e = Root("Enemy_Outlaw", pos, 24 * ch.HpMul, Enemy.Kind.Outlaw, 0.45f, 1.7f);
+            var e = Root("Enemy_Outlaw", pos, 24 * ch.HpMul, Enemy.Kind.Outlaw, 0.55f, 2.6f);
             if (!AttachModelFor(e, "Ch1_Outlaw", elite, out bool plus))
             {
                 var m = ProtoModel(e);
@@ -108,7 +111,7 @@ namespace CatTang
         // 시계추 깡패: 돌진 근접 · 이속 3.4 · 돌진 예고 0.6초 · 피해 12 · 내구 48
         public static Enemy Brute(Vector3 pos, ChapterDef ch, bool elite = false)
         {
-            var e = Root("Enemy_Brute", pos, 48 * ch.HpMul, Enemy.Kind.Brute, 0.75f, 2.1f);
+            var e = Root("Enemy_Brute", pos, 48 * ch.HpMul, Enemy.Kind.Brute, 0.95f, 2.7f);
             if (!AttachModelFor(e, "Ch1_Brute", elite, out bool plus))
             {
                 var m = ProtoModel(e);
@@ -126,7 +129,7 @@ namespace CatTang
         // 모래시계 폭탄병: 자폭 · 이속 4.5 · 붙으면 0.8초 점멸 후 반경 2m 폭발 · 피해 12 · 내구 16
         public static Enemy Bomber(Vector3 pos, ChapterDef ch, bool elite = false)
         {
-            var e = Root("Enemy_Bomber", pos, 16 * ch.HpMul, Enemy.Kind.Bomber, 0.4f, 1.3f);
+            var e = Root("Enemy_Bomber", pos, 16 * ch.HpMul, Enemy.Kind.Bomber, 0.6f, 1.75f);
             if (!AttachModelFor(e, "Ch1_Bomber", elite, out bool plus))
             {
                 var m = ProtoModel(e);
@@ -144,7 +147,7 @@ namespace CatTang
         // 1장 중간 보스: 태엽 현상금 사냥꾼 · 체력 1080 · 이속 4
         public static Enemy MidBoss(Vector3 pos, ChapterDef ch)
         {
-            var e = Root("MidBoss_BountyHunter", pos, 1080 * ch.HpMul, Enemy.Kind.Boss, 0.9f, 2.8f);
+            var e = Root("MidBoss_BountyHunter", pos, 1080 * ch.HpMul, Enemy.Kind.Boss, 1.3f, 3.8f);
             if (!AttachModel(e, "Ch1_MidBoss"))
             {
                 var m = ProtoModel(e);
@@ -168,7 +171,7 @@ namespace CatTang
         {
             var body = M(Color.Lerp(new Color(0.88f, 0.78f, 0.58f), ch.Wall, 0.35f), 6f);
             var gold = M(new Color(0.95f, 0.7f, 0.25f), 5f);
-            var e = Root("Boss_" + ch.BossPattern, pos, ch.BossHp, Enemy.Kind.Boss, 1.5f, 4f);
+            var e = Root("Boss_" + ch.BossPattern, pos, ch.BossHp, Enemy.Kind.Boss, 2.4f, 6.2f);
             // 1장 보스는 Tripo 모델(녹은 시계 거인)이 있으면 그걸로. 바늘(Hand)은 판정 · 방향용으로 남기되 안 보이게
             bool modeled = ch.Id == 1 && AttachModel(e, "Ch1_Boss");
             if (!modeled)

@@ -272,7 +272,7 @@ namespace CatTang
         {
             if (Time.time - lastJustDodge < 0.5f) return;
             lastJustDodge = Time.time;
-            FxBurst.Spawn(transform.position + Vector3.up, 2f, FxBurst.Kind.Gold, new Color(0.7f, 0.55f, 1f));
+            GunkataFx.DodgeBurst(transform.position, new Color(0.72f, 0.5f, 1f), true);   // 닷지 액션: 바닥 고리 두 겹 · 몸 감싸는 고리 · 사방 빛살 (3D)
             // 닷지 액션: 치명타 보정 + 주변 시간 느려짐
             dodgeCritUntil = Time.time + DodgeCritTime;
             Afterimage.Spawn(model, SilDodge);
@@ -303,7 +303,7 @@ namespace CatTang
 
         void ChanceDodge()
         {
-            FxBurst.Spawn(transform.position + Vector3.up, 1.6f, FxBurst.Kind.Gold, new Color(0.4f, 0.95f, 0.85f));
+            GunkataFx.DodgeBurst(transform.position, new Color(0.35f, 0.95f, 0.85f), false);
             foreach (var e in Effects.Global(this, "OnChanceDodge"))
                 if (e.Type == "BulletRefund" && Effects.Roll(e)) Refund();
         }
@@ -336,7 +336,7 @@ namespace CatTang
                 nextFireTime = Time.time + 0.06f;
                 OnFired?.Invoke(s, false);
             }
-            if (refund) { FxBurst.Spawn(transform.position + Vector3.up * 1.2f, 1.2f, FxBurst.Kind.Gold, new Color(0.4f, 0.95f, 0.85f)); return; }
+            if (refund) { GunkataFx.Flare(transform.position + Vector3.up * 1.2f, 1.2f, new Color(0.4f, 0.95f, 0.85f)); return; }
             rev.shotsThisCycle++;
             rev.next = rev.reversed ? rev.next - 1 : rev.next + 1;
             if (rev.shotsThisCycle >= 12 || rev.next < 1 || rev.next > 12) StartReload();
@@ -366,7 +366,7 @@ namespace CatTang
                         {
                             Health.GlobalStopUntil = Time.time + Mathf.Max(0.5f, e.Duration) * ControlDurationMul;
                             globalStopReady = Time.time + (e.Value2 > 0 ? e.Value2 : 20f);
-                            FxBurst.Spawn(transform.position + Vector3.up, 9f, FxBurst.Kind.Gold, new Color(0.6f, 0.75f, 1f));
+                            GunkataFx.Flare(transform.position + Vector3.up, 9f, new Color(0.6f, 0.75f, 1f));
                         }
                         break;
                 }
@@ -462,7 +462,7 @@ namespace CatTang
                 end = h.point;
                 if (pierced >= pierce) break;
                 pierced++;
-                FxBurst.Spawn(h.point, 1.0f, FxBurst.Kind.Spark, col);          // 관통 불꽃
+                GunkataFx.HitImpact(h.point, dir, col, false, 1f, true);          // 관통 불꽃 (3D)
                 foreach (var e in Effects.For(this, s, "OnPierce")) if (e.Type == "PierceDamageGrowth") dmg *= 1 + e.Value;
             }
             bool resonance = !ghost && awake && b != null && b.Id != 1000;
@@ -470,7 +470,7 @@ namespace CatTang
             if (resonance)
             {
                 // 공명 사격: 금빛 섬광 + 맞은 자리 탄 색 폭발(피해 30%) + 화면 흔들림
-                FxBurst.Spawn(origin + dir * 0.5f, 1.8f, FxBurst.Kind.Gold, col);
+                GunkataFx.Flare(origin + dir * 0.5f, 1.8f, col);
                 if (hitSet.Count > 0) Effects.Explosion(end, 2f, dmg * 0.3f, col);
                 CameraFollow.Shake(b.Grade == "Legendary" ? 0.22f : b.Grade == "Epic" ? 0.16f : 0.1f);
             }
@@ -485,7 +485,7 @@ namespace CatTang
                 foreach (var e in Effects.For(this, s, "OnRicochet")) if (e.Type == "DamageAddStack") stack += e.Value;
                 var to = next.transform.position + Vector3.up * 0.9f;
                 Tracer.Spawn(from, to, col, BulletLook.Width(b, awake) * 0.8f, false);
-                FxBurst.Spawn(from, 0.9f, FxBurst.Kind.Spark, col);
+                GunkataFx.HitImpact(from, (to - from).normalized, col, false, 1f, true);
                 hitSet.Add(next.health);
                 ApplyHit(s, next.health, dmg * (1 + stack), to, Vector3.Distance(transform.position, to), (to - from).normalized, col, crit);
                 from = to;
@@ -517,8 +517,9 @@ namespace CatTang
             bool wasLocked = target.TimeLocked;
             target.TakeDamage(dmg);
             rev.AddHeat(HeatPerHit);
-            FxBurst.Spawn(point, crit ? 1.6f : 1.1f, FxBurst.Kind.Hit, col);
-            if (crit) { FxBurst.Spawn(point + Vector3.up * 0.2f, 1.5f, FxBurst.Kind.Crit, Color.white); CameraFollow.Shake(0.05f); }
+            // 타격 이펙트 (3D 툰 불꽃, 탄 색): 섬광 덩어리 + 튀는 가시 + 충격 고리, 치명타는 금빛 네 갈래 별 + 큰 고리
+            GunkataFx.HitImpact(point, dir, col, crit);
+            if (crit) CameraFollow.Shake(0.07f);
             bool killed = !target.Alive;
             var en = target.GetComponent<Enemy>();
 
@@ -668,7 +669,7 @@ namespace CatTang
             if (perfect)
             {
                 perfectBuff = true;
-                FxBurst.Spawn(transform.position + Vector3.up, 2.2f, FxBurst.Kind.Gold, new Color(1f, 0.85f, 0.4f));
+                GunkataFx.Flare(transform.position + Vector3.up, 2.2f, new Color(1f, 0.85f, 0.4f));
                 foreach (var e in Effects.Global(this, "OnPerfectReload"))
                     if (e.Type == "Stun") Effects.AreaStun(transform.position, e.Value2 > 0 ? e.Value2 : 5f, Mathf.Max(0.3f, e.Duration) * ControlDurationMul);
             }
