@@ -164,6 +164,8 @@ namespace CatTang
         {
             if (!Init()) return;
             System.Func<FxMesh, FxMesh> T = f => f && tint.HasValue ? f.Tint(tint.Value) : f;
+            // 블렌더로 구운 불꽃 · 연기 · 불똥 플립북 프리팹 (반경 2m 기준으로 맞춤)
+            FxEffect.Spawn("FX_Explosion", p, Quaternion.identity, radius / 2f, tint);
             float r = Mathf.Max(0.5f, radius);
             var up = Vector3.up;
             // 1) 섬광 덩어리: 한가운데에서 하얗게 펑
@@ -409,7 +411,10 @@ namespace CatTang
         /// <summary>회색 연기 뭉치</summary>
         public static void Smoke(Vector3 at, float size, float life = 0.9f)
         {
-            if (!Init() || smokeMats.Length == 0) return;
+            if (!Init()) return;
+            // 블렌더로 구운 툰 연기 플립북(bk_smoke)이 있으면 그걸로 (뭉게구름이 피어올라 녹아 흩어짐)
+            if (FxFlipbook.Spawn("bk_smoke", at, Vector3.zero, size * 1.1f, life * 1.1f, false, Vector3.up * 0.6f + Random.insideUnitSphere * 0.3f, Random.Range(0f, 360f))) return;
+            if (smokeMats.Length == 0) return;
             FxSprite.Spawn(smokeMats[Random.Range(0, smokeMats.Length)], at, size, life, 0, Vector3.up * 0.5f + Random.insideUnitSphere * 0.4f, FxSprite.Style.Smoke);
         }
 
@@ -453,6 +458,8 @@ namespace CatTang
         float roll;
 
         public static int Count(string set) => Load(set).Length;
+        /// <summary>프레임 재질들 (FX/anim/set_0~N, 블렌더로 구운 bk_* 포함)</summary>
+        public static Material[] Frames(string set) => Load(set);
 
         static Material[] Load(string set)
         {

@@ -16,6 +16,9 @@ namespace CatTang
         [Tooltip("크기 · 수명 · 방향을 이만큼 무작위로 흔듦 (0~1)")] [Range(0, 1)] public float jitter = 0.15f;
         [Tooltip("카메라 보는 조각을 화면에서 무작위로 돌림")] public bool randomRoll = true;
         [Tooltip("탄 색을 입힘 (false = 재질 색 그대로, 예: 치명타 금빛)")] public bool useTint = true;
+        [Tooltip("블렌더로 구운 플립북 (Resources/FX/anim/이름_0~N, 예: bk_fire). 지정하면 카메라를 보는 판에 수명 동안 프레임을 차례로 재생")]
+        public string flipSet = "";
+        [Tooltip("플립북: 수명 동안 커지는 비율 (1 = 그대로)")] public float flipGrow = 1.15f;
 
         MeshRenderer mr;
         MaterialPropertyBlock mpb;
@@ -26,12 +29,28 @@ namespace CatTang
 
         public float EndTime => delay + life * 1.2f;
 
+        Material[] frames;
+        static readonly int ColorId = Shader.PropertyToID("_Color");
+
         public void Begin(Color? tint)
         {
             mr = GetComponent<MeshRenderer>();
             mpb = new MaterialPropertyBlock();
-            mpb.SetFloat(FxMesh.SeedId, Random.Range(0f, 100f));
-            if (tint.HasValue && useTint) FxTint.Apply(mpb, tint.Value);
+            if (!string.IsNullOrEmpty(flipSet))
+            {
+                frames = FxFlipbook.Frames(flipSet);
+                var mf = GetComponent<MeshFilter>();
+                if (mf) mf.sharedMesh = GunkataFx.Quad;
+                if (frames.Length > 0) mr.sharedMaterial = frames[0];
+                billboard = true;
+                // 구운 그림은 제 색이 있으므로 탄 색은 절반만 섞음
+                mpb.SetColor(ColorId, tint.HasValue && useTint ? Color.Lerp(Color.white, tint.Value, 0.5f) : Color.white);
+            }
+            else
+            {
+                mpb.SetFloat(FxMesh.SeedId, Random.Range(0f, 100f));
+                if (tint.HasValue && useTint) FxTint.Apply(mpb, tint.Value);
+            }
             float j = jitter;
             baseScale = transform.localScale * Random.Range(1 - j, 1 + j);
             lifeK = Random.Range(1 - j * 0.5f, 1 + j * 0.5f);
@@ -63,6 +82,16 @@ namespace CatTang
         {
             mr.enabled = t >= 0;
             if (t < 0) { transform.localScale = Vector3.zero; return; }
+            var cam0 = Camera.main;
+            if (frames != null && frames.Length > 0)
+            {
+                // 플립북: 프레임을 차례로, 조금씩 커짐
+                mr.sharedMaterial = frames[Mathf.Min(frames.Length - 1, (int)(t * frames.Length))];
+                transform.localScale = baseScale * Mathf.Lerp(1f, flipGrow, t);
+                if (cam0) transform.rotation = Quaternion.LookRotation(cam0.transform.forward, cam0.transform.up) * Quaternion.Euler(0, 0, roll);
+                mr.SetPropertyBlock(mpb);
+                return;
+            }
             FxMesh.Evaluate(kind, baseScale, t, out var sc, out float heat, out float dis);
             transform.localScale = sc;
             var cam = Camera.main;
