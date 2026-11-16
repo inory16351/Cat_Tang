@@ -51,8 +51,8 @@ namespace CatTang.EditorTools
             { "Ch1_Outlaw_Plus", ("revolver", 0.9f, null, 0, false) },
             { "Ch1_Brute", ("charges", 1.0f, "swings", 0.8f, false) },
             { "Ch1_Brute_Plus", ("charges", 0.9f, "swings", 0.7f, false) },
-            { "Ch1_Bomber", ("explode", 0.8f, null, 0, true) },
-            { "Ch1_Bomber_Plus", ("explode", 0.7f, null, 0, true) },
+            { "Ch1_Bomber", ("shakes", 0.8f, null, 0, true) },
+            { "Ch1_Bomber_Plus", ("shakes", 0.7f, null, 0, true) },
             { "Ch1_MidBoss", ("shotgun", 1.0f, "revolver", 1.2f, false) },
             { "Ch1_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
         };
@@ -67,6 +67,25 @@ namespace CatTang.EditorTools
                 if (Build(m.name, m.size, m.yaw, m.fit, m.outDir, m.outName)) made++;
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            // 같은 호출에서 막 만든 컨트롤러는 프리팹 저장 때 참조가 빠질 때가 있어, 저장된 컨트롤러를 다시 연결
+            foreach (var m in Models)
+            {
+                string pp = m.outDir + m.outName + ".prefab";
+                var ctrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(SrcDir + m.outName + ".controller");
+                if (!ctrl || !Anims.ContainsKey(m.outName) || !AssetDatabase.LoadAssetAtPath<GameObject>(pp)) continue;
+                var contents = PrefabUtility.LoadPrefabContents(pp);
+                var an = contents.GetComponentInChildren<Animator>();
+                if (an) { an.runtimeAnimatorController = ctrl; PrefabUtility.SaveAsPrefabAsset(contents, pp); }
+                PrefabUtility.UnloadPrefabContents(contents);
+            }
+            AssetDatabase.SaveAssets();
+            // 컨트롤러 · 프리팹을 강제로 다시 가져와야 참조가 풀림 (안 하면 실행 중에 컨트롤러가 비어 보임)
+            foreach (var m in Models)
+            {
+                if (!Anims.ContainsKey(m.outName)) continue;
+                AssetDatabase.ImportAsset(SrcDir + m.outName + ".controller", ImportAssetOptions.ForceUpdate);
+                AssetDatabase.ImportAsset(m.outDir + m.outName + ".prefab", ImportAssetOptions.ForceUpdate);
+            }
             Debug.Log($"[EnemyModelBuilder] 프리팹 {made}/{Models.Length}개");
         }
 
@@ -102,7 +121,9 @@ namespace CatTang.EditorTools
             var avatar = HumanAvatar(src);
             if (avatar && Anims.TryGetValue(outName, out var spec))
             {
-                var anim = inst.GetComponent<Animator>() ?? inst.AddComponent<Animator>();
+                // ??는 유니티의 '가짜 null'(없는 컴포넌트)을 걸러내지 못하므로 명시적으로 확인
+                var anim = inst.GetComponent<Animator>();
+                if (!anim) anim = inst.AddComponent<Animator>();
                 anim.avatar = avatar;
                 anim.applyRootMotion = false;
                 anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -166,9 +187,14 @@ namespace CatTang.EditorTools
 
         static AnimatorController MakeController(string outName, (string atk, float atkDur, string sp, float spDur, bool atkLoop) spec)
         {
+            // 지웠다 새로 만들면 GUID가 바뀌어 프리팹 참조가 끊김 → 있으면 그 자산을 비우고 다시 채움
             string path = SrcDir + outName + ".controller";
-            AssetDatabase.DeleteAsset(path);
-            var ctrl = AnimatorController.CreateAnimatorControllerAtPath(path);
+            var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+            if (!ctrl) ctrl = AnimatorController.CreateAnimatorControllerAtPath(path);
+            foreach (var prm in ctrl.parameters) ctrl.RemoveParameter(prm);
+            var old = ctrl.layers[0].stateMachine;
+            foreach (var cs in old.states) old.RemoveState(cs.state);
+            foreach (var at in old.anyStateTransitions) old.RemoveAnyStateTransition(at);
             ctrl.AddParameter("Speed", AnimatorControllerParameterType.Float);
             ctrl.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
             ctrl.AddParameter("Special", AnimatorControllerParameterType.Trigger);
