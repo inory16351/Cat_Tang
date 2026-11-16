@@ -113,7 +113,6 @@ function makeDeck(docTitle, footer, sections) {
     D.chip(s, ver, 11.65, 5.32, 1.0, RED, TXT, { size: 12 });
     text(s, sub, { x: 7.7, y: 5.82, w: 5.0, h: 0.4, fontSize: 15, color: MUTED });
     text(s, `작성 ${AUTHOR} · ${DATE}`, { x: 7.7, y: 6.3, w: 4.6, h: 0.3, fontSize: 13 });
-    text(s, "이미지는 모두 컨셉 시안", { x: 7.7, y: 6.62, w: 4.6, h: 0.3, fontSize: 11, color: MUTED });
     return s;
   };
   D.toc = (sideImg) => {
@@ -165,7 +164,7 @@ function buildCommon() {
   const ROOM = has("ch1/ch1_room.jpg") ? "ch1/ch1_room.jpg" : "02_ingame.png";
 
   const cv = D.cover("v2/1159v2_03_chapters.png", "공통 레벨 디자인 기획서", "챕터 · 스테이지 · 전투방 · 보스 공통 규칙", "Ver 01");
-  cv.addNotes("모든 챕터에 똑같이 적용하는 규칙만 정리. 챕터별 내용은 챕터 기획서(1장 기획서부터)에서 따로 다룸");
+  cv.addNotes("모든 챕터에 공통으로 적용하는 규칙. 챕터별 내용은 각 챕터 기획서(1장 기획서부터)에서 정리");
   D.toc("v2/1159v2_03_chapters.png");
 
   // 01 의도
@@ -175,9 +174,9 @@ function buildCommon() {
     picture(s, ROOM, 0.6, 1.6, 7.3, 4.1, "전투방 컨셉");
     caption(s, "1장 전투방 컨셉 시안 (서부 거리)", 0.6, 5.78, 7.3);
     const goals = [
-      ["판마다 새로운 전투", "직접 짠 전투방을 판마다 무작위로 뽑고,\n화약통 · 엄폐물 자리도 매번 달라짐", GOLD],
-      ["읽고 피하는 전투", "모든 공격에 예고 존재 · 몸통 접촉 피해 없음\n→ 맞더라도 내 실수라고 납득할 수 있게", TEAL],
-      ["갈수록 녹아내리는 세계", "챕터가 진행될수록 초현실 · 몽환 느낌을 강조\n→ 강해진 적을 눈으로 먼저 전달", RED],
+      ["판마다 새로운 전투", "절차적으로 생성한 전투방을 판마다 무작위로 선택\n화약통 · 엄폐물 위치도 판마다 변경", GOLD],
+      ["읽고 피하는 전투", "모든 공격에 예고 모션 / 몸통 접촉 피해 없음\n→ 맞아도 내 실수라고 납득할 수 있는 전투", TEAL],
+      ["갈수록 녹아내리는 세계", "뒤 챕터일수록 초현실 · 몽환 분위기 강화\n→ 적이 강해졌다는 것을 겉모습으로 먼저 전달", RED],
     ];
     goals.forEach((g, i) => {
       const y = 1.6 + i * 1.4;
@@ -187,7 +186,7 @@ function buildCommon() {
       text(s, g[1], { x: 8.4, y: y + 0.5, w: 4.2, h: 0.7, fontSize: 12.5, lineSpacingMultiple: 1.1 });
     });
     card(s, 8.15, 5.85, 4.55, 1.0, PURPLE);
-    text(s, [{ text: "목표  ", options: { bold: true, color: GOLD } }, { text: "판마다 다른 상황에 맞춰 빌드를 짜고, 그 빌드를 시험해 보게 만드는 것" }], { x: 8.4, y: 5.85, w: 4.15, h: 1.0, fontSize: 13, valign: "middle" });
+    text(s, [{ text: "목표  ", options: { bold: true, color: GOLD } }, { text: "판마다 다른 상황에 맞춰 빌드를 짜고 시험하는 플레이" }], { x: 8.4, y: 5.85, w: 4.15, h: 1.0, fontSize: 13, valign: "middle" });
   }
 
   // 02 챕터 구조
@@ -204,12 +203,12 @@ function buildCommon() {
       if (i < 4) arrow(s, x + 2.27, 5.3, 0.16, GOLD);
     });
     bullets(s, [
-      "고양이 사수의 컨셉을 살려 서부극 배경에서 출발",
-      "뒤 챕터로 갈수록 초현실 · 몽환 느낌을 강하게 → 강해진 적을 시각적으로 전달",
+      "고양이 사수 컨셉에 맞춰 서부극 배경에서 시작",
+      "뒤 챕터일수록 초현실 · 몽환 분위기 강화 → 적이 강해졌다는 것을 시각적으로 전달",
     ], { x: 0.6, y: 6.0, w: 12.1, h: 0.85, fontSize: 14 });
   }
   {
-    const s = content(2, "1개 챕터 구성");
+    const s = content(2, "챕터 하나의 구성");
     const seq = [["스테이지 1", PURPLE], ["스테이지 2", PURPLE], ["중간 보스", "8C3A50"], ["스테이지 3", PURPLE], ["스테이지 4", PURPLE], ["보스", RED]];
     seq.forEach((q, i) => {
       const x = 0.6 + i * 2.06;
@@ -223,10 +222,10 @@ function buildCommon() {
     s.addShape(pres.shapes.LINE, { x: 6.78, y: 2.9, w: 3.78, h: 0, line: { color: GOLD, width: 1.5 } });
     text(s, "강화형 하수인", { x: 6.78, y: 2.98, w: 3.78, h: 0.3, fontSize: 12, color: GOLD, align: "center" });
     const parts = [
-      ["스테이지", "전투방 3~4개로 구성\n모든 적을 처치하면 클리어 후 보상", PURPLE],
+      ["스테이지", "전투방 3~4개로 구성\n모든 적 처치 시 클리어 · 보상 지급", PURPLE],
       ["중간 보스", "챕터마다 하나\n스테이지 2와 3 사이의 별도 방에서 등장", "8C3A50"],
       ["보스", "챕터 출구를 지키는 시간의 존재\n쓰러뜨리면 다음 챕터로 이동", RED],
-      ["일반 적", "시간의 하수인\n챕터 테마에 맞춰 모습과 형태가 바뀜", LAV],
+      ["일반 몬스터", "시간의 하수인\n챕터 테마에 맞춰 외형 변경", LAV],
     ];
     parts.forEach((p, i) => {
       const x = 0.6 + (i % 2) * 6.1, y = 3.6 + Math.floor(i / 2) * 1.62;
@@ -241,7 +240,7 @@ function buildCommon() {
   pres.addSection({ title: SEC[2] });
   {
     const s = content(3, "스테이지: 일직선으로 이어진 전투방");
-    text(s, "1개 스테이지", { x: 0.6, y: 1.6, w: 4, h: 0.35, fontSize: 15, bold: true, color: GOLD });
+    text(s, "스테이지 흐름", { x: 0.6, y: 1.6, w: 4, h: 0.35, fontSize: 15, bold: true, color: GOLD });
     ["전투방", "전투방", "전투방", "(전투방)"].forEach((t, i) => {
       const x = 0.6 + i * 1.75;
       card(s, x, 2.05, 1.45, 0.85, CARD, { line: i === 3 ? LAV : undefined });
@@ -252,7 +251,7 @@ function buildCommon() {
     text(s, "클리어 · 보상", { x: 7.6, y: 2.05, w: 1.75, h: 0.85, fontSize: 14, bold: true, color: BG, align: "center", valign: "middle" });
     caption(s, "갈림길 없이 한 줄로 연결 · 보상은 스테이지 끝에서만 지급", 0.6, 3.0, 9);
 
-    text(s, "1개 전투방", { x: 0.6, y: 3.55, w: 4, h: 0.35, fontSize: 15, bold: true, color: GOLD });
+    text(s, "전투방 흐름", { x: 0.6, y: 3.55, w: 4, h: 0.35, fontSize: 15, bold: true, color: GOLD });
     const waves = [["웨이브 1", PURPLE, TXT], ["예고 1초", FLOOR, MUTED], ["웨이브 2", PURPLE, TXT], ["예고 1초", FLOOR, MUTED], ["(웨이브 3)", CARD, MUTED], ["방 클리어", TEAL, BG]];
     waves.forEach((w, i) => {
       const x = 0.6 + i * 1.47;
@@ -261,9 +260,9 @@ function buildCommon() {
       if (i < 5) arrow(s, x + 1.27, 4.35, 0.18, GOLD);
     });
     bullets(s, [
-      "방마다 웨이브 2~3번 · 한 무리를 다 잡으면 다음 무리가 예고 후 등장",
-      "웨이브당 적 수는 스테이지가 뒤로 갈수록 증가",
-      "방 크기는 1.5~2 화면, 카메라가 고양이를 따라 이동",
+      "방마다 웨이브 2~3번 / 현재 웨이브를 모두 처치하면 다음 웨이브가 예고 후 등장",
+      "뒤 스테이지일수록 웨이브당 적 수 증가",
+      "방 크기 1.5~2 화면 / 카메라가 고양이를 따라 이동",
     ], { x: 0.6, y: 5.0, w: 8.8, h: 1.8, fontSize: 14 });
     picture(s, ROOM, 9.7, 1.6, 3.0, 5.25, "전투방 컨셉");
     caption(s, "전투방 컨셉 시안", 9.7, 6.88, 3.0);
@@ -272,7 +271,7 @@ function buildCommon() {
   // 04 전투방 제작 규칙
   pres.addSection({ title: SEC[3] });
   {
-    const s = content(4, "직접 짠 방 + 무작위 배치");
+    const s = content(4, "절차적 생성 방 + 무작위 배치");
     // 탑뷰 방 도식
     const rx = 0.6, ry = 1.65, rw = 6.6, rh = 4.0;
     D.rect(s, rx, ry, rw, rh, FLOOR, { line: LAV, lineW: 1.5 });
@@ -305,14 +304,14 @@ function buildCommon() {
 
     bullets(s, [
       { t: "방 만들기", b: true, c: GOLD },
-      "챕터마다 전투방을 손으로 직접 짜 두고, 판마다 무작위로 뽑아 씀 (하데스 · 스컬 방식)",
-      "스테이지 장소에 어울리는 방 중에서만 뽑음",
+      "챕터마다 전투방을 절차적으로 생성해 두고 판마다 무작위로 선택",
+      "스테이지 장소에 맞는 방 중에서만 선택",
       { t: "지형", b: true, c: GOLD },
-      "모든 방은 평지, 높낮이 없이 장애물로만 구성",
-      "절벽 · 낭떠러지는 장식 → 보이지 않는 벽으로 막아 떨어지지 않음",
+      "모든 방은 높낮이 없는 평지 / 지형 변화는 장애물로만 표현",
+      "절벽 · 낭떠러지는 장식 / 보이지 않는 벽으로 막아 추락 없음",
       { t: "오브젝트", b: true, c: GOLD },
-      "화약통 · 엄폐물은 방마다 후보 자리를 정해 두고 판마다 일부만 채움",
-      "엄폐물은 총에 맞으면 부서짐 · 화약통은 터지면 적과 고양이 모두에게 피해",
+      "화약통 · 엄폐물은 방마다 정해 둔 후보 자리 중 판마다 일부에만 배치",
+      "엄폐물은 총에 맞으면 파괴 / 화약통 폭발은 적과 고양이 모두에게 피해",
     ], { x: 7.5, y: 1.6, w: 5.2, h: 5.2, fontSize: 13.5 });
   }
 
@@ -341,7 +340,7 @@ function buildCommon() {
       });
     });
     bullets(s, [
-      "보상은 스테이지의 마지막 전투방을 비웠을 때 지급",
+      "보상은 스테이지 마지막 전투방 클리어 시 지급",
     ], { x: 0.6, y: 5.65, w: 6.3, h: 1.2, fontSize: 14 });
     // 상인
     card(s, 7.2, 1.65, 5.5, 5.2, CARD, { line: RED, lineW: 1.5 });
@@ -350,8 +349,8 @@ function buildCommon() {
     caption(s, "1장 상인: 바닥에서 솟아오른 술집 카운터", 7.45, 4.52, 5.0);
     bullets(s, [
       "골드로 총탄 / 총 / 연산 판매",
-      "전투방을 비울 때마다 15% 확률로 등장",
-      "챕터당 최소 1번은 등장 보장",
+      "전투방 클리어 시 15% 확률로 등장",
+      "챕터당 최소 1번 등장 보장",
       "챕터마다 다른 모습 (1장: 술집 바텐더)",
     ], { x: 7.45, y: 4.95, w: 5.0, h: 1.8, fontSize: 14 });
   }
@@ -359,10 +358,10 @@ function buildCommon() {
   // 06 적 설계 규칙
   pres.addSection({ title: SEC[5] });
   {
-    const s = content(6, "몸통 접촉 피해 없이, 공격 모션에만 피해");
+    const s = content(6, "몸통 접촉 피해 없음 · 공격 모션에서만 피해");
     // 타임라인
-    text(s, "일반 적 공격 한 번의 흐름", { x: 0.6, y: 1.6, w: 6, h: 0.35, fontSize: 15, bold: true, color: GOLD });
-    const tl = [["이동 · 접근", 3.0, CARD, "닿아도 피해 없음"], ["예고 모션", 3.0, PURPLE, "피해 없음 · 피할 시간"], ["공격", 2.3, RED, "이 순간에만 피해"]];
+    text(s, "일반 몬스터의 공격 흐름", { x: 0.6, y: 1.6, w: 6, h: 0.35, fontSize: 15, bold: true, color: GOLD });
+    const tl = [["이동 · 접근", 3.0, CARD, "닿아도 피해 없음"], ["예고 모션", 3.0, PURPLE, "피해 없음 · 회피 시간"], ["공격", 2.3, RED, "이때만 피해 판정"]];
     let x = 0.6;
     tl.forEach((t) => {
       card(s, x, 2.05, t[1] - 0.08, 0.75, t[2]);
@@ -372,11 +371,11 @@ function buildCommon() {
     });
     bullets(s, [
       { t: "공통 규칙", b: true, c: GOLD },
-      "근접 몬스터도 공격 모션이 있고, 모션이 터지는 순간에만 피해",
+      "근접 몬스터도 공격 모션이 발동하는 순간에만 피해",
       "몸통 접촉 피해 없음 → 적 사이를 지나다녀도 안전",
-      "모든 공격 앞에 예고 모션 존재",
+      "모든 공격 전에 예고 모션",
       { t: "구성", b: true, c: GOLD },
-      "챕터마다 하수인 3종 → 처음부터 섞여 나오고, 뒤로 갈수록 수만 늘어남",
+      "챕터마다 하수인 3종 / 처음부터 섞여서 등장하고 뒤 스테이지일수록 수만 증가",
       "스테이지 3부터(중간 보스 이후)는 전부 강화형으로 교체",
     ], { x: 0.6, y: 3.45, w: 8.0, h: 3.4, fontSize: 14 });
     card(s, 8.9, 1.6, 3.8, 5.25, PURPLE);
@@ -384,17 +383,17 @@ function buildCommon() {
     picture(s, has("ch1/ch1_enemies.jpg") ? "ch1/ch1_enemies.jpg" : "05_zone1_western.png", 9.15, 2.25, 3.3, 1.86, "하수인 컨셉");
     bullets(s, [
       "더 녹아내린 모습",
-      "기존 공격에 공격 하나 추가",
-      "내구 1.5배",
+      "기존 공격에 공격 패턴 하나 추가",
+      "체력 1.5배",
     ], { x: 9.15, y: 4.35, w: 3.3, h: 1.5, fontSize: 14 });
-    text(s, "겉모습만 봐도 강해졌다는 걸 바로 알 수 있게", { x: 9.15, y: 5.75, w: 3.3, h: 0.6, fontSize: 12, color: MUTED });
+    text(s, "겉모습만으로 강화 여부를 바로 알 수 있게", { x: 9.15, y: 5.75, w: 3.3, h: 0.6, fontSize: 12, color: MUTED });
   }
 
   // 07 보스 설계 규칙
   pres.addSection({ title: SEC[6] });
   {
     const s = content(7, "보스 패턴은 세 박자: 예고 → 공격 → 빈틈");
-    const beats = [["예고", "자세 · 소리 · 경고 표시", "기본 0.6초", PURPLE], ["공격", "예고한 그대로 발동", "패턴마다 다름", RED], ["빈틈", "확정된 반격 기회", "기본 0.9초", TEAL]];
+    const beats = [["예고", "자세 · 소리 · 경고 표시", "기본 0.6초", PURPLE], ["공격", "예고한 그대로 발동", "패턴마다 다름", RED], ["빈틈", "확실한 반격 기회", "기본 0.9초", TEAL]];
     beats.forEach((b, i) => {
       const x = 0.6 + i * 4.15;
       card(s, x, 1.65, 3.8, 1.55, b[3]);
@@ -403,18 +402,18 @@ function buildCommon() {
       text(s, b[1], { x: x + 0.3, y: 2.45, w: 3.3, h: 0.5, fontSize: 14 });
       if (i < 2) arrow(s, x + 3.82, 2.42, 0.3, GOLD);
     });
-    caption(s, "패턴별로 따로 정한 시간이 있으면 그 값을 우선", 0.6, 3.28, 8);
+    caption(s, "패턴별로 정한 시간이 있으면 그 값을 우선 적용", 0.6, 3.28, 8);
     bullets(s, [
       { t: "공정함", b: true, c: GOLD },
-      "예고가 시작되면 조준 고정 (예고 뒤에 방향을 틀지 않음)",
+      "예고 시작 시 조준 고정 (예고 후 방향 전환 없음)",
       "몸통 접촉 피해 없음 · 패턴 사이 기습 없음",
-      "빈틈 동안엔 보스가 반격하지 않음",
-      "기본 조작(이동 · 대쉬)만으로 노히트 가능해야 함",
+      "빈틈 동안 보스 반격 없음",
+      "기본 조작(이동 · 대쉬)만으로 노히트 가능",
     ], { x: 0.6, y: 3.75, w: 6.0, h: 3.1, fontSize: 14 });
     bullets(s, [
       { t: "패턴 고르기", b: true, c: GOLD },
-      "고양이와의 거리 · 조건으로 후보를 추린 뒤 가중치 추첨",
-      "직전에 쓴 패턴은 후보에서 제외 → 같은 패턴 연속 금지",
+      "고양이와의 거리 · 조건으로 후보를 추린 뒤 동일 확률로 추첨",
+      "직전 패턴은 후보에서 제외 → 같은 패턴 연속 사용 없음",
     ], { x: 6.9, y: 3.75, w: 5.8, h: 1.6, fontSize: 14 });
     // 거리 후보 도식
     const cx = 8.35, cy = 6.0;
@@ -426,7 +425,7 @@ function buildCommon() {
     text(s, [
       { text: "가까우면  ", options: { color: GOLD, bold: true } }, { text: "근접 패턴 후보", options: { breakLine: true } },
       { text: "멀면  ", options: { color: GOLD, bold: true } }, { text: "원거리 패턴 후보", options: { breakLine: true } },
-      { text: "거리 무관  ", options: { color: GOLD, bold: true } }, { text: "언제나 후보" },
+      { text: "거리 무관  ", options: { color: GOLD, bold: true } }, { text: "항상 후보" },
     ], { x: 9.75, y: 5.3, w: 3.0, h: 1.45, fontSize: 12.5, lineSpacingMultiple: 1.3, valign: "middle" });
   }
 
@@ -442,7 +441,7 @@ function buildCommon() {
       text(s, c[0], { x: 0.85, y, w: 1.6, h: 0.45, fontSize: 14, color: MUTED, valign: "middle" });
       text(s, c[1], { x: 2.4, y, w: 2.0, h: 0.45, fontSize: 16, bold: true, align: "right", valign: "middle" });
     });
-    text(s, "패턴의 예고 시간 · 탄속 · 범위는 이 값으로 노히트가 가능한지 확인해서 정함", { x: 0.85, y: 6.0, w: 3.55, h: 0.75, fontSize: 11.5, color: MUTED });
+    text(s, "패턴의 예고 시간 · 탄속 · 범위는 이 기준값으로 노히트 가능 여부를 확인해 결정", { x: 0.85, y: 6.0, w: 3.55, h: 0.75, fontSize: 11.5, color: MUTED });
 
     card(s, 4.85, 1.65, 7.85, 2.95);
     text(s, "보스 체력 역산", { x: 5.1, y: 1.8, w: 4, h: 0.4, fontSize: 17, bold: true, color: GOLD });
@@ -456,8 +455,8 @@ function buildCommon() {
       fx += w;
     });
     bullets(s, [
-      "시작 화력: 초당 약 20 (기본 탄 8 · 0.3초 간격 · 12발 쏘면 장전 1.2초)",
-      "화력은 빌드가 쌓인 만큼 커진다고 가정해, 챕터 기획서에서 보스별 배율을 정함",
+      "시작 화력: 초당 약 20 (기본 탄 8 / 0.3초 간격 / 12발 사격 후 장전 1.2초)",
+      "빌드가 쌓인 만큼 화력이 커진다고 가정 / 보스별 배율은 챕터 기획서에서 결정",
     ], { x: 5.1, y: 3.3, w: 7.4, h: 1.2, fontSize: 13 });
 
     card(s, 4.85, 4.8, 7.85, 2.05);
@@ -468,7 +467,7 @@ function buildCommon() {
       text(s, t[0], { x, y: 5.55, w: 2.0, h: 0.4, fontSize: 13, align: "center" });
       text(s, t[1], { x, y: 5.92, w: 2.0, h: 0.5, fontSize: 20, bold: true, align: "center" });
     });
-    text(s, "패턴마다 따로 정한 값이 있으면 그 값을 우선 적용", { x: 9.6, y: 5.5, w: 2.95, h: 1.0, fontSize: 12, color: MUTED, valign: "middle" });
+    text(s, "패턴별로 정한 값이 있으면 그 값을 우선 적용", { x: 9.6, y: 5.5, w: 2.95, h: 1.0, fontSize: 12, color: MUTED, valign: "middle" });
   }
 
   return D.pres.writeFile({ fileName: path.join(OUT_DIR, "1159_공통_레벨디자인_기획서_20261116_정승운_Ver01.pptx") });
@@ -534,7 +533,7 @@ function buildCh1() {
     bullets(s, [
       { t: "전투방 종류", b: true, c: GOLD },
       "서부 거리 · 마을 광장 · 황무지 절벽길 · 건물 내부(술집 · 보안관 사무소)",
-      "직접 짠 전투방 10개 → 스테이지 장소에 맞는 방 중에서 무작위로 뽑음",
+      "전투방 10개 절차적 생성 → 스테이지 장소에 맞는 방 중에서 무작위로 뽑음",
       { t: "배치", b: true, c: GOLD },
       "방 크기 1.5~2 화면 · 방마다 웨이브 2~3번 · 다음 웨이브는 1초 예고 후 등장",
       "화약통은 방마다 2~4개, 엄폐물과 함께 후보 자리 중 일부에만 놓임",
