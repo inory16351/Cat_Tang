@@ -454,7 +454,7 @@ pres.addSection({ title: SEC[6] });
   });
   // 인게임 HUD
   picture(s, "v2/ingame_traits.png", 0.6, 4.8, 3.29, 2.05, "활성 특성 HUD", "contain", { alignLeft: true });
-  text(s, "인게임: 활성 특성 목록\n마우스를 올리면 단계별 효과", { x: 4.0, y: 5.6, w: 2.3, h: 0.9, fontSize: 12, color: MUTED });
+  text(s, "인게임: 활성 특성 목록\n마우스를 올리면 단계별 효과 상세 설명", { x: 4.0, y: 5.6, w: 2.3, h: 0.9, fontSize: 12, color: MUTED });
   // 특성 9종
   const traits = [
     ["회상", "BF8CFF", "고양이 실루엣이 나타나 함께 사격"],
@@ -531,7 +531,7 @@ pres.addSection({ title: SEC[6] });
     arrow(s, 10.9, y + 0.7, 0.25, GOLD);
     chip(s, e[2], 11.2, y + 0.4, 1.2, e[3], e[3] === GOLD ? BG : TXT, { h: 0.6, size: 16 });
   });
-  text(s, "같은 연산이라도 끼우는 순서에 따라 다른 판정 시각", { x: 7.3, y: 6.3, w: 5.2, h: 0.4, fontSize: 13, color: MUTED });
+  text(s, "같은 연산이라도 끼우는 순서에 따라 다른 판정 시각 적용", { x: 7.3, y: 6.3, w: 5.2, h: 0.4, fontSize: 13, color: MUTED });
 }
 
 // =============== 08 아웃게임 성장 ===============
@@ -561,7 +561,7 @@ pres.addSection({ title: SEC[7] });
     text(s, it[1], { x: 3.95, y, w: 3.15, h: 1.12, fontSize: 13, valign: "middle", lineSpacingMultiple: 1.1 });
   });
   card(s, 0.6, 5.62, 6.6, 1.23, PURPLE);
-  text(s, [{ text: "시간의 조각  ", options: { bold: true, color: GOLD } }, { text: "인 게임에서 획득 → 스탯 성장 노드 강화" }], { x: 0.85, y: 5.62, w: 6.2, h: 1.23, fontSize: 14, valign: "middle" });
+  text(s, [{ text: "시간의 조각  ", options: { bold: true, color: GOLD } }, { text: "인 게임에서 획득 → 새로운 요소 해금 시 사용" }], { x: 0.85, y: 5.62, w: 6.2, h: 1.23, fontSize: 14, valign: "middle" });
   picture(s, "v2/ref/sephiria_costume.png", 7.6, 1.65, 2.5, 3.85, "세피리아 코스튬", "contain", { alignTop: true, alignLeft: true });
   text(s, "코스튬 레퍼런스", { x: 10.35, y: 1.7, w: 2.4, h: 0.35, fontSize: 15, bold: true, color: GOLD });
   text(s, "세피리아 코스튬 목록", { x: 10.35, y: 2.1, w: 2.4, h: 0.35, fontSize: 14 });
@@ -575,5 +575,9 @@ pres.addSection({ title: SEC[7] });
     const { applyTheme } = require(process.env.PPTX_SKILL + "/scripts/apply_theme.js");
     await applyTheme(OUT, THEME);
   }
+  // 용량 줄이기: 투명하지 않은 그림 → JPEG (docs/tools/pptx_compress.py)
+  const py = process.env.PYTHON || "C:/Users/user/AppData/Local/Programs/Python/Python312/python.exe";
+  try { require("child_process").execFileSync(py, [path.join(__dirname, "pptx_compress.py"), OUT], { stdio: "inherit" }); }
+  catch (e) { console.warn("compress skipped:", e.message); }
   console.log("saved", OUT);
 })();

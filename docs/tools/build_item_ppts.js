@@ -5,13 +5,15 @@ const fs = require("fs");
 const path = require("path");
 const { applyTheme } = require(process.env.PPTX_SKILL + "/scripts/apply_theme.js");
 
-const DOCS = "D:/pro/Cat_Tang/docs";
+const DOCS = path.resolve(__dirname, "..");
+const OUT_DIR = process.env.OUT_DIR || DOCS;
 const DATA = JSON.parse(fs.readFileSync(path.join(DOCS, "data/items_for_ppt.json"), "utf8"));
 const ICON = (p) => path.join(DOCS, "images/icons", p);
 const hasIcon = (p) => fs.existsSync(ICON(p));
+const pngSize = (f) => { const b = fs.readFileSync(f); return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) }; };
 
 const THEME = {
-  name: "Cat_Tang Clock", headFontFace: "Malgun Gothic", bodyFontFace: "Malgun Gothic",
+  name: "Cat_Tang Clock", headFontFace: "Noto Sans KR", bodyFontFace: "Noto Sans KR",
   colors: { dk1: "17131F", lt1: "F3EDE2", dk2: "241D30", lt2: "A99FB5", accent1: "E0A63A", accent2: "C2343B",
             accent3: "3B2D5C", accent4: "2C2440", accent5: "5FA8B8", accent6: "8C7AA8", hlink: "E0A63A", folHlink: "8C7AA8" },
 };
@@ -28,7 +30,7 @@ function deck(title, sub) {
   pres.defineSlideMaster({
     title: "CONTENT", background: { color: K.BG },
     objects: [
-      { text: { text: `CAT_TANG · ${title} · ${DATA.author}`, options: { x: 0.6, y: 7.0, w: 7, h: 0.3, fontSize: 10, color: K.MUTED, margin: 0 } } },
+      { text: { text: `11:59 · ${title} · ${DATA.author}`, options: { x: 0.6, y: 7.0, w: 7, h: 0.3, fontSize: 10, color: K.MUTED, margin: 0 } } },
       { placeholder: { options: { name: "title", type: "title", x: 0.6, y: 0.45, w: 12.1, h: 0.8, fontSize: 30, bold: true, color: K.TXT, valign: "middle", align: "left", margin: 0 }, text: "제목" } },
     ],
     slideNumber: { x: 12.2, y: 7.0, w: 0.5, h: 0.3, fontSize: 10, color: K.MUTED, align: "right" },
@@ -36,7 +38,7 @@ function deck(title, sub) {
   pres.defineSlideMaster({ title: "COVER", background: { color: K.BG }, objects: [] });
   let n = 0;
   const nm = (s) => `${s}_${++n}`;
-  const text = (s, t, o) => s.addText(t, { isTextBox: true, fontFace: THEME.bodyFontFace, color: K.TXT, fontSize: 15, margin: 0, valign: "top", objectName: nm("text"), ...o });
+  const text = (s, t, o) => s.addText(t, { isTextBox: true, fontFace: THEME.bodyFontFace, lang: "ko-KR", color: K.TXT, fontSize: 15, margin: 0, valign: "top", objectName: nm("text"), ...o });
   const card = (s, x, y, w, h, fill = K.CARD, line) => s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.12, fill: { color: fill }, line: line ? { color: line, width: 1.5 } : { color: fill }, objectName: nm("card") });
   const bullets = (s, items, o) => text(s, items.map((t, i) => {
     const head = typeof t === "object";
@@ -46,9 +48,14 @@ function deck(title, sub) {
   const cover = (heroImg) => {
     pres.addSection({ title: "표지" });
     const s = pres.addSlide({ masterName: "COVER", sectionTitle: "표지" });
-    if (heroImg && hasIcon(heroImg)) s.addImage({ path: ICON(heroImg), x: 0, y: 0, w: 13.333, h: 7.5, sizing: { type: "cover", w: 13.333, h: 7.5 }, objectName: "cover_img" });
+    if (heroImg && hasIcon(heroImg)) {
+      // 원본 비율 유지: 슬라이드를 꽉 채우고 넘치는 쪽만 잘라 냄
+      const { w: iw, h: ih } = pngSize(ICON(heroImg));
+      const k = Math.max(13.333 / iw, 7.5 / ih);
+      s.addImage({ path: ICON(heroImg), x: 0, y: 0, w: iw * k, h: ih * k, sizing: { type: "cover", w: 13.333, h: 7.5 }, objectName: "cover_img" });
+    }
     s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 13.333, h: 7.5, fill: { color: K.BG, transparency: heroImg ? 35 : 0 }, line: { color: K.BG, transparency: 100 }, objectName: "cover_dim" });
-    text(s, "CAT_TANG", { x: 0.8, y: 2.3, w: 11, h: 0.9, fontSize: 44, bold: true, color: K.GOLD });
+    text(s, "11:59", { x: 0.8, y: 2.3, w: 11, h: 0.9, fontSize: 44, bold: true, color: K.GOLD });
     text(s, title, { x: 0.8, y: 3.25, w: 11, h: 0.8, fontSize: 36, bold: true });
     text(s, sub, { x: 0.8, y: 4.1, w: 11, h: 0.5, fontSize: 18, color: K.MUTED });
     text(s, `작성 ${DATA.author} · 2026.11 · 수치는 1차안`, { x: 0.8, y: 6.5, w: 11, h: 0.35, fontSize: 13, color: K.MUTED });
@@ -57,7 +64,7 @@ function deck(title, sub) {
 }
 
 async function save(pres, file) {
-  const out = path.join(DOCS, file);
+  const out = path.join(OUT_DIR, file);
   await pres.writeFile({ fileName: out });
   await applyTheme(out, THEME);
   console.log("written", out);
@@ -72,8 +79,8 @@ async function bulletDeck() {
   {
     const s = slide("총탄 = 아이템, 12칸 = 인벤토리", "규칙");
     const parts = [
-      ["자리 조건", "1개. 판정 시각이 맞으면 깨어남"], ["특성", "2개. 같은 특성 2 · 4 · 6개에 단계 상승"],
-      ["고유 효과", "일반 · 희귀 1개, 영웅 · 전설 최대 2개"], ["공격력", "깨어나든 아니든 항상"], ["연산 슬롯", "0~2칸. 등급과 무관"],
+      ["자리 조건", "1개. 판정 시각이 맞으면 활성화"], ["특성", "2개. 같은 특성 2 · 4 · 6개에 단계 상승"],
+      ["고유 효과", "일반 · 희귀 1개, 영웅 · 전설 최대 2개"], ["공격력", "활성화 여부와 상관없이 상시"], ["연산 슬롯", "0~2칸. 등급과 무관"],
       ["이름", "시간의 몽환적 · 시적 표현. 높은 등급일수록 고유한 이름"],
     ];
     parts.forEach((p, i) => {
@@ -83,14 +90,14 @@ async function bulletDeck() {
       text(s, p[1], { x: x + 2.0, y: y + 0.2, w: 3.8, h: 0.7, fontSize: 14 });
     });
     card(s, 0.6, 5.35, 12.13, 0.9, K.PURPLE);
-    text(s, [{ text: "깨어난 탄  ", options: { bold: true, color: K.GOLD } }, { text: "특성 + 고유 효과 + 공격력      " },
-             { text: "못 깨어난 탄  ", options: { bold: true, color: K.RED } }, { text: "공격력만" }], { x: 0.9, y: 5.55, w: 11.6, h: 0.5, fontSize: 16, valign: "middle" });
+    text(s, [{ text: "활성화 탄  ", options: { bold: true, color: K.GOLD } }, { text: "특성 + 고유 효과 + 공격력      " },
+             { text: "비활성화 탄  ", options: { bold: true, color: K.RED } }, { text: "공격력만" }], { x: 0.9, y: 5.55, w: 11.6, h: 0.5, fontSize: 16, valign: "middle" });
   }
   {
     const s = slide("효과 적용 범위", "규칙");
     const cols = [
-      ["탄 고유 효과", ["깨어나 있으면 모든 사격에 적용 (같은 효과는 탄 수만큼 겹침)", "그 탄을 직접 쏠 때는 2배 + 공명 사격", "공명 사격: 굵은 궤적 · 금빛 섬광 · 탄 색 폭발 30% · 화면 흔들림"]],
-      ["특성", ["단계는 깨어난 탄의 특성으로 셈", "켜진 효과는 모든 탄에 적용", "깨어나지 못한 탄도 포함"]],
+      ["탄 고유 효과", ["활성화돼 있으면 모든 사격에 적용 (같은 효과는 탄 수만큼 겹침)", "그 탄을 직접 쏠 때는 2배 + 공명 사격", "공명 사격: 굵은 궤적 · 금빛 섬광 · 탄 색 폭발 30% · 화면 흔들림"]],
+      ["특성", ["단계는 활성화 탄의 특성으로 셈", "켜진 효과는 모든 탄에 적용", "비활성화 탄도 포함"]],
       ["총 고유 효과", ["그 총이 담당하는 칸의 탄에만", "오른손 = 홀수 칸, 왼손 = 짝수 칸", "스킬 · 완벽 장전 효과만 전역"]],
     ];
     cols.forEach((c, i) => {
@@ -117,7 +124,7 @@ async function bulletDeck() {
   for (let page = 0; page < 2; page++) {
     const s = slide(`특성 9종 (${page + 1}/2)`, "특성");
     const head = { bold: true, color: THEME.colors.dk1, fill: { color: THEME.colors.accent1 }, fontSize: 13, valign: "middle" };
-    const cell = (t, o = {}) => ({ text: t, options: { color: THEME.colors.lt1, fill: { color: THEME.colors.accent4 }, fontSize: 11, valign: "middle", ...o } });
+    const cell = (t, o = {}) => ({ text: t, options: { lang: "ko-KR", color: THEME.colors.lt1, fill: { color: THEME.colors.accent4 }, fontSize: 11, valign: "middle", ...o } });
     const rows = [[{ text: "특성", options: head }, { text: "2개", options: head }, { text: "4개", options: head }, { text: "6개 (새 효과)", options: head }]];
     DATA.traits.slice(page * 5, page * 5 + 5).forEach((t) => rows.push([cell(`${t.name}\n${t.desc}`, { bold: true }), cell(t.t2), cell(t.t4), cell(t.t6)]));
     s.addTable(rows, { x: 0.6, y: 1.45, w: 12.13, colW: [2.6, 3.4, 2.4, 3.73], rowH: [0.45, 0.95, 0.95, 0.95, 0.95, 0.95].slice(0, rows.length),
