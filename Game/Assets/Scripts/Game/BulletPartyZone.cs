@@ -1,8 +1,6 @@
 // 불릿 파티 영역: 플레이어를 따라다니는 원형 트리거 콜라이더.
 // - 판정: SphereCollider(트리거) + 키네마틱 Rigidbody. 안에 들어온 적(Health) 전부가 매 타 피해 대상.
-// - 연출 (바닥 표시 없이 공중 이펙트만으로 사거리를 보여 줌):
-//   타마다 원 경계를 따라 탄착 불꽃 고리가 한 바퀴 튀고(조금씩 돌아감), 몸에서 금빛 탄피가 튀어 오름.
-//   열릴 때는 경계에 금빛 섬광 고리, 닫힐 때는 경계 전체가 폭발하며 사라짐.
+// - 연출: 타마다 몸에서 금빛 탄피가 튀어 오름. (원 경계 이펙트 없음. 범위는 원 안에 떨어지는 총알 비로 보임)
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,12 +13,12 @@ namespace CatTang
         Transform follow;
         Rigidbody rb;
         readonly HashSet<Health> inside = new();
-        ParticleSystem casings;
+        ParticleSystem casings, debris;
+        static Material debrisMat;
         bool closed;
 
         static Material mat;
-        static readonly Color Gold = new(1f, 0.8f, 0.32f), Hot = new(1f, 0.96f, 0.78f);
-        const int EdgePoints = 20;          // 경계 고리 이펙트 수 (반지름 6.5m 기준 약 2m 간격)
+        static readonly Color Hot = new(1f, 0.96f, 0.78f);
 
         public static BulletPartyZone Spawn(Transform follow, float radius)
         {
@@ -38,7 +36,7 @@ namespace CatTang
             z.radius = radius;
             z.rb = rb;
             z.BuildCasings();
-            z.EdgeRing(0, FxBurst.Kind.Gold, 1.6f, Gold, 0.35f);
+            z.BuildDebris();
             return z;
         }
 
@@ -71,40 +69,66 @@ namespace CatTang
         }
 
         // ---------- 연출 ----------
-        /// <summary>한 타: 경계 불꽃 고리 (타마다 조금씩 돌아 회전하는 느낌) + 탄피</summary>
+        /// <summary>한 타: 탄피 + 사방으로 튀는 파편 · 불티</summary>
         public void Pulse(int shot)
         {
-            EdgeRing(shot * 5f, FxBurst.Kind.Spark, 1.25f, Hot, 0.55f);
-            if (shot % 2 == 0) EdgeRing(shot * 5f + 360f / EdgePoints * 0.5f, FxBurst.Kind.Muzzle, 1.1f, Gold, 1.0f);
             if (casings) casings.Emit(10);
+            if (debris) debris.Emit(16);
         }
 
-        /// <summary>마무리: 경계 전체가 터지며 닫힘</summary>
+        /// <summary>마무리: 탄피 · 파편을 한 움큼 쏟고 닫힘</summary>
         public void Close()
         {
             if (closed) return;
             closed = true;
-            EdgeRing(0, FxBurst.Kind.Explosion, 2.2f, Gold, 0.6f);
-            EdgeRing(360f / EdgePoints * 0.5f, FxBurst.Kind.Gold, 1.8f, Hot, 1.0f);
             if (casings) casings.Emit(30);
+            if (debris) debris.Emit(40);
             Destroy(gameObject, 1.0f);
         }
 
-        /// <summary>원 경계를 따라 공중 이펙트를 한 바퀴</summary>
-        void EdgeRing(float offsetDeg, FxBurst.Kind kind, float size, Color tint, float height)
+        /// <summary>파편 · 불티: 검은 조각과 붉은 불티가 몸에서 사방 수평으로 튀어 나감 (속도 방향으로 늘어진 선)</summary>
+        void BuildDebris()
         {
-            var c = transform.position;
-            for (int i = 0; i < EdgePoints; i++)
-            {
-                float a = (offsetDeg + i * 360f / EdgePoints) * Mathf.Deg2Rad;
-                var p = c + new Vector3(Mathf.Cos(a) * radius, height + Random.Range(-0.15f, 0.25f), Mathf.Sin(a) * radius);
-                FxBurst.Spawn(p, size * Random.Range(0.85f, 1.15f), kind, tint);
-            }
+            if (!debrisMat) debrisMat = new Material(Shader.Find("Sprites/Default"));
+            var g = new GameObject("Debris");
+            g.transform.SetParent(transform, false);
+            g.transform.localPosition = Vector3.up * 1.0f;
+            g.transform.localRotation = Quaternion.Euler(90, 0, 0);          // 원 모양 방출을 바닥과 나란히
+            debris = g.AddComponent<ParticleSystem>();
+            debris.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = debris.main;
+            main.loop = false;
+            main.playOnAwake = false;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.7f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(5f, 12f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.11f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.16f, 0.09f, 0.08f), new Color(1f, 0.42f, 0.16f));
+            main.gravityModifier = 0.8f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 500;
+            var em = debris.emission; em.rateOverTime = 0;
+            var sh = debris.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.5f; sh.randomDirectionAmount = 0.15f;
+            var col = debris.colorOverLifetime; col.enabled = true;
+            var gr = new Gradient();
+            gr.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
+                       new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 0.6f), new GradientAlphaKey(0, 1) });
+            col.color = gr;
+            var pr = g.GetComponent<ParticleSystemRenderer>();
+            pr.sharedMaterial = debrisMat;
+            pr.renderMode = ParticleSystemRenderMode.Stretch;
+            pr.velocityScale = 0.03f;
+            pr.lengthScale = 2f;
+            pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         void BuildCasings()
         {
-            if (!mat) mat = new Material(Shader.Find("Sprites/Default"));
+            if (!mat)
+            {
+                mat = new Material(Shader.Find("Sprites/Default"));
+                var tex = Resources.Load<Texture2D>("FX/casing");          // 툰 탄피 (docs/tools/fx_sprites.py)
+                if (tex) mat.mainTexture = tex;
+            }
             var c = new GameObject("Casings");
             c.transform.SetParent(transform, false);
             c.transform.localPosition = Vector3.up * 1.1f;
@@ -121,7 +145,7 @@ namespace CatTang
             main.startSizeY = new ParticleSystem.MinMaxCurve(0.11f, 0.15f);
             main.startSizeZ = 1f;
             main.startRotation = new ParticleSystem.MinMaxCurve(0, Mathf.PI * 2);
-            main.startColor = new ParticleSystem.MinMaxGradient(Gold, Hot);
+            main.startColor = new ParticleSystem.MinMaxGradient(Color.white, Hot);   // 텍스처가 이미 놋쇠색
             main.gravityModifier = 2.2f;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.maxParticles = 400;
@@ -130,7 +154,7 @@ namespace CatTang
             var rot = casings.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-15f, 15f);
             var col = casings.colorOverLifetime; col.enabled = true;
             var g = new Gradient();
-            g.SetKeys(new[] { new GradientColorKey(Hot, 0), new GradientColorKey(Gold, 1) },
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
                       new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 0.7f), new GradientAlphaKey(0, 1) });
             col.color = g;
             var pr = c.GetComponent<ParticleSystemRenderer>();

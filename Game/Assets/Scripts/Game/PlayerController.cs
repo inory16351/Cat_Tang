@@ -40,8 +40,7 @@ namespace CatTang
         Vector3 aimDir = Vector3.forward;
         float aimDist = 8f;
         float nextFireTime, nextSkill, reloadStart, reloadDur, dashCharges = 3, dashTimer;
-        bool dashing, perfectBuff, ultimateActive, spinning;
-        Quaternion ultFacing = Quaternion.identity;
+        bool dashing, perfectBuff, ultimateActive;
         // 효과 상태
         float nextShotDamageAdd, nextShotSpeedAdd, tempDodge, tempDodgeUntil, silhouetteFollowUntil, globalStopReady, lastJustDodge;
         int critShots;
@@ -162,10 +161,10 @@ namespace CatTang
             UpdateFocus();
             if (model)
             {
-                // 불릿 파티: 자세마다 바라볼 방향으로 몸 중심을 축으로 빠르게 (순간 뒤집기 X)
-                if (ultimateActive && !spinning) TurnModelAroundBody(ultFacing, UltTurnSpeed * Time.deltaTime);
+                // 불릿 파티: 몸 중심을 축으로 빠르게 계속 회전
+                if (ultimateActive) RotateModelAroundBody(Quaternion.Euler(0, UltSpinSpeed * Time.deltaTime, 0) * model.rotation);
                 // 궁이 끝나면 몸 중심 회전으로 생긴 작은 어긋남을 제자리로
-                if (!ultimateActive && !spinning && model.localPosition.sqrMagnitude > 1e-6f)
+                else if (model.localPosition.sqrMagnitude > 1e-6f)
                     model.localPosition = Vector3.MoveTowards(model.localPosition, Vector3.zero, 2f * Time.deltaTime);
             }
             if (!health.Alive || InputLocked || !Application.isFocused) return;
@@ -189,7 +188,7 @@ namespace CatTang
             var mv = new Vector3((kb.dKey.isPressed ? 1 : 0) - (kb.aKey.isPressed ? 1 : 0), 0, (kb.wKey.isPressed ? 1 : 0) - (kb.sKey.isPressed ? 1 : 0));
             if (mv.sqrMagnitude > 1) mv.Normalize();
             var faceDir = combatEnabled ? aimDir : (mv.sqrMagnitude > 0.01f ? mv : (model ? model.forward : aimDir));
-            if (model && !ultimateActive && !spinning && faceDir.sqrMagnitude > 0.001f) model.rotation = Quaternion.Slerp(model.rotation, Quaternion.LookRotation(faceDir), 20f * Time.deltaTime);
+            if (model && !ultimateActive && faceDir.sqrMagnitude > 0.001f) model.rotation = Quaternion.Slerp(model.rotation, Quaternion.LookRotation(faceDir), 20f * Time.deltaTime);
 
             if (anim) anim.SetFloat("Speed", dashing ? 1f : mv.magnitude);
             if (poser && !ultimateActive) poser.SetAimWeight(combatEnabled ? 1f : 0f);
@@ -654,73 +653,51 @@ namespace CatTang
 
         // ---------- 궁극기: 불릿 파티 (건카타) ----------
         // 사미라 궁 느낌: 게임은 그대로 흐르고, 플레이어는 무적 상태로 WASD 이동(대시 가능)하면서 약 2초 동안
-        // 건카타 8자세 사이를 홱홱 끊어 넘어감. 플레이어를 따라다니는 원형 콜라이더(BulletPartyZone) 안의 적 전부가
-        // 12번 연속 피해를 받음. 궤적 대신 바닥 원 · 회전 스윕 · 충격파 · 탄피 · 총알 비 · 사방 총구 섬광으로 범위 공격을 강조.
+        // 몸 중심을 축으로 빠르게 계속 돌며 건카타 8자세 사이를 홱홱 끊어 넘어감.
+        // 매 타마다 금빛 실루엣 분신들이 본체 사이사이 방향으로 나타나 본체와 '같은 순간'에 총구 폭발 → 사방 일제 사격.
+        // 플레이어를 따라다니는 원형 콜라이더(BulletPartyZone) 안의 적 전부가 12번 피해. 범위는 원 안에 떨어지는 총알 비로 보임.
         static readonly int[] KataSeq = { 0, 3, 1, 5, 2, 4, 6, 7, 0, 3, 1, 7 };
         public const float UltDuration = 2.0f;        // 지속 시간 (12타)
         public const float UltRadius = 6.5f;          // 원형 콜라이더 반지름 (일반 방 24×20의 가운데 넓은 원)
         public const float UltTickMul = 0.9f;         // 한 타당 피해 배율 (칸 피해 기준, 원 안의 모든 적에게)
         public const float UltMoveMul = 0.9f;         // 궁 중 이동 속도 배율
-        public const float UltTurnSpeed = 1440f;      // 자세 사이 방향 전환 속도 (도/초, 180°에 0.125초)
-        public const float UltSpinTime = 0.4f;        // 회전 자세 한 바퀴 시간
+        public const float UltSpinSpeed = 900f;       // 궁 중 회전 속도 (도/초, 2초에 5바퀴)
+        public const int UltClones = 4;               // 한 타에 본체와 동시에 쏘는 실루엣 분신 수
+        public const float UltCloneDist = 1.6f;       // 분신이 본체에서 떨어진 거리 (m)
         const int UltRainPerTick = 7;                // 한 타에 원 안 아무 데나 떨어지는 총알 비 수
+        static readonly Color UltGold = new Color(1f, 0.82f, 0.38f);
+        static readonly Color UltGhost = new Color(1f, 0.82f, 0.36f, 0.95f);
 
         IEnumerator BulletParty()
         {
             ultimateActive = true;
-            if (model) ultFacing = model.rotation;
             rev.heat = 0;
             health.invulnerable = true;
             OnUltimate?.Invoke();
             var zone = BulletPartyZone.Spawn(transform, UltRadius);
             CameraFollow.Zoom(0.8f);
             CameraFollow.Shake(0.15f);
-            FxBurst.Spawn(transform.position + Vector3.up, 4f, FxBurst.Kind.Gold, new Color(1f, 0.8f, 0.32f));
-            FxBurst.Spawn(transform.position + Vector3.up * 0.5f, 3f, FxBurst.Kind.Explosion, new Color(1f, 0.85f, 0.4f));
             yield return new WaitForFixedUpdate();             // 콜라이더가 첫 판정을 잡을 때까지
-            float sideSign = 1;
             float tick = UltDuration / 12f;
-            var gold = new Color(1f, 0.8f, 0.32f, 0.9f);
-            var lastPos = transform.position;
             for (int i = 0; i < 12 && health.Alive; i++)
             {
-                int s = i + 1;
-                // 원형 콜라이더 안의 살아 있는 적 전부 (가까운 순)
-                var foes = zone ? zone.Targets() : new List<Health>();
-                foes.Sort((x, y) => Effects.Flat(x.transform.position - transform.position).sqrMagnitude.CompareTo(Effects.Flat(y.transform.position - transform.position).sqrMagnitude));
-                Health target = foes.Count > 0 ? foes[i % Mathf.Min(foes.Count, 4)] : null;
-                Vector3 toT = target ? Effects.Flat(target.transform.position - transform.position).normalized : Quaternion.Euler(0, i * 47, 0) * Vector3.forward;
-                if (toT.sqrMagnitude < 0.01f) toT = Vector3.forward;
-
-                // 방금 자세는 금빛 실루엣으로 남음 (이동하면 길을 따라 실루엣이 깔림)
-                var ghostPos = lastPos;
-                if (i > 0 && model) Afterimage.SpawnAt(model, ghostPos, gold, 0.75f);
-                // 좌우로 살짝 튐 (플레이어 이동 위에 얹힘)
-                cc.Move(Vector3.Cross(Vector3.up, toT).normalized * sideSign * 0.8f);
-                sideSign = -sideSign;
-
-                int k = KataSeq[i];
-                bool back = KataPoser.KataBackFacing[k];
-                ultFacing = Quaternion.LookRotation(back ? -toT : toT);   // Update가 몸 중심을 축으로 돌려 맞춤
-                if (poser) poser.Snap(k, 0.06f);
-                if (k == 7 && model) StartCoroutine(SpinModel(UltSpinTime));
+                if (poser) poser.Snap(KataSeq[i], 0.05f);
                 yield return new WaitForSeconds(0.04f);      // 자세가 잡힌 뒤 쏨
-
-                UltVolley(s, i, foes, zone, i > 0 ? ghostPos : (Vector3?)null);
+                UltVolley(i + 1, i, zone ? zone.Targets() : new List<Health>(), zone);
                 rev.heat = 0;                                 // 궁 피해로는 열기가 차지 않음
-                lastPos = transform.position;
                 yield return new WaitForSeconds(Mathf.Max(0.02f, tick - 0.04f));
             }
-            // 마무리: 제자리 회전하며 금빛 실루엣 링 + 원이 섬광과 함께 터지며 닫힘
+            // 마무리 일제 사격: 8방향 분신이 본체와 한꺼번에 쏨
             if (zone) zone.Close();
-            FxBurst.Spawn(transform.position + Vector3.up, 5f, FxBurst.Kind.Gold, Color.white);
-            CameraFollow.Shake(0.2f);
-            if (model)
-            {
-                for (int r = 0; r < 6; r++) Afterimage.SpawnAt(model, transform.position, gold, 0.6f);
-                StartCoroutine(SpinModel(UltSpinTime));
-            }
-            while (spinning) yield return null;
+            GunBlast(rightMuzzle, poser ? poser.gunR : null, 1.15f, true);
+            GunBlast(leftMuzzle, poser ? poser.gunL : null, 1.15f, true);
+            CloneVolley(8, 22.5f, UltCloneDist * 1.3f, 1f, 0.5f);
+            // 끝: 연기와 소용돌이만 남아 흩어짐
+            var center = (model ? model.position : transform.position) + Vector3.up * 0.9f;
+            for (int k = 0; k < 5; k++) GunkataFx.Swirl(center, UnityEngine.Random.Range(1.2f, 2.3f), -UltSpinSpeed * 0.6f, 0.6f);
+            for (int k = 0; k < 3; k++) GunkataFx.Smoke(center + UnityEngine.Random.insideUnitSphere * 0.8f, UnityEngine.Random.Range(2.2f, 3f), 1.2f);
+            CameraFollow.Shake(0.22f);
+            yield return new WaitForSeconds(0.25f);
             if (poser) poser.Release(0.15f);
             CameraFollow.Zoom(1f);
             rev.heat = 0;
@@ -728,30 +705,32 @@ namespace CatTang
             ultimateActive = false;
         }
 
-        /// <summary>불릿 파티 한 타: 원 안의 모든 적에게 피해 + 범위 공격 강조 이펙트 (궤적 없음)</summary>
-        void UltVolley(int s, int i, List<Health> foes, BulletPartyZone zone, Vector3? ghostPos)
+        /// <summary>불릿 파티 한 타: 본체 + 분신 동시 총구 폭발, 원 안의 모든 적에게 피해 (궤적 없음)</summary>
+        void UltVolley(int s, int i, List<Health> foes, BulletPartyZone zone)
         {
             var b = rev.slots[s].bullet;
             bool awake = rev.Awakened(s);
             Color col = BulletLook.Shown(b, awake);
-            var gold = new Color(1f, 0.82f, 0.38f);
             float baseDmg = ShotDamage(s) * UltTickMul;
             var c = transform.position;
 
             if (zone) zone.Pulse(s);
-            // 사방 총구 섬광: 몸 둘레를 돌며 6방향 (사미라 회전 사격)
-            for (int k = 0; k < 6; k++)
-            {
-                var d = Quaternion.Euler(0, i * 23f + k * 60f, 0) * Vector3.forward;
-                FxBurst.Spawn(c + Vector3.up * 1.0f + d * 1.2f, 1.1f, FxBurst.Kind.Muzzle, gold);
-            }
-            if (ghostPos.HasValue) FxBurst.Spawn(ghostPos.Value + Vector3.up * 1.0f, 1.3f, FxBurst.Kind.Muzzle, gold);
-            // 총알 비: 원 안 아무 데나 탄착 불꽃 · 흙먼지
+            // 본체: 두 총구가 지금 자세에서 가리키는 방향으로 폭발
+            GunBlast(rightMuzzle, poser ? poser.gunR : null, 1f, i % 2 == 0);
+            GunBlast(leftMuzzle, poser ? poser.gunL : null, 1f, i % 2 == 1);
+            // 분신: 본체 사이사이 방향에서 같은 자세로 동시에 (타마다 반 칸씩 엇갈려 회전하는 느낌)
+            CloneVolley(UltClones, 360f / UltClones * (i % 2 == 0 ? 0.5f : 1f), UltCloneDist, 0.9f, 0.45f);
+            // 가운데 쌓이는 회색 연기 + 몸 주위를 도는 어두운 소용돌이 (본체와 같은 방향으로 → 회전감)
+            var mid = (model ? model.position : c) + Vector3.up * 0.9f;
+            GunkataFx.Smoke(mid + UnityEngine.Random.insideUnitSphere * 0.7f, UnityEngine.Random.Range(1.6f, 2.4f));
+            for (int k = 0; k < 2; k++)
+                GunkataFx.Swirl(mid + Vector3.up * UnityEngine.Random.Range(-0.4f, 0.4f), UnityEngine.Random.Range(1.0f, 1.9f), -UltSpinSpeed * 0.9f);
+            // 총알 비: 원 안 아무 데나 탄착 불꽃 · 흙먼지 (범위가 보임)
             if (zone)
                 for (int k = 0; k < UltRainPerTick; k++)
                 {
                     var p = zone.RandomPoint() + Vector3.up * 0.25f;
-                    FxBurst.Spawn(p, UnityEngine.Random.Range(0.7f, 1.1f), FxBurst.Kind.Spark, gold);
+                    FxBurst.Spawn(p, UnityEngine.Random.Range(0.7f, 1.1f), FxBurst.Kind.Spark, UltGold);
                     if (k % 3 == 0) FxBurst.Spawn(p, 1.0f, FxBurst.Kind.Dust, Color.white);
                 }
             // 원 안의 적 전부 적중
@@ -766,28 +745,59 @@ namespace CatTang
                 // 한 적에게 여러 발이 쏟아지는 느낌: 몸 주변 탄착 두 개 + 금빛 X
                 for (int k = 0; k < 2; k++)
                     FxBurst.Spawn(to + UnityEngine.Random.insideUnitSphere * 0.5f, 0.8f, FxBurst.Kind.Spark, col);
-                if (i % 3 == 0) FxBurst.Spawn(to, 1.4f, FxBurst.Kind.Slash, gold);
+                if (i % 3 == 0) FxBurst.Spawn(to, 1.4f, FxBurst.Kind.Slash, UltGold);
             }
-            CameraFollow.Shake(foes.Count > 0 ? 0.09f : 0.05f);
+            CameraFollow.Shake(foes.Count > 0 ? 0.1f : 0.06f);
         }
 
-        /// <summary>한 바퀴 회전 (몸 중심 축, 시작 · 끝이 부드러운 가속 · 감속). 이미 도는 중이면 무시</summary>
-        IEnumerator SpinModel(float dur)
+        /// <summary>실루엣 분신 n개: 지금 자세 그대로 본체 둘레 n방향을 보고 나타나, 각자의 두 총구에서 동시에 폭발</summary>
+        void CloneVolley(int n, float offsetDeg, float dist, float scale, float life)
         {
-            if (spinning || !model) yield break;
-            spinning = true;
-            float t = 0, done = 0, ghost = 0;
-            while (t < dur && model)
+            if (!model) return;
+            var center = model.position;
+            for (int k = 0; k < n; k++)
             {
-                t += Time.deltaTime;
-                float ang = 360f * Mathf.SmoothStep(0, 1, Mathf.Clamp01(t / dur));
-                RotateModelAroundBody(Quaternion.Euler(0, ang - done, 0) * model.rotation);
-                done = ang;
-                ghost += Time.deltaTime;
-                if (ghost >= 0.05f) { ghost = 0; Afterimage.Spawn(model, new Color(1f, 0.8f, 0.35f, 0.45f), 0.3f); }
-                yield return null;
+                var rot = Quaternion.Euler(0, offsetDeg + k * 360f / n, 0);
+                var facing = rot * model.rotation;
+                var fwd = facing * Vector3.forward; fwd.y = 0;
+                var shift = (fwd.sqrMagnitude > 1e-4f ? fwd.normalized : Vector3.forward) * dist;
+                Afterimage.SpawnAt(model, transform.position + shift, facing, UltGhost, life);
+                // 분신 총구 = 본체 총구를 몸 중심 기준으로 같은 만큼 돌리고 옮긴 자리
+                if (rightMuzzle) GunBlastAt(center + shift + rot * (rightMuzzle.position - center), rot * BarrelDir(true), center, scale, false);
+                if (leftMuzzle) GunBlastAt(center + shift + rot * (leftMuzzle.position - center), rot * BarrelDir(false), center, scale, false);
             }
-            spinning = false;
+        }
+
+        Vector3 BarrelDir(bool right)
+        {
+            var g = poser ? (right ? poser.gunR : poser.gunL) : null;
+            return g ? g.forward : (model ? model.forward : transform.forward);
+        }
+
+        /// <summary>본체 총구 폭발</summary>
+        void GunBlast(Transform muzzle, Transform gun, float scale, bool smoke)
+        {
+            if (muzzle && model) GunBlastAt(muzzle.position, gun ? gun.forward : BarrelDir(true), model.position, scale, true, smoke);
+        }
+
+        /// <summary>화염 방향 = 항상 바깥. 총열이 이미 바깥(몸 중심 → 총구 쪽)을 향하면 총열 방향, 아니면 몸 중심에서 총구로 뻗는 방향.
+        /// 위 · 아래로 쏘는 자세도 위에서 보면 짧은 토막이 되지 않게 수평으로 눕힘</summary>
+        Vector3 OutwardDir(Vector3 p, Vector3 barrel, Vector3 center)
+        {
+            var radial = Effects.Flat(p - center);
+            var flat = Effects.Flat(barrel);
+            if (radial.sqrMagnitude < 0.01f) radial = flat;
+            radial = radial.sqrMagnitude > 1e-4f ? radial.normalized : transform.forward;
+            if (flat.sqrMagnitude > 0.04f && Vector3.Dot(flat.normalized, radial) > 0.5f) return flat.normalized;
+            return radial;
+        }
+
+        /// <summary>총구 폭발 한 번: 입체 불덩이 + 바깥으로 뻗는 화염 (+ 본체는 폭발 구름 · 앞으로 튀는 불똥 · 연기)</summary>
+        void GunBlastAt(Vector3 p, Vector3 barrel, Vector3 center, float scale, bool full, bool smoke = false)
+        {
+            var d = OutwardDir(p, barrel, center);
+            GunkataFx.Burst(p, d, scale, full);             // 불덩이 뭉치 + 빛줄기 (+ 본체는 붉은 흩뿌림)
+            if (smoke) GunkataFx.Smoke(p + d * 0.5f + Vector3.up * 0.2f, 1.4f * scale, 0.7f);
         }
 
         /// <summary>회전축 = 몸 중심 (골반 바로 아래). 모델 원점이 아니라 캐릭터 몸을 축으로 돌림</summary>
@@ -808,8 +818,6 @@ namespace CatTang
             model.position = pivot + delta * off;
         }
 
-        void TurnModelAroundBody(Quaternion target, float maxDeg) =>
-            RotateModelAroundBody(Quaternion.RotateTowards(model.rotation, target, maxDeg));
 
         void OnDestroy()
         {

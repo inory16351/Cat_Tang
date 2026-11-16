@@ -20,10 +20,16 @@ namespace CatTang
 
         public static void SpawnAt(Transform model, Vector3 pos, Color c, float life)
         {
+            if (model) SpawnAt(model, pos, model.rotation, c, life);
+        }
+
+        /// <summary>지금 자세 그대로, 바라보는 방향만 rot으로 바꾼 실루엣 (불릿 파티 분신: 사방을 향해 동시에 쏨)</summary>
+        public static void SpawnAt(Transform model, Vector3 pos, Quaternion rot, Color c, float life)
+        {
             if (!model) return;
             if (!baseMat) { var sh = Shader.Find("CatTang/Silhouette") ?? Shader.Find("Sprites/Default"); baseMat = new Material(sh) { renderQueue = 3050 }; }
             var root = new GameObject("Afterimage");
-            root.transform.SetPositionAndRotation(pos + (model.position - model.parent.position) * 0, model.rotation);
+            root.transform.SetPositionAndRotation(pos, rot);
             var a = root.AddComponent<Afterimage>();
             a.mpb = new MaterialPropertyBlock();
             a.born = Time.time;
