@@ -113,6 +113,29 @@ namespace CatTang
             return e;
         }
 
+        // 1장 중간 보스: 태엽 현상금 사냥꾼 · 체력 1080 · 이속 4
+        public static Enemy MidBoss(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("MidBoss_BountyHunter", pos, 1080 * ch.HpMul, Enemy.Kind.Boss, 0.9f, 2.8f);
+            if (!AttachModel(e, "Ch1_MidBoss"))
+            {
+                var m = ProtoModel(e);
+                var coat = M(Tint(new Color(0.38f, 0.26f, 0.26f), ch));
+                Part(PrimitiveType.Capsule, m, new Vector3(0, 1.2f, 0), new Vector3(1.1f, 1.2f, 0.9f), coat);
+                Part(PrimitiveType.Cylinder, m, new Vector3(0, 2.25f, 0.1f), new Vector3(0.7f, 0.06f, 0.7f), M(new Color(0.95f, 0.9f, 0.75f), 2f), new Vector3(90, 0, 0));
+                Part(PrimitiveType.Cylinder, m, new Vector3(0, 2.6f, 0), new Vector3(1.3f, 0.04f, 1.3f), M(new Color(0.28f, 0.18f, 0.16f)));
+                Part(PrimitiveType.Cylinder, m, new Vector3(0.5f, 1.3f, 0.8f), new Vector3(0.22f, 0.6f, 0.22f), M(new Color(0.55f, 0.45f, 0.4f), 2f), new Vector3(90, 0, 0));
+                Part(PrimitiveType.Cube, m, new Vector3(-0.45f, 2.3f, -0.35f), new Vector3(0.12f, 0.5f, 0.35f), M(new Color(0.9f, 0.7f, 0.3f), 2f));
+            }
+            e.speed = 4f;
+            e.chapter = ch;
+            e.chapterDmg = ch.DmgMul;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch1MidBoss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
         public static Enemy Boss(Vector3 pos, ChapterDef ch)
         {
             var body = M(Color.Lerp(new Color(0.88f, 0.78f, 0.58f), ch.Wall, 0.35f), 6f);
@@ -139,6 +162,21 @@ namespace CatTang
             e.bossPattern = ch.BossPattern;
             e.GetComponent<Health>().IsBoss = true;
             e.chapter = ch;
+            e.chapterDmg = ch.DmgMul;
+            if (ch.Id == 1)
+            {
+                // 녹은 시계 거인: 이속 3 · 시계 바늘 8m
+                e.speed = 3f;
+                foreach (var hn in new[] { "Hand", "Hand2" })
+                {
+                    var h = e.transform.Find(hn);
+                    if (!h) continue;
+                    var bar = h.GetChild(0);
+                    bar.localPosition = new Vector3(0, 0, 4f);
+                    bar.localScale = new Vector3(0.35f, 0.25f, 8f);
+                }
+                e.brain = e.gameObject.AddComponent<Ch1Boss>();
+            }
             e.GetComponent<Health>().RefreshRenderers();
             return e;
         }

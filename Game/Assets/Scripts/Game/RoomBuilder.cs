@@ -122,7 +122,7 @@ namespace CatTang
 
         static readonly Vector2Int[] Dirs = { new(0, 1), new(1, 0), new(-1, 0) };   // 북 · 동 · 서 (남쪽으로는 안 감)
 
-        public static StageLayout BuildStage(ChapterDef ch, int roomCount, int seed, bool boss)
+        public static StageLayout BuildStage(ChapterDef ch, int roomCount, int seed, bool boss, Vector2? sizeOverride = null)
         {
             var layout = new StageLayout { root = new GameObject(boss ? "Stage_Boss" : "Stage").transform };
             var rnd = new System.Random(seed);
@@ -139,7 +139,7 @@ namespace CatTang
                     cells.Add(pick);
                 }
             var cellSize = new Vector2(34, 30);
-            var roomSize = boss ? new Vector2(34, 30) : new Vector2(24, 20);
+            var roomSize = sizeOverride ?? (boss ? new Vector2(34, 30) : new Vector2(24, 20));
             var floor = Mat(boss ? Color.Lerp(ch.Floor, new Color(0.3f, 0.25f, 0.45f), 0.45f) : ch.Floor, 0);
             var wall = Mat(ch.Wall, 4);
             var gateM = Mat(new Color(0.85f, 0.62f, 0.25f), 4);

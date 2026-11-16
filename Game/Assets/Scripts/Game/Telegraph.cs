@@ -6,10 +6,11 @@ namespace CatTang
 {
     public class Telegraph : MonoBehaviour
     {
-        enum Shape { Ring, Lane }
+        enum Shape { Ring, Lane, Sector }
         Shape shape;
         LineRenderer outer, fill;
-        float born, life, radius, len, width;
+        float born, life, radius, len, width, half;
+        const int ArcN = 24;
         Color col;
         Transform follow;
         static Material mat;
@@ -60,6 +61,22 @@ namespace CatTang
             return t;
         }
 
+        /// <summary>부채꼴 예고: dir 방향을 가운데로 양쪽 halfAngle도, 반지름 radius</summary>
+        public static Telegraph Sector(Vector3 at, Vector3 dir, float radius, float halfAngle, float dur, Color c, Transform follow = null)
+        {
+            var t = new GameObject("Telegraph_Sector").AddComponent<Telegraph>();
+            t.transform.position = at;
+            dir.y = 0;
+            t.transform.rotation = Quaternion.LookRotation(dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.forward);
+            t.shape = Shape.Sector; t.radius = radius; t.half = halfAngle; t.life = dur; t.col = c; t.follow = follow;
+            t.Init();
+            return t;
+        }
+
+        /// <summary>방향 바꾸기 (조준선이 대상을 쫓을 때)</summary>
+        public void SetDir(Vector3 dir) { dir.y = 0; if (dir.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(dir.normalized); }
+        public void SetColor(Color c) => col = c;
+
         void Init()
         {
             born = Time.time;
@@ -71,6 +88,13 @@ namespace CatTang
                 outer.positionCount = fill.positionCount = 40;
                 outer.widthMultiplier = 0.09f;
                 fill.widthMultiplier = 0.22f;
+            }
+            else if (shape == Shape.Sector)
+            {
+                outer.loop = fill.loop = true;
+                outer.positionCount = fill.positionCount = ArcN + 2;
+                outer.widthMultiplier = 0.09f;
+                fill.widthMultiplier = 0.18f;
             }
             else
             {
@@ -111,6 +135,19 @@ namespace CatTang
                     var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                     outer.SetPosition(i, o + d * radius);
                     fill.SetPosition(i, o + d * rf);
+                }
+            }
+            else if (shape == Shape.Sector)
+            {
+                float rf = Mathf.Max(0.05f, radius * k);
+                outer.SetPosition(0, o);
+                fill.SetPosition(0, o);
+                for (int i = 0; i <= ArcN; i++)
+                {
+                    float a = Mathf.Lerp(-half, half, i / (float)ArcN);
+                    var d = Quaternion.AngleAxis(a, Vector3.up) * transform.forward;
+                    outer.SetPosition(i + 1, o + d * radius);
+                    fill.SetPosition(i + 1, o + d * rf);
                 }
             }
             else

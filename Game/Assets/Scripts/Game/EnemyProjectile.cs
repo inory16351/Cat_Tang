@@ -6,10 +6,11 @@ namespace CatTang
     public class EnemyProjectile : MonoBehaviour
     {
         Vector3 dir;
-        float speed, damage, dieAt;
+        float speed, damage, dieAt, rangeLeft;
         static Material mat;
 
-        public static void Spawn(Vector3 pos, Vector3 dir, float speed, float damage)
+        /// <summary>range > 0이면 그 거리만큼 날아가면 사라짐 (산탄 사거리)</summary>
+        public static EnemyProjectile Spawn(Vector3 pos, Vector3 dir, float speed, float damage, float range = 0)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = "EnemyBullet";
@@ -29,6 +30,8 @@ namespace CatTang
             p.speed = speed;
             p.damage = damage;
             p.dieAt = Time.time + 6f;
+            p.rangeLeft = range > 0 ? range : float.MaxValue;
+            return p;
         }
 
         void Update()
@@ -40,6 +43,8 @@ namespace CatTang
                 if (hp == null) { Destroy(gameObject); return; }            // 벽
             }
             transform.position += dir * step;
+            rangeLeft -= step;
+            if (rangeLeft <= 0) { Destroy(gameObject); return; }
             var pl = PlayerController.Instance;
             if (pl && pl.health.Alive)
             {

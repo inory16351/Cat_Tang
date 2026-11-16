@@ -178,7 +178,8 @@ namespace CatTang
             bossBar.SetActive(bossHealth);
             if (!bossHealth) return;
             var rm = RunManager.Instance;
-            bossName.text = rm && rm.Chapter != null ? rm.Chapter.BossName : "보스";
+            var bossEnemy = bossHealth.GetComponent<Enemy>();
+            bossName.text = bossEnemy && bossEnemy.brain ? bossEnemy.brain.DisplayName : rm && rm.Chapter != null ? rm.Chapter.BossName : "보스";
             float v = bossHealth.maxHp > 0 ? Mathf.Clamp01(bossHealth.hp / bossHealth.maxHp) : 0;
             bossShown = Mathf.MoveTowards(bossShown, v, Time.unscaledDeltaTime * 3f);
             if (bossHealth.hp < bossLastHp - 0.01f) bossHold = 0.4f;
@@ -343,7 +344,7 @@ namespace CatTang
             goldText.text = player.inv.gold.ToString();
             var rm = RunManager.Instance;
             shardText.text = rm ? $"{Meta.Shards} <size=22>(+{rm.shardsThisRun})</size>" : Meta.Shards.ToString();
-            roomText.text = rm ? (rm.IsBossRoom ? $"{rm.chapter}장 · {rm.Chapter?.BossName}" : $"{rm.chapter}장 · 스테이지 {rm.stageIndex + 1}/{RunManager.Stages} · 방 {rm.roomIndex + 1}/{rm.RoomCount}") + (rm.inCombat ? "" : "  <color=#FFD54A>· 다음 방 · 문으로</color>")
+            roomText.text = rm ? (rm.IsBossRoom ? $"{rm.chapter}장 · {rm.Chapter?.BossName}" : rm.IsMidBossRoom ? $"{rm.chapter}장 · 중간 보스" : $"{rm.chapter}장 · 스테이지 {rm.stageIndex + 1}/{RunManager.Stages} · 방 {rm.roomIndex + 1}/{rm.RoomCount}") + (rm.inCombat ? "" : "  <color=#FFD54A>· 다음 방 · 문으로</color>")
                                 : "여관 앞 마을";
 
             var rev = player.rev;

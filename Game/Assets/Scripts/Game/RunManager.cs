@@ -35,7 +35,12 @@ namespace CatTang
         public int shardsThisRun;
         public bool runOver, inCombat;
         public ChapterDef Chapter { get; private set; }
-        public bool IsBossRoom => stageIndex >= Stages;
+        public bool IsBossRoom => stageIndex >= Stages && !IsMidBossRoom;
+        // 중간 보스 방: 스테이지 2와 3 사이 (1장 기획서). 이 방을 비우면 보상 없이 바로 스테이지 3으로
+        public bool IsMidBossRoom { get; private set; }
+        bool midBossDone;
+        RewardKind afterMidBoss;
+        public Vector2 RoomSize => current != null ? current.size : new Vector2(24, 20);
         public int RoomCount => layout != null ? layout.rooms.Count : 1;
         public Vector3 RoomCenter => current != null ? current.center : Vector3.zero;
         public Transform StageRoot => layout != null ? layout.root : null;
@@ -72,8 +77,28 @@ namespace CatTang
         }
 
         // ---------- 스테이지 ----------
+        bool HasMidBoss => chapter == 1;                 // 지금은 1장만 중간 보스가 있음
+
+        void BuildMidBoss()
+        {
+            if (layout != null && layout.root) Destroy(layout.root.gameObject);
+            foreach (var e in alive) if (e) Destroy(e.gameObject);
+            alive.Clear();
+            IsMidBossRoom = true;
+            stageDone = false;
+            // 술집 앞 큰길 30×14m: 양옆 건물(긴 벽) = 돌진 태클이 부딪히는 벽
+            layout = RoomBuilder.BuildStage(Chapter, 1, chapter * 1000 + 555, true, new Vector2(30, 14));
+            current = null;
+            roomIndex = 0;
+            var r0 = layout.rooms[0];
+            player.Teleport(r0.center - r0.farSide * (r0.size.y / 2 - 2.5f) + Vector3.up * 0.3f);
+            Music.Play("bgm_boss");
+            ui?.Toast("중간 보스 — 태엽 현상금 사냥꾼");
+        }
+
         void BuildStage(int index, RewardKind reward)
         {
+            IsMidBossRoom = false;
             if (layout != null && layout.root) Destroy(layout.root.gameObject);
             foreach (var e in alive) if (e) Destroy(e.gameObject);
             alive.Clear();
@@ -109,7 +134,7 @@ namespace CatTang
             roomIndex = i;
             inCombat = true;
             foreach (var g in current.gates) g.SetActive(true);
-            wavesLeft = IsBossRoom ? 1 : (stageIndex >= 2 ? 3 : Random.value < 0.5f ? 2 : 3);   // 방마다 웨이브 2~3번 (1장 기획서)
+            wavesLeft = IsBossRoom || IsMidBossRoom ? 1 : (stageIndex >= 2 ? 3 : Random.value < 0.5f ? 2 : 3);   // 방마다 웨이브 2~3번 (1장 기획서)
             StartCoroutine(SpawnSoon());
         }
 
@@ -126,6 +151,11 @@ namespace CatTang
         {
             wavesLeft--;
             var c = current.center;
+            if (IsMidBossRoom)
+            {
+                alive.Add(EnemyFactory.MidBoss(c + current.farSide * 3f, Chapter));
+                yield break;
+            }
             if (IsBossRoom)
             {
                 alive.Add(EnemyFactory.Boss(c + new Vector3(0, 0, 4), Chapter));
@@ -183,6 +213,14 @@ namespace CatTang
             player.ResetCylinder();
             if (layout.rooms.Any(r => !r.cleared)) { ui?.Toast("다음 방으로"); return; }
             stageDone = true;
+            if (IsMidBossRoom)
+            {
+                midBossDone = true;
+                ui?.Toast("태엽 현상금 사냥꾼을 쓰러뜨렸다 (+30 골드)");
+                player.inv.gold += 30;
+                BuildStage(2, afterMidBoss);
+                return;
+            }
             if (IsBossRoom) { ui?.ShowRewardPick("최종 보상 — 하나 고르기", BossOptions(), ChapterClear); return; }
             if (pendingReward == RewardKind.Gold || pendingReward == RewardKind.Shard || pendingReward == RewardKind.Armor) { GrantFixed(pendingReward); AfterReward(); return; }
             ui?.ShowRewardPick($"스테이지 보상 — {RoomDoor.NameOf(pendingReward)}", Options(pendingReward), AfterReward);
@@ -345,6 +383,13 @@ namespace CatTang
         {
             if (inCombat || runOver) return;
             ui?.CloseAll();
+            // 스테이지 2를 끝내고 문을 고르면 먼저 중간 보스 방 (고른 문의 보상은 스테이지 3으로 넘김)
+            if (stageIndex == 1 && !midBossDone && HasMidBoss)
+            {
+                afterMidBoss = d.reward;
+                BuildMidBoss();
+                return;
+            }
             BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward);
         }
 

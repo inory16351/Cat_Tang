@@ -21,6 +21,8 @@ namespace CatTang
         public float projectileDamage = 8;
         public string bossPattern = "Spiral";
         public ChapterDef chapter;
+        public float chapterDmg = 1f;                 // 챕터 피해 배율 (보스 패턴 피해에 곱함)
+        [HideInInspector] public BossBrain brain;     // 있으면 보스 패턴을 이 두뇌가 맡음 (1장 보스 · 중간 보스)
 
         // 1장 기획서 수치 (피해 · 체력은 EnemyFactory에서 챕터 배율과 함께 넣음)
         public const float OutlawAimTime = 0.5f, OutlawBulletSpeed = 9f;
@@ -78,7 +80,10 @@ namespace CatTang
                 case Kind.Outlaw: OutlawUpdate(p, dir, dist, spd); break;
                 case Kind.Brute: BruteUpdate(p, dir, dist, spd); break;
                 case Kind.Bomber: BomberUpdate(p, dir, dist, spd); break;
-                case Kind.Boss: BossUpdate(p, dir, dist, spd); break;
+                case Kind.Boss:
+                    if (!brain) brain = GetComponent<BossBrain>();
+                    if (brain) brain.Tick(p, dir, dist, spd); else BossUpdate(p, dir, dist, spd);
+                    break;
             }
             Animate((transform.position - before).magnitude / Mathf.Max(0.0001f, Time.deltaTime));
         }
