@@ -180,7 +180,7 @@ namespace CatTang
             yield return new WaitForSeconds(WavePreview);
             spawning = false;
             if (runOver || current == null) yield break;
-            foreach (var pos in spots) alive.Add(EnemyFactory.RandomMinion(pos, Chapter));
+            foreach (var pos in spots) alive.Add(EnemyFactory.RandomMinion(pos, Chapter, elite: midBossDone && stageIndex >= 2));   // 중간 보스 뒤 하수인은 전부 강화형
         }
 
         public void AddEnemy(Enemy e) { if (e) alive.Add(e); }

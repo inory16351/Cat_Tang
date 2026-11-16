@@ -52,19 +52,44 @@ namespace CatTang
         }
 
         /// <summary>일반 적 웨이브 구성: 무법자 = 챕터 사격형 비율 + 10%, 폭탄병 25%, 나머지 깡패</summary>
-        public static Enemy RandomMinion(Vector3 pos, ChapterDef ch)
+        public static Enemy RandomMinion(Vector3 pos, ChapterDef ch, bool elite = false)
         {
             float r = Random.value, outlaw = Mathf.Clamp01(ch.ShooterRatio + 0.1f);
-            if (r < outlaw) return Outlaw(pos, ch);
-            if (r < outlaw + 0.25f) return Bomber(pos, ch);
-            return Brute(pos, ch);
+            if (r < outlaw) return Outlaw(pos, ch, elite);
+            if (r < outlaw + 0.25f) return Bomber(pos, ch, elite);
+            return Brute(pos, ch, elite);
+        }
+
+        /// <summary>강화형 모델(Resources/Enemies/이름_Plus)이 있으면 그걸, 없으면 기본 모델</summary>
+        static bool AttachModelFor(Enemy e, string res, bool elite, out bool plusModel)
+        {
+            plusModel = elite && AttachModel(e, res + "_Plus");
+            return plusModel || AttachModel(e, res);
+        }
+
+        /// <summary>강화형: 체력 1.5배. 전용 모델이 없으면 기본 모델을 조금 크게 · 더 달군 색으로</summary>
+        static void MakeElite(Enemy e, bool plusModel)
+        {
+            e.elite = true;
+            e.name += "_Plus";
+            e.GetComponent<Health>().maxHp *= 1.5f;
+            var model = e.transform.Find("Model");
+            if (plusModel || !model) return;
+            model.localScale *= 1.12f;
+            foreach (var r in model.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.materials;
+                foreach (var m in mats) if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", m.GetColor("_BaseColor") * new Color(1.15f, 0.82f, 0.68f));
+                r.materials = mats;
+            }
+            e.SetModel(model);
         }
 
         // 태엽 무법자: 원거리 · 이속 2.6 · 2초마다 1발(예고 0.5초) · 피해 8 · 내구 24
-        public static Enemy Outlaw(Vector3 pos, ChapterDef ch)
+        public static Enemy Outlaw(Vector3 pos, ChapterDef ch, bool elite = false)
         {
             var e = Root("Enemy_Outlaw", pos, 24 * ch.HpMul, Enemy.Kind.Outlaw, 0.45f, 1.7f);
-            if (!AttachModel(e, "Ch1_Outlaw"))
+            if (!AttachModelFor(e, "Ch1_Outlaw", elite, out bool plus))
             {
                 var m = ProtoModel(e);
                 Part(PrimitiveType.Capsule, m, new Vector3(0, 0.75f, 0), new Vector3(0.6f, 0.6f, 0.5f), M(Tint(new Color(0.42f, 0.3f, 0.32f), ch)));
@@ -75,15 +100,16 @@ namespace CatTang
             e.speed = 2.6f;
             e.projectileDamage = 8 * ch.DmgMul;
             e.shootInterval = 2f;
+            if (elite) MakeElite(e, plus);
             e.GetComponent<Health>().RefreshRenderers();
             return e;
         }
 
         // 시계추 깡패: 돌진 근접 · 이속 3.4 · 돌진 예고 0.6초 · 피해 12 · 내구 48
-        public static Enemy Brute(Vector3 pos, ChapterDef ch)
+        public static Enemy Brute(Vector3 pos, ChapterDef ch, bool elite = false)
         {
             var e = Root("Enemy_Brute", pos, 48 * ch.HpMul, Enemy.Kind.Brute, 0.75f, 2.1f);
-            if (!AttachModel(e, "Ch1_Brute"))
+            if (!AttachModelFor(e, "Ch1_Brute", elite, out bool plus))
             {
                 var m = ProtoModel(e);
                 Part(PrimitiveType.Cube, m, new Vector3(0, 0.95f, 0), new Vector3(1.3f, 1.4f, 0.9f), M(Tint(new Color(0.36f, 0.28f, 0.3f), ch)));
@@ -92,15 +118,16 @@ namespace CatTang
             }
             e.speed = 3.4f;
             e.contactDamage = 12 * ch.DmgMul;
+            if (elite) MakeElite(e, plus);
             e.GetComponent<Health>().RefreshRenderers();
             return e;
         }
 
         // 모래시계 폭탄병: 자폭 · 이속 4.5 · 붙으면 0.8초 점멸 후 반경 2m 폭발 · 피해 12 · 내구 16
-        public static Enemy Bomber(Vector3 pos, ChapterDef ch)
+        public static Enemy Bomber(Vector3 pos, ChapterDef ch, bool elite = false)
         {
             var e = Root("Enemy_Bomber", pos, 16 * ch.HpMul, Enemy.Kind.Bomber, 0.4f, 1.3f);
-            if (!AttachModel(e, "Ch1_Bomber"))
+            if (!AttachModelFor(e, "Ch1_Bomber", elite, out bool plus))
             {
                 var m = ProtoModel(e);
                 Part(PrimitiveType.Capsule, m, new Vector3(0, 0.55f, 0), new Vector3(0.6f, 0.45f, 0.5f), M(Tint(new Color(0.4f, 0.3f, 0.28f), ch)));
@@ -109,6 +136,7 @@ namespace CatTang
             }
             e.speed = 4.5f;
             e.contactDamage = 12 * ch.DmgMul;
+            if (elite) MakeElite(e, plus);
             e.GetComponent<Health>().RefreshRenderers();
             return e;
         }

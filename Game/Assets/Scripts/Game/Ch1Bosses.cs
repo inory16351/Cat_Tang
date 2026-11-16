@@ -52,14 +52,16 @@ namespace CatTang
     {
         public float radius = 1.5f, slow = 0.3f, until;
 
-        public static void Spawn(Vector3 at, float radius, float life, float slow)
+        public static void Spawn(Vector3 at, float radius, float life, float slow) => Spawn(at, radius, life, slow, new Color(0.95f, 0.62f, 0.2f));
+
+        public static void Spawn(Vector3 at, float radius, float life, float slow, Color color)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             go.name = "MeltPuddle";
             Object.Destroy(go.GetComponent<Collider>());
             go.transform.position = at + Vector3.up * 0.02f;
             go.transform.localScale = new Vector3(radius * 2, 0.01f, radius * 2);
-            go.GetComponent<Renderer>().sharedMaterial = RoomBuilder.Mat(new Color(0.95f, 0.62f, 0.2f), 0);
+            go.GetComponent<Renderer>().sharedMaterial = RoomBuilder.Mat(color, 0);
             var m = go.AddComponent<MeltPuddle>();
             m.radius = radius; m.slow = slow; m.until = Time.time + life;
         }

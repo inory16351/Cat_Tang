@@ -40,6 +40,7 @@ namespace CatTang
 
         CharacterController cc;
         Vector3 aimDir = Vector3.forward;
+        public Vector3 AimDir => aimDir;            // 강화형 무법자가 조준당했는지 볼 때 씀
         float aimDist = 8f;
         float nextFireTime, nextSkill, reloadStart, reloadDur, dashCharges = 3, dashTimer;
         bool dashing, perfectBuff, ultimateActive;

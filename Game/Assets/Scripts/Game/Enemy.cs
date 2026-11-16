@@ -21,6 +21,7 @@ namespace CatTang
         public float projectileDamage = 8;
         public string bossPattern = "Spiral";
         public ChapterDef chapter;
+        public bool elite;                            // 강화형 (스테이지 3부터): 공격 하나 추가 · 체력 1.5배
         public float chapterDmg = 1f;                 // 챕터 피해 배율 (보스 패턴 피해에 곱함)
         [HideInInspector] public BossBrain brain;     // 있으면 보스 패턴을 이 두뇌가 맡음 (1장 보스 · 중간 보스)
 
@@ -28,6 +29,11 @@ namespace CatTang
         public const float OutlawAimTime = 0.5f, OutlawBulletSpeed = 9f;
         public const float BruteWindup = 0.6f, BruteChargeSpeed = 13f, BruteChargeDist = 8f, BruteRange = 7f, BruteCooldown = 2.2f, BruteRecover = 0.7f;
         public const float BomberFuse = 0.8f, BomberRadius = 2f, BomberTrigger = 1.3f;
+        // 강화형 (1장 기획서): 무법자+ 회피 사격 4초 쿨 · 3m / 깡패+ 회전 휘두르기 예고 0.7 · 반경 2.5 · 피해 12 / 폭탄병+ 모래 장판 반경 2 · 3초 · 이속 30% 감소
+        public const float RollCooldown = 4f, RollDist = 3f, SpinWindup = 0.7f, SpinRadius = 2.5f, SandLife = 3f, SandSlow = 0.3f;
+        float nextRoll, nextSpin;
+        Vector3 rollFrom, rollTo;
+        float rollT;
 
         [HideInInspector] public Health health;
         float nextAttack, spin, nextHandHit, nextSummon;
@@ -36,7 +42,7 @@ namespace CatTang
         bool dead;
 
         // 일반 적 공격 상태
-        enum Act { Move, Windup, Charge, Recover, Fuse }
+        enum Act { Move, Windup, Charge, Recover, Fuse, Roll, Spin }
         Act act = Act.Move;
         float actUntil, charged;
         Vector3 lockDir;
@@ -100,6 +106,31 @@ namespace CatTang
         // ---------- 태엽 무법자 ----------
         void OutlawUpdate(PlayerController p, Vector3 dir, float dist, float spd)
         {
+            if (act == Act.Roll)
+            {
+                rollT += Time.deltaTime / 0.35f;
+                transform.position = Vector3.Lerp(rollFrom, rollTo, Mathf.SmoothStep(0, 1, rollT));
+                if (model) model.localRotation = Quaternion.Euler(0, 0, -360f * Mathf.Clamp01(rollT) * Mathf.Sign(Vector3.Dot(rollTo - rollFrom, transform.right))) * modelBaseRot;
+                if (rollT < 1f) return;
+                // 구른 뒤 바로 한 발
+                var d = Effects.Flat(p.transform.position - transform.position).normalized;
+                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, d, OutlawBulletSpeed, projectileDamage);
+                GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + d * 0.8f, d, 0.6f);
+                act = Act.Move;
+                nextAttack = Mathf.Max(nextAttack, Time.time + 0.8f);
+                return;
+            }
+            if (elite && act == Act.Move && Time.time >= nextRoll && dist < 16f && Vector3.Angle(Effects.Flat(p.AimDir), -dir) < 10f)
+            {
+                // 고양이가 조준하면 옆으로 구르며 한 발
+                act = Act.Roll;
+                rollT = 0;
+                rollFrom = transform.position;
+                var side = Vector3.Cross(Vector3.up, dir) * (Random.value < 0.5f ? 1 : -1);
+                rollTo = RunManager.Instance ? RunManager.Instance.ClampToRoom(rollFrom + side * RollDist, 1.2f) : rollFrom + side * RollDist;
+                nextRoll = Time.time + RollCooldown;
+                return;
+            }
             if (act == Act.Windup)
             {
                 Face(lockDir);
@@ -156,6 +187,23 @@ namespace CatTang
                 case Act.Recover:
                     if (Time.time >= actUntil) { act = Act.Move; nextAttack = Time.time + BruteCooldown / AtkMul; }
                     return;
+                case Act.Spin:
+                    if (Time.time < actUntil) return;
+                    // 시계추를 들고 한 바퀴: 주변 원형 타격
+                    if (model) StartCoroutine(SpinModel());
+                    if (Effects.Flat(p.transform.position - transform.position).magnitude <= SpinRadius) p.health.TakeDamage(contactDamage);
+                    GunkataFx.Swirl(transform.position + Vector3.up, SpinRadius, 540f);
+                    act = Act.Recover;
+                    actUntil = Time.time + 0.5f;
+                    nextSpin = Time.time + 3.5f / AtkMul;
+                    return;
+            }
+            if (elite && Time.time >= nextSpin && dist < SpinRadius - 0.3f)
+            {
+                act = Act.Spin;
+                actUntil = Time.time + SpinWindup / AtkMul;
+                tele = Telegraph.Ring(transform.position, SpinRadius, actUntil - Time.time, Telegraph.Danger, transform);
+                return;
             }
             if (dist > 1.2f) transform.position += dir * Mathf.Min(spd * Time.deltaTime, dist - 1.2f);
             Face(dir);
@@ -196,9 +244,19 @@ namespace CatTang
             if (dead) return;
             if (p && p.health.Alive && Effects.Flat(p.transform.position - transform.position).magnitude <= BomberRadius)
                 p.health.TakeDamage(contactDamage);
+            if (elite) MeltPuddle.Spawn(transform.position, BomberRadius, SandLife, SandSlow, new Color(0.92f, 0.78f, 0.45f));   // 모래 장판
             selfDestruct = true;
             health.hp = 0;
             Die(health);
+        }
+
+        System.Collections.IEnumerator SpinModel()
+        {
+            for (float t = 0; t < 0.3f && model; t += Time.deltaTime)
+            {
+                model.localRotation = Quaternion.Euler(0, 360f * t / 0.3f, 0) * modelBaseRot;
+                yield return null;
+            }
         }
 
         bool selfDestruct;
