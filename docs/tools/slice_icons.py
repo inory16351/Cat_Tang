@@ -2,10 +2,12 @@
 # 같은 크기 격자로 자르면 칸을 넘친 그림이 잘리거나 옆 그림이 끼므로,
 # 그림 덩어리(배경과 다른 영역)를 찾아 가장 가까운 칸에 배정한 뒤 덩어리 범위로 자른다.
 # 사용: slice_icons.py <sheet.png> <cols> <rows> <out_dir> <id1,id2,...> <prefix>
+# 저장: 배경을 투명으로 뺀 RGBA PNG (게임에서 아이콘 뒤에 남색 네모가 보이지 않게)
 import sys, os
 import numpy as np
 from PIL import Image
 from scipy import ndimage as nd
+from icon_toon import bg_alpha
 
 OUT = 256
 PAD = 0.08        # 그림 둘레 여백 (긴 변 대비)
@@ -74,7 +76,9 @@ def slice_sheet(sheet, cols, rows, out_dir, ids, prefix):
         ty0, tx0 = max(sy0, 0), max(sx0, 0)
         ty1, tx1 = min(sy0 + side, H), min(sx0 + side, W)
         canvas[ty0 - sy0:ty1 - sy0, tx0 - sx0:tx1 - sx0] = clean[ty0:ty1, tx0:tx1]
-        out = Image.fromarray(np.clip(canvas, 0, 255).astype(np.uint8))
+        alpha = bg_alpha(canvas, bg)                          # 배경색 영역 → 투명
+        rgba = np.dstack([np.clip(canvas, 0, 255), alpha[..., None] * 255]).astype(np.uint8)
+        out = Image.fromarray(rgba, "RGBA")
         out.resize((OUT, OUT), Image.LANCZOS).save(os.path.join(out_dir, f"{prefix}_{i}.png"))
     print("sliced", len(ids), sheet)
 

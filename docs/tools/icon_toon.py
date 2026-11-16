@@ -1,6 +1,7 @@
 # 플랫 아이콘에 툰 셰이더 효과를 2D로 입힌다 (Unity UI 셰이더로 옮길 수식의 시험판)
 # 단계: 마스크 → 원본 선으로 부품 분리 → 부품별 높이(거리장) → 노멀 → 2단 음영 + 잉크 경계 + 해칭 + 림 + 굵은 외곽선
 # 사용: icon_toon.py <in.png|in_dir> <out.png|out_dir> [preset] [ui]
+#   아이콘(ui 아님)은 배경을 투명하게 뺀 RGBA로 저장 (게임에서 남색 네모가 보이지 않게). ui 모드는 예전처럼 배경색 RGB.
 import sys
 import numpy as np
 from PIL import Image
@@ -26,6 +27,26 @@ def mask_of(rgb):
     m = nd.binary_fill_holes(m)
     m = nd.binary_opening(m, iterations=1)
     return m
+
+
+def bg_alpha(rgb, bg=BG, near=12.0, hole=8.0, min_hole=40):
+    """배경색 영역의 알파를 0으로 (0~1 알파 배열 반환).
+    지우는 곳: 가장자리와 이어진 배경색 영역 + 그림 안에 갇힌 큰 배경 구멍(방아쇠울 안 등).
+    배경과 맞닿은 그림 가장자리는 배경색과 얼마나 다른지에 따라 반투명으로 부드럽게.
+    (Unity로 게임 아이콘 55개의 배경을 지울 때 쓴 것과 같은 방식)"""
+    d = np.linalg.norm(np.asarray(rgb, np.float32)[..., :3] - bg, axis=2)
+    lab, _ = nd.label(d <= near)
+    border = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    clear = np.isin(lab, border[border > 0])
+    lab2, n2 = nd.label((d <= hole) & ~clear)
+    if n2:
+        sizes = nd.sum(np.ones_like(d), lab2, range(1, n2 + 1))
+        big = np.concatenate([[False], sizes >= min_hole])
+        clear |= big[lab2]
+    a = np.where(clear, 0.0, 1.0).astype(np.float32)
+    edge = nd.binary_dilation(clear, structure=np.ones((3, 3), bool)) & ~clear
+    a[edge] = np.clip((d[edge] - 8.0) / 12.0, 0, 1)
+    return a
 
 
 def height_of(m, radius, d=None):
@@ -100,7 +121,14 @@ def normals(h):
     return n / np.linalg.norm(n, axis=2, keepdims=True)
 
 
-def toon(img, shade=1, ink=1, hatch=1, rim=1, outline=8, scale=2, ui=False, radius=0.04):
+def toon(img, shade=1, ink=1, hatch=1, rim=1, outline=8, scale=2, ui=False, radius=0.04, transparent=False):
+    """transparent=True: 배경을 투명으로 뺀 RGBA 반환 (아이콘용). False면 예전처럼 배경색을 채운 RGB (HUD 도구들이 씀)"""
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        # 투명 배경 입력(slice_icons 결과 등): 투명한 곳이 검정으로 읽히면 마스크가 깨지므로 배경색 위에 얹음
+        rgba = img.convert("RGBA")
+        base = Image.new("RGB", img.size, tuple(int(v) for v in BG))
+        base.paste(rgba, mask=rgba.split()[3])
+        img = base
     im = img.convert("RGB")
     im = im.resize((im.width * scale, im.height * scale), Image.LANCZOS)
     rgb = np.asarray(im, np.float32)
@@ -156,10 +184,20 @@ def toon(img, shade=1, ink=1, hatch=1, rim=1, outline=8, scale=2, ui=False, radi
 
     bg = BG / 255
     res = np.where(m[..., None], out, bg)
+    rf = None
     if outline:
         ring = nd.binary_dilation(m, iterations=outline) & ~m
         rf = nd.gaussian_filter(ring.astype(np.float32), 0.8)[..., None]
         res = np.where(m[..., None], res, bg * (1 - rf) + INK * rf)
+    if transparent:
+        # 그림(m) = 불투명. 단 m은 구멍까지 채운 마스크라 원본에서 배경색이던 큰 구멍은 다시 투명으로.
+        alpha = np.where(m, 1.0, 0.0).astype(np.float32)
+        alpha[m & (bg_alpha(rgb) <= 0)] = 0
+        if rf is not None:
+            alpha = np.where(m, alpha, rf[..., 0])          # 바깥 외곽선은 그 진하기만큼
+        res = np.dstack([res, alpha[..., None]])
+        res = np.clip(res * 255, 0, 255).astype(np.uint8)
+        return Image.fromarray(res, "RGBA").resize(img.size, Image.LANCZOS)
     res = np.clip(res * 255, 0, 255).astype(np.uint8)
     return Image.fromarray(res).resize(img.size, Image.LANCZOS)
 
@@ -170,12 +208,13 @@ if __name__ == "__main__":
     src, dst = sys.argv[1], sys.argv[2]
     preset = sys.argv[3] if len(sys.argv) > 3 else "hades"
     ui = len(sys.argv) > 4 and sys.argv[4] == "ui"
+    tr = not ui                                     # 아이콘은 투명 배경, UI 판은 예전처럼
     if os.path.isdir(src):
         os.makedirs(dst, exist_ok=True)
         files = sorted(glob.glob(os.path.join(src, "*.png")))
         for f in files:
-            toon(Image.open(f), ui=ui, **PRESETS[preset]).save(os.path.join(dst, os.path.basename(f)))
+            toon(Image.open(f), ui=ui, transparent=tr, **PRESETS[preset]).save(os.path.join(dst, os.path.basename(f)))
         print("toon", len(files), "->", dst)
     else:
-        toon(Image.open(src), ui=ui, **PRESETS[preset]).save(dst)
+        toon(Image.open(src), ui=ui, transparent=tr, **PRESETS[preset]).save(dst)
         print(dst)

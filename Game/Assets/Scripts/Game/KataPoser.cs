@@ -38,6 +38,8 @@ namespace CatTang
         KataPose from, to, cur;
         float t = 1, weight, weightTarget;
         float scale = 1;
+        /// <summary>골반 뼈 (몸 중심 = 회전축)</summary>
+        public Transform Hips => hips;
 
         // ---------- 자세 표 ----------
         static Vector3 V(float x, float y, float z) => new Vector3(x, y, z).normalized;

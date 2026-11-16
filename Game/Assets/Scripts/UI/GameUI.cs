@@ -22,7 +22,10 @@ namespace CatTang
         RectTransform hpFillRt;
         float hpFillW;
         Text hpText, goldText, shardText, roomText, nextText, promptText, toastText, heatText, skillText;
-        Image[] dash = new Image[3];
+        Text[] dash = new Text[3];
+        Image dashBar;
+        GameObject dashGauge;
+        static readonly Color DashOn = new Color(0.62f, 0.9f, 1f), DashOff = new Color(1f, 1f, 1f, 0.22f);
         GameObject prompt;
         PlayerController player;
         Coroutine toastCo;
@@ -97,12 +100,21 @@ namespace CatTang
             hpFillW = (hi[2] - hi[0]) * sc;
             hpText = UIKit.Label("HPText", frame.transform, new Vector2(0, 1), new Vector2((hi[0] + hi[2]) / 2f * sc, -(hi[1] + hi[3]) / 2f * sc), new Vector2(240, 40), 26, TextAnchor.MiddleCenter, true);
             hpText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            // 대시 3칸
+            // 대시 게이지: >> 기호 3칸 (찬 칸은 밝게, 차오르는 칸은 서서히) + 아래 가는 충전 바
+            var dg = UIKit.MakeRect("DashGauge", hudRoot, new Vector2(0, 1), new Vector2(58, -196), new Vector2(240, 70), new Vector2(0, 0.5f));
+            dashGauge = dg.gameObject;
             for (int i = 0; i < 3; i++)
             {
-                dash[i] = UIKit.Img("Dash" + i, hudRoot, "dash_full", new Vector2(0, 1), new Vector2(120 + i * 78, -205), new Vector2(76, 76));
-                dash[i].rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                dash[i] = UIKit.Label("Dash" + i, dg, new Vector2(0, 0.5f), new Vector2(i * 70, 6), new Vector2(70, 56), 44, TextAnchor.MiddleCenter, true, DashOn);
+                dash[i].rectTransform.pivot = new Vector2(0, 0.5f);
+                dash[i].text = ">>";
             }
+            var barBg = UIKit.MakeRect("BarBg", dg, new Vector2(0, 0.5f), new Vector2(6, -26), new Vector2(198, 6), new Vector2(0, 0.5f)).gameObject.AddComponent<Image>();
+            barBg.color = new Color(0, 0, 0, 0.45f);
+            barBg.raycastTarget = false;
+            dashBar = UIKit.MakeRect("Bar", barBg.transform, new Vector2(0, 0.5f), Vector2.zero, new Vector2(198, 6), new Vector2(0, 0.5f)).gameObject.AddComponent<Image>();
+            dashBar.color = DashOn;
+            dashBar.raycastTarget = false;
             // 골드 · 시간의 조각 (오른쪽 위)
             var coin = UIKit.Img("Coin", hudRoot, "coin", new Vector2(1, 1), new Vector2(-300, -60), new Vector2(64, 64));
             coin.rectTransform.pivot = new Vector2(0.5f, 0.5f);
@@ -135,7 +147,7 @@ namespace CatTang
             prompt.SetActive(false);
             if (village)
             {
-                foreach (var g in new GameObject[] { hpFill.transform.parent.gameObject, dash[0].gameObject, dash[1].gameObject, dash[2].gameObject, coin.gameObject, goldText.gameObject, nextText.gameObject, heatText.gameObject, skillText.gameObject })
+                foreach (var g in new GameObject[] { hpFill.transform.parent.gameObject, dashGauge, coin.gameObject, goldText.gameObject, nextText.gameObject, heatText.gameObject, skillText.gameObject })
                     g.SetActive(false);
             }
         }
@@ -169,12 +181,18 @@ namespace CatTang
             hpFillRt.sizeDelta = new Vector2(Mathf.Max(0.01f, hpFillW * f), hpFillRt.sizeDelta.y);
             hpFill.enabled = f > 0.01f;
             hpText.text = $"{Mathf.CeilToInt(h.hp)} / {Mathf.CeilToInt(h.maxHp)}";
+            float dc = player.DashCharges, dp = player.DashRechargeProgress;
             for (int i = 0; i < 3; i++)
             {
-                bool full = player.DashCharges >= i + 1;
-                dash[i].sprite = UIKit.Spr(full ? "dash_full" : "dash_empty");
-                dash[i].transform.localScale = Vector3.one * (full ? 1f : (i == Mathf.FloorToInt(player.DashCharges) ? 0.8f + 0.2f * player.DashRechargeProgress : 0.8f));
+                bool full = dc >= i + 1;
+                bool filling = !full && i == Mathf.FloorToInt(dc);
+                float k = full ? 1f : filling ? dp * 0.6f : 0f;          // 차오르는 칸은 60%까지만 밝아짐 (다 차면 번쩍)
+                dash[i].color = Color.Lerp(DashOff, DashOn, k);
+                dash[i].transform.localScale = Vector3.one * (full ? 1f : 0.85f);
             }
+            // 충전 바: 전체 대시 게이지 (칸 수 + 진행)
+            float total = Mathf.Clamp01((dc + (dc >= player.dashMax ? 0 : dp)) / Mathf.Max(1, player.dashMax));
+            dashBar.rectTransform.sizeDelta = new Vector2(198 * total, 6);
             goldText.text = player.inv.gold.ToString();
             var rm = RunManager.Instance;
             shardText.text = rm ? $"{Meta.Shards} <size=22>(+{rm.shardsThisRun})</size>" : Meta.Shards.ToString();
@@ -266,7 +284,8 @@ namespace CatTang
                     var card = UIKit.Panel("Card" + i, panel.transform, new Vector2(0.5f, 0.5f), new Vector2(-500 + (i % 3) * 500, 120 - (i / 3) * 300), new Vector2(440, 270), false, "tooltip", 2f);
                     var icon = UIKit.Img("Icon", card.transform, "slot", new Vector2(0, 0.5f), new Vector2(90, 20), new Vector2(130, 130));
                     icon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                    var inner = UIKit.MakeRect("I", icon.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(100, 100)).gameObject.AddComponent<Image>();
+                    icon.enabled = false;                                // 네모 틀 없이 아이콘만
+                    var inner = UIKit.MakeRect("I", icon.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130, 130)).gameObject.AddComponent<Image>();
                     inner.preserveAspect = true;
                     inner.sprite = it.kind switch { ItemKind.Bullet => UIKit.BulletIcon(it.bullet), ItemKind.Gun => UIKit.GunIcon(it.gun), _ => UIKit.Spr("op_token") };
                     var nm = UIKit.Label("Name", card.transform, new Vector2(0, 1), new Vector2(170, -60), new Vector2(250, 60), 24, TextAnchor.MiddleLeft, true, new Color(0.3f, 0.18f, 0.1f));
@@ -327,7 +346,8 @@ namespace CatTang
                 var card = UIKit.Panel("Card" + i, go.transform, new Vector2(0.5f, 0.5f), new Vector2(x, -10), new Vector2(430, 520), false, "tooltip", 1.8f);
                 var frame = UIKit.Img("Frame", card.transform, "slot", new Vector2(0.5f, 1), new Vector2(0, -120), new Vector2(170, 170));
                 frame.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                var ic = UIKit.MakeRect("Icon", frame.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(132, 132)).gameObject.AddComponent<Image>();
+                frame.enabled = false;                                   // 네모 틀 없이 아이콘만
+                var ic = UIKit.MakeRect("Icon", frame.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(170, 170)).gameObject.AddComponent<Image>();
                 ic.sprite = o.icon; ic.preserveAspect = true; ic.raycastTarget = false;
                 var nm = UIKit.Label("Name", card.transform, new Vector2(0.5f, 1), new Vector2(0, -230), new Vector2(380, 80), 28, TextAnchor.UpperCenter, true, new Color(0.3f, 0.18f, 0.1f));
                 nm.rectTransform.pivot = new Vector2(0.5f, 1);
@@ -370,7 +390,8 @@ namespace CatTang
                 UIKit.Label("Head", card.transform, new Vector2(0.5f, 1), new Vector2(0, -42), new Vector2(460, 40), 24, TextAnchor.MiddleCenter, true, headCol).text = head;
                 var frame = UIKit.Img("Frame", card.transform, "slot", new Vector2(0.5f, 1), new Vector2(0, -140), new Vector2(140, 140));
                 frame.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                var ic = UIKit.MakeRect("Icon", frame.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110, 110)).gameObject.AddComponent<Image>();
+                frame.enabled = false;                                   // 네모 틀 없이 아이콘만
+                var ic = UIKit.MakeRect("Icon", frame.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140, 140)).gameObject.AddComponent<Image>();
                 ic.sprite = UIKit.GunIcon(gun); ic.preserveAspect = true; ic.raycastTarget = false;
                 var nm = UIKit.Label("Name", card.transform, new Vector2(0.5f, 1), new Vector2(0, -232), new Vector2(460, 40), 26, TextAnchor.MiddleCenter, true, brown);
                 nm.text = gun != null ? $"{gun.Name}  <size=18>{UIKit.GradeKo(gun.Grade)} · ×{gun.DamageMul:0.00} · {gun.FireInterval:0.00}초</size>" : "-";
@@ -522,7 +543,8 @@ namespace CatTang
                 var card = Card(content, "Gun" + g.Id, new Vector2(-480 + (i % 4) * 320, 140 - (i / 4) * 320), new Vector2(300, 300));
                 var ic = UIKit.Img("Icon", card.transform, "slot", new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(110, 110));
                 ic.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                var inner = UIKit.MakeRect("I", ic.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(88, 88)).gameObject.AddComponent<Image>();
+                ic.enabled = false;                                      // 네모 틀 없이 아이콘만
+                var inner = UIKit.MakeRect("I", ic.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110, 110)).gameObject.AddComponent<Image>();
                 inner.sprite = UIKit.GunIcon(g); inner.preserveAspect = true; inner.color = un ? Color.white : new Color(0.3f, 0.3f, 0.3f);
                 CardText(card.transform, $"{g.Name}\n<size=16>{UIKit.GradeKo(g.Grade)} · ×{g.DamageMul:0.00}</size>", new Vector2(0, -140), new Vector2(280, 60), 22, true);
                 if (!un)

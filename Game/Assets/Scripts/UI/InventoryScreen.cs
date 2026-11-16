@@ -289,7 +289,8 @@ namespace CatTang
             var b = EnhBullet;
             // 왼쪽: 탄 + 연산 칸 2개 (위 · 아래)
             var big = UIKit.Img("Bullet", P, "slot", new Vector2(0.5f, 0.5f), new Vector2(-400, 90), new Vector2(230, 230));
-            var bi = UIKit.MakeRect("I", big.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(190, 190)).gameObject.AddComponent<Image>();
+            big.enabled = false;                                         // 네모 틀 없이 아이콘만
+            var bi = UIKit.MakeRect("I", big.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(230, 230)).gameObject.AddComponent<Image>();
             bi.sprite = UIKit.BulletIcon(b); bi.preserveAspect = true; bi.raycastTarget = false;
             var nm = UIKit.Label("Name", P, new Vector2(0.5f, 0.5f), new Vector2(-400, -60), new Vector2(380, 44), 30, TextAnchor.MiddleCenter, true);
             nm.text = b.Name;
