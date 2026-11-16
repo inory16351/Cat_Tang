@@ -161,11 +161,79 @@ namespace CatTang
             t.supportRichText = true;
             t.raycastTarget = false;
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
+            // 글이 칸보다 길면 넘치지 않고 글자 크기를 줄여 칸 안에 맞춤 (최소 60% · 10pt)
+            t.resizeTextForBestFit = true;
+            t.resizeTextMaxSize = fontSize;
+            t.resizeTextMinSize = Mathf.Max(10, Mathf.RoundToInt(fontSize * 0.6f));
+            t.verticalOverflow = VerticalWrapMode.Truncate;
             var sh = rt.gameObject.AddComponent<Shadow>();
             sh.effectColor = new Color(0, 0, 0, 0.75f);
             sh.effectDistance = new Vector2(2, -2);
             return t;
+        }
+
+        /// <summary>글 크기에 맞춰 칸을 직접 키우는 글(툴팁 본문 등): 자동 줄이기를 끄고 아래로 넘치게 둠. minSize를 주면 그 크기까지만 줄이기</summary>
+        public static void NoFit(Text t, int minSize = 0)
+        {
+            if (minSize > 0) { t.resizeTextMinSize = minSize; return; }
+            t.resizeTextForBestFit = false;
+            t.verticalOverflow = VerticalWrapMode.Overflow;
+        }
+
+        static string Hex(Color c) => ColorUtility.ToHtmlStringRGB(c);
+
+        /// <summary>탄 · 총 · 연산 툴팁 내용 (보상 · 상점 카드에 마우스를 올렸을 때)</summary>
+        public static TipContent ItemTip(Item it)
+        {
+            var lines = new List<string>();
+            const string Sub = "#C9C2D4", Dim = "#8C8696";
+            switch (it.kind)
+            {
+                case ItemKind.Bullet:
+                {
+                    var b = it.bullet;
+                    lines.Add($"<color=#{Hex(GradeColor(b.Grade))}>{GradeKo(b.Grade)} 탄</color>  ·  공격 <b>{b.Damage}</b>");
+                    lines.Add($"<color={Sub}>활성화 조건</color>  {(string.IsNullOrEmpty(b.CondType) || b.CondType == "None" ? "없음 (항상 활성)" : CondKo(b))}");
+                    lines.Add($"<color={Sub}>연산 슬롯</color>  {b.OpSlots}개" + (it.ops.Count > 0 ? $"  (끼움: {string.Join(", ", it.ops.ConvertAll(o => o.Name))})" : ""));
+                    var traits = new List<string>();
+                    foreach (var id in new[] { b.Trait1, b.Trait2 })
+                        if (id != 0 && Tables.Traits.TryGetValue(id, out var tr)) traits.Add($"<b>{tr.Name}</b>  <color={Sub}>{tr.Desc}</color>");
+                    if (traits.Count > 0) { lines.Add(""); lines.Add($"<color=#FFD54A>특성</color>"); lines.AddRange(traits); }
+                    var effects = new List<string>();
+                    foreach (var id in new[] { b.Effect1, b.Effect2 })
+                        if (id != 0 && Tables.Effects.TryGetValue(id, out var e)) effects.Add("· " + e.Desc);
+                    if (effects.Count > 0) { lines.Add(""); lines.Add($"<color=#FFD54A>고유 효과</color>  <size=16><color={Dim}>(활성화되었을 때)</color></size>"); lines.AddRange(effects); }
+                    if (!string.IsNullOrEmpty(b.Desc)) { lines.Add(""); lines.Add($"<i><color={Dim}>{b.Desc}</color></i>"); }
+                    return new TipContent { icon = BulletIcon(b), title = b.Name, titleColor = GradeColor(b.Grade), body = string.Join("\n", lines) };
+                }
+                case ItemKind.Gun:
+                {
+                    var g = it.gun;
+                    lines.Add($"<color=#{Hex(GradeColor(g.Grade))}>{GradeKo(g.Grade)} 총</color>  ·  공격 ×<b>{g.DamageMul:0.00}</b>");
+                    lines.Add($"<color={Sub}>연사</color> {g.FireInterval:0.00}초   <color={Sub}>장전</color> {g.ReloadTime:0.0}초");
+                    var crit = new List<string>();
+                    if (g.CritChance > 0) crit.Add($"치명타 확률 +{g.CritChance * 100:0}%");
+                    if (g.CritDamage > 0) crit.Add($"치명타 피해 +{g.CritDamage * 100:0}%");
+                    if (crit.Count > 0) lines.Add(string.Join("   ", crit));
+                    lines.Add("");
+                    lines.Add($"<color=#FFD54A>오른손 (홀수 칸)</color>  {HandEffectLine(g, true)}");
+                    lines.Add($"<color=#7FCBFF>왼손 (짝수 칸)</color>  {HandEffectLine(g, false)}");
+                    var p = PlayerController.Instance;
+                    if (p && p.rev != null)
+                    {
+                        lines.Add("");
+                        lines.Add($"<size=16><color={Dim}>지금  오른손 {p.rev.rightGun?.Name ?? "-"}  ·  왼손 {p.rev.leftGun?.Name ?? "-"}</color></size>");
+                    }
+                    if (!string.IsNullOrEmpty(g.Desc)) { lines.Add(""); lines.Add($"<i><color={Dim}>{g.Desc}</color></i>"); }
+                    return new TipContent { icon = GunIcon(g), title = g.Name, titleColor = GradeColor(g.Grade), body = string.Join("\n", lines) };
+                }
+                default:
+                    return new TipContent
+                    {
+                        icon = Spr("op_token"), title = it.Name, titleColor = Blue,
+                        body = $"탄의 연산 슬롯에 끼워 판정 시각을 바꿈\n<color={Sub}>슬롯 순서대로 적용 · 발사 순서는 그대로</color>"
+                    };
+            }
         }
 
         /// <summary>제목 리본 배너 + 글</summary>

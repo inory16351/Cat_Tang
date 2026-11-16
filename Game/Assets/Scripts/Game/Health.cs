@@ -82,6 +82,7 @@ namespace CatTang
             hp -= dmg;
             if (fromDelayed) lastDamageWasDelayed = Time.time;
             flashUntil = Time.time + 0.08f;
+            if (isPlayer) hurtUntil = Time.unscaledTime + HurtBlinkTime;
             OnDamaged?.Invoke(dmg);
             if (!isPlayer) DamageNumber.Spawn(transform.position + Vector3.up * 1.6f, dmg);
             if (hp <= 0) { hp = 0; OnDeath?.Invoke(this); }
@@ -97,7 +98,14 @@ namespace CatTang
         public void AddMark(float amp, int max) { if (Time.time >= markUntil) marks = 0; markAmp = amp; markMax = Mathf.Max(1, max); marks = Mathf.Min(markMax, marks + 1); markUntil = Time.time + 6f; }
         public void ClearMarks() => marks = 0;
         public void AddDelayed(float dmg, float after) => delayed.Add((Time.time + after, dmg));
-        public void Knockback(Vector3 v) => knock += v;
+        /// <summary>넉백. 보스는 거의 밀리지 않음 (방 밖으로 밀려 나가지 않게)</summary>
+        public void Knockback(Vector3 v) => knock += IsBoss ? v * 0.1f : v;
+
+        // 플레이어 피격 점멸: 0.45초 동안 빨갛게 깜빡임 (흰 기본 색 × 텍스처라 흰 번쩍임은 안 보여서 빨강으로)
+        const float HurtBlinkTime = 0.45f;
+        static readonly Color HurtRed = new Color(1f, 0.12f, 0.12f);
+        float hurtUntil;
+        public bool HurtFlashing => Time.unscaledTime < hurtUntil;
 
         void Update()
         {
@@ -114,7 +122,15 @@ namespace CatTang
                 transform.position += knock * Time.deltaTime * 8f;
                 knock = Vector3.Lerp(knock, Vector3.zero, Time.deltaTime * 8f);
             }
-            bool flash = Time.time < flashUntil;
+            bool flash = !isPlayer && Time.time < flashUntil;
+            // 플레이어: 남은 시간 동안 약 0.07초 간격으로 빨강 ↔ 원래 색 (갈수록 옅어짐)
+            float hurtK = 0;
+            if (isPlayer && HurtFlashing)
+            {
+                float left = (hurtUntil - Time.unscaledTime) / HurtBlinkTime;
+                bool on = Mathf.Repeat(Time.unscaledTime * 14f, 1f) < 0.55f;
+                hurtK = on ? Mathf.Lerp(0.45f, 0.85f, left) : 0.1f * left;
+            }
             for (int i = 0; i < rends.Length; i++)
             {
                 if (!rends[i]) continue;
@@ -123,6 +139,7 @@ namespace CatTang
                 if (TimeLocked || GlobalStop) c = Color.Lerp(c, new Color(0.55f, 0.75f, 1f), 0.65f);
                 else if (Time.time < stunUntil) c = Color.Lerp(c, new Color(1f, 0.95f, 0.5f), 0.5f);
                 else if (MarkStacks > 0) c = Color.Lerp(c, new Color(1f, 0.5f, 0.85f), 0.15f + 0.04f * MarkStacks);
+                if (hurtK > 0) c = Color.Lerp(c, HurtRed, hurtK);
                 mpb.SetColor(BaseColorId, flash ? Color.white : c);
                 rends[i].SetPropertyBlock(mpb);
             }

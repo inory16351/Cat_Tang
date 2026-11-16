@@ -418,7 +418,7 @@ namespace CatTang
             var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 0), new Vector2(1400, 820), true);
             UIKit.Banner("떠돌이 상인", panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 560);
             UIKit.CloseButton(panel.transform, CloseAll);
-            var gold = UIKit.Label("Gold", panel.transform, new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(600, 40), 30, TextAnchor.MiddleCenter, true, UIKit.Gold);
+            var gold = UIKit.Label("Gold", panel.transform, new Vector2(0.5f, 1), new Vector2(0, -122), new Vector2(600, 40), 30, TextAnchor.MiddleCenter, true, UIKit.Gold);
             void Redraw()
             {
                 for (int c = panel.transform.childCount - 1; c >= 0; c--)
@@ -428,17 +428,18 @@ namespace CatTang
                 {
                     var it = m.stock[i];
                     int idx = i, price = Shop.PriceOf(it);
-                    var card = UIKit.Panel("Card" + i, panel.transform, new Vector2(0.5f, 0.5f), new Vector2(-500 + (i % 3) * 500, 120 - (i / 3) * 300), new Vector2(440, 270), false, "tooltip", 2f);
+                    // 카드 2줄: 위 줄은 골드 글 아래, 아래 줄은 회복 · 새로고침 버튼 위 (서로 안 겹치게)
+                    var card = UIKit.Panel("Card" + i, panel.transform, new Vector2(0.5f, 0.5f), new Vector2(-500 + (i % 3) * 500, 96 - (i / 3) * 254), new Vector2(440, 240), false, "tooltip", 2f);
                     var icon = UIKit.Img("Icon", card.transform, "slot", new Vector2(0, 0.5f), new Vector2(90, 20), new Vector2(130, 130));
                     icon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
                     icon.enabled = false;                                // 네모 틀 없이 아이콘만
                     var inner = UIKit.MakeRect("I", icon.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130, 130)).gameObject.AddComponent<Image>();
                     inner.preserveAspect = true;
                     inner.sprite = it.kind switch { ItemKind.Bullet => UIKit.BulletIcon(it.bullet), ItemKind.Gun => UIKit.GunIcon(it.gun), _ => UIKit.Spr("op_token") };
-                    var nm = UIKit.Label("Name", card.transform, new Vector2(0, 1), new Vector2(170, -60), new Vector2(250, 60), 24, TextAnchor.MiddleLeft, true, new Color(0.3f, 0.18f, 0.1f));
+                    var nm = UIKit.Label("Name", card.transform, new Vector2(0, 1), new Vector2(170, -52), new Vector2(250, 56), 24, TextAnchor.MiddleLeft, true, new Color(0.3f, 0.18f, 0.1f));
                     nm.rectTransform.pivot = new Vector2(0, 0.5f);
                     nm.text = it.Name;
-                    var ds = UIKit.Label("Desc", card.transform, new Vector2(0, 1), new Vector2(170, -110), new Vector2(250, 60), 18, TextAnchor.UpperLeft, false, new Color(0.3f, 0.2f, 0.12f));
+                    var ds = UIKit.Label("Desc", card.transform, new Vector2(0, 1), new Vector2(170, -98), new Vector2(250, 56), 18, TextAnchor.UpperLeft, false, new Color(0.3f, 0.2f, 0.12f));
                     ds.rectTransform.pivot = new Vector2(0, 1);
                     ds.text = it.kind switch
                     {
@@ -447,7 +448,7 @@ namespace CatTang
                         _ => "탄에 끼워 판정 시각을 바꿈"
                     };
                     foreach (var t in new[] { nm, ds }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
-                    var btn = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(60, 40), new Vector2(260, 70), m.sold[i] ? "판매됨" : $"{price} 골드", () =>
+                    var btn = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(60, 36), new Vector2(260, 64), m.sold[i] ? "판매됨" : $"{price} 골드", () =>
                     {
                         bool isGun = it.kind == ItemKind.Gun;
                         if (m.sold[idx] || player.inv.gold < price || (!isGun && !player.inv.HasSpace)) return;
@@ -458,8 +459,9 @@ namespace CatTang
                         Redraw();
                     }, 24);
                     UIKit.SetInteractable(btn, !m.sold[i] && player.inv.gold >= price && (it.kind == ItemKind.Gun || player.inv.HasSpace));
+                    CursorTip.Attach(card.gameObject, () => UIKit.ItemTip(it));
                 }
-                var heal = UIKit.MakeButton("CardHeal", panel.transform, new Vector2(0.5f, 0), new Vector2(-260, 70), new Vector2(420, 80), $"체력 회복 40%  ({Merchant.HealCost} 골드)", () =>
+                var heal = UIKit.MakeButton("CardHeal", panel.transform, new Vector2(0.5f, 0), new Vector2(-260, 52), new Vector2(420, 74), $"체력 회복 40%  ({Merchant.HealCost} 골드)", () =>
                 {
                     if (player.inv.gold < Merchant.HealCost) return;
                     player.inv.gold -= Merchant.HealCost;
@@ -467,7 +469,7 @@ namespace CatTang
                     Redraw();
                 }, 22);
                 UIKit.SetInteractable(heal, player.inv.gold >= Merchant.HealCost && player.health.hp < player.health.maxHp);
-                var reroll = UIKit.MakeButton("CardReroll", panel.transform, new Vector2(0.5f, 0), new Vector2(260, 70), new Vector2(420, 80), $"새로고침  ({m.RerollCost} 골드)", () =>
+                var reroll = UIKit.MakeButton("CardReroll", panel.transform, new Vector2(0.5f, 0), new Vector2(260, 52), new Vector2(420, 74), $"새로고침  ({m.RerollCost} 골드)", () =>
                 {
                     if (player.inv.gold < m.RerollCost) return;
                     player.inv.gold -= m.RerollCost;
@@ -499,16 +501,24 @@ namespace CatTang
                 var nm = UIKit.Label("Name", card.transform, new Vector2(0.5f, 1), new Vector2(0, -230), new Vector2(380, 80), 28, TextAnchor.UpperCenter, true, new Color(0.3f, 0.18f, 0.1f));
                 nm.rectTransform.pivot = new Vector2(0.5f, 1);
                 nm.text = o.label;
-                var ds = UIKit.Label("Desc", card.transform, new Vector2(0.5f, 1), new Vector2(0, -310), new Vector2(370, 130), 18, TextAnchor.UpperCenter, false, new Color(0.32f, 0.22f, 0.14f));
+                // 설명 칸: 이름 아래 ~ 고르기 버튼 위 (버튼과 겹치지 않게 높이 95, 넘치면 글자가 줄어듦)
+                var ds = UIKit.Label("Desc", card.transform, new Vector2(0.5f, 1), new Vector2(0, -305), new Vector2(370, 95), 18, TextAnchor.UpperCenter, false, new Color(0.32f, 0.22f, 0.14f));
                 ds.rectTransform.pivot = new Vector2(0.5f, 1);
                 ds.text = o.desc;
                 foreach (var t in new[] { nm, ds }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
+                bool picked = false;
                 UIKit.MakeButton("Pick", card.transform, new Vector2(0.5f, 0), new Vector2(0, 56), new Vector2(280, 76), "고르기", () =>
                 {
+                    if (picked) return;          // 두 번 눌림 방지
+                    picked = true;
+                    CursorTip.Hide();
                     CloseAll();
-                    o.apply?.Invoke();          // 총이면 여기서 교체 창이 열림
+                    // 총: 교체 창이 열리고, 손을 고르거나 버린 뒤에 onDone (전에는 onDone이 바로 불려 교체 창이 닫혀 버림)
+                    if (o.applyThen != null) { o.applyThen(onDone); return; }
+                    o.apply?.Invoke();
                     onDone?.Invoke();
                 }, 26);
+                if (o.item != null) CursorTip.Attach(card.gameObject, () => UIKit.ItemTip(o.item));
             }
         }
 
@@ -583,7 +593,8 @@ namespace CatTang
                 if (Meta.FacilityUnlockChapter[f] > before && Meta.FacilityUnlockChapter[f] <= Meta.ChaptersCleared) unlock += $"\n<color=#FFD54A>마을에 '{Meta.FacilityName[f]}'이(가) 열렸다</color>";
             if (unlock != "") unlock = "\n" + unlock;
             string next = !all ? $"\n다음 판은 {Mathf.Min(Meta.ChapterCount, Meta.ChaptersCleared + 1)}장까지 갈 수 있다." : "";
-            t.text = (win ? $"{Tables.Chapter(chapter)?.BossName}을(를) 넘었다.{next}" : $"{chapter}장에서 쓰러졌다. 다시 여관 2층에서 눈을 뜬다.") +
+            string pick = win && rm && !string.IsNullOrEmpty(rm.bossPick) ? $"\n최종 보상: <color=#FFD54A>{rm.bossPick}</color>" : "";
+            t.text = (win ? $"{Tables.Chapter(chapter)?.BossName}을(를) 넘었다.{pick}{next}" : $"{chapter}장에서 쓰러졌다. 다시 여관 2층에서 눈을 뜬다.") +
                      $"\n\n시간의 조각 +{shards}  (보유 {Meta.Shards})\n골드는 사라진다.{unlock}";
             UIKit.MakeButton("Village", panel.transform, new Vector2(0.5f, 0), new Vector2(0, 90), new Vector2(380, 90), "마을로", () =>
             {

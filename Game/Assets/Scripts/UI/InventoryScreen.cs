@@ -98,10 +98,11 @@ namespace CatTang
             var tabB = UIKit.MakeButton("TabStats", I, new Vector2(0.5f, 1), new Vector2(118, -50), new Vector2(220, 64), "능력치", () => { statsTab = true; Refresh(); }, 22);
             tabDesc = tabA.GetComponentInChildren<Text>();
             tabStats = tabB.GetComponentInChildren<Text>();
-            infoIcon = UIKit.Img("Icon", I, "slot", new Vector2(0.5f, 1), new Vector2(0, -170), new Vector2(130, 130));
+            // 아이콘 · 제목 · 본문이 위아래로 겹치지 않게 간격을 둠 (아이콘 아래 -220, 제목 -230~-274, 본문 -284~)
+            infoIcon = UIKit.Img("Icon", I, "slot", new Vector2(0.5f, 1), new Vector2(0, -160), new Vector2(120, 120));
             infoIcon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            infoTitle = UIKit.Label("Title", I, new Vector2(0.5f, 1), new Vector2(0, -250), new Vector2(460, 44), 30, TextAnchor.MiddleCenter, true, Brown);
-            infoBody = UIKit.Label("Body", I, new Vector2(0.5f, 1), new Vector2(0, -280), new Vector2(440, 440), 20, TextAnchor.UpperLeft, false, BrownText);
+            infoTitle = UIKit.Label("Title", I, new Vector2(0.5f, 1), new Vector2(0, -252), new Vector2(460, 44), 30, TextAnchor.MiddleCenter, true, Brown);
+            infoBody = UIKit.Label("Body", I, new Vector2(0.5f, 1), new Vector2(0, -284), new Vector2(440, 440), 20, TextAnchor.UpperLeft, false, BrownText);
             infoBody.rectTransform.pivot = new Vector2(0.5f, 1);
             foreach (var t in new[] { infoTitle, infoBody }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
             Refresh();

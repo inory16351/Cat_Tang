@@ -44,6 +44,7 @@ namespace CatTang
             h.tipText = UIKit.Label("Body", h.tip, new Vector2(0, 1), new Vector2(24, -96), new Vector2(372, 160), 19, TextAnchor.UpperLeft);
             h.tipText.rectTransform.pivot = new Vector2(0, 1);
             h.tipText.lineSpacing = 1.1f;
+            UIKit.NoFit(h.tipText);                     // 글 길이에 맞춰 툴팁 높이를 직접 늘림
             tp.gameObject.SetActive(false);
             return h;
         }

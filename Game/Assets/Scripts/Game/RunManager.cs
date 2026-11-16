@@ -13,7 +13,10 @@ namespace CatTang
     {
         public string label, desc;
         public Sprite icon;
+        public Item item;                               // 탄 · 총 · 연산이면 그 아이템 (마우스 올림 툴팁용)
         public System.Action apply;
+        /// <summary>창을 하나 더 거치는 보상(총 → 교체 창): 그 창이 닫힌 뒤에 done을 불러야 다음 단계로 넘어감</summary>
+        public System.Action<System.Action> applyThen;
     }
 
     public class RunManager : MonoBehaviour
@@ -141,6 +144,16 @@ namespace CatTang
 
         public void AddEnemy(Enemy e) { if (e) alive.Add(e); }
 
+        /// <summary>지금 전투 방 안으로 위치를 붙잡음 (inset = 벽에서 띄울 거리, 몸 반지름 + 여유). 방이 없으면 그대로</summary>
+        public Vector3 ClampToRoom(Vector3 p, float inset)
+        {
+            if (current == null) return p;
+            float hx = Mathf.Max(0.5f, current.size.x / 2 - inset), hz = Mathf.Max(0.5f, current.size.y / 2 - inset);
+            p.x = Mathf.Clamp(p.x, current.center.x - hx, current.center.x + hx);
+            p.z = Mathf.Clamp(p.z, current.center.z - hz, current.center.z + hz);
+            return p;
+        }
+
         public void OnEnemyKilled(Enemy e)
         {
             alive.Remove(e);
@@ -226,8 +239,18 @@ namespace CatTang
             list.Add(ItemOption(Item.Of(guns[Random.Range(0, guns.Count)])));
             int s = 20 + 10 * chapter;
             list.Add(new RewardOption { label = $"시간의 조각 +{s}", desc = "마을에서 영구 강화에 쓴다", icon = UIKit.Spr("shard"), apply = () => shardsThisRun += s });
+            // 고른 보상 이름을 기억해 다음 장 안내 · 결과 화면에 띄움
+            foreach (var o in list)
+            {
+                var opt = o;
+                var a = opt.apply; var at = opt.applyThen;
+                if (a != null) opt.apply = () => { bossPick = opt.label; a(); };
+                if (at != null) opt.applyThen = done => { bossPick = opt.label; at(done); };
+            }
             return list;
         }
+
+        public string bossPick;                          // 이번 보스 보상으로 고른 것 (결과 화면 표시)
 
         RewardOption ItemOption(Item it)
         {
@@ -235,11 +258,16 @@ namespace CatTang
             {
                 ItemKind.Bullet => $"{UIKit.GradeKo(it.bullet.Grade)} · 공격 {it.bullet.Damage} · 조건 {UIKit.CondKo(it.bullet)}\n" +
                                    string.Join("\n", new[] { it.bullet.Effect1, it.bullet.Effect2 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? e.Desc : "")),
-                ItemKind.Gun => $"{UIKit.GradeKo(it.gun.Grade)} · 공격 ×{it.gun.DamageMul:0.00} · 연사 {it.gun.FireInterval:0.00}초\n" + UIKit.GunHandText(it.gun),
+                // 총의 손별 효과는 길어서 카드엔 요약만, 자세한 건 마우스 올림 툴팁으로
+                ItemKind.Gun => $"{UIKit.GradeKo(it.gun.Grade)} · 공격 ×{it.gun.DamageMul:0.00} · 연사 {it.gun.FireInterval:0.00}초\n<i>{it.gun.Desc}</i>",
                 _ => "탄에 끼워 판정 시각을 바꾼다"
-            };
+            } + "\n<size=15><color=#8A6A4A>마우스를 올리면 자세히</color></size>";
             var icon = it.kind switch { ItemKind.Bullet => UIKit.BulletIcon(it.bullet), ItemKind.Gun => UIKit.GunIcon(it.gun), _ => UIKit.Spr("op_token") };
-            return new RewardOption { label = it.Name, desc = desc, icon = icon, apply = () => Give(it) };
+            var o = new RewardOption { label = it.Name, desc = desc, icon = icon, item = it };
+            // 총은 보관함에 안 들어가고 교체 창을 거침 → 그 창에서 손을 고른 뒤에 다음 단계(문 · 다음 장)로
+            if (it.kind == ItemKind.Gun) o.applyThen = done => { if (ui) ui.ShowGunPick(it.gun, done); else done?.Invoke(); };
+            else o.apply = () => Give(it);
+            return o;
         }
 
         static List<T> Distinct<T>(System.Func<T> make, int n)
@@ -320,7 +348,8 @@ namespace CatTang
             chapter++;
             Chapter = Tables.Chapter(chapter);
             player.health.Heal(player.health.maxHp * 0.3f);
-            ui?.Toast($"{chapter - 1}장 돌파 — {chapter}장 · {Chapter?.Name}");
+            ui?.Toast((string.IsNullOrEmpty(bossPick) ? "" : $"{bossPick} 획득 · ") + $"{chapter - 1}장 돌파 — {chapter}장 · {Chapter?.Name}");
+            bossPick = null;
             Music.Play("bgm_stage");
             BuildStage(0, RewardKind.Gold);
         }

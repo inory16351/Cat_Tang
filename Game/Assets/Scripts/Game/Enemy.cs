@@ -74,6 +74,15 @@ namespace CatTang
             }
         }
 
+        // 넉백 · 이동 뒤에 방 밖으로 나가지 않게 붙잡음 (보스는 몸이 커서 벽에서 더 띄움)
+        void LateUpdate()
+        {
+            var rm = RunManager.Instance;
+            if (!rm || !health.Alive) return;
+            var p = rm.ClampToRoom(transform.position, kind == Kind.Boss ? 3f : 1.2f);
+            if ((p - transform.position).sqrMagnitude > 0.000001f) transform.position = p;
+        }
+
         void Fan(int count, float offset, float spd)
         {
             for (int i = 0; i < count; i++)
