@@ -24,6 +24,12 @@ namespace CatTang
         Text hpText, goldText, shardText, roomText, nextText, promptText, toastText, heatText, skillText;
         Text[] dash = new Text[3];
         Image dashBar;
+        bool dashArt;
+        static readonly Color DashPipEmpty = new Color(0.28f, 0.27f, 0.32f, 0.9f), DashPipOn = new Color(0.86f, 0.86f, 0.84f, 1f);   // 찬 칸도 살짝 눌러 HUD 톤에 맞춤
+        readonly Image[] dashFill = new Image[3];
+        readonly RectTransform[] dashCell = new RectTransform[3];
+        readonly float[] dashPop = new float[3];
+        readonly bool[] dashWasFull = new bool[3];
         GameObject dashGauge;
         static readonly Color DashOn = new Color(0.62f, 0.9f, 1f), DashOff = new Color(1f, 1f, 1f, 0.22f);
         GameObject prompt;
@@ -47,6 +53,23 @@ namespace CatTang
             if (FindFirstObjectByType<EventSystem>() == null)
                 new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
 
+            // 닷지 액션: 화면 전체 푸른 보랏빛 (시간이 느려지는 느낌)
+            // 궁 준비: 화면 가장자리에서 일렁이는 불길 (열기 3칸이 차면)
+            if (!village)
+            {
+                heatGlow = UIKit.Stretch("HeatGlow", root).gameObject.AddComponent<RawImage>();
+                heatGlow.raycastTarget = false;
+                heatGlow.color = new Color(1, 1, 1, 0);
+                // 손 그림 테두리 불길 (Codex, FX/edge/edge_0~N)이 있으면 그걸, 없으면 코드로 만든 불길
+                var drawn = new List<Texture2D>();
+                for (int i = 0; i < 8; i++) { var t = Resources.Load<Texture2D>("FX/edge/edge_" + i); if (!t) break; drawn.Add(t); }
+                heatFrames = drawn.Count > 0 ? drawn.ToArray() : new Texture2D[4];
+                if (drawn.Count == 0) for (int i = 0; i < heatFrames.Length; i++) heatFrames[i] = MakeHeatFrame(17 + i * 31);
+                heatGlow.texture = heatFrames[0];
+            }
+            dodgeTint = UIKit.Stretch("DodgeTint", root).gameObject.AddComponent<Image>();
+            dodgeTint.color = new Color(0.35f, 0.45f, 1f, 0f);
+            dodgeTint.raycastTarget = false;
             hudRoot = UIKit.Stretch("HUD", root);
             if (!village)
             {
@@ -55,8 +78,87 @@ namespace CatTang
                 hud.Build(hudRoot, 1080);
             }
             BuildTop();
+            if (!village) TraitHud.Build(hudRoot, new Vector2(30, -262));     // 활성 특성 목록 (마우스 올리면 효과)
             screens = UIKit.Stretch("Screens", root);
             toastText = UIKit.Label("Toast", root, new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1200, 60), 38, TextAnchor.MiddleCenter, true, UIKit.Gold);
+        }
+
+        RawImage heatGlow;
+        Texture2D[] heatFrames;
+        float heatGlowA, heatFrameT;
+        int heatFrame;
+
+        /// <summary>가장자리 불길 한 장: 화면 끝에서 안쪽으로 뻗는 불꽃 혀 (노이즈로 들쭉날쭉), 바깥 진홍 → 안쪽 주황 · 노랑, 가운데는 투명</summary>
+        static Texture2D MakeHeatFrame(int seed)
+        {
+            const int W = 640, H = 360;
+            var rng = new System.Random(seed);
+            // 값 노이즈 격자 (가장자리 둘레를 따라 불꽃 혀 크기가 달라지게)
+            int GX = 48, GY = 27;
+            var g = new float[GX + 1, GY + 1];
+            for (int x = 0; x <= GX; x++) for (int y = 0; y <= GY; y++) g[x, y] = (float)rng.NextDouble();
+            float N(float u, float v)
+            {
+                float fx = u * GX, fy = v * GY; int x0 = Mathf.Clamp((int)fx, 0, GX - 1), y0 = Mathf.Clamp((int)fy, 0, GY - 1);
+                float tx = fx - x0, ty = fy - y0; tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+                return Mathf.Lerp(Mathf.Lerp(g[x0, y0], g[x0 + 1, y0], tx), Mathf.Lerp(g[x0, y0 + 1], g[x0 + 1, y0 + 1], tx), ty);
+            }
+            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color32[W * H];
+            Color deep = new Color(0.55f, 0.03f, 0.05f), red = new Color(0.95f, 0.15f, 0.08f), orange = new Color(1f, 0.5f, 0.1f), yellow = new Color(1f, 0.85f, 0.35f);
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                {
+                    float u = x / (float)(W - 1), v = y / (float)(H - 1);
+                    // 가장자리까지 거리 (화면 비율 보정, 0 = 끝)
+                    float e = Mathf.Min(Mathf.Min(u, 1 - u) * 1.78f, Mathf.Min(v, 1 - v));
+                    float n = N(u, v) * 0.6f + N(u * 2.7f % 1f, v * 2.7f % 1f) * 0.4f;
+                    n = n * n;                                              // 대부분 짧고 가끔 길게 솟는 혀
+                    float reach = 0.035f + 0.15f * n;                     // 불꽃 혀 길이
+                    float f = Mathf.Clamp01(1 - e / reach);              // 1 = 끝, 0 = 혀 끝
+                    float a = Mathf.SmoothStep(0, 1, f);
+                    // 단계 색 (툰처럼 딱 끊김): 혀 끝 노랑 → 주황 → 빨강 → 바깥 진홍
+                    Color c = f > 0.8f ? deep : f > 0.5f ? red : f > 0.25f ? orange : yellow;
+                    c.a = a * (f > 0.25f ? 0.9f : 0.7f);
+                    px[y * W + x] = c;
+                }
+            tex.SetPixels32(px);
+            tex.Apply();
+            return tex;
+        }
+
+        void UpdateHeatGlow()
+        {
+            if (!heatGlow) return;
+            bool ready = player && player.rev.heat >= Revolver.HeatMax && !player.UltimateActive;
+            heatGlowA = Mathf.MoveTowards(heatGlowA, ready ? 1 : 0, Time.unscaledDeltaTime * (ready ? 3f : 5f));
+            if (heatGlowA <= 0.001f) { if (heatGlow.enabled) heatGlow.enabled = false; return; }
+            heatGlow.enabled = true;
+            // 일렁임: 불꽃 모양 4장을 번갈아 + 숨 쉬듯 밝기 · 살짝 커졌다 작아짐
+            heatFrameT += Time.unscaledDeltaTime;
+            if (heatFrameT > 0.11f) { heatFrameT = 0; heatFrame = (heatFrame + 1 + UnityEngine.Random.Range(0, 2)) % heatFrames.Length; heatGlow.texture = heatFrames[heatFrame]; }
+            float t = Time.unscaledTime;
+            float pulse = 0.78f + 0.22f * Mathf.Sin(t * 5.2f) * Mathf.Sin(t * 2.3f + 1f);
+            heatGlow.color = new Color(1, 1, 1, heatGlowA * pulse * 0.85f);
+            float s = 1.0f + 0.015f * Mathf.Sin(t * 3.7f);
+            heatGlow.rectTransform.localScale = new Vector3(s, s, 1);
+        }
+
+        Image dodgeTint;
+        Text dodgeText;
+        float dodgeFlash, lastCritLeft;
+
+        void UpdateDodge()
+        {
+            float left = player ? player.DodgeCritLeft : 0;
+            if (left > lastCritLeft + 0.5f) dodgeFlash = 1f;                 // 방금 닷지 액션 발동
+            lastCritLeft = left;
+            // 느려진 동안(실시간 약 0.6초) 짙게 유지하다 풀림
+            dodgeFlash = Mathf.MoveTowards(dodgeFlash, 0, Time.unscaledDeltaTime * 0.9f);
+            var c = dodgeTint.color; c.a = 0.38f * Mathf.Clamp01(dodgeFlash * 1.6f); dodgeTint.color = c;
+            if (!dodgeText) return;
+            dodgeText.gameObject.SetActive(left > 0);
+            if (left > 0) dodgeText.text = $"닷지!  치명타 ×{PlayerController.DodgeCritMul:0.0}  <size=20>{left:0.0}초</size>";
         }
 
         GameObject bossBar;
@@ -103,18 +205,44 @@ namespace CatTang
             // 대시 게이지: >> 기호 3칸 (찬 칸은 밝게, 차오르는 칸은 서서히) + 아래 가는 충전 바
             var dg = UIKit.MakeRect("DashGauge", hudRoot, new Vector2(0, 1), new Vector2(58, -196), new Vector2(240, 70), new Vector2(0, 0.5f));
             dashGauge = dg.gameObject;
+            // 세피리아식 대시 칸: 체력 바 아래 작은 대시 아이콘(Codex: UI/dash_icon) 3개를 한 줄로.
+            // 찬 칸 = 원래 색, 빈 칸 = 어두운 회색, 차오르는 칸 = 회색 위로 색이 아래에서 위로 차오름
+            var sprIcon = UIKit.Spr("dash_icon");
+            if (sprIcon)
+            {
+                dashArt = true;
+                const float PipSize = 50, PipGap = 4;
+                for (int i = 0; i < 3; i++)
+                {
+                    var cell = UIKit.MakeRect("Pip" + i, dg, new Vector2(0, 0.5f), new Vector2(i * (PipSize + PipGap), 0), new Vector2(PipSize, PipSize), new Vector2(0, 0.5f));
+                    var bg = cell.gameObject.AddComponent<Image>(); bg.sprite = sprIcon; bg.preserveAspect = true; bg.raycastTarget = false;
+                    bg.color = DashPipEmpty;
+                    // HUD 다른 그림처럼 바닥에 진한 그림자를 깔아 붕 떠 보이지 않게
+                    var shd = cell.gameObject.AddComponent<Shadow>(); shd.effectColor = new Color(0.05f, 0.03f, 0.08f, 0.75f); shd.effectDistance = new Vector2(3, -3);
+                    dashFill[i] = UIKit.MakeRect("Fill", cell, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(PipSize, PipSize)).gameObject.AddComponent<Image>();
+                    dashFill[i].sprite = sprIcon; dashFill[i].preserveAspect = true;
+                    dashFill[i].type = Image.Type.Filled; dashFill[i].fillMethod = Image.FillMethod.Vertical; dashFill[i].fillOrigin = (int)Image.OriginVertical.Bottom;
+                    dashFill[i].raycastTarget = false;
+                    dashCell[i] = cell;
+                }
+            }
             for (int i = 0; i < 3; i++)
             {
                 dash[i] = UIKit.Label("Dash" + i, dg, new Vector2(0, 0.5f), new Vector2(i * 70, 6), new Vector2(70, 56), 44, TextAnchor.MiddleCenter, true, DashOn);
                 dash[i].rectTransform.pivot = new Vector2(0, 0.5f);
                 dash[i].text = ">>";
+                dash[i].gameObject.SetActive(!dashArt);
             }
             var barBg = UIKit.MakeRect("BarBg", dg, new Vector2(0, 0.5f), new Vector2(6, -26), new Vector2(198, 6), new Vector2(0, 0.5f)).gameObject.AddComponent<Image>();
             barBg.color = new Color(0, 0, 0, 0.45f);
             barBg.raycastTarget = false;
+            barBg.gameObject.SetActive(!dashArt);
             dashBar = UIKit.MakeRect("Bar", barBg.transform, new Vector2(0, 0.5f), Vector2.zero, new Vector2(198, 6), new Vector2(0, 0.5f)).gameObject.AddComponent<Image>();
             dashBar.color = DashOn;
             dashBar.raycastTarget = false;
+            dodgeText = UIKit.Label("DodgeCrit", hudRoot, new Vector2(0, 1), new Vector2(270, -196), new Vector2(420, 44), 26, TextAnchor.MiddleLeft, true, DashOn);
+            dodgeText.rectTransform.pivot = new Vector2(0, 0.5f);
+            dodgeText.gameObject.SetActive(false);
             // 골드 · 시간의 조각 (오른쪽 위)
             var coin = UIKit.Img("Coin", hudRoot, "coin", new Vector2(1, 1), new Vector2(-300, -60), new Vector2(64, 64));
             coin.rectTransform.pivot = new Vector2(0.5f, 0.5f);
@@ -130,7 +258,9 @@ namespace CatTang
             bFrame.color = new Color(0.12f, 0.07f, 0.1f, 0.95f);
             bossTrail = UIKit.Img("Trail", bossBar.transform, "hp_fill", new Vector2(0, 0.5f), new Vector2(14, -10), new Vector2(952, 30), true, 1.6f);
             bossTrail.rectTransform.pivot = new Vector2(0, 0.5f);
-            bossTrail.color = new Color(1f, 0.95f, 0.85f);
+            // 깎인 만큼 남는 흔적: 체력 바와 같은 모양(스프라이트 알파)을 순백으로 → 빨간 체력과 확실히 구분
+            bossTrail.sprite = UIKit.WhiteSprite(bossTrail.sprite);
+            bossTrail.color = Color.white;
             bossFill = UIKit.Img("Fill", bossBar.transform, "hp_fill", new Vector2(0, 0.5f), new Vector2(14, -10), new Vector2(952, 30), true, 1.6f);
             bossFill.rectTransform.pivot = new Vector2(0, 0.5f);
             bossName = UIKit.Label("Name", bossBar.transform, new Vector2(0.5f, 1), new Vector2(0, 6), new Vector2(900, 40), 30, TextAnchor.MiddleCenter, true, UIKit.Gold);
@@ -176,12 +306,29 @@ namespace CatTang
                 }
                 if (kb.escapeKey.wasPressedThisFrame && current && !resultsOpen) CloseAll();
             }
+            UpdateDodge();
+            UpdateHeatGlow();
             var h = player.health;
             float f = Mathf.Clamp01(h.hp / Mathf.Max(1, h.maxHp));
             hpFillRt.sizeDelta = new Vector2(Mathf.Max(0.01f, hpFillW * f), hpFillRt.sizeDelta.y);
             hpFill.enabled = f > 0.01f;
             hpText.text = $"{Mathf.CeilToInt(h.hp)} / {Mathf.CeilToInt(h.maxHp)}";
             float dc = player.DashCharges, dp = player.DashRechargeProgress;
+            if (dashArt)
+            {
+                // 칸마다 따로: 찬 칸 = 가득 · 밝게, 차오르는 칸 = 진행만큼 왼쪽부터 · 살짝 어둡게, 빈 칸 = 비움. 다 차는 순간 칸이 톡 튐
+                for (int i = 0; i < 3; i++)
+                {
+                    bool full = dc >= i + 1;
+                    bool filling = !full && i == Mathf.FloorToInt(dc);
+                    dashFill[i].fillAmount = full ? 1f : filling ? dp : 0f;
+                    dashFill[i].color = full ? DashPipOn : new Color(0.62f, 0.66f, 0.7f, 0.85f);
+                    if (full && !dashWasFull[i]) dashPop[i] = 1f;
+                    dashWasFull[i] = full;
+                    dashPop[i] = Mathf.MoveTowards(dashPop[i], 0, Time.unscaledDeltaTime * 4f);
+                    dashCell[i].localScale = Vector3.one * (1 + 0.2f * dashPop[i] * dashPop[i]);
+                }
+            }
             for (int i = 0; i < 3; i++)
             {
                 bool full = dc >= i + 1;
@@ -426,13 +573,17 @@ namespace CatTang
             resultsOpen = true;
             UIKit.Dim(go.transform, 0.85f);
             var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 620), true);
-            UIKit.Banner(win ? $"{chapter}장 돌파" : "시간에 삼켜졌다", panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 600);
+            var rm = RunManager.Instance;
+            int before = rm ? rm.clearedAtStart : 0;
+            bool all = Meta.ChaptersCleared >= Meta.ChapterCount;
+            UIKit.Banner(win ? (all && before < Meta.ChapterCount ? "11:59를 넘었다" : $"{chapter}장 돌파") : "시간에 삼켜졌다", panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 600);
             var t = UIKit.Label("Body", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(820, 300), 30, TextAnchor.MiddleCenter);
             string unlock = "";
-            if (win)
-                for (int f = 0; f < 4; f++)
-                    if (Meta.FacilityUnlockChapter[f] == chapter) unlock = $"\n\n<color=#FFD54A>마을에 '{Meta.FacilityName[f]}'이(가) 열렸다</color>";
-            t.text = (win ? $"{Tables.Chapter(chapter)?.BossName}을(를) 넘었다." : "다시 여관 2층에서 눈을 뜬다.") +
+            for (int f = 0; f < 4; f++)
+                if (Meta.FacilityUnlockChapter[f] > before && Meta.FacilityUnlockChapter[f] <= Meta.ChaptersCleared) unlock += $"\n<color=#FFD54A>마을에 '{Meta.FacilityName[f]}'이(가) 열렸다</color>";
+            if (unlock != "") unlock = "\n" + unlock;
+            string next = !all ? $"\n다음 판은 {Mathf.Min(Meta.ChapterCount, Meta.ChaptersCleared + 1)}장까지 갈 수 있다." : "";
+            t.text = (win ? $"{Tables.Chapter(chapter)?.BossName}을(를) 넘었다.{next}" : $"{chapter}장에서 쓰러졌다. 다시 여관 2층에서 눈을 뜬다.") +
                      $"\n\n시간의 조각 +{shards}  (보유 {Meta.Shards})\n골드는 사라진다.{unlock}";
             UIKit.MakeButton("Village", panel.transform, new Vector2(0.5f, 0), new Vector2(0, 90), new Vector2(380, 90), "마을로", () =>
             {
@@ -441,37 +592,42 @@ namespace CatTang
             }, 30);
         }
 
-        // ---------- 마을: 챕터 선택 ----------
+        // ---------- 마을: 시간의 문 (한 판 = 1장부터 한 목숨) ----------
+        // 챕터를 고르지 않음. 늘 1장에서 출발해 보스를 넘을 때마다 다음 장으로 이어지고, 이번 판의 끝 = 넘은 장 + 1
         public void OpenChapterSelect()
         {
             var go = OpenScreen("Chapters");
             UIKit.Dim(go.transform);
-            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1300, 860), true);
+            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1300, 900), true);
             UIKit.Banner("시간의 문", panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 520);
             UIKit.CloseButton(panel.transform, CloseAll);
+            int cleared = Meta.ChaptersCleared, frontier = Mathf.Min(Meta.ChapterCount, cleared + 1);
+            var head = UIKit.Label("Head", panel.transform, new Vector2(0.5f, 1), new Vector2(0, -130), new Vector2(1100, 40), 24, TextAnchor.MiddleCenter, true, UIKit.Cream);
+            head.text = cleared >= Meta.ChapterCount ? "모든 장을 넘었다 · 1장부터 5장까지 한 목숨으로" : $"1장부터 한 목숨으로 · 이번 판은 <color=#FFD54A>{frontier}장</color>까지";
             for (int i = 0; i < Tables.Chapters.Count; i++)
             {
                 var ch = Tables.Chapters[i];
-                bool open = ch.Id <= Meta.ChaptersCleared + 1;
-                bool cleared = ch.Id <= Meta.ChaptersCleared;
-                var row = UIKit.Panel("Row" + ch.Id, panel.transform, new Vector2(0.5f, 1), new Vector2(0, -170 - i * 128), new Vector2(1100, 116), false, "tooltip", 2.6f);
-                var nm = UIKit.Label("Name", row.transform, new Vector2(0, 0.5f), new Vector2(40, 12), new Vector2(700, 44), 30, TextAnchor.MiddleLeft, true, new Color(0.3f, 0.18f, 0.1f));
+                bool done = ch.Id <= cleared, goal = ch.Id == frontier && !done, locked = ch.Id > frontier;
+                var row = UIKit.Panel("Row" + ch.Id, panel.transform, new Vector2(0.5f, 1), new Vector2(0, -190 - i * 112), new Vector2(1100, 100), false, "tooltip", 2.6f);
+                if (locked) row.color = new Color(1, 1, 1, 0.45f);
+                var nm = UIKit.Label("Name", row.transform, new Vector2(0, 0.5f), new Vector2(40, 12), new Vector2(760, 44), 28, TextAnchor.MiddleLeft, true, new Color(0.3f, 0.18f, 0.1f));
                 nm.rectTransform.pivot = new Vector2(0, 0.5f);
-                nm.text = $"{ch.Id}장 · {ch.Name}" + (cleared ? "  ✓" : "");
-                var ds = UIKit.Label("Desc", row.transform, new Vector2(0, 0.5f), new Vector2(40, -26), new Vector2(700, 30), 19, TextAnchor.MiddleLeft, false, new Color(0.35f, 0.24f, 0.15f));
+                nm.text = $"{ch.Id}장 · {ch.Name}";
+                var ds = UIKit.Label("Desc", row.transform, new Vector2(0, 0.5f), new Vector2(40, -24), new Vector2(760, 30), 18, TextAnchor.MiddleLeft, false, new Color(0.35f, 0.24f, 0.15f));
                 ds.rectTransform.pivot = new Vector2(0, 0.5f);
-                ds.text = open ? $"{ch.Desc} · 보스: {ch.BossName}" : $"{ch.Id - 1}장을 넘어야 열림";
-                foreach (var t in new[] { nm, ds }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
-                int id = ch.Id;
-                var b = UIKit.MakeButton("Go", row.transform, new Vector2(1, 0.5f), new Vector2(-30, 0), new Vector2(240, 76), open ? "출발" : "잠김", () =>
-                {
-                    Meta.SelectedChapter = id;
-                    Time.timeScale = 1f;
-                    SceneManager.LoadSceneAsync("Run");
-                }, 26);
-                b.GetComponent<RectTransform>().pivot = new Vector2(1, 0.5f);
-                UIKit.SetInteractable(b, open);
+                ds.text = locked ? $"{ch.Id - 1}장을 넘으면 다음 판부터 갈 수 있음" : $"{ch.Desc} · 보스: {ch.BossName}";
+                var st = UIKit.Label("State", row.transform, new Vector2(1, 0.5f), new Vector2(-40, 0), new Vector2(260, 50), 24, TextAnchor.MiddleRight, true,
+                    done ? new Color(0.25f, 0.45f, 0.2f) : goal ? new Color(0.65f, 0.2f, 0.1f) : new Color(0.4f, 0.32f, 0.25f));
+                st.rectTransform.pivot = new Vector2(1, 0.5f);
+                st.text = done ? "넘음 ✓" : goal ? "이번 목표" : "잠김";
+                foreach (var t in new[] { nm, ds, st }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
             }
+            UIKit.MakeButton("Go", panel.transform, new Vector2(0.5f, 0), new Vector2(0, 70), new Vector2(420, 90), "출발 — 1장부터", () =>
+            {
+                Meta.SelectedChapter = 1;
+                Time.timeScale = 1f;
+                SceneManager.LoadSceneAsync("Run");
+            }, 30);
         }
 
         // ---------- 마을 시설 ----------

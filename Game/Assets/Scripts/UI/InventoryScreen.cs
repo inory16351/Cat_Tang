@@ -424,7 +424,7 @@ namespace CatTang
                 var name = Tables.Traits.TryGetValue(kv.Key, out var t) ? t.Name : kv.Key.ToString();
                 int tier = rev.TierOf(kv.Value);
                 string eff = string.Join(" / ", Tables.TraitTiers.Where(x => x.trait == kv.Key && x.tier <= tier).Select(x => Tables.Effects.TryGetValue(x.effect, out var e) ? e.Desc : ""));
-                lines.Add(tier > 0 ? $"  <b>{name} {kv.Value} · {tier}단계</b>\n   <size=17>{eff}</size>" : $"  {name} {kv.Value}  <size=16>(2개부터)</size>");
+                lines.Add(tier > 0 ? $"  <b>{name} {kv.Value} · {tier / 2}단계</b>\n   <size=17>{eff}</size>" : $"  {name} {kv.Value}  <size=16>(2개부터)</size>");
             }
             infoBody.text = string.Join("\n", lines);
         }

@@ -35,6 +35,8 @@ namespace CatTang
         public event Action<float> OnReloadStart;
         public event Action<bool> OnReloadEnd;
         public event Action OnUltimate;
+        /// <summary>닷지 액션 발동 (치명타 보정 시간)</summary>
+        public event Action<float> OnDodgeAction;
 
         CharacterController cc;
         Vector3 aimDir = Vector3.forward;
@@ -50,6 +52,15 @@ namespace CatTang
         public float DashRechargeProgress => dashCharges >= dashMax ? 1 : dashTimer / DashRechargeTime;
         public float ReloadProgress => rev.reloading ? Mathf.Clamp01((Time.time - reloadStart) / reloadDur) : 0;
         public Interactable Focus { get; private set; }
+        public bool UltimateActive => ultimateActive;
+        // 실루엣 색 (주인공 붉은 스카프에 맞춘 붉은 계열): 대시 잔상 · 분신 사격 = 진홍, 대시 끝 · 백스텝 = 밝은 붉은빛, 닷지 = 분홍빛 붉은색
+        static readonly Color SilCrimson = new Color(0.92f, 0.16f, 0.2f, 0.75f);
+        static readonly Color SilHot = new Color(1f, 0.42f, 0.28f, 1f);
+        static readonly Color SilDodge = new Color(1f, 0.32f, 0.42f, 0.85f);
+        // 닷지 액션: 적의 공격을 대시로 직접 피하면 → 주변 시간이 느려지고(0.2배, 실시간 0.3초 + 0.3초 동안 회복) 짧은 시간 치명타 보정
+        public const float DodgeCritMul = 1.5f, DodgeCritTime = 2.5f, DodgeSlowScale = 0.2f, DodgeSlowHold = 0.3f, DodgeSlowRecover = 0.3f;
+        float dodgeCritUntil;
+        public float DodgeCritLeft => Mathf.Max(0, dodgeCritUntil - Time.time);
 
         void Awake()
         {
@@ -61,6 +72,7 @@ namespace CatTang
             health.OnChanceDodge += ChanceDodge;
             Tables.Load();
             if (model) { poser = model.GetComponent<KataPoser>(); anim = model.GetComponentInChildren<Animator>(); }
+            if (!GetComponent<ReloadMotion>()) gameObject.AddComponent<ReloadMotion>();     // 스피드로더 장전 동작
         }
 
         // ---------- 능력치 ----------
@@ -71,6 +83,8 @@ namespace CatTang
         /// <summary>치명타 확률 = 기본 5% + 양손 총 합 + 효과 + 기억</summary>
         public float CritChance => 0.05f + (rev.rightGun != null ? rev.rightGun.CritChance : 0) + (rev.leftGun != null ? rev.leftGun.CritChance : 0)
                                    + Effects.GlobalPassive(this, "CritChanceAdd") + Meta.Stat("CritChance");
+        /// <summary>칸 s를 쏠 때 실제 치명타 확률: (기본 + 그 탄 효과) × 닷지 배율, 최대 100%</summary>
+        public float CritChanceFor(int s) => Mathf.Clamp01((CritChance + Effects.Passive(this, s, "CritChance")) * (Time.time < dodgeCritUntil ? DodgeCritMul : 1f));
         /// <summary>치명타 피해 배율 = 기본 150% + 양손 총 합 + 효과 + 기억</summary>
         public float CritDamage => 1.5f + (rev.rightGun != null ? rev.rightGun.CritDamage : 0) + (rev.leftGun != null ? rev.leftGun.CritDamage : 0)
                                    + Effects.GlobalPassive(this, "CritDamageAdd") + Meta.Stat("CritDamage");
@@ -237,17 +251,17 @@ namespace CatTang
             health.invulnerable = true;
             health.dashing = true;
             float t = 0, ghostT = 0;
-            Afterimage.Spawn(model, new Color(0.7f, 0.55f, 1f, 0.75f));
+            Afterimage.Spawn(model, SilCrimson);
             while (t < dashTime)
             {
                 cc.Move(dir * (dashDistance / dashTime) * Time.deltaTime);
                 t += Time.deltaTime;
                 ghostT += Time.deltaTime;
-                if (ghostT >= 0.035f) { ghostT = 0; Afterimage.Spawn(model, new Color(0.7f, 0.55f, 1f, 0.6f)); }
+                if (ghostT >= 0.035f) { ghostT = 0; Afterimage.Spawn(model, SilCrimson * new Color(1, 1, 1, 0.8f)); }
                 yield return null;
             }
             dashing = false;
-            Afterimage.Spawn(model, new Color(1f, 0.85f, 0.45f, 0.55f));
+            Afterimage.Spawn(model, SilHot * new Color(1, 1, 1, 0.6f));
             yield return new WaitForSeconds(JustDodgeWindow);
             health.dashing = false;
             health.invulnerable = ultimateActive;         // 불릿 파티 중 대시는 무적을 풀지 않음
@@ -258,11 +272,32 @@ namespace CatTang
             if (Time.time - lastJustDodge < 0.5f) return;
             lastJustDodge = Time.time;
             FxBurst.Spawn(transform.position + Vector3.up, 2f, FxBurst.Kind.Gold, new Color(0.7f, 0.55f, 1f));
+            // 닷지 액션: 치명타 보정 + 주변 시간 느려짐
+            dodgeCritUntil = Time.time + DodgeCritTime;
+            Afterimage.Spawn(model, SilDodge);
+            CameraFollow.Zoom(ultimateActive ? 0.8f : 0.9f);
+            if (!ultimateActive) StartCoroutine(DodgeSlow());
+            OnDodgeAction?.Invoke(DodgeCritTime);
             foreach (var e in Effects.Global(this, "OnJustDodge"))
             {
                 if (e.Type == "InstantReload" && rev.reloading) FinishReload(false);
                 if (e.Type == "CritNextShots") critShots += Mathf.RoundToInt(e.Value);
             }
+        }
+
+        IEnumerator DodgeSlow()
+        {
+            if (Time.timeScale < 0.99f) yield break;           // 멈춤 화면 · 다른 연출 중이면 건드리지 않음
+            Time.timeScale = DodgeSlowScale;
+            yield return new WaitForSecondsRealtime(DodgeSlowHold);
+            for (float t = 0; t < DodgeSlowRecover; t += Time.unscaledDeltaTime)
+            {
+                if (Time.timeScale == 0f) yield break;           // 그 사이 멈춤 화면이 열림
+                Time.timeScale = Mathf.Lerp(DodgeSlowScale, 1f, t / DodgeSlowRecover);
+                yield return null;
+            }
+            if (Time.timeScale > 0f) Time.timeScale = 1f;
+            if (!ultimateActive) CameraFollow.Zoom(1f);
         }
 
         void ChanceDodge()
@@ -293,6 +328,7 @@ namespace CatTang
                 nextShotSpeedAdd = 0;
                 nextFireTime = Time.time + (gun != null ? gun.FireInterval : 0.3f) / Mathf.Max(0.2f, 1 + atkSpeed);
                 refund = Shoot(s, aimDir, s % 2 == 1 ? rightMuzzle : leftMuzzle, 1f);
+                if (poser) poser.Recoil(s % 2 == 1);              // 쏜 손 반동
             }
             else
             {
@@ -303,6 +339,38 @@ namespace CatTang
             rev.shotsThisCycle++;
             rev.next = rev.reversed ? rev.next - 1 : rev.next + 1;
             if (rev.shotsThisCycle >= 12 || rev.next < 1 || rev.next > 12) StartReload();
+        }
+
+        /// <summary>발사 효과(OnFire): 활성화된 탄 · 양손 총 · 특성 · 코스튬. 평소 사격과 불릿 파티가 같이 씀. 반환 = 탄 회수</summary>
+        bool FireEffects(int s, Vector3 dir, Transform muzzle, float targetDist)
+        {
+            bool refund = false;
+            foreach (var e in Effects.For(this, s, "OnFire"))
+            {
+                if (!Effects.CondOk(e, this, s, null) || !Effects.Roll(e)) continue;
+                switch (e.Type)
+                {
+                    case "SilhouetteShot": StartCoroutine(SilhouetteShot(s, dir, e.Value)); break;
+                    case "ExtraShot":
+                        for (int k = 0; k < Mathf.Max(1, Mathf.RoundToInt(e.Value)); k++)
+                            Shoot(s, Quaternion.Euler(0, (k % 2 == 0 ? 7 : -7) * (k / 2 + 1), 0) * dir, muzzle, e.Value2 > 0 ? e.Value2 : 0.5f, targetDist, true);
+                        break;
+                    case "DamageAdd": if (e.Target == "NextBullet") nextShotDamageAdd += e.Value; break;
+                    case "NextBulletAttackSpeedAdd": nextShotSpeedAdd += e.Value; break;
+                    case "Stun": Effects.AreaStun(transform.position, e.Value2 > 0 ? e.Value2 : 3f, Mathf.Max(0.3f, e.Duration) * ControlDurationMul); break;
+                    case "DodgeChance": tempDodge = e.Value; tempDodgeUntil = Time.time + e.Duration; break;
+                    case "BulletRefund": refund = true; break;
+                    case "GlobalTimeStop":
+                        if (Time.time >= globalStopReady)
+                        {
+                            Health.GlobalStopUntil = Time.time + Mathf.Max(0.5f, e.Duration) * ControlDurationMul;
+                            globalStopReady = Time.time + (e.Value2 > 0 ? e.Value2 : 20f);
+                            FxBurst.Spawn(transform.position + Vector3.up, 9f, FxBurst.Kind.Gold, new Color(0.6f, 0.75f, 1f));
+                        }
+                        break;
+                }
+            }
+            return refund;
         }
 
         /// <summary>칸 s의 기본 피해 (패시브 효과 포함, 대상 무관)</summary>
@@ -335,7 +403,7 @@ namespace CatTang
                 nextShotDamageAdd = 0;
                 if (perfectBuff) { dmg *= 1.5f; perfectBuff = false; }
             }
-            bool crit = CritChance + Effects.Passive(this, s, "CritChance") > UnityEngine.Random.value || (!ghost && critShots > 0);
+            bool crit = CritChanceFor(s) > UnityEngine.Random.value || (!ghost && critShots > 0);
             if (!ghost && critShots > 0) critShots--;
             if (crit) dmg *= CritDamage;
 
@@ -346,32 +414,7 @@ namespace CatTang
             castFrom.y = transform.position.y + 0.9f;
 
             // 발사 효과
-            if (!ghost)
-                foreach (var e in Effects.For(this, s, "OnFire"))
-                {
-                    if (!Effects.CondOk(e, this, s, null) || !Effects.Roll(e)) continue;
-                    switch (e.Type)
-                    {
-                        case "SilhouetteShot": StartCoroutine(SilhouetteShot(s, dir, e.Value)); break;
-                        case "ExtraShot":
-                            for (int k = 0; k < Mathf.Max(1, Mathf.RoundToInt(e.Value)); k++)
-                                Shoot(s, Quaternion.Euler(0, (k % 2 == 0 ? 7 : -7) * (k / 2 + 1), 0) * dir, muzzle, e.Value2 > 0 ? e.Value2 : 0.5f, targetDist, true);
-                            break;
-                        case "DamageAdd": if (e.Target == "NextBullet") nextShotDamageAdd += e.Value; break;
-                        case "NextBulletAttackSpeedAdd": nextShotSpeedAdd += e.Value; break;
-                        case "Stun": Effects.AreaStun(transform.position, e.Value2 > 0 ? e.Value2 : 3f, Mathf.Max(0.3f, e.Duration) * ControlDurationMul); break;
-                        case "DodgeChance": tempDodge = e.Value; tempDodgeUntil = Time.time + e.Duration; break;
-                        case "BulletRefund": refund = true; break;
-                        case "GlobalTimeStop":
-                            if (Time.time >= globalStopReady)
-                            {
-                                Health.GlobalStopUntil = Time.time + Mathf.Max(0.5f, e.Duration) * ControlDurationMul;
-                                globalStopReady = Time.time + (e.Value2 > 0 ? e.Value2 : 20f);
-                                FxBurst.Spawn(transform.position + Vector3.up, 9f, FxBurst.Kind.Gold, new Color(0.6f, 0.75f, 1f));
-                            }
-                            break;
-                    }
-                }
+            if (!ghost) refund = FireEffects(s, dir, muzzle, targetDist);
             if (!ghost && Time.time < silhouetteFollowUntil) StartCoroutine(SilhouetteShot(s, dir, 0.3f));
 
             // 관통 · 튕김 · 유도
@@ -447,7 +490,11 @@ namespace CatTang
                 from = to;
             }
 
-            if (muzzle || !fromPos.HasValue) FxBurst.Spawn(origin + dir * 0.3f, ghost ? 0.5f : 0.7f, FxBurst.Kind.Muzzle, col);
+            if (muzzle || !fromPos.HasValue)
+            {
+                FxBurst.Spawn(origin + dir * 0.3f, ghost ? 0.5f : 0.7f, FxBurst.Kind.Muzzle, col);
+                GunkataFx.MuzzleFlash(origin, Effects.Flat(dir).normalized, ghost ? 0.6f : 0.85f);     // 작은 총구 화염
+            }
             if (!ghost) OnFired?.Invoke(s, awake);
             return refund;
         }
@@ -557,7 +604,7 @@ namespace CatTang
             yield return new WaitForSeconds(0.07f);
             var side = Vector3.Cross(Vector3.up, dir).normalized * (UnityEngine.Random.value < 0.5f ? 1.1f : -1.1f);
             var pos = transform.position + side - dir * 0.4f;
-            Afterimage.SpawnAt(model, pos, new Color(0.75f, 0.55f, 1f, 0.7f), 0.5f);
+            Afterimage.SpawnAt(model, pos, SilCrimson, 0.5f);
             Shoot(s, dir, null, mul, -1, true, pos);
             foreach (var e in Effects.Global(this, "OnSilhouette"))
                 if (e.Type == "SilhouetteFollow") silhouetteFollowUntil = Time.time + Mathf.Max(1f, e.Duration);
@@ -566,7 +613,7 @@ namespace CatTang
         IEnumerator TrailSilhouette(int s, Vector3 at, float mul, float after)
         {
             var pos = Effects.Flat(at) + Vector3.up * 0.05f;
-            Afterimage.SpawnAt(model, pos, new Color(0.75f, 0.55f, 1f, 0.6f), after + 0.3f);
+            Afterimage.SpawnAt(model, pos, SilCrimson * new Color(1, 1, 1, 0.8f), after + 0.3f);
             yield return new WaitForSeconds(after);
             var tgt = Effects.Nearest(pos, 12f);
             if (!tgt) yield break;
@@ -641,12 +688,13 @@ namespace CatTang
             var back = -aimDir;
             float t = 0;
             health.invulnerable = true;
-            Afterimage.Spawn(model, new Color(1f, 0.85f, 0.45f, 0.6f));
+            Afterimage.Spawn(model, SilHot * new Color(1, 1, 1, 0.65f));
             while (t < 0.15f) { cc.Move(back * (4f / 0.15f) * Time.deltaTime); t += Time.deltaTime; yield return null; }
             health.invulnerable = false;
             for (int i = 0; i < 2; i++)
             {
                 Shoot(Mathf.Clamp(rev.next, 1, 12), aimDir, i == 0 ? rightMuzzle : leftMuzzle, 0.8f, -1, true);
+                if (poser) poser.Recoil(i == 0);
                 yield return new WaitForSeconds(0.08f);
             }
         }
@@ -666,7 +714,7 @@ namespace CatTang
         public const float UltCloneDist = 1.6f;       // 분신이 본체에서 떨어진 거리 (m)
         const int UltRainPerTick = 7;                // 한 타에 원 안 아무 데나 떨어지는 총알 비 수
         static readonly Color UltGold = new Color(1f, 0.82f, 0.38f);
-        static readonly Color UltGhost = new Color(1f, 0.82f, 0.36f, 0.95f);
+        static readonly Color UltGhost = new Color(1f, 0.3f, 0.24f, 0.95f);     // 궁 분신: 붉은 실루엣
 
         IEnumerator BulletParty()
         {
@@ -691,7 +739,7 @@ namespace CatTang
             if (zone) zone.Close();
             GunBlast(rightMuzzle, poser ? poser.gunR : null, 1.15f, true);
             GunBlast(leftMuzzle, poser ? poser.gunL : null, 1.15f, true);
-            CloneVolley(8, 22.5f, UltCloneDist * 1.3f, 1f, 0.5f);
+            CloneStrikes(8, null, 1f, 0.4f, true, 1.8f);
             // 끝: 연기와 소용돌이만 남아 흩어짐
             var center = (model ? model.position : transform.position) + Vector3.up * 0.9f;
             for (int k = 0; k < 5; k++) GunkataFx.Swirl(center, UnityEngine.Random.Range(1.2f, 2.3f), -UltSpinSpeed * 0.6f, 0.6f);
@@ -711,15 +759,22 @@ namespace CatTang
             var b = rev.slots[s].bullet;
             bool awake = rev.Awakened(s);
             Color col = BulletLook.Shown(b, awake);
-            float baseDmg = ShotDamage(s) * UltTickMul;
             var c = transform.position;
+            // 활성화된 총탄 · 특성 · 총 · 코스튬의 발사 효과도 그대로 (분신 사격 · 추가 사격 · 기절 · 시간 정지 등).
+            // 맞힌 효과(OnHit) · 처치 효과(OnKill)는 아래 ApplyHit가 적용
+            var near = Effects.Nearest(c, UltRadius);
+            var fireDir = near ? Effects.Flat(near.transform.position - c).normalized : BarrelDir(i % 2 == 0);
+            FireEffects(s, fireDir, i % 2 == 0 ? rightMuzzle : leftMuzzle, near ? Vector3.Distance(c, near.transform.position) : -1f);
+            float baseDmg = ShotDamage(s) * UltTickMul * (1 + nextShotDamageAdd);
+            nextShotDamageAdd = 0;
 
             if (zone) zone.Pulse(s);
             // 본체: 두 총구가 지금 자세에서 가리키는 방향으로 폭발
             GunBlast(rightMuzzle, poser ? poser.gunR : null, 1f, i % 2 == 0);
             GunBlast(leftMuzzle, poser ? poser.gunL : null, 1f, i % 2 == 1);
+            if (poser) { poser.Recoil(true, 0.8f); poser.Recoil(false, 0.8f); }
             // 분신: 본체 사이사이 방향에서 같은 자세로 동시에 (타마다 반 칸씩 엇갈려 회전하는 느낌)
-            CloneVolley(UltClones, 360f / UltClones * (i % 2 == 0 ? 0.5f : 1f), UltCloneDist, 0.9f, 0.45f);
+            CloneStrikes(UltClones, foes, 0.8f, 0.16f);
             // 가운데 쌓이는 회색 연기 + 몸 주위를 도는 어두운 소용돌이 (본체와 같은 방향으로 → 회전감)
             var mid = (model ? model.position : c) + Vector3.up * 0.9f;
             GunkataFx.Smoke(mid + UnityEngine.Random.insideUnitSphere * 0.7f, UnityEngine.Random.Range(1.6f, 2.4f));
@@ -740,7 +795,7 @@ namespace CatTang
                 var to = h.transform.position + Vector3.up * 0.9f;
                 var dir = Effects.Flat(to - c);
                 dir = dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
-                bool crit = CritChance + Effects.Passive(this, s, "CritChance") > UnityEngine.Random.value;
+                bool crit = CritChanceFor(s) > UnityEngine.Random.value;
                 ApplyHit(s, h, crit ? baseDmg * CritDamage : baseDmg, to, Vector3.Distance(c, to), dir, col, crit);
                 // 한 적에게 여러 발이 쏟아지는 느낌: 몸 주변 탄착 두 개 + 금빛 X
                 for (int k = 0; k < 2; k++)
@@ -751,21 +806,45 @@ namespace CatTang
         }
 
         /// <summary>실루엣 분신 n개: 지금 자세 그대로 본체 둘레 n방향을 보고 나타나, 각자의 두 총구에서 동시에 폭발</summary>
-        void CloneVolley(int n, float offsetDeg, float dist, float scale, float life)
+        const float CloneDashTime = 0.1f;             // 분신이 몸에서 대시해 나가는 시간 (잔상 꼬리를 남김)
+
+        /// <summary>분신 n개 (사미라 궁 · 불릿 파티 느낌): 몸에서 대시하듯 잔상을 끌며 둘레(0.8~1.8m)로 뛰쳐나가, 제각각 방향으로 쏘고 금방 사라짐.
+        /// 매 타 자리 · 방향이 달라 몸 주위가 총구 섬광으로 들끓는 느낌. 적이 있으면 한 분신은 그 적 쪽을 봄.
+        /// ring = 마무리: 몸에서 사방으로 한꺼번에 튀어 나가며 바깥을 향해 일제 사격</summary>
+        void CloneStrikes(int n, List<Health> foes, float scale, float life, bool ring = false, float ringDist = 0)
         {
             if (!model) return;
+            var basePos = transform.position;
             var center = model.position;
+            var rootOff = model.position - transform.position;
+            Vector3 muzR = rightMuzzle ? rightMuzzle.position - center : Vector3.zero, muzL = leftMuzzle ? leftMuzzle.position - center : Vector3.zero;
+            Vector3 barR = BarrelDir(true), barL = BarrelDir(false);
+            var fwd0 = Effects.Flat(model.forward).normalized;
+            float spin0 = UnityEngine.Random.Range(0f, 360f);
             for (int k = 0; k < n; k++)
             {
-                var rot = Quaternion.Euler(0, offsetDeg + k * 360f / n, 0);
-                var facing = rot * model.rotation;
-                var fwd = facing * Vector3.forward; fwd.y = 0;
-                var shift = (fwd.sqrMagnitude > 1e-4f ? fwd.normalized : Vector3.forward) * dist;
-                Afterimage.SpawnAt(model, transform.position + shift, facing, UltGhost, life);
-                // 분신 총구 = 본체 총구를 몸 중심 기준으로 같은 만큼 돌리고 옮긴 자리
-                if (rightMuzzle) GunBlastAt(center + shift + rot * (rightMuzzle.position - center), rot * BarrelDir(true), center, scale, false);
-                if (leftMuzzle) GunBlastAt(center + shift + rot * (leftMuzzle.position - center), rot * BarrelDir(false), center, scale, false);
+                Vector3 dir;
+                Quaternion facing;
+                if (ring) dir = Quaternion.Euler(0, 22.5f + k * 360f / n, 0) * fwd0;
+                else dir = Quaternion.Euler(0, spin0 + k * 360f / n + UnityEngine.Random.Range(-25f, 25f), 0) * Vector3.forward;
+                float dist = ring ? ringDist : UnityEngine.Random.Range(0.8f, 1.8f);
+                var spot = basePos + dir * dist;
+                var start = basePos;                                           // 몸에서 대시해 나감
+                Health tgt = !ring && k == 0 && foes != null && foes.Count > 0 ? foes[UnityEngine.Random.Range(0, foes.Count)] : null;
+                if (ring) facing = Quaternion.LookRotation(dir, Vector3.up);
+                else if (tgt) facing = Quaternion.LookRotation(Effects.Flat(tgt.transform.position - spot).normalized, Vector3.up);
+                else facing = Quaternion.LookRotation(Quaternion.Euler(0, UnityEngine.Random.Range(-60f, 60f), 0) * dir, Vector3.up);   // 대체로 바깥쪽
+                Afterimage.DashIn(model, start, spot, facing, UltGhost, CloneDashTime, life);
+                var rot = Quaternion.Euler(0, Quaternion.LookRotation(facing * Vector3.forward).eulerAngles.y - Quaternion.LookRotation(fwd0).eulerAngles.y, 0);
+                StartCoroutine(CloneFire(spot + rootOff, rot, muzR, muzL, barR, barL, scale));
             }
+        }
+
+        IEnumerator CloneFire(Vector3 center, Quaternion rot, Vector3 muzR, Vector3 muzL, Vector3 barR, Vector3 barL, float scale)
+        {
+            yield return new WaitForSeconds(CloneDashTime);
+            if (muzR != Vector3.zero) GunBlastAt(center + rot * muzR, rot * barR, center, scale, false);
+            if (muzL != Vector3.zero) GunBlastAt(center + rot * muzL, rot * barL, center, scale, false);
         }
 
         Vector3 BarrelDir(bool right)

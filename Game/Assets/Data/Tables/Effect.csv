@@ -17,15 +17,15 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9151,OnHit,None,0,1.0,HitTarget,DelayedDamage,0.3,0.0,1.0,1초 뒤 피해 30% 한 번 더
 9152,OnHit,None,0,1.0,HitTarget,DelayedDamage,0.6,0.0,1.0,1초 뒤 피해 60%
 9153,OnHit,None,0,1.0,HitTarget,DelayedDamage,0.6,2.5,1.0,1초 뒤 피해 60%가 반경 2.5로 퍼짐
-9161,Passive,None,0,1.0,Self,JustDodgeWindowAdd,0.2,0.0,0.0,저스트 회피 판정 +20%
+9161,Passive,None,0,1.0,Self,JustDodgeWindowAdd,0.2,0.0,0.0,대시 회피 판정 +20%
 9162,Passive,None,0,1.0,Self,JustDodgeWindowAdd,0.4,0.0,0.0,판정 +40%
-9163,OnJustDodge,None,0,1.0,Self,CritNextShots,3,0.0,0.0,저스트 회피 후 다음 3발 치명타
+9163,OnJustDodge,None,0,1.0,Self,CritNextShots,3,0.0,0.0,대시로 공격을 피하면 다음 3발 치명타
 9171,Passive,None,0,1.0,Self,ControlDurationAdd,0.2,0.0,0.0,정지 · 둔화 지속 +20%
 9172,Passive,None,0,1.0,Self,ControlDurationAdd,0.4,0.0,0.0,지속 +40%
 9173,Passive,None,0,1.0,Self,DamageVsStoppedAdd,1.0,0.0,0.0,정지된 적에게 주는 피해 2배
-9181,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.15,0.0,0.0,깨어나지 못한 탄 공격력 +15%
+9181,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.15,0.0,0.0,비활성화 탄 공격력 +15%
 9182,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.3,0.0,0.0,+30%
-9183,Passive,None,0,1.0,Self,UnawakenedTraitCount,1,0.0,0.0,깨어나지 못한 탄도 첫 번째 특성이 켜짐
+9183,Passive,None,0,1.0,Self,UnawakenedTraitCount,1,0.0,0.0,비활성화 탄도 첫 번째 특성이 켜짐
 9201,OnHit,None,0,1.0,HitTarget,Knockback,0.5,0.0,0.0,맞은 적을 살짝 밀쳐냄
 9202,OnFire,None,0,1.0,Self,ExtraShot,1,0.3,0.0,옆으로 1발 더 (피해 30%)
 9203,OnHit,None,0,1.0,Self,Ricochet,1,0.0,0.0,1번 튕김

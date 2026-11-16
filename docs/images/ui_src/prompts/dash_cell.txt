@@ -1,0 +1,7 @@
+Create ONE image file named dash_cell.png in the current directory (use your image generation tool and save it here). Size 1024x512.
+Game HUD GAUGE pieces for a dash charge meter, matching the attached HUD reference exactly in style (chunky brass/gold steampunk frame, rivets, thick dark outline, flat cel shading).
+Draw the SAME horizontal capsule gauge TWICE, stacked vertically, identical frame shape, size and position in each half (top half = y 0-255, bottom half = y 256-511), each capsule about 900px wide and 150px tall, centered in its half:
+- TOP: EMPTY state - the glass interior is dark navy/black, unlit.
+- BOTTOM: FULL state - the same frame but the interior is filled with glowing cyan/teal energy (bright core, lighter highlight stripe along the top, small chevron ">>" shapes in the energy pointing right).
+The brass frames must be pixel-identical between top and bottom; only the interior differs.
+Background everywhere else: perfectly flat solid magenta #FF00FF (no gradient, no shadow, no text).

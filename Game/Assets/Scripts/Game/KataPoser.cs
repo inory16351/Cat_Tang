@@ -30,7 +30,9 @@ namespace CatTang
     {
         public Animator anim;
         public Transform gunR, gunL, muzzleR, muzzleL;
-        [Range(0, 1)] public float aimWeight = 1f;      // 평소 조준 자세 세기
+        [Range(0, 1)] public float aimWeight = 1f;
+        /// <summary>총 원점(손잡이)을 주먹 기준으로 얼마나 옮길지 (총 기준 좌표, m). 음수 y = 총을 아래로 → 손잡이가 주먹 안으로</summary>
+        public Vector3 gripOffset = new Vector3(0, -0.09f, -0.02f);      // 평소 조준 자세 세기
         public float snapTime = 0.05f;                  // 자세 전환 시간 (절도 있게 짧게)
 
         Transform hips, spine, head, rUp, rLo, rHand, lUp, lLo, lHand, rTh, rSh, rFoot, lTh, lSh, lFoot;
@@ -103,11 +105,42 @@ namespace CatTang
             weightTarget = 1;
         }
 
+        /// <summary>임의 자세로 (장전 동작 등). snap 초 동안</summary>
+        public void Pose(KataPose p, float snap)
+        {
+            from = cur; to = p; t = 0; snapTime = snap;
+            weightTarget = 1;
+        }
+
+        /// <summary>총을 손 안에서 더 돌림 (총 기준, 손잡이 원점). 장전 털기 · 돌려 쥐기용. identity = 그대로</summary>
+        [System.NonSerialized] public Quaternion gunExtraR = Quaternion.identity, gunExtraL = Quaternion.identity;
+
         /// <summary>평소 조준 자세로 돌아옴</summary>
         public void Release(float snap = 0.12f)
         {
             from = cur; to = Aim; t = 0; snapTime = snap;
             weightTarget = aimWeight;
+        }
+
+        // ---------- 사격 반동 ----------
+        const float RecoilArm = 20f, RecoilGun = 6f, RecoilDecay = 7f;     // 총은 팔과 거의 일직선으로 같이 올라감     // 팔이 위로 튀는 각 · 총구가 젖혀지는 각 · 돌아오는 속도(1/초)
+        float recoilR, recoilL;
+
+        /// <summary>쏠 때 호출: 그 손 팔이 위로 튀고 총구가 젖혀졌다가 0.15초쯤에 돌아옴</summary>
+        public void Recoil(bool right, float power = 1f)
+        {
+            if (right) recoilR = Mathf.Max(recoilR, power); else recoilL = Mathf.Max(recoilL, power);
+        }
+
+        // 반동 곡선: 바로 튀고(위쪽) 빠르게 감쇠
+        static float Curve(float r) => r * r * (3 - 2 * r);
+
+        Vector3 Kick(Vector3 dir, float r)
+        {
+            if (r <= 0.001f) return dir;
+            var axis = Vector3.Cross(dir, transform.up);
+            if (axis.sqrMagnitude < 1e-4f) return dir;
+            return Quaternion.AngleAxis(RecoilArm * Curve(r), axis.normalized) * dir;
         }
 
         public void SetAimWeight(float w) { aimWeight = w; if (to.Equals(Aim) || IsAim) weightTarget = w; }
@@ -143,8 +176,12 @@ namespace CatTang
                 Point(lTh, lSh, W(cur.lThigh), weight); Point(lSh, lFoot, W(cur.lShin), weight);
             }
             // 팔 (위팔 → 아래팔 → 손을 같은 방향으로 쭉)
-            Point(rUp, rLo, W(cur.rArm), weight); Point(rLo, rHand, W(cur.rArm), weight);
-            Point(lUp, lLo, W(cur.lArm), weight); Point(lLo, lHand, W(cur.lArm), weight);
+            // 반동: 쏜 팔이 위로 튀었다 돌아옴
+            float dt2 = Time.deltaTime;
+            recoilR = Mathf.MoveTowards(recoilR, 0, dt2 * RecoilDecay); recoilL = Mathf.MoveTowards(recoilL, 0, dt2 * RecoilDecay);
+            var ra = Kick(W(cur.rArm), recoilR); var la = Kick(W(cur.lArm), recoilL);
+            Point(rUp, rLo, ra, weight); Point(rLo, rHand, ra, weight);
+            Point(lUp, lLo, la, weight); Point(lLo, lHand, la, weight);
             // 아래팔을 팔 축으로 비틀어 엄지(= 총 윗면)가 위를 향하게
             Roll(rLo, rHand, rIndex, rThumb, weight);
             Roll(lLo, lHand, lIndex, lThumb, weight);
@@ -186,6 +223,8 @@ namespace CatTang
         {
             Align(gunR, rLo, rHand, rIndex, rThumb);
             Align(gunL, lLo, lHand, lIndex, lThumb);
+            if (gunR) gunR.rotation *= gunExtraR * Quaternion.Euler(-RecoilGun * Curve(recoilR), 0, 0);
+            if (gunL) gunL.rotation *= gunExtraL * Quaternion.Euler(-RecoilGun * Curve(recoilL), 0, 0);
         }
 
         // 총 원점 = 손잡이 (주먹 안), +z = 총구, +y = 윗면(엄지 쪽)
@@ -199,7 +238,9 @@ namespace CatTang
             Vector3 up = thumb ? thumb.position - fist : transform.up;
             up -= d * Vector3.Dot(up, d);
             if (up.sqrMagnitude < 1e-6f) up = DesiredUp(d);
-            gun.SetPositionAndRotation(fist, Quaternion.LookRotation(d, up.normalized));
+            var rot = Quaternion.LookRotation(d, up.normalized);
+            // 손잡이가 주먹 안에 오도록 총을 총 기준으로 옮김 (위 · 아래 = y, 앞뒤 = z, 모델 크기 비례)
+            gun.SetPositionAndRotation(fist + rot * gripOffset * scale, rot);
         }
 
         /// <summary>그 총의 총구가 가리키는 수평 방향</summary>

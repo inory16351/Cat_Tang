@@ -13,8 +13,8 @@ namespace CatTang
         Transform follow;
         Rigidbody rb;
         readonly HashSet<Health> inside = new();
-        ParticleSystem casings, debris;
-        static Material debrisMat;
+        ParticleSystem casings, debris, embers;
+        static Material debrisMat, emberMat;
         bool closed;
 
         static Material mat;
@@ -73,7 +73,8 @@ namespace CatTang
         public void Pulse(int shot)
         {
             if (casings) casings.Emit(10);
-            if (debris) debris.Emit(16);
+            if (debris) debris.Emit(debrisTex ? 8 : 16);
+            if (embers) embers.Emit(10);
         }
 
         /// <summary>마무리: 탄피 · 파편을 한 움큼 쏟고 닫힘</summary>
@@ -82,43 +83,85 @@ namespace CatTang
             if (closed) return;
             closed = true;
             if (casings) casings.Emit(30);
-            if (debris) debris.Emit(40);
+            if (debris) debris.Emit(debrisTex ? 18 : 40);
+            if (embers) embers.Emit(26);
             Destroy(gameObject, 1.0f);
         }
 
-        /// <summary>파편 · 불티: 검은 조각과 붉은 불티가 몸에서 사방 수평으로 튀어 나감 (속도 방향으로 늘어진 선)</summary>
+        static bool debrisTex;
+
+        /// <summary>파편 · 불티 (손 그림 Codex 시트가 있으면 그림으로):
+        /// - 파편(FX/shards, 4칸): 부서진 톱니 · 쇳조각 · 시곗바늘 · 시계 유리 조각이 빙글빙글 돌며 사방으로 튀어 떨어짐
+        /// - 불티(FX/embers, 4칸): 날아가는 방향으로 늘어나는 불꽃 줄기
+        /// 시트가 없으면 예전 네모 파편</summary>
         void BuildDebris()
         {
-            if (!debrisMat) debrisMat = new Material(Shader.Find("Sprites/Default"));
-            var g = new GameObject("Debris");
+            var shardTex = Resources.Load<Texture2D>("FX/shards");
+            var emberTex = Resources.Load<Texture2D>("FX/embers");
+            debrisTex = shardTex;
+            if (!debrisMat)
+            {
+                debrisMat = new Material(Shader.Find("Sprites/Default"));
+                if (shardTex) debrisMat.mainTexture = shardTex;
+            }
+            debris = MakeBurst("Debris", debrisMat, shardTex ? 4 : 0, false);
+            var main = debris.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.45f, 0.8f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(4f, 9f);
+            main.startSize = shardTex ? new ParticleSystem.MinMaxCurve(0.32f, 0.55f) : new ParticleSystem.MinMaxCurve(0.05f, 0.11f);
+            main.startRotation = new ParticleSystem.MinMaxCurve(0, Mathf.PI * 2);
+            main.startColor = shardTex ? new ParticleSystem.MinMaxGradient(Color.white) : new ParticleSystem.MinMaxGradient(new Color(0.16f, 0.09f, 0.08f), new Color(1f, 0.42f, 0.16f));
+            main.gravityModifier = 1.4f;
+            var rot = debris.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-12f, 12f);
+            if (!shardTex) { var pr = debris.GetComponent<ParticleSystemRenderer>(); pr.renderMode = ParticleSystemRenderMode.Stretch; pr.velocityScale = 0.03f; pr.lengthScale = 2f; }
+
+            if (emberTex)
+            {
+                if (!emberMat) emberMat = new Material(Shader.Find("Sprites/Default")) { mainTexture = emberTex };
+                embers = MakeBurst("Embers", emberMat, 4, true);
+                var em = embers.main;
+                em.startLifetime = new ParticleSystem.MinMaxCurve(0.25f, 0.5f);
+                em.startSpeed = new ParticleSystem.MinMaxCurve(7f, 14f);
+                em.startSize = new ParticleSystem.MinMaxCurve(0.22f, 0.4f);
+                em.gravityModifier = 0.3f;
+            }
+        }
+
+        /// <summary>몸에서 사방 수평으로 한 번에 터지는 입자. sheet = 텍스처 가로 칸 수(0 = 텍스처 없음, 칸 중 아무거나), stretch = 날아가는 방향으로 늘림</summary>
+        ParticleSystem MakeBurst(string name, Material m, int sheet, bool stretch)
+        {
+            var g = new GameObject(name);
             g.transform.SetParent(transform, false);
             g.transform.localPosition = Vector3.up * 1.0f;
             g.transform.localRotation = Quaternion.Euler(90, 0, 0);          // 원 모양 방출을 바닥과 나란히
-            debris = g.AddComponent<ParticleSystem>();
-            debris.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            var main = debris.main;
+            var ps = g.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
             main.loop = false;
             main.playOnAwake = false;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.7f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(5f, 12f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.11f);
-            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.16f, 0.09f, 0.08f), new Color(1f, 0.42f, 0.16f));
-            main.gravityModifier = 0.8f;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.maxParticles = 500;
-            var em = debris.emission; em.rateOverTime = 0;
-            var sh = debris.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.5f; sh.randomDirectionAmount = 0.15f;
-            var col = debris.colorOverLifetime; col.enabled = true;
+            var em = ps.emission; em.rateOverTime = 0;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.5f; sh.randomDirectionAmount = 0.15f;
+            var col = ps.colorOverLifetime; col.enabled = true;
             var gr = new Gradient();
             gr.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
-                       new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 0.6f), new GradientAlphaKey(0, 1) });
+                       new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 0.65f), new GradientAlphaKey(0, 1) });
             col.color = gr;
+            if (sheet > 0)
+            {
+                var ts = ps.textureSheetAnimation; ts.enabled = true;
+                ts.numTilesX = sheet; ts.numTilesY = 1;
+                ts.animation = ParticleSystemAnimationType.WholeSheet;
+                ts.frameOverTime = new ParticleSystem.MinMaxCurve(0);
+                ts.startFrame = new ParticleSystem.MinMaxCurve(0, sheet - 0.01f);
+                ts.cycleCount = 1;
+            }
             var pr = g.GetComponent<ParticleSystemRenderer>();
-            pr.sharedMaterial = debrisMat;
-            pr.renderMode = ParticleSystemRenderMode.Stretch;
-            pr.velocityScale = 0.03f;
-            pr.lengthScale = 2f;
+            pr.sharedMaterial = m;
             pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            if (stretch) { pr.renderMode = ParticleSystemRenderMode.Stretch; pr.velocityScale = 0.025f; pr.lengthScale = 1.4f; }
+            return ps;
         }
 
         void BuildCasings()

@@ -22,6 +22,10 @@ namespace CatTang
         public const int Stages = 4;
 
         public int chapter = 1;
+        // 한 판 = 한 목숨 (세피리아식): 늘 1장부터 시작해 보스를 넘으면 마을로 안 돌아가고 다음 장으로 이어짐.
+        // 이번 판의 끝(frontier) = 지금까지 넘은 장 + 1. 새 장을 넘으면 판이 끝나고 다음 판은 한 장 더 멀리 갈 수 있음
+        public int clearedAtStart, frontier;
+        public bool AllCleared => Meta.ChaptersCleared >= Meta.ChapterCount;
         public int stageIndex;                        // 0~3 스테이지, 4 보스
         public int roomIndex;                         // 스테이지 안에서 지금 방
         public RewardKind pendingReward = RewardKind.Gold;
@@ -51,7 +55,9 @@ namespace CatTang
         {
             player = PlayerController.Instance;
             ui = FindFirstObjectByType<GameUI>();
-            chapter = Mathf.Clamp(Meta.SelectedChapter, 1, Meta.ChapterCount);
+            clearedAtStart = Meta.ChaptersCleared;
+            frontier = Mathf.Min(Meta.ChapterCount, clearedAtStart + 1);
+            chapter = 1;
             Chapter = Tables.Chapter(chapter);
             player.combatEnabled = true;
             player.SetupRun();
@@ -308,7 +314,15 @@ namespace CatTang
         {
             Meta.MarkChapterCleared(chapter);
             shardsThisRun += 15 * chapter;
-            EndRun(true);
+            if (chapter >= frontier) { EndRun(true); return; }
+            // 다음 장으로 이어감: 체력 30% 회복 · 골드 · 빌드 그대로
+            ui?.CloseAll();
+            chapter++;
+            Chapter = Tables.Chapter(chapter);
+            player.health.Heal(player.health.maxHp * 0.3f);
+            ui?.Toast($"{chapter - 1}장 돌파 — {chapter}장 · {Chapter?.Name}");
+            Music.Play("bgm_stage");
+            BuildStage(0, RewardKind.Gold);
         }
 
         void OnPlayerDeath(Health h) => EndRun(false);

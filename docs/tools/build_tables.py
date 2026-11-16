@@ -114,15 +114,15 @@ eff(9143, "OnExecute", "HeatGain", 1, desc="처형하면 열기 1칸")
 eff(9151, "OnHit", "DelayedDamage", 0.30, dur=1.0, target="HitTarget", desc="1초 뒤 피해 30% 한 번 더")
 eff(9152, "OnHit", "DelayedDamage", 0.60, dur=1.0, target="HitTarget", desc="1초 뒤 피해 60%")
 eff(9153, "OnHit", "DelayedDamage", 0.60, 2.5, 1.0, target="HitTarget", desc="1초 뒤 피해 60%가 반경 2.5로 퍼짐")
-eff(9161, "Passive", "JustDodgeWindowAdd", 0.20, desc="저스트 회피 판정 +20%")
+eff(9161, "Passive", "JustDodgeWindowAdd", 0.20, desc="대시 회피 판정 +20%")
 eff(9162, "Passive", "JustDodgeWindowAdd", 0.40, desc="판정 +40%")
-eff(9163, "OnJustDodge", "CritNextShots", 3, desc="저스트 회피 후 다음 3발 치명타")
+eff(9163, "OnJustDodge", "CritNextShots", 3, desc="대시로 공격을 피하면 다음 3발 치명타")
 eff(9171, "Passive", "ControlDurationAdd", 0.20, desc="정지 · 둔화 지속 +20%")
 eff(9172, "Passive", "ControlDurationAdd", 0.40, desc="지속 +40%")
 eff(9173, "Passive", "DamageVsStoppedAdd", 1.0, desc="정지된 적에게 주는 피해 2배")
-eff(9181, "Passive", "UnawakenedDamageAdd", 0.15, desc="깨어나지 못한 탄 공격력 +15%")
+eff(9181, "Passive", "UnawakenedDamageAdd", 0.15, desc="비활성화 탄 공격력 +15%")
 eff(9182, "Passive", "UnawakenedDamageAdd", 0.30, desc="+30%")
-eff(9183, "Passive", "UnawakenedTraitCount", 1, desc="깨어나지 못한 탄도 첫 번째 특성이 켜짐")
+eff(9183, "Passive", "UnawakenedTraitCount", 1, desc="비활성화 탄도 첫 번째 특성이 켜짐")
 
 # 탄 고유 효과 (9201~)
 eff(9201, "OnHit", "Knockback", 0.5, target="HitTarget", desc="맞은 적을 살짝 밀쳐냄")
@@ -229,10 +229,10 @@ TRAIT = [
     (3003, "망각", "적을 시간 속에 가둬 멈추고 더 아프게 한다", "trait_oblivion"),
     (3004, "되감기", "피해를 맞기 직전의 순간으로 되감는다 (회피)", "trait_rewind"),
     (3005, "종말", "끝이 가까운 적을 처형하고 보스에게 강한 피해", "trait_end"),
-    (3006, "지연", "시간차로 피해가 한 번 더 들어간다", "trait_delay"),
-    (3007, "예지", "다가올 공격을 미리 본다 (저스트 회피)", "trait_foresight"),
+    (3006, "지연", "일정 시간 후 추가 피해가 들어간다", "trait_delay"),
+    (3007, "예지", "대시 회피 판정이 늘어난다", "trait_foresight"),
     (3008, "영원", "멈춘 시간이 더 오래 이어진다", "trait_eternity"),
-    (3009, "미련", "깨어나지 못한 탄에도 힘이 남는다", "trait_lingering"),
+    (3009, "미련", "비활성화 탄에 보너스 효과가 붙는다", "trait_lingering"),
 ]
 TRAIT_TIER = []  # Id, TraitId, Tier, EffectId
 _tid = 31001

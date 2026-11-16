@@ -79,6 +79,33 @@ namespace CatTang
         };
 
         // ---------- 만들기 ----------
+        static readonly Dictionary<Sprite, Sprite> whiteCache = new();
+
+        /// <summary>같은 모양(알파)의 순백 스프라이트. 테두리(9-slice) · PPU 유지. 원본 텍스처가 읽기 금지여도 GPU로 복사해서 만듦</summary>
+        public static Sprite WhiteSprite(Sprite src)
+        {
+            if (!src) return null;
+            if (whiteCache.TryGetValue(src, out var w) && w) return w;
+            var tex = src.texture;
+            var rt = RenderTexture.GetTemporary(tex.width, tex.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            Graphics.Blit(tex, rt);
+            var prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            var r = src.textureRect;
+            var copy = new Texture2D((int)r.width, (int)r.height, TextureFormat.RGBA32, false);
+            copy.ReadPixels(new Rect(r.x, r.y, r.width, r.height), 0, 0);
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+            var px = copy.GetPixels32();
+            for (int i = 0; i < px.Length; i++) { px[i].r = px[i].g = px[i].b = 255; }
+            copy.SetPixels32(px);
+            copy.Apply();
+            copy.wrapMode = TextureWrapMode.Clamp;
+            w = Sprite.Create(copy, new Rect(0, 0, r.width, r.height), new Vector2(0.5f, 0.5f), src.pixelsPerUnit, 0, SpriteMeshType.FullRect, src.border);
+            whiteCache[src] = w;
+            return w;
+        }
+
         public static RectTransform MakeRect(string name, Transform parent, Vector2 anchor, Vector2 pos, Vector2 size, Vector2? pivot = null)
         {
             var go = new GameObject(name, typeof(RectTransform));
