@@ -30,25 +30,85 @@ namespace CatTang
 
         static Color Tint(Color baseC, ChapterDef ch) => Color.Lerp(baseC, ch.Wall, 0.25f);
 
-        public static Enemy Chaser(Vector3 pos, ChapterDef ch)
+        /// <summary>Tripo 모델 프리팹(Resources/Enemies/이름)이 있으면 "Model" 자식으로 붙임. 없으면 false → 도형으로 대신</summary>
+        static bool AttachModel(Enemy e, string res)
         {
-            var e = Root("Enemy_Chaser", pos, 30 * ch.HpMul, Enemy.Kind.Chaser, 0.5f, 1.2f);
-            Part(PrimitiveType.Cube, e.transform, new Vector3(0, 0.6f, 0), Vector3.one * 0.9f, M(Tint(new Color(0.58f, 0.36f, 0.78f), ch)), new Vector3(0, 45, 0));
-            Part(PrimitiveType.Sphere, e.transform, new Vector3(0, 0.75f, 0.45f), Vector3.one * 0.25f, M(new Color(1f, 0.85f, 0.3f), 2f));
-            e.speed = 3.4f + 0.15f * ch.Id;
-            e.contactDamage = 8 * ch.DmgMul;
+            var prefab = Resources.Load<GameObject>("Enemies/" + res);
+            if (!prefab) return false;
+            var m = Object.Instantiate(prefab, e.transform, false);
+            m.name = "Model";
+            foreach (var c in m.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+            e.SetModel(m.transform);
+            return true;
+        }
+
+        /// <summary>도형 몸통을 "Model" 아래에 만들어 흔들림 연출이 똑같이 붙게 함</summary>
+        static Transform ProtoModel(Enemy e)
+        {
+            var m = new GameObject("Model").transform;
+            m.SetParent(e.transform, false);
+            e.SetModel(m);
+            return m;
+        }
+
+        /// <summary>일반 적 웨이브 구성: 무법자 = 챕터 사격형 비율 + 10%, 폭탄병 25%, 나머지 깡패</summary>
+        public static Enemy RandomMinion(Vector3 pos, ChapterDef ch)
+        {
+            float r = Random.value, outlaw = Mathf.Clamp01(ch.ShooterRatio + 0.1f);
+            if (r < outlaw) return Outlaw(pos, ch);
+            if (r < outlaw + 0.25f) return Bomber(pos, ch);
+            return Brute(pos, ch);
+        }
+
+        // 태엽 무법자: 원거리 · 이속 2.6 · 2초마다 1발(예고 0.5초) · 피해 8 · 내구 24
+        public static Enemy Outlaw(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("Enemy_Outlaw", pos, 24 * ch.HpMul, Enemy.Kind.Outlaw, 0.45f, 1.7f);
+            if (!AttachModel(e, "Ch1_Outlaw"))
+            {
+                var m = ProtoModel(e);
+                Part(PrimitiveType.Capsule, m, new Vector3(0, 0.75f, 0), new Vector3(0.6f, 0.6f, 0.5f), M(Tint(new Color(0.42f, 0.3f, 0.32f), ch)));
+                Part(PrimitiveType.Cylinder, m, new Vector3(0, 1.45f, 0.05f), new Vector3(0.5f, 0.06f, 0.5f), M(new Color(0.95f, 0.9f, 0.75f), 2f), new Vector3(90, 0, 0));
+                Part(PrimitiveType.Cylinder, m, new Vector3(0, 1.72f, 0), new Vector3(0.75f, 0.03f, 0.75f), M(new Color(0.3f, 0.2f, 0.18f)));
+                Part(PrimitiveType.Cylinder, m, new Vector3(0.3f, 0.95f, 0.45f), new Vector3(0.12f, 0.25f, 0.12f), M(new Color(0.85f, 0.65f, 0.3f), 2f), new Vector3(90, 0, 0));
+            }
+            e.speed = 2.6f;
+            e.projectileDamage = 8 * ch.DmgMul;
+            e.shootInterval = 2f;
             e.GetComponent<Health>().RefreshRenderers();
             return e;
         }
 
-        public static Enemy Shooter(Vector3 pos, ChapterDef ch)
+        // 시계추 깡패: 돌진 근접 · 이속 3.4 · 돌진 예고 0.6초 · 피해 12 · 내구 48
+        public static Enemy Brute(Vector3 pos, ChapterDef ch)
         {
-            var e = Root("Enemy_Shooter", pos, 22 * ch.HpMul, Enemy.Kind.Shooter, 0.5f, 1.4f);
-            Part(PrimitiveType.Sphere, e.transform, new Vector3(0, 0.8f, 0), Vector3.one, M(Tint(new Color(0.3f, 0.58f, 0.78f), ch)));
-            Part(PrimitiveType.Cylinder, e.transform, new Vector3(0, 0.85f, 0.6f), new Vector3(0.22f, 0.3f, 0.22f), M(new Color(1f, 0.85f, 0.3f), 2f), new Vector3(90, 0, 0));
-            e.speed = 2.6f;
-            e.projectileDamage = 7 * ch.DmgMul;
-            e.shootInterval = Mathf.Max(1.1f, 2.1f - 0.15f * ch.Id);
+            var e = Root("Enemy_Brute", pos, 48 * ch.HpMul, Enemy.Kind.Brute, 0.75f, 2.1f);
+            if (!AttachModel(e, "Ch1_Brute"))
+            {
+                var m = ProtoModel(e);
+                Part(PrimitiveType.Cube, m, new Vector3(0, 0.95f, 0), new Vector3(1.3f, 1.4f, 0.9f), M(Tint(new Color(0.36f, 0.28f, 0.3f), ch)));
+                Part(PrimitiveType.Cylinder, m, new Vector3(0, 1.35f, 0.47f), new Vector3(0.8f, 0.05f, 0.8f), M(new Color(0.95f, 0.9f, 0.75f), 2f), new Vector3(90, 0, 0));
+                Part(PrimitiveType.Sphere, m, new Vector3(0.8f, 0.45f, 0.6f), Vector3.one * 0.6f, M(new Color(0.95f, 0.65f, 0.25f), 2f));
+            }
+            e.speed = 3.4f;
+            e.contactDamage = 12 * ch.DmgMul;
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // 모래시계 폭탄병: 자폭 · 이속 4.5 · 붙으면 0.8초 점멸 후 반경 2m 폭발 · 피해 12 · 내구 16
+        public static Enemy Bomber(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("Enemy_Bomber", pos, 16 * ch.HpMul, Enemy.Kind.Bomber, 0.4f, 1.3f);
+            if (!AttachModel(e, "Ch1_Bomber"))
+            {
+                var m = ProtoModel(e);
+                Part(PrimitiveType.Capsule, m, new Vector3(0, 0.55f, 0), new Vector3(0.6f, 0.45f, 0.5f), M(Tint(new Color(0.4f, 0.3f, 0.28f), ch)));
+                Part(PrimitiveType.Sphere, m, new Vector3(0, 1.1f, 0), new Vector3(0.45f, 0.55f, 0.45f), M(new Color(1f, 0.75f, 0.3f), 2f));
+                Part(PrimitiveType.Sphere, m, new Vector3(0.4f, 0.7f, 0.25f), Vector3.one * 0.32f, M(new Color(0.15f, 0.12f, 0.12f)));
+            }
+            e.speed = 4.5f;
+            e.contactDamage = 12 * ch.DmgMul;
             e.GetComponent<Health>().RefreshRenderers();
             return e;
         }

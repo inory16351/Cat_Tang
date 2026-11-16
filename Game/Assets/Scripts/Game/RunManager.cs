@@ -109,26 +109,33 @@ namespace CatTang
             roomIndex = i;
             inCombat = true;
             foreach (var g in current.gates) g.SetActive(true);
-            wavesLeft = IsBossRoom ? 1 : (stageIndex >= 2 ? 2 : Random.value < 0.5f ? 1 : 2);
+            wavesLeft = IsBossRoom ? 1 : (stageIndex >= 2 ? 3 : Random.value < 0.5f ? 2 : 3);   // 방마다 웨이브 2~3번 (1장 기획서)
             StartCoroutine(SpawnSoon());
         }
 
         IEnumerator SpawnSoon()
         {
-            yield return new WaitForSeconds(0.6f);
-            SpawnWave();
+            yield return new WaitForSeconds(0.3f);
+            yield return SpawnWave();
         }
 
-        void SpawnWave()
+        bool spawning;
+        public const float WavePreview = 1f;              // 다음 웨이브 예고 (1장 기획서: 1초)
+
+        IEnumerator SpawnWave()
         {
             wavesLeft--;
             var c = current.center;
             if (IsBossRoom)
             {
                 alive.Add(EnemyFactory.Boss(c + new Vector3(0, 0, 4), Chapter));
-                return;
+                yield break;
             }
-            int n = Mathf.Min(3 + stageIndex + (chapter - 1), 9);
+            spawning = true;
+            // 웨이브당 적 (1장 기획서): 스테이지 1은 4~6마리 → 스테이지 4는 6~9마리. 뒤 장은 +1씩
+            int lo = 4 + Mathf.RoundToInt(stageIndex * 2f / 3f), hi = 6 + stageIndex;
+            int n = Mathf.Min(Random.Range(lo, hi + 1) + (chapter - 1), 11);
+            var spots = new List<Vector3>();
             for (int k = 0; k < n; k++)
             {
                 Vector3 pos;
@@ -137,9 +144,13 @@ namespace CatTang
                 {
                     pos = c + new Vector3(Random.Range(-current.size.x / 2 + 2.5f, current.size.x / 2 - 2.5f), 0, Random.Range(-current.size.y / 2 + 2.5f, current.size.y / 2 - 2.5f));
                 } while (Effects.Flat(pos - player.transform.position).magnitude < 5f && ++tries < 10);
-                bool shooter = Random.value < Chapter.ShooterRatio;
-                alive.Add(shooter ? EnemyFactory.Shooter(pos, Chapter) : EnemyFactory.Chaser(pos, Chapter));
+                spots.Add(pos);
+                Telegraph.Ring(pos, 0.7f, WavePreview, Telegraph.Aim);
             }
+            yield return new WaitForSeconds(WavePreview);
+            spawning = false;
+            if (runOver || current == null) yield break;
+            foreach (var pos in spots) alive.Add(EnemyFactory.RandomMinion(pos, Chapter));
         }
 
         public void AddEnemy(Enemy e) { if (e) alive.Add(e); }
@@ -159,8 +170,8 @@ namespace CatTang
             alive.Remove(e);
             alive.RemoveAll(x => x == null);
             if (e && e.kind != Enemy.Kind.Boss) player.inv.gold += Random.Range(2, 5);
-            if (!inCombat || alive.Count > 0) return;
-            if (wavesLeft > 0) { SpawnWave(); return; }
+            if (!inCombat || alive.Count > 0 || spawning) return;
+            if (wavesLeft > 0) { StartCoroutine(SpawnWave()); return; }
             RoomCleared();
         }
 
