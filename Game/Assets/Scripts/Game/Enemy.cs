@@ -444,7 +444,12 @@ namespace CatTang
             bool blew = kind == Kind.Bomber && selfDestruct;
             if (blew) GunkataFx.Explosion(transform.position, BomberRadius, true);   // 3D 자폭 폭발 (모래 먼지 · 파편)
             if (Mathf.Approximately(health.lastDamageWasDelayed, Time.time)) PlayerController.Instance?.DelayedKill(transform.position);
-            if (!blew) FxBurst.Spawn(transform.position + Vector3.up, kind == Kind.Boss ? 6f : 2.2f, FxBurst.Kind.Explosion);
+            // 사망: 이미지 폭발 대신 몸이 검게 굳어 검은 안개로 흩어지며 사라짐 (DeathMist)
+            if (!blew)
+            {
+                if (model) { DeathMist.Play(model, kind == Kind.Boss ? 1.6f : 1f); model = null; }
+                else FxBurst.Spawn(transform.position + Vector3.up, kind == Kind.Boss ? 6f : 2.2f, FxBurst.Kind.Explosion);
+            }
             RunManager.Instance?.OnEnemyKilled(this);
             Destroy(gameObject);
         }

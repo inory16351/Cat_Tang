@@ -1,7 +1,9 @@
 // 화면 연출 (URP 전역 볼륨을 런타임에 만들어 씀)
 // - PerfectDodge: 극한 회피(닷지 액션) — 젠레스 존 제로식. 순간 파란 섬광 → 화면이 회색으로 빠지고(약간 차갑게) 가장자리 색수차 · 비네트,
-//   슬로우가 풀리며 색이 돌아옴. 시간은 실제 시간(unscaled)으로 돌림 (슬로우 중에도 일정)
-// 플레이 진입 시 도메인 리로드를 끈 프로젝트라 정적 참조가 판을 넘어 남음 → 볼륨이 파괴됐으면 다시 만듦
+//   슬로우가 풀리며 색이 돌아옴
+// - PlayerHit: 고양이 피격 — 순간 하얗게 번쩍 → 붉은 비네트 · 색수차 · 렌즈가 툭 튐, 0.4초에 걸쳐 빠짐 (+ 아주 짧은 히트스톱)
+// 시간은 실제 시간(unscaled)으로 돌림 (슬로우 · 히트스톱 중에도 일정)
+// 플레이 진입 시 도메인 리로드를 끈 프로젝트라 정적 참조가 판을 넘어 남음 → 파괴됐으면 다시 만듦
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -11,37 +13,46 @@ namespace CatTang
     public class ScreenFx : MonoBehaviour
     {
         static ScreenFx inst;
-        Volume vol;
-        ColorAdjustments color;
-        ChromaticAberration chroma;
-        Vignette vig;
-        LensDistortion lens;
 
-        float start = -99, hold, recover;
+        class Layer
+        {
+            public Volume vol;
+            public ColorAdjustments color;
+            public ChromaticAberration chroma;
+            public Vignette vig;
+            public LensDistortion lens;
+            public float start = -99;
+        }
+
+        Layer dodge, hit;
+        float dodgeHold, dodgeRecover, hitPower;
 
         static ScreenFx Get()
         {
             if (inst) return inst;
             var go = new GameObject("ScreenFx");
             inst = go.AddComponent<ScreenFx>();
-            inst.Build();
+            inst.dodge = inst.Make(100, new Color(0.05f, 0.08f, 0.2f));
+            inst.hit = inst.Make(101, new Color(0.45f, 0.02f, 0.03f));
             return inst;
         }
 
-        void Build()
+        Layer Make(int priority, Color vignette)
         {
-            vol = gameObject.AddComponent<Volume>();
-            vol.isGlobal = true;
-            vol.priority = 100;
-            vol.weight = 0;
+            var l = new Layer();
+            l.vol = gameObject.AddComponent<Volume>();
+            l.vol.isGlobal = true;
+            l.vol.priority = priority;
+            l.vol.weight = 0;
             var prof = ScriptableObject.CreateInstance<VolumeProfile>();
-            color = prof.Add<ColorAdjustments>(true);
-            chroma = prof.Add<ChromaticAberration>(true);
-            vig = prof.Add<Vignette>(true);
-            lens = prof.Add<LensDistortion>(true);
-            vig.color.Override(new Color(0.05f, 0.08f, 0.2f));
-            vig.smoothness.Override(0.45f);
-            vol.profile = prof;
+            l.color = prof.Add<ColorAdjustments>(true);
+            l.chroma = prof.Add<ChromaticAberration>(true);
+            l.vig = prof.Add<Vignette>(true);
+            l.lens = prof.Add<LensDistortion>(true);
+            l.vig.color.Override(vignette);
+            l.vig.smoothness.Override(0.45f);
+            l.vol.profile = prof;
+            return l;
         }
 
         /// <summary>카메라 후처리를 켬 (Run 씬 카메라는 꺼져 있음). 볼륨이 비어 있으면 화면은 그대로</summary>
@@ -58,28 +69,61 @@ namespace CatTang
         {
             EnablePost();
             var s = Get();
-            s.start = Time.unscaledTime; s.hold = hold; s.recover = recover;
+            s.dodge.start = Time.unscaledTime; s.dodgeHold = hold; s.dodgeRecover = recover;
+            s.enabled = true;
+        }
+
+        /// <summary>고양이 피격 화면: power 0~1 (피해가 클수록 세게)</summary>
+        public static void PlayerHit(float power)
+        {
+            EnablePost();
+            var s = Get();
+            s.hit.start = Time.unscaledTime; s.hitPower = Mathf.Clamp(power, 0.4f, 1f);
             s.enabled = true;
         }
 
         void Update()
         {
-            float t = Time.unscaledTime - start;
-            float total = hold + recover;
-            if (t > total + 0.05f) { vol.weight = 0; enabled = false; return; }
-            // 무게: 0.04초에 확 들어오고 hold 동안 유지, recover 동안 부드럽게 빠짐
-            float w = t < 0.04f ? t / 0.04f : t < hold ? 1f : 1f - Mathf.SmoothStep(0, 1, (t - hold) / Mathf.Max(0.01f, recover));
-            vol.weight = Mathf.Clamp01(w);
-            // 첫 0.12초: 파랗게 번쩍 (노출 ↑ · 푸른 필터) → 회색으로 가라앉음
-            float flash = Mathf.Clamp01(1f - t / 0.12f);
-            color.postExposure.Override(Mathf.Lerp(-0.15f, 1.3f, flash));
-            color.saturation.Override(Mathf.Lerp(-82f, -20f, flash));
-            color.contrast.Override(18f);
-            color.colorFilter.Override(Color.Lerp(new Color(0.86f, 0.92f, 1f), new Color(0.7f, 0.85f, 1f), flash));
-            // 가장자리: 색수차는 번쩍일 때 세게, 비네트는 유지, 렌즈는 살짝 빨려 들어갔다 풀림
-            chroma.intensity.Override(Mathf.Lerp(0.35f, 1f, flash));
-            vig.intensity.Override(0.38f);
-            lens.intensity.Override(Mathf.Lerp(-0.08f, -0.28f, flash));
+            bool any = false;
+            // 극한 회피
+            {
+                float t = Time.unscaledTime - dodge.start, total = dodgeHold + dodgeRecover;
+                if (t <= total + 0.05f)
+                {
+                    any = true;
+                    float w = t < 0.04f ? t / 0.04f : t < dodgeHold ? 1f : 1f - Mathf.SmoothStep(0, 1, (t - dodgeHold) / Mathf.Max(0.01f, dodgeRecover));
+                    dodge.vol.weight = Mathf.Clamp01(w);
+                    float flash = Mathf.Clamp01(1f - t / 0.12f);
+                    dodge.color.postExposure.Override(Mathf.Lerp(-0.15f, 1.3f, flash));
+                    dodge.color.saturation.Override(Mathf.Lerp(-82f, -20f, flash));
+                    dodge.color.contrast.Override(18f);
+                    dodge.color.colorFilter.Override(Color.Lerp(new Color(0.86f, 0.92f, 1f), new Color(0.7f, 0.85f, 1f), flash));
+                    dodge.chroma.intensity.Override(Mathf.Lerp(0.35f, 1f, flash));
+                    dodge.vig.intensity.Override(0.38f);
+                    dodge.lens.intensity.Override(Mathf.Lerp(-0.08f, -0.28f, flash));
+                }
+                else dodge.vol.weight = 0;
+            }
+            // 피격
+            {
+                const float Life = 0.42f;
+                float t = Time.unscaledTime - hit.start;
+                if (t <= Life)
+                {
+                    any = true;
+                    float k = 1f - t / Life;                       // 1 → 0
+                    float pop = Mathf.Clamp01(1f - t / 0.06f);     // 첫 0.06초 번쩍
+                    hit.vol.weight = Mathf.Clamp01(k * 1.4f) * hitPower;
+                    hit.color.postExposure.Override(Mathf.Lerp(0f, 0.9f, pop));
+                    hit.color.saturation.Override(-25f * k);
+                    hit.color.colorFilter.Override(Color.Lerp(Color.white, new Color(1f, 0.82f, 0.82f), k));
+                    hit.chroma.intensity.Override(Mathf.Lerp(0.2f, 1f, k));
+                    hit.vig.intensity.Override(Mathf.Lerp(0.15f, 0.55f, k));
+                    hit.lens.intensity.Override(0.22f * k * Mathf.Sin(t * 60f));   // 렌즈가 툭 튀었다 흔들리며 돌아옴
+                }
+                else hit.vol.weight = 0;
+            }
+            if (!any) enabled = false;
         }
 
         void OnDestroy() { if (inst == this) inst = null; }

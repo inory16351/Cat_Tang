@@ -243,7 +243,102 @@ def bake_spark():
         render(sc, "spark", f)
 
 
-SETS = {"fire": bake_fire, "smoke": bake_smoke, "spark": bake_spark}
+def bake_mist():
+    """사망 검은 안개: 몸 크기의 검보라 덩어리들이 소용돌이치며 위로 솟고 길쭉하게 늘어나다 흩어짐"""
+    sc = reset(); set_line_color(sc, (0.16, 0.06, 0.22))
+    rnd = random.Random(21)
+    mats, obs = [], []
+    for i in range(8):
+        m = toon_mat(f"mist{i}", [(0.0, (0.15, 0.11, 0.19)), (0.22, (0.08, 0.06, 0.11)), (0.5, (0.04, 0.03, 0.06)), (0.8, (0.015, 0.012, 0.02))])
+        o = lumpy(f"m{i}", 50 + i, m)
+        a = TAU * i / 8 + rnd.uniform(-0.3, 0.3)
+        o["a"] = a; o["r"] = rnd.uniform(0.15, 0.45); o["z0"] = rnd.uniform(-0.9, 0.3); o["s"] = rnd.uniform(0.45, 0.7); o["lag"] = rnd.uniform(0, 0.18)
+        mats.append(m); obs.append(o)
+    for f in range(FRAMES):
+        t = f / (FRAMES - 1)
+        for o, m in zip(obs, mats):
+            k = max(0.0, (t - o["lag"]) / (1 - o["lag"]))
+            a = o["a"] + k * 2.2                                   # 소용돌이
+            r = o["r"] * (1 + 0.8 * k)
+            o.location = (math.cos(a) * r, 0, o["z0"] + 1.1 * ease_out(k, 2))
+            fade = min(1.0, max(0.0, (k - 0.65) / 0.35))
+            grow = ease_out(min(1, k / 0.25))
+            o.scale = (o["s"] * grow * (1 - 0.3 * k) * (1 - fade) ** 1.3, o["s"] * grow * (1 - fade) ** 1.3, o["s"] * grow * (1 + 0.9 * k) * (1 - fade) ** 1.3)
+            o.hide_render = fade >= 0.999 or grow <= 0.001
+            setv(m, "heat", 1 - 0.6 * k)
+            setv(m, "dissolve", min(0.55, max(0, (k - 0.4) / 0.6)))
+        render(sc, "mist", f)
+
+
+def star_obj(name, mat, points=4, r_out=0.5, r_in=0.08, t=0.06):
+    me = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    n = points * 2
+    ring = []
+    for k in range(n):
+        a = TAU * k / n + math.pi / 2
+        r = r_out if k % 2 == 0 else r_in
+        ring.append(bm.verts.new((math.cos(a) * r, 0, math.sin(a) * r)))
+    front = bm.verts.new((0, -t, 0)); back = bm.verts.new((0, t, 0))
+    for k in range(n):
+        l = (k + 1) % n
+        bm.faces.new((ring[k], ring[l], front)); bm.faces.new((ring[l], ring[k], back))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(me); bm.free()
+    ob = bpy.data.objects.new(name, me)
+    ob.data.materials.append(mat)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def bake_dodge():
+    """닷지 액션 (젠레스 존 제로 극한 회피 느낌): 파란 고리 두 겹이 퍼지고, 큰 4갈래 별이 번쩍였다 줄고, 작은 반짝임이 차례로 깜빡임"""
+    sc = reset(); set_line_color(sc, (0.04, 0.08, 0.25)); sc.render.line_thickness = 1.6
+    for s_ in sc.view_layers[0].freestyle_settings.linesets: s_.linestyle.thickness = 1.6
+    blue = [(0.0, (1, 1, 1)), (0.2, (0.75, 0.9, 1)), (0.45, (0.4, 0.7, 1)), (0.75, (0.18, 0.4, 0.95))]
+    rings = []
+    for i in range(2):
+        m = toon_mat(f"ring{i}", blue)
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.5, minor_radius=0.03 if i == 0 else 0.022, major_segments=64, minor_segments=10)
+        o = bpy.context.active_object
+        o.rotation_euler = (math.pi / 2, 0, 0)            # 고리 축을 카메라 쪽(Y)으로
+        o.data.materials.append(m)
+        rings.append((o, m, 0.0 if i == 0 else 0.12))
+    sm = toon_mat("star", blue)
+    star = star_obj("star", sm, 4, 0.85, 0.16, 0.1)
+    sparks = []
+    rnd = random.Random(31)
+    for i in range(7):
+        m = toon_mat(f"tw{i}", blue)
+        o = star_obj(f"tw{i}", m, 4, 0.26, 0.07, 0.05)
+        a = rnd.uniform(0, TAU); r = rnd.uniform(0.45, 1.05)
+        o.location = (math.cos(a) * r, 0, math.sin(a) * r * 0.9)
+        o["lag"] = 0.08 + i * 0.09; o["s"] = rnd.uniform(0.6, 1.1)
+        sparks.append((o, m))
+    for f in range(FRAMES):
+        t = f / (FRAMES - 1)
+        for o, m, lag in rings:
+            k = max(0.0, (t - lag) / (1 - lag))
+            s = 0.25 + 1.7 * ease_out(k, 3)
+            o.scale = (s, s, s)
+            o.hide_render = k <= 0 or k >= 0.8
+            setv(m, "heat", 1 - k)
+            setv(m, "dissolve", max(0, (k - 0.55) / 0.45) * 0.6)
+        pop = math.sin(min(1, t / 0.12) * math.pi / 2) * max(0.0, 1 - max(0, t - 0.12) / 0.45)
+        star.scale = (pop, pop, pop)
+        star.rotation_euler = (0, t * 0.6, 0)
+        star.hide_render = pop <= 0.01
+        setv(sm, "heat", 1 - t)
+        for o, m in sparks:
+            k = (t - o["lag"]) / 0.3
+            v = math.sin(min(1, max(0, k)) * math.pi) if 0 <= k <= 1 else 0
+            o.scale = (v * o["s"],) * 3
+            o.hide_render = v <= 0.01
+            o.rotation_euler = (0, k * 1.5, 0)
+        render(sc, "dodge", f)
+
+
+SETS = {"fire": bake_fire, "smoke": bake_smoke, "spark": bake_spark, "mist": bake_mist, "dodge": bake_dodge}
 only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(SETS)
 for n in only:
     SETS[n]()

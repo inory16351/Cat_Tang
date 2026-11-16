@@ -71,6 +71,7 @@ namespace CatTang
             health.isPlayer = true;
             health.OnJustDodge += JustDodge;
             health.OnChanceDodge += ChanceDodge;
+            health.OnDamaged += Hurt;
             Tables.Load();
             if (model) { poser = model.GetComponent<KataPoser>(); anim = model.GetComponentInChildren<Animator>(); }
             if (!GetComponent<ReloadMotion>()) gameObject.AddComponent<ReloadMotion>();     // 스피드로더 장전 동작
@@ -301,6 +302,31 @@ namespace CatTang
             }
             if (Time.timeScale > 0f) Time.timeScale = 1f;
             if (!ultimateActive) CameraFollow.Zoom(1f);
+        }
+
+        // ---------- 피격 피드백 (2026-11-16 사용자: 맞았을 때 확실하게) ----------
+        // 하얀 번쩍 → 붉은 비네트 · 색수차(ScreenFx) + 아주 짧은 히트스톱 + 강한 흔들림 + 몸에 붉은 타격 이펙트
+        static readonly Color HurtFx = new Color(1f, 0.18f, 0.16f);
+
+        void Hurt(float dmg)
+        {
+            float power = Mathf.Clamp01(dmg / Mathf.Max(1f, health.maxHp * 0.15f));
+            ScreenFx.PlayerHit(0.55f + 0.45f * power);
+            CameraFollow.Shake(0.22f + 0.2f * power);
+            var at = (model ? model.position : transform.position) + Vector3.up * 1.0f;
+            var cam = Camera.main;
+            var toCam = cam ? (cam.transform.position - at).normalized : Vector3.back;
+            FxEffect.Spawn("FX_HitCrit", at, Quaternion.LookRotation(-toCam), 0.9f, HurtFx);
+            if (!ultimateActive) StartCoroutine(HitStop(0.05f + 0.04f * power));
+        }
+
+        /// <summary>히트스톱: 맞는 순간 아주 잠깐 멈춤 (실제 시간). 다른 연출(멈춤 화면 · 슬로우) 중이면 건드리지 않음</summary>
+        IEnumerator HitStop(float realSeconds)
+        {
+            if (Time.timeScale < 0.99f) yield break;
+            Time.timeScale = 0.04f;
+            yield return new WaitForSecondsRealtime(realSeconds);
+            if (Time.timeScale > 0f && Time.timeScale < 0.05f) Time.timeScale = 1f;
         }
 
         void ChanceDodge()
