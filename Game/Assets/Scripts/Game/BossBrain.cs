@@ -15,6 +15,7 @@ namespace CatTang
         public Reach reach;
         public System.Func<bool> allowed;           // 추가 조건 (없으면 늘 가능)
         public System.Func<IEnumerator> run;
+        public string anim = "Attack";             // 패턴 시작 때 애니메이터 트리거
     }
 
     public static class PatternPicker
@@ -74,8 +75,8 @@ namespace CatTang
         }
 
         protected abstract void Setup();
-        protected void Add(string id, Reach reach, System.Func<IEnumerator> run, System.Func<bool> allowed = null) =>
-            patterns.Add(new BossPattern { id = id, reach = reach, run = run, allowed = allowed });
+        protected void Add(string id, Reach reach, System.Func<IEnumerator> run, System.Func<bool> allowed = null, string anim = "Attack") =>
+            patterns.Add(new BossPattern { id = id, reach = reach, run = run, allowed = allowed, anim = anim });
 
         /// <summary>추첨과 별개로 끼어드는 확정 패턴 (예: 체력 75 · 50 · 25% 시각 패턴). 있으면 그 코루틴을 돌려줌</summary>
         protected virtual System.Func<IEnumerator> Forced() => null;
@@ -96,7 +97,7 @@ namespace CatTang
             var forced = Forced();
             if (forced != null) { Begin(forced(), null); return; }
             var pick = PatternPicker.Pick(patterns, dist <= NearDist, lastPattern);
-            if (pick != null) Begin(pick.run(), pick.id);
+            if (pick != null) { if (self) self.Anim(pick.anim); Begin(pick.run(), pick.id); }
         }
 
         void Begin(IEnumerator routine, string id)

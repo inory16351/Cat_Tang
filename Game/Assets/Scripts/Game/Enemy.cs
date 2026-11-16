@@ -149,6 +149,7 @@ namespace CatTang
                 act = Act.Windup;
                 lockDir = dir;
                 actUntil = Time.time + OutlawAimTime;
+                Anim("Attack");
                 tele = Telegraph.Lane(transform.position + dir * 0.6f, dir, Mathf.Min(dist + 2f, 12f), 0.14f, OutlawAimTime, Telegraph.Aim);
             }
         }
@@ -190,7 +191,7 @@ namespace CatTang
                 case Act.Spin:
                     if (Time.time < actUntil) return;
                     // 시계추를 들고 한 바퀴: 주변 원형 타격
-                    if (model) StartCoroutine(SpinModel());
+                    if (model && !anim) StartCoroutine(SpinModel());
                     if (Effects.Flat(p.transform.position - transform.position).magnitude <= SpinRadius) p.health.TakeDamage(contactDamage);
                     GunkataFx.Swirl(transform.position + Vector3.up, SpinRadius, 540f);
                     act = Act.Recover;
@@ -202,6 +203,7 @@ namespace CatTang
             {
                 act = Act.Spin;
                 actUntil = Time.time + SpinWindup / AtkMul;
+                Anim("Special");
                 tele = Telegraph.Ring(transform.position, SpinRadius, actUntil - Time.time, Telegraph.Danger, transform);
                 return;
             }
@@ -212,6 +214,7 @@ namespace CatTang
                 act = Act.Windup;
                 lockDir = dir;
                 actUntil = Time.time + BruteWindup / AtkMul;
+                Anim("Attack");
                 tele = Telegraph.Lane(transform.position, dir, BruteChargeDist + 0.8f, 1.6f, actUntil - Time.time, Telegraph.Danger);
             }
         }
@@ -235,6 +238,8 @@ namespace CatTang
             {
                 act = Act.Fuse;
                 actUntil = Time.time + BomberFuse;
+                AnimBusy(true);
+                Anim("Attack");
                 tele = Telegraph.Ring(transform.position, BomberRadius, BomberFuse, Telegraph.Danger, transform);
             }
         }
@@ -268,6 +273,16 @@ namespace CatTang
         {
             if (!model) return;
             if (!modelScaleSet) { modelScale = model.localScale; modelScaleSet = true; }
+            if (anim)
+            {
+                // 애니메이터가 걷기 · 동작을 맡음. 돌진 중엔 앞으로 살짝 숙이기만
+                anim.SetFloat("Speed", Mathf.Clamp01(moveSpeed / Mathf.Max(0.5f, speed)));
+                float lean2 = act == Act.Charge ? 12f : 0f;
+                model.localRotation = Quaternion.Slerp(model.localRotation, Quaternion.Euler(lean2, 0, 0) * modelBaseRot, 12f * Time.deltaTime);
+                if (act != Act.Fuse && act != Act.Roll) model.localScale = modelScale;
+                if (act != Act.Roll) model.localPosition = Vector3.zero;
+                return;
+            }
             float k = Mathf.Clamp01(moveSpeed / Mathf.Max(0.5f, speed));
             bobT += Time.deltaTime * (kind == Kind.Bomber ? 16f : kind == Kind.Brute ? 8f : 10f) * Mathf.Max(0.25f, k);
             float lean = act == Act.Charge ? 18f : act == Act.Windup && kind == Kind.Brute ? -10f : 0f;
@@ -277,7 +292,14 @@ namespace CatTang
         }
 
         Quaternion modelBaseRot = Quaternion.identity;
-        public void SetModel(Transform m) { model = m; modelBaseRot = m.localRotation; modelScale = m.localScale; modelScaleSet = true; }
+        public void SetModel(Transform m) { model = m; modelBaseRot = m.localRotation; modelScale = m.localScale; modelScaleSet = true; anim = m ? m.GetComponentInChildren<Animator>() : null; }
+
+        // 리깅된 모델의 애니메이터 (없으면 코드 흔들림으로 대신)
+        Animator anim;
+        public bool HasAnimator => anim;
+        /// <summary>동작 트리거: "Attack" · "Special"</summary>
+        public void Anim(string trigger) { if (anim) anim.SetTrigger(trigger); }
+        public void AnimBusy(bool on) { if (anim) anim.SetBool("Busy", on); }
 
         // 넉백 · 이동 뒤에 방 밖으로 나가지 않게 붙잡음 (보스는 몸이 커서 벽에서 더 띄움)
         void LateUpdate()

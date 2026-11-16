@@ -93,7 +93,7 @@ namespace CatTang
         {
             Add("산탄 부채꼴", Reach.Near, Shotgun);
             Add("회전 난사", Reach.Near, SpinFire);
-            Add("수배 저격", Reach.Far, Snipe);
+            Add("수배 저격", Reach.Far, Snipe, null, "Special");
             Add("돌진 태클", Reach.Far, Tackle);
             Add("하수인 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2);
             nextBounty = Time.time + 8f;
@@ -259,7 +259,7 @@ namespace CatTang
 
         protected override void Setup()
         {
-            Add("시계 바늘 휘두르기", Reach.Near, Sweep);
+            Add("시계 바늘 휘두르기", Reach.Near, Sweep, null, "Special");
             Add("녹은 웅덩이", Reach.Near, Puddles);
             Add("12방향 숫자 탄", Reach.Far, Numbers);
             Add("되감기 폭발", Reach.Far, Rewind);

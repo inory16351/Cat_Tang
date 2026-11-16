@@ -169,11 +169,16 @@ namespace CatTang
             var body = M(Color.Lerp(new Color(0.88f, 0.78f, 0.58f), ch.Wall, 0.35f), 6f);
             var gold = M(new Color(0.95f, 0.7f, 0.25f), 5f);
             var e = Root("Boss_" + ch.BossPattern, pos, ch.BossHp, Enemy.Kind.Boss, 1.5f, 4f);
-            Part(PrimitiveType.Cylinder, e.transform, new Vector3(0, 1.6f, 0), new Vector3(2.6f, 1.6f, 2.6f), body);
-            Part(PrimitiveType.Cylinder, e.transform, new Vector3(0, 3.3f, 0), new Vector3(2.9f, 0.12f, 2.9f), gold);
-            Part(PrimitiveType.Sphere, e.transform, new Vector3(0, 3.9f, 0), Vector3.one * 1.3f, body);
-            Part(PrimitiveType.Sphere, e.transform, new Vector3(0.3f, 4.0f, 0.55f), Vector3.one * 0.25f, M(new Color(1f, 0.85f, 0.3f), 2f));
-            Part(PrimitiveType.Sphere, e.transform, new Vector3(-0.3f, 4.0f, 0.55f), Vector3.one * 0.25f, M(new Color(1f, 0.85f, 0.3f), 2f));
+            // 1장 보스는 Tripo 모델(녹은 시계 거인)이 있으면 그걸로. 바늘(Hand)은 판정 · 방향용으로 남기되 안 보이게
+            bool modeled = ch.Id == 1 && AttachModel(e, "Ch1_Boss");
+            if (!modeled)
+            {
+                Part(PrimitiveType.Cylinder, e.transform, new Vector3(0, 1.6f, 0), new Vector3(2.6f, 1.6f, 2.6f), body);
+                Part(PrimitiveType.Cylinder, e.transform, new Vector3(0, 3.3f, 0), new Vector3(2.9f, 0.12f, 2.9f), gold);
+                Part(PrimitiveType.Sphere, e.transform, new Vector3(0, 3.9f, 0), Vector3.one * 1.3f, body);
+                Part(PrimitiveType.Sphere, e.transform, new Vector3(0.3f, 4.0f, 0.55f), Vector3.one * 0.25f, M(new Color(1f, 0.85f, 0.3f), 2f));
+                Part(PrimitiveType.Sphere, e.transform, new Vector3(-0.3f, 4.0f, 0.55f), Vector3.one * 0.25f, M(new Color(1f, 0.85f, 0.3f), 2f));
+            }
             int hands = ch.BossPattern == "Gear" || ch.BossPattern == "Master" ? 2 : 1;
             for (int i = 0; i < hands; i++)
             {
@@ -202,6 +207,7 @@ namespace CatTang
                     var bar = h.GetChild(0);
                     bar.localPosition = new Vector3(0, 0, 4f);
                     bar.localScale = new Vector3(0.35f, 0.25f, 8f);
+                    bar.GetComponent<Renderer>().enabled = !modeled;   // 모델이 칼을 들고 있으면 막대는 숨김
                 }
                 e.brain = e.gameObject.AddComponent<Ch1Boss>();
             }

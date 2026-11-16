@@ -3,9 +3,12 @@
 // - 키를 맞추고(목표 높이) 발바닥을 y = 0에, 몸 가운데를 x · z = 0에 둠
 // - 정면이 +Z가 되도록 yaw 보정 (Tripo 원본 방향이 다르면 Yaw 표를 고침)
 // EnemyFactory가 Resources.Load("Enemies/이름")으로 불러 "Model" 자식으로 붙임.
+// - 리깅된 모델(Tripo Auto Rig · Mixamo 뼈대 → Humanoid)은 애니메이터를 붙임:
+//   Idle · Run = 주인공 고양이 클립을 휴머노이드로 돌려 씀, Attack · Special = Tripo AI 모션(클립 이름의 키워드로 찾음)
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEngine;
 
 namespace CatTang.EditorTools
@@ -39,6 +42,19 @@ namespace CatTang.EditorTools
             ("Kit_Fence", 1.2f, 0f, 'h', KitDir, "Fence"),
             ("Kit_MeltClock", 2.8f, 0f, 'h', KitDir, "MeltClock"),
             ("Kit_BarCounter", 1.3f, 0f, 'h', KitDir, "BarCounter"),
+        };
+
+        // 애니메이터 구성: 공격 클립 키워드 · 공격 재생 시간(초) · 특수 클립 키워드 · 특수 시간 · 공격 반복 여부
+        static readonly Dictionary<string, (string atk, float atkDur, string sp, float spDur, bool atkLoop)> Anims = new()
+        {
+            { "Ch1_Outlaw", ("revolver", 1.0f, null, 0, false) },
+            { "Ch1_Outlaw_Plus", ("revolver", 0.9f, null, 0, false) },
+            { "Ch1_Brute", ("charges", 1.0f, "swings", 0.8f, false) },
+            { "Ch1_Brute_Plus", ("charges", 0.9f, "swings", 0.7f, false) },
+            { "Ch1_Bomber", ("explode", 0.8f, null, 0, true) },
+            { "Ch1_Bomber_Plus", ("explode", 0.7f, null, 0, true) },
+            { "Ch1_MidBoss", ("shotgun", 1.0f, "revolver", 1.2f, false) },
+            { "Ch1_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
         };
 
         [MenuItem("CatTang/1장 적 프리팹 만들기 (Tripo)")]
@@ -83,7 +99,16 @@ namespace CatTang.EditorTools
             inst.transform.SetParent(root.transform, false);
             inst.transform.localRotation = Quaternion.Euler(0, yaw, 0) * inst.transform.localRotation;
             foreach (var c in inst.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
-            foreach (var a in inst.GetComponentsInChildren<Animator>()) Object.DestroyImmediate(a);
+            var avatar = HumanAvatar(src);
+            if (avatar && Anims.TryGetValue(outName, out var spec))
+            {
+                var anim = inst.GetComponent<Animator>() ?? inst.AddComponent<Animator>();
+                anim.avatar = avatar;
+                anim.applyRootMotion = false;
+                anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                anim.runtimeAnimatorController = MakeController(outName, spec);
+            }
+            else foreach (var a in inst.GetComponentsInChildren<Animator>()) Object.DestroyImmediate(a);
 
             // 재질: 원본 텍스처 → 툰
             var cache = new Dictionary<Material, Material>();
@@ -119,6 +144,61 @@ namespace CatTang.EditorTools
             Object.DestroyImmediate(root);
             Debug.Log($"[EnemyModelBuilder] {path} (키 {height}m)");
             return true;
+        }
+
+        static Avatar HumanAvatar(GameObject src)
+        {
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(src)))
+                if (o is Avatar a && a.isValid && a.isHuman) return a;
+            return null;
+        }
+
+        /// <summary>1장 폴더 · 주인공 FBX 안의 휴머노이드 클립 중 이름에 키워드가 든 것</summary>
+        static AnimationClip FindClip(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            var dirs = new[] { SrcDir.TrimEnd('/'), "Assets/Art/Characters/CatHero" };
+            foreach (var guid in AssetDatabase.FindAssets("t:Model", dirs))
+                foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)))
+                    if (o is AnimationClip c && !c.name.StartsWith("__preview") && c.name.ToLower().Contains(key) && c.isHumanMotion) return c;
+            return null;
+        }
+
+        static AnimatorController MakeController(string outName, (string atk, float atkDur, string sp, float spDur, bool atkLoop) spec)
+        {
+            string path = SrcDir + outName + ".controller";
+            AssetDatabase.DeleteAsset(path);
+            var ctrl = AnimatorController.CreateAnimatorControllerAtPath(path);
+            ctrl.AddParameter("Speed", AnimatorControllerParameterType.Float);
+            ctrl.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
+            ctrl.AddParameter("Special", AnimatorControllerParameterType.Trigger);
+            ctrl.AddParameter("Busy", AnimatorControllerParameterType.Bool);
+            var sm = ctrl.layers[0].stateMachine;
+            var idle = sm.AddState("Idle"); idle.motion = FindClip("idle");
+            var run = sm.AddState("Run"); run.motion = FindClip("run");
+            sm.defaultState = idle;
+            var t = idle.AddTransition(run); t.AddCondition(AnimatorConditionMode.Greater, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.12f;
+            t = run.AddTransition(idle); t.AddCondition(AnimatorConditionMode.Less, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.18f;
+            AddAction(sm, idle, "Attack", FindClip(spec.atk), spec.atkDur, spec.atkLoop);
+            AddAction(sm, idle, "Special", FindClip(spec.sp), spec.spDur, false);
+            EditorUtility.SetDirty(ctrl);
+            return ctrl;
+        }
+
+        // AnyState → 동작 (트리거). 반복 동작(폭탄병 점멸)은 Busy가 꺼질 때까지, 아니면 다 재생 후 Idle로
+        static void AddAction(AnimatorStateMachine sm, AnimatorState idle, string trigger, AnimationClip clip, float dur, bool loop)
+        {
+            if (!clip) return;
+            var st = sm.AddState(trigger);
+            st.motion = clip;
+            st.speed = dur > 0 ? clip.length / dur : 1f;
+            var t = sm.AddAnyStateTransition(st);
+            t.AddCondition(AnimatorConditionMode.If, 0, trigger);
+            t.hasExitTime = false; t.duration = 0.06f; t.canTransitionToSelf = false;
+            var back = st.AddTransition(idle);
+            if (loop) { back.AddCondition(AnimatorConditionMode.IfNot, 0, "Busy"); back.hasExitTime = false; }
+            else { back.hasExitTime = true; back.exitTime = 0.95f; }
+            back.duration = 0.12f;
         }
 
         static Bounds Bounds(GameObject go)
