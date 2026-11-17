@@ -89,6 +89,15 @@ namespace CatTang
             go.AddComponent<RainDropFx>().col = col;
         }
 
+        /// <summary>하늘 줄 없이 바닥 탄자국 + 흙먼지 + 불똥만 (불릿 파티: 2026-11-17 사용자 — 총알 비는 빼고 바닥 탄 자국은 남김)</summary>
+        public static void GroundHit(Vector3 ground, Color col)
+        {
+            var go = new GameObject("FX_GroundHit");
+            go.transform.position = ground;
+            var r = go.AddComponent<RainDropFx>();
+            r.col = col; r.groundOnly = true;
+        }
+
         // ---------- 14. 관통 · 튕김 ----------
         /// <summary>관통: 맞은 자리에서 탄도 방향으로 길쭉하게 뚫고 나가는 불꽃 꼬리 (가시 3개가 앞으로 늘어지며 빠져나감)</summary>
         public static void Pierce(Vector3 p, Vector3 dir, Color col)
@@ -133,6 +142,7 @@ namespace CatTang
     public class RainDropFx : MonoBehaviour
     {
         public Color col;
+        public bool groundOnly;                       // 하늘 줄 없이 바로 탄자국 (ExtraFx.GroundHit)
         const float Fall = 0.09f, Fade = 0.12f;
         static Texture2D holeTex;
         static Material holeMat;
@@ -143,6 +153,7 @@ namespace CatTang
 
         void Start()
         {
+            if (groundOnly) { Land(); Destroy(gameObject); return; }
             // 하늘 비스듬한 자리에서 (카메라 쪽 · 옆으로 조금씩 흔들어)
             top = transform.position + new Vector3(Random.Range(-1.2f, 1.2f), 7f, Random.Range(-1.6f, -0.6f));
             line = ExtraFx.Line(transform, 2, col, 0.09f);

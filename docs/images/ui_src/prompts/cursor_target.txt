@@ -1,8 +1,10 @@
 Create ONE image file named cursor_target.png in the current directory (use your image generation tool and save it here; do not draw it with code — after generating you may only crop/resize/save). Square 512x512.
 
-A game AIMING CURSOR that looks like an old western SHOOTING-RANGE PAPER TARGET (표적지), seen straight on, for a gunslinger-cat game. It sits on top of the battlefield, so most of it must be SEE-THROUGH:
-- 3 concentric thin rings (like the scoring rings of a paper target), drawn as bold lines only — NOT filled discs. Outer ring about 88% of the canvas, middle about 60%, inner about 32%. Ring lines are warm cream/ivory (#F6E7C1) with a thick dark ink outline (#1A1222) on both edges. The outer ring has small notches/tick marks at 12, 3, 6 and 9 o'clock, like a crosshair, poking slightly inward and outward.
-- A small solid RED BULLSEYE dot (#E23B2E) with a dark outline exactly in the center (about 7% of the canvas).
-- A couple of tiny torn/bullet-hole nicks on the outer ring for a hand-made paper feel (subtle).
-- Everything between the rings is EMPTY (magenta) so the game shows through. Flat cel colors, no gradients, no glow, no shadow, no text, no numbers.
-Background (outside and between the rings): perfectly flat solid magenta #FF00FF (no gradient, no shadow, no glow bleeding onto it). Centered exactly.
+A game AIMING CURSOR (crosshair) for a western gunslinger-cat action game. It must match the attached HUD reference exactly in style: chunky cartoon game-UI art, BRASS / polished GOLD metal (#F2B53A main, #FFE08A highlight, #B8741E shade, flat cel bands, no gradients), very THICK dark ink outline (#1A1018) around every shape, a bit of a second darker brown outline like the reference.
+Design (important — NO rings, NO circles, NO full circle frame anywhere):
+- FOUR chunky brass prongs at 12, 3, 6 and 9 o'clock, each a short thick wedge/arrowhead pointing INWARD toward the center, like a revolver sight. Each prong about 26% of the canvas long, rounded back end, sharp inner tip. Inner tips stop well before the center leaving an EMPTY gap (about 30% of the canvas) so the target behind is visible.
+- A small solid CRIMSON diamond dot (#E0262E with a tiny white highlight notch) exactly in the center, about 8% of the canvas, with the same thick dark outline.
+- Optionally tiny rivet dots on each prong (like the HUD bolts).
+- Everything else is EMPTY (magenta) so the game shows through.
+Flat cel colors, no glow, no shadow, no text.
+Background: perfectly flat solid magenta #FF00FF everywhere outside the shapes (no gradient, no shadow, no glow bleeding onto it). Centered exactly, perfectly symmetric.

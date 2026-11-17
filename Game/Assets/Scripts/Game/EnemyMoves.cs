@@ -276,7 +276,7 @@ namespace CatTang
             var sb = Kit.Prefab(chapter, "SandBomb");
             var kit = sb ? sb : Kit.Prefab(chapter, "Keg");
             if (kit) { bomb = Instantiate(kit); if (!sb) bomb.transform.localScale *= 0.35f; else bomb.transform.localScale *= 1.25f; foreach (var c in bomb.GetComponentsInChildren<Collider>()) Destroy(c); }
-            else { bomb = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(bomb.GetComponent<Collider>()); bomb.transform.localScale = Vector3.one * 0.35f; }
+            else { bomb = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(bomb.GetComponent<Collider>()); bomb.transform.localScale = Vector3.one * 0.35f; bomb.GetComponent<Renderer>().sharedMaterial = RoomBuilder.Mat(new Color(0.85f, 0.6f, 0.3f), 2f); }   // 최후 대비: 회색 기본 재질 말고 모래색
             var from = transform.position + Vector3.up * 1.4f + transform.forward * 0.3f;   // 손이 앞으로 휘둘러진 자리
             for (float t = 0; t < 1f; t += Time.deltaTime / SandBombFlight)
             {

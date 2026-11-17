@@ -108,6 +108,7 @@ namespace CatTang
                 Part(PrimitiveType.Cylinder, m, new Vector3(0, 1.72f, 0), new Vector3(0.75f, 0.03f, 0.75f), M(new Color(0.3f, 0.2f, 0.18f)));
                 Part(PrimitiveType.Cylinder, m, new Vector3(0.3f, 0.95f, 0.45f), new Vector3(0.12f, 0.25f, 0.12f), M(new Color(0.85f, 0.65f, 0.3f), 2f), new Vector3(90, 0, 0));
             }
+            e.chapter = ch;                     // 장 정보 (폭탄병 모래 폭탄 모델 찾기 등 — 없으면 회색 기본 구를 던졌음, 2026-11-17)
             e.speed = 2.6f;
             e.projectileDamage = 8 * ch.DmgMul;
             e.shootInterval = 2f;
@@ -127,6 +128,7 @@ namespace CatTang
                 Part(PrimitiveType.Cylinder, m, new Vector3(0, 1.35f, 0.47f), new Vector3(0.8f, 0.05f, 0.8f), M(new Color(0.95f, 0.9f, 0.75f), 2f), new Vector3(90, 0, 0));
                 Part(PrimitiveType.Sphere, m, new Vector3(0.8f, 0.45f, 0.6f), Vector3.one * 0.6f, M(new Color(0.95f, 0.65f, 0.25f), 2f));
             }
+            e.chapter = ch;                     // 장 정보 (폭탄병 모래 폭탄 모델 찾기 등 — 없으면 회색 기본 구를 던졌음, 2026-11-17)
             e.speed = 3.4f;
             e.contactDamage = 12 * ch.DmgMul;
             if (elite) MakeElite(e, plus);
@@ -145,6 +147,7 @@ namespace CatTang
                 Part(PrimitiveType.Sphere, m, new Vector3(0, 1.1f, 0), new Vector3(0.45f, 0.55f, 0.45f), M(new Color(1f, 0.75f, 0.3f), 2f));
                 Part(PrimitiveType.Sphere, m, new Vector3(0.4f, 0.7f, 0.25f), Vector3.one * 0.32f, M(new Color(0.15f, 0.12f, 0.12f)));
             }
+            e.chapter = ch;                     // 장 정보 (폭탄병 모래 폭탄 모델 찾기 등 — 없으면 회색 기본 구를 던졌음, 2026-11-17)
             e.speed = 4.5f;
             e.contactDamage = 12 * ch.DmgMul;
             if (elite) MakeElite(e, plus);

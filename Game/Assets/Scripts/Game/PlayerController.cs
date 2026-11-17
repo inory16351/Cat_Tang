@@ -795,7 +795,7 @@ namespace CatTang
         // 타마다 몸 중심을 축으로 제각각 각도로 홱 틀어(NextUltTurn) 새 방향에 박히고, 건카타 8자세로 오른손 → 왼손 연사 + 상체 반동.
         // 매 타마다 금빛 실루엣 분신 3~5개가 무작위 자리로 대시해 조금씩 어긋난 순간에 총구 폭발. 한 타 안의 총구 방향은 모두 다름 (ClaimDir).
         // 마무리는 별 모양 일제 사격 없이 마지막 탕-탕 한 번 후 연기 속에 끝.
-        // 플레이어를 따라다니는 원형 콜라이더(BulletPartyZone) 안의 적 전부가 12번 피해. 범위는 원 안에 떨어지는 총알 비로 보임.
+        // 플레이어를 따라다니는 원형 콜라이더(BulletPartyZone) 안의 적 전부가 12번 피해. 범위는 원 안 바닥 탄자국으로 보임.
         static readonly int[] KataSeq = { 0, 3, 1, 5, 2, 4, 6, 7, 0, 3, 1, 7 };
         public const float UltDuration = 2.0f;        // 지속 시간 (12타)
         public const float UltRadius = 6.5f;          // 원형 콜라이더 반지름 (일반 방 24×20의 가운데 넓은 원)
@@ -803,8 +803,8 @@ namespace CatTang
         public const float UltMoveMul = 0.9f;         // 궁 중 이동 속도 배율
         public const float UltSpinSpeed = 900f;       // 몸 주위 소용돌이 곡선이 도는 속도 (도/초)
         public const int UltClones = 4;               // 한 타에 본체와 동시에 쏘는 실루엣 분신 수
+        const int UltHolesPerTick = 7;               // 한 타에 원 안 아무 데나 생기는 바닥 탄자국 수
         public const float UltCloneDist = 1.6f;       // 분신이 본체에서 떨어진 거리 (m)
-        const int UltRainPerTick = 7;                // 한 타에 원 안 아무 데나 떨어지는 총알 비 수
         static readonly Color UltGold = new Color(1f, 0.82f, 0.38f);
         static readonly Color UltGhost = new Color(1f, 0.68f, 0.22f, 0.95f);    // 궁 분신: 금빛 주황 실루엣 (총구 섬광 ToonFire 노랑~주황에 맞춤)
 
@@ -930,10 +930,10 @@ namespace CatTang
             GunkataFx.Smoke(mid + UnityEngine.Random.insideUnitSphere * 0.7f, UnityEngine.Random.Range(1.6f, 2.4f));
             for (int k = 0; k < 2; k++)
                 GunkataFx.Swirl(mid + Vector3.up * UnityEngine.Random.Range(-0.4f, 0.4f), UnityEngine.Random.Range(1.0f, 1.9f), -UltSpinSpeed * 0.9f);
-            // 총알 비: 원 안 아무 데나, 하늘에서 비스듬히 내리꽂히는 금빛 줄 → 흙먼지 + 작은 탄자국 (2026-11-17 사용자: 고리 대신 비처럼). 범위가 보임
+            // 총알 비(하늘 줄)는 뺌 (2026-11-17 사용자: 특성도 없는데 비가 내림) — 바닥 탄자국 · 흙먼지만 원 안 아무 데나 (범위가 보임)
             if (zone)
-                for (int k = 0; k < UltRainPerTick; k++)
-                    ExtraFx.RainDrop(zone.RandomPoint(), UltGold);
+                for (int k = 0; k < UltHolesPerTick; k++)
+                    ExtraFx.GroundHit(zone.RandomPoint(), UltGold);
             // 원 안의 적 전부 적중
             foreach (var h in foes)
             {

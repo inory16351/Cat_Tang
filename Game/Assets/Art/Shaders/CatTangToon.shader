@@ -2,6 +2,9 @@
 // - 명암 3단: 밝은 면 / 1차 그림자 / 2차 그림자 (경계는 _ShadeSoftness로 딱 끊기게)
 // - 림 라이트: 빛 받는 쪽 가장자리에만
 // - 외곽선: 뒤집은 겹(inverted hull), 화면 기준 픽셀 굵기 유지
+// - 브롤 스타즈풍 시험 모드 (2026-11-17 사용자: 하데스 말고 플랫 · 가시성 높은 그림체): 전역 _CatTangBrawl = 1일 때만 (기본 0 = 지금 모습 그대로).
+//   그림자 1단 · 같은 색상으로 어둡게(보라 그림자 X) · 채도 높은 단색 면 · 굵은 검은 외곽선 · 작고 단단한 림/하이라이트.
+//   _BrawlActor = 1 (고양이 · 적, BrawlStyle가 렌더러에 표시) / 0 = 배경: 배경은 한 톤 낮추고 텍스처 무늬를 뭉개 단순하게
 Shader "CatTang/Toon"
 {
     Properties
@@ -48,6 +51,7 @@ Shader "CatTang/Toon"
         _OuterOutlineWidth ("Outer Outline Width (px, 0 = 끔)", Range(0, 12)) = 0
         _OuterStencilRef ("Outer Outline Stencil Ref", Int) = 0
         [Toggle] _OutlineVertexAlpha ("Vertex Alpha = Width", Float) = 0
+        [HideInInspector] _BrawlActor ("Brawl Actor (1 = 캐릭터 · 적)", Float) = 0
     }
 
     SubShader
@@ -87,7 +91,11 @@ Shader "CatTang/Toon"
             half4 _OuterOutlineColor;
             half _OuterOutlineWidth;
             half _RecolorAmount, _RecolorFrom, _RecolorWidth, _RecolorHue, _RecolorSat, _RecolorVal;
+            half _BrawlActor;
         CBUFFER_END
+
+        // 브롤 스타즈풍 시험 모드 스위치 (전역, Shader.SetGlobalFloat). 0 = 원래 모습
+        float _CatTangBrawl;
 
         half3 RgbToHsv(half3 c)
         {
@@ -180,9 +188,62 @@ Shader "CatTang/Toon"
                 return lerp(shade2, lerp(shade1, albedo, lit), deep);
             }
 
+            // 브롤 스타즈풍: 그림자 1단(같은 색상을 어둡게) · 선명한 단색 면 · 작고 단단한 림 · 하이라이트. 배경은 한 톤 낮고 무늬를 뭉갬
+            half4 FragBrawl(Varyings i)
+            {
+                bool actor = _BrawlActor > 0.5;
+                half4 tex = SAMPLE_TEXTURE2D_BIAS(_BaseMap, sampler_BaseMap, i.uv, actor ? 0.25 : 0.75) * _BaseColor;
+                tex.rgb = Recolor(tex.rgb);
+                half3 hsv = RgbToHsv(tex.rgb);
+                if (actor) { hsv.y = saturate(hsv.y * 1.25 + 0.04); hsv.z = saturate(hsv.z * 1.0); }
+                else       { hsv.y = saturate(hsv.y * 1.08);       hsv.z = saturate(hsv.z * 0.95); }
+                half3 albedo = HsvToRgb(hsv);
+                // 그림자 색: 같은 색상, 조금 더 진하고 어둡게 (보랏빛 그림자 X)
+                half3 shadeCol = HsvToRgb(half3(hsv.x, saturate(hsv.y * (actor ? 1.12 : 1.0) + (actor ? 0.06 : 0.0)), hsv.z * (actor ? 0.62 : 0.62)));
+
+                float3 N = normalize(i.normalWS);
+                float3 V = GetWorldSpaceNormalizeViewDir(i.positionWS);
+                Light mainLight = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
+                half ndl = saturate(dot(N, mainLight.direction));
+                half shadow = smoothstep(0.45h, 0.55h, mainLight.shadowAttenuation);
+                half lit = smoothstep(0.27h, 0.31h, ndl * shadow);
+                half3 lightTint = mainLight.color;
+                half3 color = lerp(shadeCol, albedo, lit) * lightTint;
+                color += albedo * SampleSH(N) * _AmbientStrength;
+
+                #if defined(_ADDITIONAL_LIGHTS)
+                InputData inputData = (InputData)0;
+                inputData.positionWS = i.positionWS;
+                inputData.normalWS = N;
+                inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS);
+                uint lightCount = GetAdditionalLightsCount();
+                LIGHT_LOOP_BEGIN(lightCount)
+                    Light l = GetAdditionalLight(lightIndex, i.positionWS, half4(1, 1, 1, 1));
+                    half al = saturate(dot(N, l.direction)) * l.distanceAttenuation * l.shadowAttenuation;
+                    color += albedo * l.color * step(0.3h, al) * 0.6h;
+                LIGHT_LOOP_END
+                #endif
+
+                if (actor)
+                {
+                    // 림: 빛 받는 쪽 가장자리에 얇고 단단한 흰 띠
+                    half fresnel = pow(1.0h - saturate(dot(N, V)), 4.0h);
+                    color += 0.28h * step(0.42h, fresnel) * lit;
+                    // 하이라이트: 위쪽 빛 반사 작은 흰 점
+                    half spec = step(0.985h, saturate(dot(N, normalize(mainLight.direction + V))));
+                    color = lerp(color, 1.0h.xxx, spec * lit * 0.4h);
+                }
+                // 채도 살짝 (2026-11-17 사용자: 파스텔 톤이라 전체가 뿌옇다 → 밝기 올리기 · 배경 뭉개기를 줄이고 채도만 조금. 대비 늘리기는 빛 세기 > 1이라 과해져 뺌)
+                half lum = dot(color, half3(0.299h, 0.587h, 0.114h));
+                color = max(0, lerp(lum.xxx, color, 1.06h));
+                color = MixFog(color, i.fogFactor);
+                return half4(color, 1);
+            }
+
             half4 frag(Varyings i) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(i);
+                if (_CatTangBrawl > 0.5) return FragBrawl(i);
                 half4 tex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor;
                 tex.rgb = Recolor(tex.rgb);
                 half3 albedo = lerp(dot(tex.rgb, half3(0.299, 0.587, 0.114)).xxx, tex.rgb, _Saturation) * _Brightness;
@@ -275,6 +336,8 @@ Shader "CatTang/Toon"
                 float len = length(nCS);
                 float2 dir = len > 1e-5 ? nCS / len : float2(0, 0);
                 half width = _OutlineWidth * (_OutlineVertexAlpha > 0.5 ? v.color.a : 1.0h);
+                // 브롤풍: 캐릭터 · 적은 굵고 일정한 검은 외곽선 3.5px (배경은 원래 선)
+                if (_CatTangBrawl > 0.5 && _BrawlActor > 0.5) width = 3.5h * (_OutlineVertexAlpha > 0.5 ? v.color.a : 1.0h);
                 // 화면 픽셀 기준 굵기: 카메라 거리와 상관없이 같은 두께
                 posCS.xy += dir * width * 2.0 * posCS.w / _ScreenParams.xy;
                 o.positionCS = posCS;
@@ -284,7 +347,8 @@ Shader "CatTang/Toon"
 
             half4 frag(Varyings i) : SV_Target
             {
-                return half4(MixFog(_OutlineColor.rgb, i.fogFactor), 1);
+                half3 oc = _CatTangBrawl > 0.5 && _BrawlActor > 0.5 ? half3(0.05h, 0.04h, 0.06h) : _OutlineColor.rgb;   // 브롤풍: 캐릭터 · 적은 검은 선
+                return half4(MixFog(oc, i.fogFactor), 1);
             }
             ENDHLSL
         }
@@ -328,7 +392,8 @@ Shader "CatTang/Toon"
                 float2 nCS = mul((float3x3)UNITY_MATRIX_VP, nWS).xy;
                 float len = length(nCS);
                 float2 dir = len > 1e-5 ? nCS / len : float2(0, 0);
-                posCS.xy += dir * (_OutlineWidth + _OuterOutlineWidth) * 2.0 * posCS.w / _ScreenParams.xy;
+                half baseW = _CatTangBrawl > 0.5 && _BrawlActor > 0.5 ? 3.5h : _OutlineWidth;
+                posCS.xy += dir * (baseW + _OuterOutlineWidth) * 2.0 * posCS.w / _ScreenParams.xy;
                 o.positionCS = posCS;
                 o.fogFactor = ComputeFogFactor(posCS.z);
                 return o;
