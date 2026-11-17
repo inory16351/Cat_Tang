@@ -40,7 +40,7 @@ namespace CatTang
         public bool IsMidBossRoom { get; private set; }
         bool midBossDone;
         RewardKind afterMidBoss;
-        public Vector2 RoomSize => current != null ? current.size : new Vector2(24, 20);
+        public Vector2 RoomSize => current != null ? current.size : RoomBuilder.RoomSize;
         public int RoomCount => layout != null ? layout.rooms.Count : 1;
         public Vector3 RoomCenter => current != null ? current.center : Vector3.zero;
         public Transform StageRoot => layout != null ? layout.root : null;

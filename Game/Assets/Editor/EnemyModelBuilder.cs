@@ -68,6 +68,16 @@ namespace CatTang.EditorTools
             ("Kit_DryGrass", 1.0f, 0f, 'w', KitDir, "DryGrass"),
             ("Kit_SandDrift", 2.4f, 0f, 'w', KitDir, "SandDrift"),
             ("Kit_Skull", 0.8f, 0f, 'w', KitDir, "Skull"),
+            // 절차적 건물 줄용 정면 8종 + 골목 울타리 (블렌더 + Codex, Art/tools/blender_kit_facades.py). 폭이 정확해야 줄이 맞음
+            ("Kit_Facade_Store", 5f, 180f, 'w', KitDir, "Facade_Store"),
+            ("Kit_Facade_Hotel", 6f, 180f, 'w', KitDir, "Facade_Hotel"),
+            ("Kit_Facade_Narrow", 3f, 180f, 'w', KitDir, "Facade_Narrow"),
+            ("Kit_Facade_Adobe", 4f, 180f, 'w', KitDir, "Facade_Adobe"),
+            ("Kit_Facade_Shack", 3f, 180f, 'w', KitDir, "Facade_Shack"),
+            ("Kit_Facade_Bank", 4f, 180f, 'w', KitDir, "Facade_Bank"),
+            ("Kit_Facade_Barn", 5f, 180f, 'w', KitDir, "Facade_Barn"),
+            ("Kit_Facade_Blue", 4f, 180f, 'w', KitDir, "Facade_Blue"),
+            ("Kit_AlleyFence", 2f, 180f, 'w', KitDir, "AlleyFence"),
         };
 
         // 애니메이터 구성: 공격 클립 키워드 · 공격 재생 시간(초) · 특수 클립 키워드 · 특수 시간 · 공격 반복 여부

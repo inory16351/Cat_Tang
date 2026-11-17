@@ -60,6 +60,7 @@ namespace CatTang
             // 스테이지 1(황무지 절벽길)은 절벽 바위 모듈, 그 뒤(마을)는 건물 정면 모듈. module을 주면 그것 (술집 실내 = PlankWall)
             var rm = RunManager.Instance;
             bool cliff = rm && rm.stageIndex == 0 && !rm.IsMidBossRoom && Has(ch, "Cliff");
+            if (module == null && !cliff && wallCube && Has(ch, Facades[0])) return BuildingRow(ch, wallCube, inward, hideCube);
             var prefab = Prefab(ch, module ?? (cliff ? "Cliff" : "Wall"));
             if (!prefab || !wallCube) return false;
             var t = wallCube.transform;
@@ -79,10 +80,107 @@ namespace CatTang
                 go.transform.localPosition = axis * (-len / 2 + w * (i + 0.5f));
                 go.transform.localRotation = Quaternion.Euler(0, yaw, 0);
                 go.transform.localScale = new Vector3(w / modW, 1, 1);
+                if (cliff && module == null)
+                {
+                    // 절벽도 똑같이 늘어서지 않게: 높이 · 들여쓰기 · 폭을 조금씩
+                    var jr = new System.Random(Mathf.RoundToInt(t.position.x * 13 + t.position.z * 7) + i * 31);
+                    float J(float lo, float hi) => lo + (float)jr.NextDouble() * (hi - lo);
+                    go.transform.localScale = new Vector3(w / modW * J(1f, 1.18f), J(0.8f, 1.35f), J(0.9f, 1.15f));
+                    go.transform.localPosition += -inward * J(0f, 0.6f);
+                }
             }
             var r = wallCube.GetComponent<Renderer>();
             if (r && hideCube) r.enabled = false;
             return true;
+        }
+
+        // ---------- 절차적 건물 줄 (2026-11-17 사용자: 벽이 너무 일정함, 바둑판 느낌 없애기) ----------
+        // 블렌더 + Codex 건물 정면 8종(Art/tools/blender_kit_facades.py, 폭 3~6m, 높이 · 지붕 모양 · 칠 색이 다 다름)을
+        // 벽 길이에 맞춰 무작위로 이어 붙임: 같은 건물 연속 금지, 건물마다 높이 ±, 뒤로 물러남 0~0.7m,
+        // 가끔 1~1.6m 골목(안쪽 울타리 + 상자 · 술통). 마지막 칸은 폭을 늘이거나 줄여 딱 맞춤.
+        // 충돌은 원래 벽 상자 그대로. 정면 본체 앞면이 벽 상자 안쪽 면(벽 선에서 0.3)에 오게 놓음 (차양 · 현관은 방 쪽으로 0.4 더 나옴)
+        public static readonly string[] Facades = { "Facade_Store", "Facade_Hotel", "Facade_Narrow", "Facade_Adobe", "Facade_Shack", "Facade_Bank", "Facade_Barn", "Facade_Blue" };
+        static readonly float[] FacadeW = { 5f, 6f, 3f, 4f, 3f, 4f, 5f, 4f };
+        const float FacadeFront = 1.1f;     // 정면 본체 앞면 (조각 원점 기준 +Z)
+
+        static bool BuildingRow(ChapterDef ch, GameObject wallCube, Vector3 inward, bool hideCube)
+        {
+            var t = wallCube.transform;
+            bool alongX = t.localScale.x >= t.localScale.z;
+            float len = alongX ? t.localScale.x : t.localScale.z;
+            float face = (alongX ? t.localScale.z : t.localScale.x) / 2;     // 벽 상자 반 두께
+            var axis = alongX ? Vector3.right : Vector3.forward;
+            float yaw = Quaternion.LookRotation(inward).eulerAngles.y;
+            var holder = new GameObject("Buildings").transform;
+            holder.SetParent(t.parent, false);
+            holder.localPosition = new Vector3(t.localPosition.x, 0, t.localPosition.z);
+            var rnd = new System.Random(Mathf.RoundToInt(t.position.x * 17.3f + t.position.z * 5.1f) ^ 0x5bd1);
+            float R(float lo, float hi) => lo + (float)rnd.NextDouble() * (hi - lo);
+            // 남쪽 벽(카메라 쪽, 정면이 북쪽을 봄)은 플레이어를 가리지 않게 낮춤
+            float hMul = inward.z > 0.5f ? 0.72f : 1f;
+            float x = -len / 2;
+            int last = -1;
+            bool first = true;
+            while (len / 2 - x > 0.4f)
+            {
+                float left = len / 2 - x;
+                // 골목
+                if (!first && left > 4.5f && rnd.NextDouble() < 0.18)
+                {
+                    float gw = R(1f, 1.6f);
+                    Alley(ch, holder, axis * (x + gw / 2), inward, yaw, gw, face, rnd);
+                    x += gw; last = -1;
+                    continue;
+                }
+                first = false;
+                // 남은 길이에 맞는 건물 (같은 건물 연속 금지)
+                var fits = new List<int>();
+                for (int i = 0; i < Facades.Length; i++)
+                    if (i != last && FacadeW[i] <= left + 0.3f && Has(ch, Facades[i])) fits.Add(i);
+                int pick; float w;
+                // 고른 뒤 남는 자투리가 애매(0.4~2.6m)하면 너무 늘어나니, 딱 맞거나 넉넉히 남는 건물을 우선
+                var good = fits.FindAll(i => { float a = left - FacadeW[i]; return a >= 2.6f || a <= FacadeW[i] * 0.3f; });
+                if (good.Count > 0) fits = good;
+                if (fits.Count > 0)
+                {
+                    pick = fits[rnd.Next(fits.Count)];
+                    w = FacadeW[pick];
+                    float after = left - w;
+                    if (after < 2.6f) w = left;                 // 남는 자투리는 이 건물을 늘여 메움
+                }
+                else
+                {
+                    // 3m보다 짧게 남음: 가장 좁은 건물을 줄여 넣거나, 아주 짧으면 울타리
+                    if (left < 2.2f) { Alley(ch, holder, axis * (x + left / 2), inward, yaw, left, face, rnd); break; }
+                    pick = last == 2 ? 4 : 2; w = left;
+                }
+                var prefab = Prefab(ch, Facades[pick]);
+                var go = Object.Instantiate(prefab, holder, false);
+                go.name = Facades[pick];
+                float back = R(0f, 0.7f);
+                go.transform.localPosition = axis * (x + w / 2) + inward * (face - FacadeFront - back);
+                go.transform.localRotation = Quaternion.Euler(0, yaw, 0);
+                var s0 = go.transform.localScale;
+                go.transform.localScale = new Vector3(s0.x * w / FacadeW[pick], s0.y * R(0.88f, 1.15f) * hMul, s0.z);
+                foreach (var c in go.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+                x += w; last = pick;
+            }
+            var r = wallCube.GetComponent<Renderer>();
+            if (r && hideCube) r.enabled = false;
+            return true;
+        }
+
+        /// <summary>건물 사이 골목: 안쪽으로 물러난 울타리 + 가끔 상자 · 술통 (충돌 없음, 벽 상자가 막음)</summary>
+        static void Alley(ChapterDef ch, Transform holder, Vector3 along, Vector3 inward, float yaw, float gw, float face, System.Random rnd)
+        {
+            var f = Place(ch, "AlleyFence", holder, along - inward * 1.2f, yaw, 1f, false);
+            if (f) f.transform.localScale = new Vector3(f.transform.localScale.x * gw / 2f, f.transform.localScale.y, f.transform.localScale.z);
+            if (gw > 1.2f && rnd.NextDouble() < 0.6)
+            {
+                var name = rnd.NextDouble() < 0.5 ? "Crates" : "BarrelStack";
+                var p = Place(ch, name, holder, along - inward * 0.3f, yaw + (float)rnd.NextDouble() * 40f - 20f, 0.75f, false);
+                if (p) foreach (var c in p.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+            }
         }
 
         /// <summary>바닥 타일을 격자로 깔기 (그림만, 충돌은 원래 바닥 상자)</summary>

@@ -151,8 +151,8 @@ namespace CatTang
                     var pick = options[rnd.NextDouble() < 0.45 && options.Contains(last + Dirs[0]) ? options.IndexOf(last + Dirs[0]) : rnd.Next(options.Count)];
                     cells.Add(pick);
                 }
-            var cellSize = new Vector2(34, 30);
-            var roomSize = sizeOverride ?? (boss ? new Vector2(34, 30) : new Vector2(24, 20));
+            var cellSize = CellSize;
+            var roomSize = sizeOverride ?? (boss ? new Vector2(34, 30) : RoomSize);
             var floor = Mat(boss ? Color.Lerp(ch.Floor, new Color(0.3f, 0.25f, 0.45f), 0.45f) : ch.Floor, 0);
             var wall = Mat(ch.Wall, 4);
             var gateM = Mat(new Color(0.85f, 0.62f, 0.25f), 4);
@@ -260,21 +260,23 @@ namespace CatTang
                 foreach (var c in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
                 {
                     if (rnd.NextDouble() < 0.35) continue;
-                    float w = R(3.5f, 5f), d = R(3f, 4.2f);
+                    float w = R(4f, 6f), d = R(3.5f, 5f);
                     Block(ch, info, new Vector2(c.x * (hw - w / 2), c.y * (hd - d / 2)), new Vector2(w, d), hw, hd);
                 }
             }
             else if (roll < 0.8)
             {
                 // L자: 한 모서리를 크게
-                float w = R(7.5f, 9f), d = R(5.5f, 7f);
+                float w = R(8.5f, 10.5f), d = R(6.5f, 8.5f);
                 Block(ch, info, new Vector2(sx() * (hw - w / 2), sx() * (hd - d / 2)), new Vector2(w, d), hw, hd);
             }
             else
             {
                 // 가운데 섬 + 모서리 홈 하나
-                float w = R(3f, 4.2f), d = R(3f, 4f);
-                Block(ch, info, new Vector2(sx() * R(4.5f, 6.5f), sx() * R(3f, 4.5f)), new Vector2(w, d), hw, hd);
+                // 섬은 바깥 벽에서 3m 이상, 문 앞 통로(±2.6)에서 떨어뜨림. 마을이면 건물 두 채가 등을 맞댈 만큼 깊게
+                bool town = !(RunManager.Instance && RunManager.Instance.stageIndex == 0);
+                float w = R(4f, 6f), d = town ? R(5.2f, 6f) : R(3.2f, 4.5f);
+                Block(ch, info, new Vector2(sx() * R(2.6f + w / 2, hw - 3f - w / 2), sx() * R(2.6f + d / 2, hd - 3f - d / 2)), new Vector2(w, d), hw, hd);
                 float w2 = R(3.5f, 4.5f), d2 = R(3f, 4f);
                 Block(ch, info, new Vector2(sx() * (hw - w2 / 2), sx() * (hd - d2 / 2)), new Vector2(w2, d2), hw, hd);
             }
@@ -285,8 +287,11 @@ namespace CatTang
         {
             var rm = RunManager.Instance;
             bool cliff = rm && rm.stageIndex == 0;
-            var top = Mat(cliff ? new Color(0.55f, 0.27f, 0.18f) : new Color(0.33f, 0.2f, 0.14f), 4);
-            var go = Prim(PrimitiveType.Cube, "Block", info.root, new Vector3(local.x, 1.25f, local.y), new Vector3(size.x, 2.5f, size.y), top);
+            // 마을: 덩어리 위는 바깥 어둠(카메라 배경)과 같은 색으로 낮게 깔고, 둘레를 건물 정면이 둘러쌈 → "건물 뒤 = 방 밖"으로 읽힘
+            // (2026-11-17 사용자: 지붕 색 판이 정체불명으로 보임)
+            var top = cliff ? Mat(new Color(0.55f, 0.27f, 0.18f), 4) : Mat(new Color(0.08f, 0.07f, 0.11f), 0);
+            float bh = cliff ? 2.5f : 1.2f;
+            var go = Prim(PrimitiveType.Cube, "Block", info.root, new Vector3(local.x, bh / 2, local.y), new Vector3(size.x, bh, size.y), top);
             info.blocks.Add(new Rect(info.center.x + local.x - size.x / 2, info.center.z + local.y - size.y / 2, size.x, size.y));
             // 방 안쪽을 향한 면에만 벽 모듈 (바깥 벽과 겹치는 면은 건너뜀)
             var sides = new[] { (new Vector2(1, 0), size.y), (new Vector2(-1, 0), size.y), (new Vector2(0, 1), size.x), (new Vector2(0, -1), size.x) };
@@ -297,7 +302,8 @@ namespace CatTang
                 if (Mathf.Abs(edge) >= limit - 0.05f) continue;
                 var pos = n.x != 0 ? new Vector3(edge, 1.25f, local.y) : new Vector3(local.x, 1.25f, edge);
                 var cube = Prim(PrimitiveType.Cube, "BlockFace", info.root, pos, n.x != 0 ? new Vector3(0.3f, 2.5f, len) : new Vector3(len, 2.5f, 0.3f), top, false);
-                Kit.TileWall(ch, cube, new Vector3(n.x, 0, n.y));
+                // 짧은 면(마을)은 건물 대신 골목 울타리
+                Kit.TileWall(ch, cube, new Vector3(n.x, 0, n.y), !cliff && len < 2.9f && Kit.Has(ch, "AlleyFence") ? "AlleyFence" : null);
             }
             // 바위 지대면 위에 바위 몇 개 (뚜껑이 밋밋하지 않게)
             if (cliff && Kit.Has(ch, "Rock_0"))
@@ -308,8 +314,11 @@ namespace CatTang
         // ---------- 술집 홀 (중간 보스, 2026-11-17 사용자: 건물로 걸어 들어가 이어지게) ----------
         // 스테이지 2 마지막 방에서 복도를 지나 술집 여닫이문으로 들어감 → 홀 안에서 싸움 → 이기면 북쪽 뒷문이 열리고
         // 그 너머에 스테이지 3이 이어 지어짐 (RunManager). 실내: 나무 마루 · 판자벽, 바깥 입구 쪽은 건물 정면
-        public static readonly Vector2 SaloonSize = new(26, 20);    // 깊이 20 = 일반 방과 같아 복도 길이가 맞음
-        public const float CellDepth = 30f;               // 방 칸 간격 (스테이지 3을 뒷문 너머에 붙일 때)
+        // 방 크기 (2026-11-17 사용자: 모양을 깎는다면 줄이지 말고 키울 것): 24×20 → 28×24. 깎이는 덩어리를 빼도 예전보다 넓음
+        public static readonly Vector2 RoomSize = new(28, 24);
+        public static readonly Vector2 CellSize = new(38, 34);       // 방 칸 간격 = 방 + 복도 10m
+        public static readonly Vector2 SaloonSize = RoomSize;        // 일반 방과 같아야 들어오는 복도 길이가 맞음
+        public const float CellDepth = 34f;               // 방 칸 간격 (스테이지 3을 뒷문 너머에 붙일 때) = CellSize.y
 
         static void BuildSaloon(ChapterDef ch, StageLayout layout, Vector3 center, Vector3 entrance, Vector2 cellSize, int seed)
         {
@@ -356,7 +365,7 @@ namespace CatTang
                 // 복도: 입구 쪽은 스테이지 2 마지막 방이 이미 지음. 뒷문 쪽은 스테이지 3 첫 방(깊이 20)의 남쪽 벽까지
                 if (side == back)
                 {
-                    float gapLen = CellDepth - hd - 10f;
+                    float gapLen = CellDepth - hd - RoomSize.y / 2;
                     var mid = new Vector3(0, 0, hd + gapLen / 2);
                     var cor = new GameObject("BackCorridor").transform;
                     cor.SetParent(info.root, false);
