@@ -121,7 +121,7 @@ namespace CatTang
             layout = RoomBuilder.BuildStage(Chapter, rooms, chapter * 1000 + index * 37 + Random.Range(0, 999), IsBossRoom, null,
                 attachOrigin ?? Vector3.zero, attachOrigin.HasValue, saloon);
             var hallRoom = layout.rooms.Find(r => r.midBoss);
-            if (hallRoom != null) { if (hallRoom.entranceGate) hallRoom.entranceGate.SetActive(true); if (hallRoom.backGate) hallRoom.backGate.SetActive(true); }
+            if (hallRoom != null) { WoodGate.Close(hallRoom.entranceGate, false); WoodGate.Close(hallRoom.backGate, false); }
             current = null;
             roomIndex = 0;
             var r0 = layout.rooms[0];
@@ -149,7 +149,7 @@ namespace CatTang
             current.entered = true;
             roomIndex = i;
             inCombat = true;
-            foreach (var g in current.gates) g.SetActive(true);
+            foreach (var g in current.gates) WoodGate.Close(g);          // 위에서 쾅 닫힘
             if (current.midBoss)
             {
                 IsMidBossRoom = true;                     // 술집 홀: 들어서면 문이 닫히고 중간 보스
@@ -235,6 +235,7 @@ namespace CatTang
             alive.Remove(e);
             alive.RemoveAll(x => x == null);
             if (e && e.kind != Enemy.Kind.Boss) player.inv.gold += Random.Range(2, 5);
+            if (e && (e.kind != Enemy.Kind.Boss || IsMidBossRoom)) HeartPickup.TryDrop(e, e.kind == Enemy.Kind.Boss);   // 하트: 일반 6% · 강화형 10% · 중간 보스 확정
             if (!inCombat || alive.Count > 0 || spawning) return;
             if (wavesLeft > 0) { StartCoroutine(SpawnWave()); return; }
             RoomCleared();
@@ -244,7 +245,7 @@ namespace CatTang
         {
             inCombat = false;
             current.cleared = true;
-            foreach (var g in current.gates) g.SetActive(false);
+            foreach (var g in current.gates) WoodGate.Break(g);          // 덜컹 → 조각 날림
             player.ResetCylinder();
             if (current.midBoss)
             {
@@ -304,7 +305,7 @@ namespace CatTang
             var hall = layout?.rooms.Find(r => r.midBoss && !r.cleared);
             if (hall != null)
             {
-                if (hall.entranceGate) hall.entranceGate.SetActive(false);
+                WoodGate.Break(hall.entranceGate);
                 stageDone = false;
                 ui?.Toast("술집 문이 열렸다 — 들어가면 중간 보스");
                 return;

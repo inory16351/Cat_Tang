@@ -23,6 +23,8 @@ namespace CatTang
         }
 
         public int RerollCost => 30 + 15 * rerolls;
-        public const int HealCost = 50;
+        // 하트 (2026-11-17 사용자: 상인도 하트 판매). 하나 = 최대 체력 HeartPickup.HealPct, 상인 한 명당 3개
+        public const int HeartCost = 25;
+        public int heartsLeft = 3;
     }
 }

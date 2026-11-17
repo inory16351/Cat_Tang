@@ -8,6 +8,15 @@ Shader "CatTang/Toon"
     {
         [MainTexture] _BaseMap ("Base Map (손으로 칠한 텍스처)", 2D) = "white" {}
         [MainColor] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
+        _Saturation ("Saturation (배경 톤 낮추기 < 1)", Range(0, 1.5)) = 1
+        _Brightness ("Brightness (배경 톤 낮추기 < 1)", Range(0, 1.5)) = 1
+        // 색 범위 치환 (적 배색): 원래 색상 범위(From ± Width)의 덜 선명한 몸 색만 목표 색상으로 돌림. 금속 금빛 · 선명한 진홍 포인트는 유지
+        _RecolorAmount ("Recolor Amount", Range(0, 1)) = 0
+        _RecolorFrom ("Recolor From Hue", Range(0, 1)) = 0.97
+        _RecolorWidth ("Recolor Hue Width", Range(0, 0.5)) = 0.1
+        _RecolorHue ("Recolor To Hue", Range(0, 1)) = 0.5
+        _RecolorSat ("Recolor Saturation x", Range(0, 2)) = 1
+        _RecolorVal ("Recolor Value x", Range(0, 2)) = 1
 
         [Header(Shade)]
         _ShadeColor ("1st Shade Color", Color) = (0.62, 0.55, 0.72, 1)
@@ -34,6 +43,10 @@ Shader "CatTang/Toon"
         [Header(Outline)]
         _OutlineColor ("Outline Color", Color) = (0.08, 0.05, 0.08, 1)
         _OutlineWidth ("Outline Width (px)", Range(0, 10)) = 2.5
+        // 바깥 테두리 (적): 몸 · 외곽선이 스텐실을 찍고, 렌더러 기능(CatTangOuterOutline)이 그 바깥에만 색 띠를 그림 → 형체 안쪽에는 안 생김
+        _OuterOutlineColor ("Outer Outline Color", Color) = (0.78, 0.07, 0.12, 1)
+        _OuterOutlineWidth ("Outer Outline Width (px, 0 = 끔)", Range(0, 12)) = 0
+        _OuterStencilRef ("Outer Outline Stencil Ref", Int) = 0
         [Toggle] _OutlineVertexAlpha ("Vertex Alpha = Width", Float) = 0
     }
 
@@ -69,7 +82,38 @@ Shader "CatTang/Toon"
             half4 _OutlineColor;
             half _OutlineWidth;
             half _OutlineVertexAlpha;
+            half _Saturation;
+            half _Brightness;
+            half4 _OuterOutlineColor;
+            half _OuterOutlineWidth;
+            half _RecolorAmount, _RecolorFrom, _RecolorWidth, _RecolorHue, _RecolorSat, _RecolorVal;
         CBUFFER_END
+
+        half3 RgbToHsv(half3 c)
+        {
+            half4 K = half4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+            half4 p = lerp(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
+            half4 q = lerp(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
+            half d = q.x - min(q.w, q.y);
+            half e = 1.0e-4;
+            return half3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+        }
+        half3 HsvToRgb(half3 c)
+        {
+            half3 p = abs(frac(c.xxx + half3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+            return c.z * lerp(1.0.xxx, saturate(p - 1.0), c.y);
+        }
+        half3 Recolor(half3 rgb)
+        {
+            if (_RecolorAmount <= 0.001) return rgb;
+            half3 hsv = RgbToHsv(rgb);
+            half dh = abs(frac(hsv.x - _RecolorFrom + 0.5) - 0.5);           // 색상 거리 (둘레)
+            half w = 1 - smoothstep(_RecolorWidth * 0.7, _RecolorWidth, dh);
+            w *= smoothstep(0.08, 0.18, hsv.y);                              // 회색 · 검정은 그대로
+            w *= 1 - smoothstep(0.62, 0.8, hsv.y * step(0.35, hsv.z));       // 밝고 선명한 진홍 포인트는 유지
+            half3 to = HsvToRgb(half3(_RecolorHue, saturate(hsv.y * _RecolorSat), saturate(hsv.z * _RecolorVal)));
+            return lerp(rgb, to, w * _RecolorAmount);
+        }
         ENDHLSL
 
         // ---------- 1. 본체 ----------
@@ -77,6 +121,7 @@ Shader "CatTang/Toon"
         {
             Name "ForwardLit"
             Tags { "LightMode" = "UniversalForward" }
+            Stencil { Ref [_OuterStencilRef] Comp Always Pass Replace }
             Cull Back
 
             HLSLPROGRAM
@@ -139,7 +184,8 @@ Shader "CatTang/Toon"
             {
                 UNITY_SETUP_INSTANCE_ID(i);
                 half4 tex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor;
-                half3 albedo = tex.rgb;
+                tex.rgb = Recolor(tex.rgb);
+                half3 albedo = lerp(dot(tex.rgb, half3(0.299, 0.587, 0.114)).xxx, tex.rgb, _Saturation) * _Brightness;
                 float3 N = normalize(i.normalWS);
                 float3 V = GetWorldSpaceNormalizeViewDir(i.positionWS);
 
@@ -197,6 +243,7 @@ Shader "CatTang/Toon"
             Tags { "LightMode" = "SRPDefaultUnlit" }
             Cull Front
             ZWrite On
+            Stencil { Ref [_OuterStencilRef] Comp Always Pass Replace }
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -238,6 +285,58 @@ Shader "CatTang/Toon"
             half4 frag(Varyings i) : SV_Target
             {
                 return half4(MixFog(_OutlineColor.rgb, i.fogFactor), 1);
+            }
+            ENDHLSL
+        }
+
+        // ---------- 2-1. 바깥 테두리 (스텐실 바깥에만, 렌더러 기능이 불투명 뒤에 그림) ----------
+        Pass
+        {
+            Name "OuterOutline"
+            Tags { "LightMode" = "CatTangOuterOutline" }
+            Cull Front
+            ZWrite Off
+            ZTest LEqual
+            Stencil { Ref [_OuterStencilRef] Comp NotEqual }
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float fogFactor : TEXCOORD0;
+            };
+
+            Varyings vert(Attributes v)
+            {
+                Varyings o = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(v);
+                if (_OuterOutlineWidth <= 0.01) { o.positionCS = float4(0, 0, -2, 1); return o; }   // 끔: 화면 밖
+                float4 posCS = TransformObjectToHClip(v.positionOS.xyz);
+                float3 nWS = TransformObjectToWorldNormal(v.normalOS);
+                float2 nCS = mul((float3x3)UNITY_MATRIX_VP, nWS).xy;
+                float len = length(nCS);
+                float2 dir = len > 1e-5 ? nCS / len : float2(0, 0);
+                posCS.xy += dir * (_OutlineWidth + _OuterOutlineWidth) * 2.0 * posCS.w / _ScreenParams.xy;
+                o.positionCS = posCS;
+                o.fogFactor = ComputeFogFactor(posCS.z);
+                return o;
+            }
+
+            half4 frag(Varyings i) : SV_Target
+            {
+                return half4(MixFog(_OuterOutlineColor.rgb, i.fogFactor), 1);
             }
             ENDHLSL
         }

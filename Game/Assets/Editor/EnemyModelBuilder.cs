@@ -80,6 +80,10 @@ namespace CatTang.EditorTools
             ("Kit_AlleyFence", 2f, 180f, 'w', KitDir, "AlleyFence"),
             // 폭탄병이 던지는 모래 폭탄 (블렌더 + Codex, Art/tools/blender_kit_sandbomb.py)
             ("Kit_SandBomb", 0.55f, 0f, 'h', KitDir, "SandBomb"),
+            // 방 사이 나무 문 — 미리 쪼갠 조각(Piece_XX) + 가시 조각(Splinter_X), 클리어하면 WoodGate가 조각을 날림 (blender_kit_woodgate.py)
+            ("Kit_WoodGate", 4.6f, 180f, 'w', KitDir, "WoodGate"),
+            // 체력 회복 하트 (적 처치 드롭 · 상인, blender_kit_heart.py) — HeartPickup이 띄워 돌림
+            ("Kit_Heart", 0.6f, 0f, 'w', KitDir, "Heart"),
             // 방 모양을 만드는 큰 지형지물 (블렌더 + Codex, Art/tools/blender_kit_landmarks.py). 크기 = 예전 막힌 덩어리만큼(4~6m) 키운 가로 (2026-11-17 사용자: 저 정도 크기로)
             ("Kit_LM_RockSpire", 5.8f, 180f, 'w', KitDir, "LM_RockSpire"),
             ("Kit_LM_BoulderPile", 5.0f, 180f, 'w', KitDir, "LM_BoulderPile"),
@@ -489,6 +493,38 @@ namespace CatTang.EditorTools
             return b;
         }
 
+        // 적 테두리 (2026-11-17 사용자): 빨간 바탕선, 채도 높게, 단 형체 바깥에만 (안쪽 겹친 곳까지 빨개서 눈 아픔)
+        // → 안쪽 선은 예전처럼 어두운 잉크, 빨강은 스텐실로 실루엣 바깥에만 (셰이더 OuterOutline 패스 + 렌더러 기능 CatTangOuterOutline)
+        public static readonly Color EnemyOutline = new(0.78f, 0.07f, 0.12f);
+        public const float EnemyOuterWidth = 3.5f;
+        public const int EnemyStencil = 4;
+        public static void EnemyEdge(Material m)
+        {
+            if (m.HasProperty("_OutlineColor")) m.SetColor("_OutlineColor", new Color(0.08f, 0.05f, 0.08f));
+            if (m.HasProperty("_RimColor")) m.SetColor("_RimColor", new Color(1f, 0.78f, 0.35f));
+            if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.5f);
+            if (m.HasProperty("_OuterOutlineColor"))
+            {
+                m.SetColor("_OuterOutlineColor", EnemyOutline);
+                m.SetFloat("_OuterOutlineWidth", EnemyOuterWidth);
+                m.SetInt("_OuterStencilRef", EnemyStencil);
+            }
+            EditorUtility.SetDirty(m);
+        }
+
+        [MenuItem("CatTang/적 테두리 색 적용 (살짝 붉은 외곽선)")]
+        public static void ApplyEnemyEdge()
+        {
+            int n = 0;
+            foreach (var guid in AssetDatabase.FindAssets("Ch1_ t:Material", new[] { SrcDir.TrimEnd('/') }))
+            {
+                var m = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
+                if (m && m.name.StartsWith("Ch1_") && m.shader && m.shader.name == "CatTang/Toon") { EnemyEdge(m); n++; }
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[EnemyModelBuilder] 적 테두리 {n}개 재질");
+        }
+
         static Material ToonFor(string name, Material src, int index)
         {
             string p = SrcDir + name + "_Toon" + (index > 0 ? "_" + index : "") + ".mat";
@@ -503,12 +539,20 @@ namespace CatTang.EditorTools
             m.SetTexture("_BaseMap", tex);
             // 텍스처 없는 도형 모델(Codex 블렌더 스크립트, 재질 색만 있음)은 원본 재질 색을 그대로
             Color flat = src.HasProperty("_BaseColor") ? src.GetColor("_BaseColor") : src.HasProperty("_Color") ? src.color : Color.white;
+            // 회색으로 뽑은 블렌더 모델: 재질 이름으로 배색표(ModelPalette) 색을 입힘 (Art/README.md)
+            if (!tex && ModelPalette.TryResolve(src, flat, out var pal)) flat = pal;
             m.SetColor("_BaseColor", tex ? Color.white : flat);
             // 1장 팔레트: 황혼 보라 그림자 + 금빛 테두리
             m.SetColor("_ShadeColor", new Color(0.72f, 0.58f, 0.66f));
             m.SetColor("_SecondShadeColor", new Color(0.45f, 0.34f, 0.46f));
             if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", 4f);   // 2026-11-16 사용자: 외곽선 두껍게
             if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.5f);
+            // 배경 키트는 채도 · 밝기를 낮춤 (EnvTone), 캐릭터 · 하트 · 폭탄 · 화약통은 원래 색
+            bool env = name.StartsWith("Kit_") && name != "Kit_Heart" && name != "Kit_SandBomb" && name != "Kit_Keg";
+            if (m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", env ? EnvTone.Saturation : 1f); m.SetFloat("_Brightness", env ? EnvTone.Brightness : 1f); }
+            // 적: 배경과 갈리게 살짝 진홍 외곽선 + 붉은 가장자리 빛 (2026-11-17 사용자: 적에게 살짝 배경선)
+            if (name.StartsWith("Ch1_")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }   // 적 배색 2안 (차가운 한 계열)
+            if (name == "Kit_Heart" && m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", 1.15f); m.SetFloat("_Brightness", 1.12f); }   // 하트는 더 선명하게
             EditorUtility.SetDirty(m);
             return m;
         }

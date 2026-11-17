@@ -112,7 +112,7 @@ function makeDeck(docTitle, footer, sections) {
     text(s, title, { x: 7.7, y: 5.25, w: 4.0, h: 0.5, fontSize: 24, bold: true, fit: "shrink" });
     D.chip(s, ver, 11.65, 5.32, 1.0, RED, TXT, { size: 12 });
     text(s, sub, { x: 7.7, y: 5.82, w: 5.0, h: 0.4, fontSize: 15, color: MUTED });
-    text(s, `작성 ${AUTHOR} · ${DATE}`, { x: 7.7, y: 6.3, w: 4.6, h: 0.3, fontSize: 13 });
+    text(s, `작성 ${AUTHOR}${D.sep || " · "}${D.date || DATE}`, { x: 7.7, y: 6.3, w: 4.6, h: 0.3, fontSize: 13 });
     return s;
   };
   D.toc = (sideImg) => {
@@ -886,7 +886,8 @@ function buildCh1() {
   return D.pres.writeFile({ fileName: path.join(OUT_DIR, "1159_1장_기획서_20261116_정승운_Ver01.pptx") });
 }
 
-(async () => {
+module.exports = { makeDeck, AUTHOR, FONT, BG, CARD, TXT, MUTED, GOLD, RED, TEAL, PURPLE, LAV, FLOOR, has, img };
+if (require.main === module) (async () => {
   const outs = [await buildCommon(), await buildCh1()];
   const py = process.env.PYTHON || "C:/Users/user/AppData/Local/Programs/Python/Python312/python.exe";
   for (const o of outs) {

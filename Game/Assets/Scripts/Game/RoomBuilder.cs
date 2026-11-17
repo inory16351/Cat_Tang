@@ -201,7 +201,7 @@ namespace CatTang
                         var off = horizontal ? new Vector3(k * (2.3f + seg / 2), 0, 0) : new Vector3(0, 0, k * (2.3f + seg / 2));
                         Kit.TileWall(ch, Prim(PrimitiveType.Cube, "Wall", info.root, pos + off, horizontal ? new Vector3(seg, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, seg), wall), inward);
                     }
-                    var gate = Prim(PrimitiveType.Cube, "Gate", info.root, pos, horizontal ? new Vector3(4.6f, 2.5f, 0.5f) : new Vector3(0.5f, 2.5f, 4.6f), gateM);
+                    var gate = WoodGate.Make(ch, info.root, "Gate", new Vector3(pos.x, 0, pos.z), inward, gateM);   // 나무 문 (클리어하면 부서짐)
                     gate.SetActive(false);
                     info.gates.Add(gate);
                     // 복도 (다음 방 쪽만)
@@ -349,7 +349,7 @@ namespace CatTang
                 // 문: 여닫이 술집 문(장식) + 막는 문짝(평소 닫힘 → RunManager가 열어 줌)
                 float doorYaw = Quaternion.LookRotation(inward).eulerAngles.y;
                 if (side == ent) Kit.Place(ch, "SaloonDoor", info.root, pos - new Vector3(0, 1.25f, 0) - inward * 0.1f, doorYaw, 1f, false);
-                var gate = Prim(PrimitiveType.Cube, side == ent ? "SaloonGate" : "BackGate", info.root, pos, horizontal ? new Vector3(4.6f, 2.5f, 0.5f) : new Vector3(0.5f, 2.5f, 4.6f), gateM);
+                var gate = WoodGate.Make(ch, info.root, side == ent ? "SaloonGate" : "BackGate", new Vector3(pos.x, 0, pos.z), inward, gateM);
                 info.gates.Add(gate);
                 if (side == ent) info.entranceGate = gate; else info.backGate = gate;
                 // 복도: 입구 쪽은 스테이지 2 마지막 방이 이미 지음. 뒷문 쪽은 스테이지 3 첫 방(깊이 20)의 남쪽 벽까지

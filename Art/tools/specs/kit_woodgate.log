@@ -1,0 +1,906 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1e727-45db-7270-aa2a-61d87067f545
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_woodgate.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_woodgate.py`
+After writing it, RUN it once with that command and fix errors until it exports.
+Use `Art/tools/blender_kit_sandbomb.py` as a reference for the setup / materials / bevel / FBX-export style (same conventions).
+
+## Goal
+A PRE-FRACTURED heavy wooden barricade door that blocks the doorway between rooms in a top-down cel-shaded western roguelite
+(chapter 1: dusty old-west town melting like a Dali clock; gold drips are the accent). It slams shut when a fight starts
+and BURSTS INTO PIECES when the room is cleared. The game flings every piece separately, so the door must be built from
+many SEPARATE mesh objects that together look like one intact door (no gaps visible when assembled).
+Seen from a high camera → chunky, readable planks, no tiny detail. Slightly hand-made irregularity (seeded random, `random.Random(7731)`).
+BEVEL modifier (width 0.012, 2 segments, angle limit, clamp overlap) on wood and iron parts.
+
+## Dimensions (Blender Z-up, meters). Door plane = XZ plane, thickness along Y.
+- Overall: width 4.6 (X from -2.3 to +2.3), height 2.6 (Z from 0 to 2.6), origin at bottom-center (0,0,0).
+- Centered on Y=0; total thickness with rails and straps ≈ 0.32. Front = +Y.
+
+## Construction (each listed piece = its own object)
+1. **Vertical planks** (`wood` / `wood_light` alternating randomly, ~8 planks, widths 0.52–0.62 that sum exactly to 4.6, thickness 0.14 at Y∈[-0.07,0.07]).
+   Plank tops are uneven: each plank height 2.45–2.6, top end cut either flat, slanted, or a shallow point.
+   **Each plank is split into 2 or 3 chunks** along JAGGED SPLINTERED break lines (zig-zag cut across the plank with 3–5 teeth, teeth depth 0.06–0.14, break heights random between 0.6 and 2.0).
+   The two chunks share exactly the same zig-zag edge so they fit together perfectly. Build each chunk as an extruded 2D polygon (outline in XZ, extruded in Y) — bmesh, not booleans.
+   Keep planks clean (no grooves); give each chunk 0–2 small knot discs (`wood_dark`, flat cylinder r 0.04–0.06, 0.01 proud of the front face) parented by joining into that chunk.
+2. **Horizontal rails** on the FRONT (+Y) face: two `wood_dark` rails (height 0.22, thickness 0.08, sitting on Y∈[0.07,0.15]) at Z≈0.55 and Z≈2.0, spanning the full width. Each rail is split into 3 pieces with jagged ends (same zig-zag-in-plan idea, 2–3 teeth).
+3. **Diagonal Z brace** on the front between the two rails: one `wood_dark` board from lower-left to upper-right, split into 2 pieces at a jagged break.
+4. **Iron straps** on the BACK (−Y) face: two `iron` bands (height 0.14, thickness 0.03) at Z≈0.8 and Z≈1.8, full width, each split into 3 segments (straight cuts are fine, iron bends not breaks). Big round `iron` rivet heads (flattened spheres r 0.035) every ~0.55 along each strap on the back AND matching rivets on the front rails, joined into the piece they sit on.
+5. **Gold drip accent**: one `gold_drip` drip running down from the upper rail over a plank (elongated teardrop + blob), joined into that rail piece.
+6. **Splinter templates** (for extra debris): 3 small loose objects named `Splinter_0`, `Splinter_1`, `Splinter_2` in `wood_light`/`wood` — thin jagged sticks 0.25–0.45 long, 0.04–0.07 wide, 0.03 thick (pointy on both ends). Put them INSIDE the door volume at the center (X≈0, Z≈1.3, Y=0) so they are hidden inside the planks.
+
+## Naming
+- Every door piece object: `Piece_00`, `Piece_01`, … (two-digit, any order). Splinters as above. No other objects.
+- Each piece's ORIGIN must be at its own geometric center (origin_set ORIGIN_GEOMETRY / bounds center) so the game can spin it around its center.
+- Do NOT join pieces together. Total triangles ≤ 6000.
+
+## Colors (flat Principled BSDF base colors, NO textures), materials named exactly:
+`wood` (0.55, 0.34, 0.19), `wood_light` (0.68, 0.45, 0.26), `wood_dark` (0.33, 0.19, 0.12), `iron` (0.24, 0.22, 0.25), `gold_drip` (1.0, 0.78, 0.22).
+
+## Export
+- Recalc normals outward on every piece. Export all objects (pieces + splinters, as separate meshes, keep hierarchy flat) to
+  `Game/Assets/Art/Characters/Ch1/Kit_WoodGate.fbx` with
+  `axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+- No cameras/lights. Print `EXPORTED Kit_WoodGate <pieces> <tris> <dims>` and `DONE`.
+- Short Korean header comment at the top of the script (what it makes, how to run).
+
+codex
+참고 스크립트의 제작·내보내기 규칙을 확인한 뒤, 목재 파편이 서로 맞물리는 스크립트를 작성하고 Blender로 실행해 FBX 생성까지 검증하겠습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/blender_kit_sandbomb.py' in C:\Project\Cat_Tang
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '*woodgate*' -g '*sandbomb*' -g '"'!Game/Library/**'"' -g '"'!Game/Temp/**'"'" in C:\Project\Cat_Tang
+ succeeded in 229ms:
+# 紐⑤옒二쇰㉧????깂怨?紐⑤옒?쒓퀎 ?쒓퍚??留뚮뱾怨?FBX濡??대낫?낅땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_sandbomb.py
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / "Game/Assets/Art/Characters/Ch1/Kit_SandBomb.fbx"
+RNG = random.Random(48317)
+PARTS = []
+MATERIALS = {}
+COLORS = {
+    "canvas": (0.85, 0.76, 0.6),
+    "sand": (0.9, 0.72, 0.45),
+    "wood_dark": (0.33, 0.19, 0.12),
+    "brass": (0.85, 0.62, 0.25),
+    "iron": (0.24, 0.22, 0.25),
+    "gold_drip": (1.0, 0.78, 0.22),
+    "spark": (1.0, 0.55, 0.15),
+}
+BULGE_PHASE = RNG.uniform(-math.pi, math.pi)
+
+
+def setup():
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete(use_global=False)
+    for material in list(bpy.data.materials):
+        bpy.data.materials.remove(material)
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.scale_length = 1.0
+    for name, color in COLORS.items():
+        material = bpy.data.materials.new(name)
+        material.use_nodes = True
+        material.diffuse_color = (*color, 1.0)
+        shader = material.node_tree.nodes.get("Principled BSDF")
+        shader.inputs["Base Color"].default_value = (*color, 1.0)
+        shader.inputs["Roughness"].default_value = 0.78
+        if name == "spark":
+            shader.inputs["Emission Color"].default_value = (*color, 1.0)
+            shader.inputs["Emission Strength"].default_value = 3.0
+        MATERIALS[name] = material
+
+
+def register(obj, name, material, smooth=False):
+    obj.name = name
+    obj.data.materials.append(MATERIALS[material])
+    for face in obj.data.polygons:
+        face.use_smooth = smooth
+    PARTS.append(obj)
+    return obj
+
+
+def mesh_part(name, vertices, faces, material, smooth=False):
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    return register(obj, name, material, smooth)
+
+
+def bevel(obj, angle_limit=math.radians(30)):
+    modifier = obj.modifiers.new("Soft handmade edges", "BEVEL")
+    modifier.width = 0.01
+    modifier.segments = 2
+    modifier.limit_method = "ANGLE"
+    modifier.angle_limit = angle_limit
+    # Clamp overlap keeps thin brass discs and tapered panels intact.
+    modifier.use_clamp_overlap = True
+
+
+def sphere(name, center, scale, material, segments=16, rings=8):
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=segments, ring_count=rings, radius=1.0, location=center
+    )
+    obj = bpy.context.object
+    for vertex in obj.data.vertices:
+        vertex.co.x *= scale[0]
+        vertex.co.y *= scale[1]
+        vertex.co.z *= scale[2]
+    return register(obj, name, material, smooth=True)
+
+
+def cone(name, center, bottom_radius, top_radius, height, material,
+         segments=12, hard=False, direction=None):
+    bpy.ops.mesh.primitive_cone_add(
+        vertices=segments, radius1=bottom_radius, radius2=top_radius,
+        depth=height, location=center
+    )
+    obj = register(bpy.context.object, name, material)
+    if direction is not None:
+        obj.rotation_euler = Vector(direction).to_track_quat("Z", "Y").to_euler()
+    if hard:
+        bevel(obj)
+    return obj
+
+
+def tube(name, points, radii, material, sides=6, smooth=True, closed=False):
+    points = [Vector(point) for point in points]
+    vertices = []
+    for index, point in enumerate(points):
+        if closed:
+            tangent = points[(index + 1) % len(points)] - points[(index - 1) % len(points)]
+        else:
+            tangent = points[min(index + 1, len(points) - 1)] - points[max(index - 1, 0)]
+        tangent.normalize()
+        reference = Vector((0.0, 1.0, 0.0))
+        if abs(tangent.dot(reference)) > 0.95:
+            reference = Vector((1.0, 0.0, 0.0))
+        normal = tangent.cross(reference).normalized()
+        binormal = tangent.cross(normal).normalized()
+        for side in range(sides):
+            angle = math.tau * side / sides
+            offset = normal * math.cos(angle) + binormal * math.sin(angle)
+            vertices.append(point + radii[index] * offset)
+    faces = []
+    for ring in range(len(points) if closed else len(points) - 1):
+        next_ring = (ring + 1) % len(points)
+        for side in range(sides):
+            a = ring * sides + side
+            b = ring * sides + (side + 1) % sides
+            c = next_ring * sides + (side + 1) % sides
+            d = next_ring * sides + side
+            faces.append((a, b, c, d))
+    if not closed:
+        faces.append(tuple(reversed(range(sides))))
+        faces.append(tuple((len(points) - 1) * sides + side for side in range(sides)))
+    return mesh_part(name, vertices, faces, material, smooth)
+
+
+def sack_radius(angle, z):
+    latitude = max(0.0, 1.0 - (z / 0.163) ** 2) ** 0.5
+    lobes = 1.0 + 0.065 * math.cos(5.0 * angle + BULGE_PHASE)
+    lobes += 0.025 * math.sin(3.0 * angle + z * 9.0)
+    return 0.2 * latitude * lobes
+
+
+def build_sack():
+    sphere("Round iron bomb core", (0, 0, 0), (0.18, 0.176, 0.143), "iron", 12, 6)
+    sack = sphere("Five soft canvas bulges", (0, 0, 0), (1, 1, 1), "canvas", 20, 10)
+    for vertex in sack.data.vertices:
+        unit = vertex.co.copy()
+        angle = math.atan2(unit.y, unit.x)
+        z = unit.z * 0.163
+        radius = sack_radius(angle, z)
+        vertex.co = (radius * math.cos(angle), radius * math.sin(angle), z)
+
+    # A wide shoulder tapers into a folded, flared gathered mouth.
+    vertices = []
+    neck_rings = [(0.123, 0.095), (0.15, 0.061), (0.17, 0.044), (0.19, 0.055)]
+    sides = 16
+    for z, radius in neck_rings:
+        for side in range(sides):
+            angle = math.tau * side / sides
+            fold = 1.0 + 0.12 * math.cos(8 * angle + 0.3)
+            vertices.append((radius * fold * math.cos(angle),
+                             radius * fold * math.sin(angle), z))
+    faces = []
+    for ring in range(len(neck_rings) - 1):
+        for side in range(sides):
+            a = ring * sides + side
+            b = ring * sides + (side + 1) % sides
+            faces.append((a, b, b + sides, a + sides))
+    faces.extend([tuple(reversed(range(sides))), tuple(range(48, 64))])
+    mesh_part("Gathered canvas neck", vertices, faces, "canvas", smooth=True)
+
+    bpy.ops.mesh.primitive_torus_add(
+        major_segments=16, minor_segments=6, location=(0, 0, 0.164),
+        major_radius=0.052, minor_radius=0.012
+    )
+    register(bpy.context.object, "Neck rope tie", "wood_dark", smooth=True)
+
+    # A single tilted meridian crosses the belly and meets the neck tie.
+    points = []
+    rope_angle = math.radians(28)
+    for index in range(28):
+        angle = math.tau * index / 28
+        horizontal = 0.205 * math.sin(angle)
+        z = 0.166 * math.cos(angle)
+        lobe_angle = rope_angle if horizontal >= 0 else rope_angle + math.pi
+        lobe_scale = 1.0 + 0.065 * math.cos(5 * lobe_angle + BULGE_PHASE)
+        points.append((horizontal * lobe_scale * math.cos(rope_angle),
+                       horizontal * lobe_scale * math.sin(rope_angle), z))
+    tube("Crossing belly rope", points, [0.009] * len(points), "wood_dark", closed=True)
+
+
+def hourglass_bulb(name, z_bottom, z_top, radius_bottom, radius_top):
+    # Three closed brass cone panels leave broad windows to the inner sand.
+    vertices = []
+    faces = []
+    for panel in range(3):
+        center_angle = math.tau * panel / 3 + 0.2
+        angles = (center_angle - 0.23, center_angle + 0.23)
+        start = len(vertices)
+        for inset in (0.0, 0.004):
+            for z, radius in ((z_bottom, radius_bottom), (z_top, radius_top)):
+                for angle in angles:
+                    vertices.append(((radius - inset) * math.cos(angle),
+                                     (radius - inset) * math.sin(angle), z))
+        for face in ((0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1),
+                     (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)):
+            faces.append(tuple(start + index for index in face))
+    obj = mesh_part(name, vertices, faces, "brass")
+    bevel(obj)
+
+
+def build_hourglass():
+    cone("Bottom brass disc", (0, 0, 0.192), 0.057, 0.057, 0.012, "brass", hard=True)
+    hourglass_bulb("Lower brass cone", 0.198, 0.248, 0.049, 0.009)
+    hourglass_bulb("Upper brass cone", 0.248, 0.298, 0.009, 0.049)
+    cone("Top brass disc", (0, 0, 0.304), 0.057, 0.057, 0.012, "brass", hard=True)
+    cone("Lower sand pile", (0, 0, 0.216), 0.039, 0.004, 0.036, "sand")
+    cone("Upper sand reservoir", (0, 0, 0.278), 0.004, 0.033, 0.036, "sand")
+    cone("Sand through waist", (0, 0, 0.248), 0.003, 0.003, 0.03, "sand", segments=6)
+
+
+def build_fuse():
+    points = []
+    for index in range(13):
+        t = 4.6 * index / 12
+        points.append((0.021 * (1 - math.cos(t)), 0.021 * math.sin(t),
+                       0.307 + 0.06 * index / 12))
+    fuse = tube("Curly iron fuse", points, [0.008] * len(points), "iron")
+    bevel(fuse, angle_limit=math.radians(75))
+    center = Vector(points[-1])
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=0.014, location=center)
+    register(bpy.context.object, "Spark heart", "spark")
+    # Six spatial rays keep the spark recognizable throughout the airborne spin.
+    for index, direction in enumerate(((1, 0, 0), (-1, 0, 0), (0, 1, 0),
+                                       (0, -1, 0), (0, 0, 1), (0, 0, -1))):
+        direction = Vector(direction)
+        length = RNG.uniform(0.025, 0.033)
+        cone("Spark ray %d" % index, center + direction * (0.009 + length / 2),
+             0.009, 0, length, "spark", segments=5, direction=direction)
+
+
+def build_leaks():
+    angle = math.radians(-62)
+    points = [(0.052 * math.cos(angle), 0.052 * math.sin(angle), 0.164)]
+    heights = (0.148, 0.124, 0.082, 0.028, -0.027, -0.07)
+    for z in heights:
+        radius = sack_radius(angle, z) + 0.004
+        points.append((radius * math.cos(angle), radius * math.sin(angle), z))
+    tube("Single flowing gold teardrop", points,
+         [0.009, 0.011, 0.012, 0.013, 0.012, 0.011, 0.015], "gold_drip", sides=7)
+    end = Vector(points[-1])
+    sphere("Rounded gold drop", end + Vector((0, 0, -0.009)),
+           (0.02, 0.02, 0.028), "gold_drip", 10, 6)
+
+    sphere("Dark bottom tear", (0.025, -0.025, -0.156),
+           (0.029, 0.019, 0.009), "wood_dark", 10, 6)
+    for index, (x, y, length) in enumerate(((0.012, -0.026, 0.047), (0.037, -0.02, 0.034))):
+        tube("Leaking sand trickle %d" % index,
+             [(x, y, -0.154), (x + 0.003, y - 0.002, -0.171),
+              (x + 0.006, y - 0.004, -0.154 - length)],
+             [0.009, 0.007, 0.003], "sand", sides=6)
+
+
+def finish_and_export():
+    # Apply the hard-part bevels before joining so every component retains its edges.
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in PARTS:
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        for modifier in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name = "Kit_SandBomb"
+    obj.data.name = "Kit_SandBomb"
+
+    # Preserve the body's center as the pivot while setting a compact overall height.
+    bpy.context.scene.cursor.location = (0, 0, 0)
+    bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+    bpy.context.view_layer.update()
+    scale = 0.54 / obj.dimensions.z
+    obj.scale = (scale, scale, scale)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert all(len(edge.link_faces) == 2 for edge in bm.edges), "Unclosed mesh component"
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    obj.data.calc_loop_triangles()
+    triangles = len(obj.data.loop_triangles)
+    bpy.context.view_layer.update()
+    dimensions = tuple(round(value, 4) for value in obj.dimensions)
+    assert triangles < 3000, "Triangle budget exceeded: %d" % triangles
+    assert abs(obj.dimensions.z - 0.54) < 0.0001
+    assert obj.location.length < 0.000001
+    assert set(material.name for material in obj.data.materials) == set(COLORS)
+    assert len(bpy.context.scene.objects) == 1 and obj.type == "MESH"
+
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.export_scene.fbx(
+        filepath=str(OUTPUT), use_selection=True,
+        axis_forward="-Z", axis_up="Y", apply_scale_options="FBX_SCALE_UNITS",
+        bake_space_transform=True, object_types={"MESH"}, use_mesh_modifiers=True,
+        mesh_smooth_type="FACE", add_leaf_bones=False, bake_anim=False
+    )
+    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 0
+    print("EXPORTED Kit_SandBomb %d %s" % (triangles, dimensions))
+    print("DONE")
+
+
+def main():
+    setup()
+    build_sack()
+    build_hourglass()
+    build_fuse()
+    build_leaks()
+    finish_and_export()
+
+
+if __name__ == "__main__":
+    main()
+
+ exited 1 in 1039ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '*woodgate*' -g '*sandbomb*' -g '!Game/Lib ...
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$paths = @('"'C:/AGENTS.md', 'C:/Project/AGENTS.md', 'C:/Project/Cat_Tang/AGENTS.md', 'C:/Project/Cat_Tang/Art/AGENTS.md', 'C:/Project/Cat_Tang/Art/tools/AGENTS.md'); foreach ("'$path in $paths) { if (Test-Path -LiteralPath $path) { Write-Output $path; Get-Content -LiteralPath $path -Encoding UTF8 } }; git status --short; Get-ChildItem Art/tools -Name; Test-Path '"'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'" in C:\Project\Cat_Tang
+ succeeded in 205ms:
+ M "docs/1159_1\354\236\245_\352\270\260\355\232\215\354\204\234_20261116_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? Art/tools/specs/kit_woodgate.log
+?? Art/tools/specs/kit_woodgate_spec.md
+specs
+blender_bake_fx.py
+blender_fx.py
+blender_kit_facades.py
+blender_kit_ground.py
+blender_kit_landmarks.py
+blender_kit_props.py
+blender_kit_sandbomb.py
+blender_kit_simple.py
+denoise.py
+ground_texture.py
+make_test_bullet.py
+render_turntable.py
+sheet_cut.py
+tripo_import.py
+True
+
+codex
+균열 양쪽에 같은 지그재그 좌표를 사용하고, 맞닿는 면은 베벨 적용 후 복원해 조립 상태의 틈을 막겠습니다. 리벳·옹이·금 방울은 해당 파편에 합쳐 함께 날아가도록 구성하겠습니다.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_woodgate.py
+diff --git a/Art/tools/blender_kit_woodgate.py b/Art/tools/blender_kit_woodgate.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..b0cab9a5272a135cfcf98e83268b6e66e0a26164
+--- /dev/null
++++ b/Art/tools/blender_kit_woodgate.py
+@@ -0,0 +1,423 @@
++# 전투 종료 때 조각으로 터지는 서부풍 나무 바리케이드 문을 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_woodgate.py
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / "Game/Assets/Art/Characters/Ch1/Kit_WoodGate.fbx"
++RNG = random.Random(7731)
++PARTS = []
++SPLINTERS = []
++MATERIALS = {}
++COLORS = {
++    "wood": (0.55, 0.34, 0.19),
++    "wood_light": (0.68, 0.45, 0.26),
++    "wood_dark": (0.33, 0.19, 0.12),
++    "iron": (0.24, 0.22, 0.25),
++    "gold_drip": (1.0, 0.78, 0.22),
++}
++BEVEL_WIDTH = 0.012
++
++
++def setup():
++    bpy.ops.object.select_all(action="SELECT")
++    bpy.ops.object.delete(use_global=False)
++    for material in list(bpy.data.materials):
++        bpy.data.materials.remove(material)
++    bpy.context.scene.unit_settings.system = "METRIC"
++    bpy.context.scene.unit_settings.scale_length = 1.0
++    for name, color in COLORS.items():
++        material = bpy.data.materials.new(name)
++        material.use_nodes = True
++        material.diffuse_color = (*color, 1.0)
++        shader = material.node_tree.nodes.get("Principled BSDF")
++        shader.inputs["Base Color"].default_value = (*color, 1.0)
++        shader.inputs["Roughness"].default_value = 0.78
++        MATERIALS[name] = material
++
++
++def activate(obj):
++    bpy.ops.object.select_all(action="DESELECT")
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++
++
++def recalc(mesh):
++    bm = bmesh.new()
++    bm.from_mesh(mesh)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert all(edge.is_manifold for edge in bm.edges), "Unclosed mesh component"
++    bm.to_mesh(mesh)
++    bm.free()
++    mesh.update()
++
++
++def restore_mating_edges(obj, paths, y_min, y_max):
++    # Beveling both sides of a fracture would open a visible V-shaped gap.
++    # Restore only the shared interfaces, keeping the exposed perimeter rounded.
++    corners = [Vector(point) for path in paths for point in path]
++    segments = [(Vector(a), Vector(b)) for path in paths
++                for a, b in zip(path, path[1:])]
++    reach = BEVEL_WIDTH * 2.1
++    for vertex in obj.data.vertices:
++        point = Vector((vertex.co.x, vertex.co.z))
++        nearest_corner = min(corners, key=lambda corner: (corner - point).length_squared)
++        if (nearest_corner - point).length <= reach:
++            target = nearest_corner
++        else:
++            candidates = []
++            for start, end in segments:
++                direction = end - start
++                t = max(0.0, min(1.0, (point - start).dot(direction)
++                                 / direction.length_squared))
++                candidates.append(start + t * direction)
++            target = min(candidates, key=lambda candidate: (candidate - point).length_squared)
++        if (target - point).length > reach:
++            continue
++        vertex.co.x, vertex.co.z = target
++        if abs(vertex.co.y - y_min) <= BEVEL_WIDTH * 1.1:
++            vertex.co.y = y_min
++        elif abs(vertex.co.y - y_max) <= BEVEL_WIDTH * 1.1:
++            vertex.co.y = y_max
++
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=0.000001)
++    bmesh.ops.dissolve_degenerate(bm, edges=list(bm.edges), dist=0.000001)
++    bmesh.ops.dissolve_limit(
++        bm, angle_limit=0.00001, verts=list(bm.verts), edges=list(bm.edges),
++        use_dissolve_boundaries=False,
++    )
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    bm.to_mesh(obj.data)
++    bm.free()
++    obj.data.update()
++
++
++def extrude_piece(outline, y_min, y_max, material, mating_paths=(), splinter=False):
++    # A single concave XZ polygon is extruded with bmesh, without booleans.
++    bm = bmesh.new()
++    vertices = [bm.verts.new((x, y_min, z)) for x, z in outline]
++    face = bm.faces.new(vertices)
++    extrusion = bmesh.ops.extrude_face_region(bm, geom=[face])
++    new_vertices = [element for element in extrusion["geom"]
++                    if isinstance(element, bmesh.types.BMVert)]
++    bmesh.ops.translate(bm, verts=new_vertices, vec=(0, y_max - y_min, 0))
++    # The original face is retained by extrude_face_region as the back cap.
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    name = "Splinter_%d" % len(SPLINTERS) if splinter else "Piece_%02d" % len(PARTS)
++    mesh = bpy.data.meshes.new(name)
++    bm.to_mesh(mesh)
++    bm.free()
++    obj = bpy.data.objects.new(name, mesh)
++    bpy.context.collection.objects.link(obj)
++    obj.data.materials.append(MATERIALS[material])
++    (SPLINTERS if splinter else PARTS).append(obj)
++
++    activate(obj)
++    modifier = obj.modifiers.new("Soft handmade edges", "BEVEL")
++    modifier.width = BEVEL_WIDTH
++    modifier.segments = 2
++    modifier.limit_method = "ANGLE"
++    modifier.angle_limit = math.radians(30)
++    modifier.use_clamp_overlap = True
++    bpy.ops.object.modifier_apply(modifier=modifier.name)
++    if mating_paths:
++        restore_mating_edges(obj, mating_paths, y_min, y_max)
++    recalc(obj.data)
++    return obj
++
++
++def attach(owner, decoration, material):
++    decoration.data.materials.append(MATERIALS[material])
++    activate(owner)
++    decoration.select_set(True)
++    bpy.ops.object.join()
++
++
++def knot(owner, x, z):
++    radius = RNG.uniform(0.04, 0.06)
++    bpy.ops.mesh.primitive_cylinder_add(
++        vertices=8, radius=radius, depth=0.014,
++        location=(x, 0.073, z), rotation=(math.pi / 2, 0, 0),
++    )
++    attach(owner, bpy.context.object, "wood_dark")
++
++
++def rivet(owner, x, y, z):
++    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1, location=(x, y, z))
++    obj = bpy.context.object
++    for vertex in obj.data.vertices:
++        vertex.co.x *= 0.035
++        vertex.co.y *= 0.018
++        vertex.co.z *= 0.035
++    attach(owner, obj, "iron")
++
++
++def fracture(start, end, teeth, depth):
++    # Alternating offsets form pointed splinters. Both neighbors reuse this list.
++    start, end = Vector(start), Vector(end)
++    tangent = (end - start).normalized()
++    normal = Vector((-tangent.y, tangent.x))
++    points = [tuple(start)]
++    for index in range(1, teeth * 2):
++        t = index / (teeth * 2)
++        offset = depth * (0.5 if index % 2 else -0.5)
++        points.append(tuple(start.lerp(end, t) + normal * offset))
++    points.append(tuple(end))
++    return points
++
++
++def line_height(path, x):
++    for (x0, z0), (x1, z1) in zip(path, path[1:]):
++        if x0 <= x <= x1:
++            return z0 + (z1 - z0) * (x - x0) / (x1 - x0)
++    raise ValueError("Point outside plank")
++
++
++def build_planks():
++    # Sum to exactly 4.6 while retaining every width inside [0.52, 0.62].
++    widths = [RNG.uniform(0.55, 0.60) for _ in range(7)]
++    widths.append(4.6 - sum(widths))
++    while not 0.52 <= widths[-1] <= 0.62:
++        widths = [RNG.uniform(0.55, 0.60) for _ in range(7)]
++        widths.append(4.6 - sum(widths))
++    assert abs(sum(widths) - 4.6) < 1e-10
++    x_left = -2.3
++    previous_material = RNG.choice(("wood", "wood_light"))
++    for index, width in enumerate(widths):
++        x_right = x_left + width
++        height = 2.6 if index == 3 else RNG.uniform(2.45, 2.585)
++        style = index % 3
++        if style == 0:
++            top = [(x_left, height), (x_right, height)]
++        elif style == 1:
++            slope = RNG.uniform(0.035, 0.085)
++            top = [(x_left, height - slope), (x_right, height)]
++        else:
++            top = [(x_left, height - 0.055),
++                   (x_left + width * RNG.uniform(0.4, 0.6), height),
++                   (x_right, height - 0.075)]
++        if index in (2, 5):
++            heights = [RNG.uniform(0.65, 0.95), RNG.uniform(1.55, 1.95)]
++        else:
++            heights = [RNG.uniform(0.85, 1.8)]
++        breaks = [fracture((x_left, z), (x_right, z + RNG.uniform(-0.05, 0.05)),
++                           3, RNG.uniform(0.06, 0.14)) for z in heights]
++        boundaries = [[(x_left, 0), (x_right, 0)], *breaks, top]
++        material = ("wood_light" if previous_material == "wood" else "wood")
++        if RNG.random() < 0.2:
++            material = previous_material
++        previous_material = material
++        for chunk_index, (lower, upper) in enumerate(zip(boundaries, boundaries[1:])):
++            mating_paths = []
++            if chunk_index:
++                mating_paths.append(lower)
++            if chunk_index < len(boundaries) - 2:
++                mating_paths.append(upper)
++            # Plank side joints are flush too, including their front/back edges.
++            if index:
++                mating_paths.append([lower[0], upper[0]])
++            if index < 7:
++                mating_paths.append([lower[-1], upper[-1]])
++            obj = extrude_piece(lower + list(reversed(upper)), -0.07, 0.07,
++                                material, mating_paths)
++            for _ in range(RNG.randint(0, 2)):
++                x = RNG.uniform(x_left + 0.09, x_right - 0.09)
++                z_min = line_height(lower, x) + 0.10
++                z_max = line_height(upper, x) - 0.10
++                z = RNG.uniform(z_min, z_max)
++                # Keep knots readable beside the front reinforcement boards.
++                if abs(z - 0.55) < 0.19:
++                    z = max(z_min, 0.34)
++                elif abs(z - 2.0) < 0.19:
++                    z = min(z_max, 1.79)
++                knot(obj, x, z)
++        x_left = x_right
++
++
++def build_rails():
++    rails = []
++    for z in (0.55, 2.0):
++        bottom, top = z - 0.11, z + 0.11
++        cuts = [[(-2.3, bottom), (-2.3, top)]]
++        for x in (-0.78, 0.77):
++            cuts.append(fracture((x, bottom), (x, top), 2, RNG.uniform(0.065, 0.09)))
++        cuts.append([(2.3, bottom), (2.3, top)])
++        row = []
++        for index, (left, right) in enumerate(zip(cuts, cuts[1:])):
++            mating_paths = []
++            if index:
++                mating_paths.append(left)
++            if index < 2:
++                mating_paths.append(right)
++            obj = extrude_piece(left + list(reversed(right)), 0.07, 0.15,
++                                "wood_dark", mating_paths)
++            # Rivets stay safely away from the rail fracture interfaces.
++            for x in (-2.12, -1.57, -1.02, -0.47, 0.08, 0.63, 1.18, 1.73, 2.12):
++                if left[0][0] + 0.07 < x < right[0][0] - 0.07:
++                    rivet(obj, x, 0.151, z)
++            row.append(obj)
++        rails.append(row)
++    return rails
++
++
++def build_brace():
++    # In local board coordinates, the break crosses its width with two teeth.
++    start, end = Vector((-2.04, 0.64)), Vector((2.02, 1.91))
++    tangent = (end - start).normalized()
++    normal = Vector((-tangent.y, tangent.x))
++    half_width = 0.135
++    middle = start.lerp(end, 0.49)
++    cut = fracture(middle - normal * half_width, middle + normal * half_width,
++                   2, 0.11)
++    left_end = [tuple(start - normal * half_width), tuple(start + normal * half_width)]
++    right_end = [tuple(end - normal * half_width), tuple(end + normal * half_width)]
++    # The diagonal lies above the planks and overlaps the rail edges slightly.
++    # Its raised front face gives the complete gate approximately 0.32 m depth.
++    extrude_piece(left_end + list(reversed(cut)), 0.073, 0.20, "wood_dark", [cut])
++    extrude_piece(cut + list(reversed(right_end)), 0.073, 0.20, "wood_dark", [cut])
++
++
++def build_straps():
++    for z in (0.8, 1.8):
++        cuts = (-2.3, -0.79, 0.79, 2.3)
++        for index, (left, right) in enumerate(zip(cuts, cuts[1:])):
++            bottom, top = z - 0.07, z + 0.07
++            mating_paths = []
++            if index:
++                mating_paths.append([(left, bottom), (left, top)])
++            if index < 2:
++                mating_paths.append([(right, bottom), (right, top)])
++            obj = extrude_piece([(left, bottom), (right, bottom),
++                                 (right, top), (left, top)],
++                                -0.10, -0.07, "iron", mating_paths)
++            for x in (-2.12, -1.57, -1.02, -0.47, 0.08, 0.63, 1.18, 1.73, 2.12):
++                if left + 0.07 < x < right - 0.07:
++                    rivet(obj, x, -0.101, z)
++
++
++def build_gold(upper_rail):
++    # One continuous, broad teardrop flows from the upper rail onto a plank.
++    # The lower bulb intersects its tail so it reads as a single molten drip.
++    x = -0.34
++    outline = [(x - 0.046, 2.08), (x + 0.041, 2.075),
++               (x + 0.035, 1.98), (x + 0.025, 1.83),
++               (x + 0.037, 1.66), (x + 0.012, 1.60),
++               (x - 0.027, 1.625), (x - 0.039, 1.68),
++               (x - 0.018, 1.83), (x - 0.027, 1.98)]
++    bm = bmesh.new()
++    verts = [bm.verts.new((px, 0.148 if z >= 1.89 else 0.067, z))
++             for px, z in outline]
++    face = bm.faces.new(verts)
++    result = bmesh.ops.extrude_face_region(bm, geom=[face])
++    new_vertices = [item for item in result["geom"] if isinstance(item, bmesh.types.BMVert)]
++    bmesh.ops.translate(bm, verts=new_vertices, vec=(0, 0.018, 0))
++    bmesh.ops.triangulate(bm, faces=list(bm.faces))
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    mesh = bpy.data.meshes.new("Molten gold")
++    bm.to_mesh(mesh)
++    bm.free()
++    obj = bpy.data.objects.new("Molten gold", mesh)
++    bpy.context.collection.objects.link(obj)
++    attach(upper_rail, obj, "gold_drip")
++    bpy.ops.mesh.primitive_uv_sphere_add(
++        segments=8, ring_count=4, radius=1, location=(x, 0.084, 1.65),
++    )
++    obj = bpy.context.object
++    for vertex in obj.data.vertices:
++        vertex.co.x *= 0.048
++        vertex.co.y *= 0.022
++        vertex.co.z *= 0.071
++    attach(upper_rail, obj, "gold_drip")
++
++
++def build_splinters():
++    for index in range(3):
++        length = RNG.uniform(0.25, 0.45)
++        width = RNG.uniform(0.04, 0.07)
++        center = Vector(((index - 1) * 0.035, 1.3 + (index - 1) * 0.025))
++        angle = RNG.uniform(-0.3, 0.3)
++        tangent = Vector((math.sin(angle), math.cos(angle)))
++        normal = Vector((tangent.y, -tangent.x))
++        local_outline = [(0, -length / 2), (width / 2, -length * 0.23),
++                         (width * 0.30, length * 0.08), (width / 2, length * 0.29),
++                         (0, length / 2), (-width / 2, length * 0.16),
++                         (-width * 0.33, -length * 0.17)]
++        outline = [tuple(center + normal * across + tangent * along)
++                   for across, along in local_outline]
++        extrude_piece(outline, -0.015, 0.015,
++                      "wood_light" if index != 1 else "wood", splinter=True)
++
++
++def finish_and_export():
++    objects = PARTS + SPLINTERS
++    triangles = 0
++    for obj in objects:
++        recalc(obj.data)
++        for face in obj.data.polygons:
++            face.use_smooth = False
++        activate(obj)
++        bpy.ops.object.origin_set(type="ORIGIN_GEOMETRY", center="BOUNDS")
++        obj.data.name = obj.name
++        obj.data.calc_loop_triangles()
++        triangles += len(obj.data.loop_triangles)
++        assert obj.parent is None
++        assert obj.type == "MESH"
++        assert all(value == 1 for value in obj.scale)
++        bounds = [Vector(corner) for corner in obj.bound_box]
++        bounds_center = (Vector(tuple(min(corner[axis] for corner in bounds)
++                                      for axis in range(3)))
++                         + Vector(tuple(max(corner[axis] for corner in bounds)
++                                        for axis in range(3)))) / 2
++        assert bounds_center.length < 0.00001, "Off-center piece pivot"
++    bpy.context.view_layer.update()
++    corners = [obj.matrix_world @ Vector(corner)
++               for obj in objects for corner in obj.bound_box]
++    minimum = Vector(tuple(min(corner[axis] for corner in corners) for axis in range(3)))
++    maximum = Vector(tuple(max(corner[axis] for corner in corners) for axis in range(3)))
++    dimensions = tuple(round(value, 4) for value in maximum - minimum)
++    assert len(PARTS) == 32 and len(SPLINTERS) == 3
++    assert len(bpy.context.scene.objects) == len(objects)
++    assert [obj.name for obj in PARTS] == ["Piece_%02d" % i for i in range(len(PARTS))]
++    assert [obj.name for obj in SPLINTERS] == ["Splinter_%d" % i for i in range(3)]
++    assert triangles <= 6000, "Triangle budget exceeded: %d" % triangles
++    assert abs(dimensions[0] - 4.6) < 0.0001, dimensions
++    assert abs(dimensions[2] - 2.6) < 0.0001, dimensions
++    assert abs(minimum.z) < 0.0001
++    assert 0.30 <= dimensions[1] <= 0.34, dimensions
++    assert set(material.name for obj in objects for material in obj.data.materials) == set(COLORS)
++
++    bpy.ops.object.select_all(action="SELECT")
++    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
++    bpy.ops.export_scene.fbx(
++        filepath=str(OUTPUT), use_selection=True,
++        axis_forward="-Z", axis_up="Y", apply_scale_options="FBX_SCALE_UNITS",
++        bake_space_transform=True, object_types={"MESH"}, use_mesh_modifiers=True,
++        mesh_smooth_type="FACE", add_leaf_bones=False, bake_anim=False,
++    )
++    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 0
++    print("EXPORTED Kit_WoodGate %d %d %s" % (len(PARTS), triangles, dimensions))
++    print("DONE")
++
++
++def main():
++    setup()
++    build_planks()
++    rails = build_rails()
++    build_brace()
++    build_straps()
++    build_gold(rails[1][1])
++    build_splinters()
++    finish_and_export()
++
++
++if __name__ == "__main__":
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_woodgate.py" in C:\Project\Cat_Tang
+ succeeded in 2654ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_woodgate.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch1\\Kit_WoodGate.fbx'
+export finished in 0.0373 sec.
+EXPORTED Kit_WoodGate 32 3208 (4.6, 0.3163, 2.6)
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short; Get-Item Art/tools/blender_kit_woodgate.py, Game/Assets/Art/Characters/Ch1/Kit_WoodGate.fbx | Select-Object FullName, Length' in C:\Project\Cat_Tang
+ succeeded in 324ms:
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M "docs/1159_1\354\236\245_\352\270\260\355\232\215\354\204\234_20261116_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? Art/tools/blender_kit_woodgate.py
+?? Art/tools/specs/kit_woodgate.log
+?? Art/tools/specs/kit_woodgate_spec.md
+?? Game/Assets/Art/Characters/Ch1/Kit_WoodGate.fbx
+?? Game/Assets/Scripts/Game/WoodGate.cs
+?? Game/Assets/Scripts/Game/WoodGate.cs.meta
+
+FullName                                                            Length
+--------                                                            ------
+C:\Project\Cat_Tang\Art\tools\blender_kit_woodgate.py                17309
+C:\Project\Cat_Tang\Game\Assets\Art\Characters\Ch1\Kit_WoodGate.fbx 163132
+
+
+
+codex
+Created [blender_kit_woodgate.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_woodgate.py) and successfully ran the requested Blender command.
+
+Exported [Kit_WoodGate.fbx](/C:/Project/Cat_Tang/Game/Assets/Art/Characters/Ch1/Kit_WoodGate.fbx) with 32 pieces, 3 splinters, and 3,208 triangles. Dimensions are 4.6 × 0.3163 × 2.6 m. Output ended with `DONE`.
+tokens used
+31,448
+Created [blender_kit_woodgate.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_woodgate.py) and successfully ran the requested Blender command.
+
+Exported [Kit_WoodGate.fbx](/C:/Project/Cat_Tang/Game/Assets/Art/Characters/Ch1/Kit_WoodGate.fbx) with 32 pieces, 3 splinters, and 3,208 triangles. Dimensions are 4.6 × 0.3163 × 2.6 m. Output ended with `DONE`.

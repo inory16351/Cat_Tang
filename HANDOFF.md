@@ -107,9 +107,24 @@ Tripo 웹 요령: 직접 URL로 열면 고면수 모델 로딩에 20초쯤 걸�
 - **자폭병 던지기**: 원인 = 투척에 자폭 떨기 클립(Attack)을 쓰고 예비 동작 없이 바로 폭탄이 날아감. `MakeThrowClip`(`Ch1_BomberThrow`, 0.34초 손 떠남) + 애니메이터 `Throw` 트리거/상태(빌더) + `BomberThrow`가 제자리에서 젖혔다 놓은 뒤 폭탄 비행. 폭탄 모델 `Kit_SandBomb`(모래주머니 + 모래시계 뚜껑 + 불꽃 심지, `blender_kit_sandbomb.py`). SetTrigger("Throw") → Throw 상태로 가는 것은 확인. 한 번 AI 투척 때 Attack 상태가 잡힌 적이 있음 → 남아 있던 Attack 트리거일 수 있으니 `BomberThrow` 시작에 `anim.ResetTrigger("Attack")` 추가를 검토.
 - **브릿지**: Tripo CLI 0.11.2(로그인 · `tripo doctor` 통과, 1000 크레딧). Unity Tripo Bridge 1.0.14 = `Game/Packages/com.tripo3d.unitybridge`(메뉴 Tools > Tripo Bridge). Blender Tripo Bridge 1.1.0 = Blender 5.3 사용자 애드온, 활성화됨(ws 60600).
 
+## 2026-11-17 — 나무 문 · 부서지는 연출
+
+- **모델**: `Art/tools/blender_kit_woodgate.py`(Codex, 명세 `specs/kit_woodgate_spec.md`) → `Kit_WoodGate.fbx` 4.6×2.6m. 세로 판자 8장을 지그재그 부러진 선으로 2~3토막씩 미리 쪼갬 + 앞면 가로대 2 · 대각 버팀목 · 금빛 흘러내림, 뒷면 쇠띠 2 + 리벳. 조각 32개(`Piece_XX`) + 가시 틀 3개(`Splinter_X`), 3.2천 삼각형. 빌더 표에 `Kit_WoodGate` 추가 → `Resources/Kit/Ch1/WoodGate.prefab`.
+- **`Scripts/Game/WoodGate.cs`**: `WoodGate.Make`(충돌 상자 + 모델, 정면이 방 안쪽) · `Close`(위에서 0.2초 낙하 쾅 → 흙먼지 · 살짝 눌림 · 흔들림) · `Break`(0.28초 덜컹 → 조각마다 복제해 고양이 반대쪽으로 날림, 가시 12~16개, 흙먼지 · 부스러기 · 흔들림). 조각은 `GateDebris`(물리 엔진 없이 중력 · 회전 · 바닥 튕김 → 2~3초 뒤 가라앉아 사라짐). 키트 없으면 예전 색 상자.
+- `RoomBuilder`의 일반 방 `Gate` · 술집 `SaloonGate` · `BackGate` 전부 이것. `RunManager`는 `SetActive` 대신 `WoodGate.Close/Break`(술집 문 열림도 부서짐).
+- 확인: 플레이에서 슬로모션으로 닫힘 · 덜컹 · 폭발 · 정리(조각 0개) 확인, 에러 없음. 술집 문은 화면으로 따로 안 봄.
+
+## 2026-11-17 — 하트 회복 · 배경 톤 · 적 외곽선
+
+- **하트**(`Scripts/Game/HeartPickup.cs`): 적 처치 시 일반 6% · 강화형 10% · 중간 보스 확정(`RunManager.OnEnemyKilled`). 튀어나와 떨어진 뒤 떠서 돌고, 고양이가 1.6m 안에 오면 빨려 와 최대 체력 20% 회복(가득이면 안 빨려 옴). 붉은 후광(맥동) + 바닥 붉은 점광원 + 가끔 반짝임. 모델은 블렌더 + Codex `blender_kit_heart.py` → `Resources/Kit/Ch1/Heart.prefab`(×1.4로 띄움, 재질 채도 1.15 · 밝기 1.12).
+- **상인**: 예전 "체력 회복 40% (50골드)" 버튼 → "하트 · 체력 20% (25골드)", 상인당 3개(`Merchant.heartsLeft`).
+- **배경 톤 낮추기**(→ 아래에서 되돌림): 툰 셰이더에 `_Saturation` · `_Brightness` 추가. `Editor/EnvTone.cs`(메뉴 `CatTang/배경 톤 낮추기`)가 맵 키트 재질 채도 0.55(밝기는 1 — 고양이 · 적이 어두워서 바닥을 어둡게 하면 오히려 묻힘). 하트 · 모래 폭탄 · 화약통은 제외. 빌더(`ToonFor`)도 키트를 만들 때 같은 값을 넣음.
+- **적 외곽선**: 안쪽 선은 예전처럼 어두운 잉크, **빨간 띠(0.78, 0.07, 0.12 · 3.5px)는 실루엣 바깥에만**. 뒤집은 겹 외곽선은 팔 · 몸이 겹친 안쪽에도 생겨 빨강이 너무 많았음(사용자: 눈 아픔) → 툰 셰이더 몸 · 외곽선 패스가 스텐실(`_OuterStencilRef`, 적 = 4)을 찍고, 새 패스 `OuterOutline`(LightMode `CatTangOuterOutline`)이 스텐실 바깥에만 그림. 이 패스는 PC_Renderer의 RenderObjects 기능 "적 바깥 테두리"가 불투명 다음에 그림(메뉴 `CatTang/적 바깥 테두리 렌더러 기능 추가`). 빌더 `EnemyEdge`가 적 재질에 자동 적용.
+- **적 배색 2안 확정**: 툰 셰이더 `_Recolor*`(색 범위 치환) — 적 몸의 적갈색(355°±27°)만 차가운 보라 · 청회색(255~270°)으로, 금빛 금속 · 선명한 진홍 포인트는 유지. `Editor/EnemyPalette.cs`(메뉴 `CatTang/적 배색/1안 · 2안 · 원래`), 빌더가 적 재질에 2안을 넣음. 비교 이미지 `docs/images/compare/`.
+- **맵 채도는 원래대로 되돌림**(사용자): `EnvTone.Saturation = 1`. 적이 차가운 색이 되어 주황 맵과 갈리므로 배경을 낮출 필요가 없어짐. 셰이더 값 · 메뉴는 남겨 둠.
+
 ## 남은 다음 작업
 
-0. **방 문을 나무 문 모델로 (2026-11-17 요청, 아직 안 함)**: 블렌더 + Codex로 나무 문(널빤지 + 쇠띠, 4.6m 폭 문짝) 모델링 → 지금 `RoomBuilder`의 노란 `Gate` 상자 대신 사용, **방을 클리어하면 부서짐**(판자 조각 파편 · 먼지, `RunManager.RoomCleared`에서 gates 끄는 곳). 술집 `SaloonGate` · `BackGate`도 같이 검토.
 1. 자폭병 던지기 실제 AI 투척으로 다시 확인(위 Attack 트리거 메모).
 2. VFX 조금 더 다듬기(2026-11-17 요청, 아직 안 함).
 

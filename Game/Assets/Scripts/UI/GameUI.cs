@@ -462,14 +462,17 @@ namespace CatTang
                     UIKit.SetInteractable(btn, !m.sold[i] && player.inv.gold >= price && (it.kind == ItemKind.Gun || player.inv.HasSpace));
                     CursorTip.Attach(card.gameObject, () => UIKit.ItemTip(it));
                 }
-                var heal = UIKit.MakeButton("CardHeal", panel.transform, new Vector2(0.5f, 0), new Vector2(-260, 52), new Vector2(420, 74), $"체력 회복 40%  ({Merchant.HealCost} 골드)", () =>
+                int healPct = Mathf.RoundToInt(HeartPickup.HealPct * 100);
+                var heal = UIKit.MakeButton("CardHeal", panel.transform, new Vector2(0.5f, 0), new Vector2(-260, 52), new Vector2(420, 74),
+                    m.heartsLeft > 0 ? $"하트 · 체력 {healPct}%  ({Merchant.HeartCost} 골드 · {m.heartsLeft}개)" : "하트 · 다 팔림", () =>
                 {
-                    if (player.inv.gold < Merchant.HealCost) return;
-                    player.inv.gold -= Merchant.HealCost;
-                    player.health.Heal(player.health.maxHp * 0.4f);
+                    if (m.heartsLeft <= 0 || player.inv.gold < Merchant.HeartCost || player.health.hp >= player.health.maxHp) return;
+                    player.inv.gold -= Merchant.HeartCost;
+                    m.heartsLeft--;
+                    player.health.Heal(player.health.maxHp * HeartPickup.HealPct);
                     Redraw();
                 }, 22);
-                UIKit.SetInteractable(heal, player.inv.gold >= Merchant.HealCost && player.health.hp < player.health.maxHp);
+                UIKit.SetInteractable(heal, m.heartsLeft > 0 && player.inv.gold >= Merchant.HeartCost && player.health.hp < player.health.maxHp);
                 var reroll = UIKit.MakeButton("CardReroll", panel.transform, new Vector2(0.5f, 0), new Vector2(260, 52), new Vector2(420, 74), $"새로고침  ({m.RerollCost} 골드)", () =>
                 {
                     if (player.inv.gold < m.RerollCost) return;
