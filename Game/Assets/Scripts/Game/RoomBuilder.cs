@@ -215,7 +215,9 @@ namespace CatTang
                         for (int k = -1; k <= 1; k += 2)
                         {
                             var o = horizontal ? new Vector3(k * 2.6f, 1.25f, 0) : new Vector3(0, 1.25f, k * 2.6f);
-                            Prim(PrimitiveType.Cube, "Wall", cor, mid + o, horizontal ? new Vector3(0.6f, 2.5f, gapLen + 0.4f) : new Vector3(gapLen + 0.4f, 2.5f, 0.6f), wall);
+                            // 복도 벽도 건물 · 절벽으로 덮음 (맨 상자 X)
+                            var cw = Prim(PrimitiveType.Cube, "Wall", cor, mid + o, horizontal ? new Vector3(0.6f, 2.5f, gapLen + 0.4f) : new Vector3(gapLen + 0.4f, 2.5f, 0.6f), wall);
+                            Kit.TileWall(ch, cw, horizontal ? new Vector3(-k, 0, 0) : new Vector3(0, 0, -k));
                         }
                     }
                 }
@@ -244,72 +246,60 @@ namespace CatTang
 
         static Vector2Int saloonDir;
 
-        // ---------- 방 모양 (2026-11-17 사용자: 완전 사각형 말고) ----------
-        // 사각 그대로 15% · 모서리 홈 35% · L자 30% · 가운데 섬 20%. 막힌 덩어리는 안쪽 면에 절벽(스테이지 1) · 건물 벽 모듈을 둘러 보이게 하고
-        // 위는 바위 · 지붕 색 뚜껑. 문 앞 통로(벽 가운데 ±2.3)와 방 가운데는 비워 둠. 적 생성 · 이동은 RunManager가 막힌 곳을 피함
+        // ---------- 방 모양: 큰 지형지물 (2026-11-17 사용자) ----------
+        // "완전 사각형 말고" → 처음엔 방 모서리를 덩어리로 깎았으나 "네모난 갈색 상자" · "이상함" →
+        // "그 크기의, 그 장소에 있을 법한 오브젝트로 자연스럽게 배치". 블렌더 + Codex 지형지물(Art/tools/blender_kit_landmarks.py)을
+        // 방마다 1~3개: 모서리 쪽(벽과 0.3~2.2m 틈 → 뒤로 돌아가는 좁은 길)이나 안쪽, 방향은 90° 단위 ± 15°.
+        // 문 앞 통로(가운데 십자 ±2.6)와 방 가운데(반지름 4)는 비움, 서로 2m 이상 떨어짐. 발자국(축 정렬 사각형)은 RoomInfo.blocks →
+        // 적 생성 · 이동 · 지도가 피함
+        static readonly (string name, float w, float d)[] BadlandsLM =
+            { ("LM_RockSpire", 5.8f, 4.18f), ("LM_BoulderPile", 5.0f, 3.78f), ("LM_WagonWreck", 5.4f, 4.35f), ("LM_MineCart", 5.2f, 2.49f), ("LM_DeadTree", 4.2f, 3.88f) };
+        static readonly (string name, float w, float d)[] TownLM =
+            { ("LM_WaterTower", 4.0f, 3.64f), ("LM_Stagecoach", 5.2f, 3.22f), ("LM_Well", 3.6f, 3.35f), ("LM_HayCart", 5.4f, 3.03f), ("LM_MarketStall", 5.2f, 3.06f), ("LM_LumberPile", 5.2f, 2.78f) };
+
         static void AddShape(ChapterDef ch, RoomInfo info, System.Random rnd)
         {
+            var rm = RunManager.Instance;
+            var pool = new List<(string name, float w, float d)>();
+            foreach (var lm in rm && rm.stageIndex == 0 ? BadlandsLM : TownLM) if (Kit.Has(ch, lm.name)) pool.Add(lm);
+            if (pool.Count == 0) return;
             float hw = info.size.x / 2, hd = info.size.y / 2;
-            double roll = rnd.NextDouble();
             float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
-            int sx() => rnd.Next(2) == 0 ? -1 : 1;
-            if (roll < 0.15) return;
-            if (roll < 0.5)
+            int S() => rnd.Next(2) == 0 ? -1 : 1;
+            double roll = rnd.NextDouble();
+            int want = roll < 0.12 ? 1 : roll < 0.6 ? 2 : 3;
+            var local = new List<Rect>();
+            for (int tries = 0; tries < 40 && local.Count < want && pool.Count > 0; tries++)
             {
-                // 모서리 홈: 네 모서리 중 2~4곳
-                foreach (var c in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
+                var lm = pool[rnd.Next(pool.Count)];
+                float yaw = rnd.Next(4) * 90f + R(-15f, 15f);
+                float c = Mathf.Abs(Mathf.Cos(yaw * Mathf.Deg2Rad)), sn = Mathf.Abs(Mathf.Sin(yaw * Mathf.Deg2Rad));
+                float W = lm.w * c + lm.d * sn, D = lm.w * sn + lm.d * c;          // 돌린 뒤 축 정렬 발자국
+                if (W > hw - 3.2f || D > hd - 3.2f) continue;
+                Vector2 pos;
+                if (rnd.NextDouble() < 0.55)
                 {
-                    if (rnd.NextDouble() < 0.35) continue;
-                    float w = R(4f, 6f), d = R(3.5f, 5f);
-                    Block(ch, info, new Vector2(c.x * (hw - w / 2), c.y * (hd - d / 2)), new Vector2(w, d), hw, hd);
+                    float gx = R(0.3f, 2.2f), gz = R(0.3f, 2.2f);                    // 모서리 쪽, 벽과 틈
+                    pos = new Vector2(S() * (hw - 0.6f - gx - W / 2), S() * (hd - 0.6f - gz - D / 2));
                 }
-            }
-            else if (roll < 0.8)
-            {
-                // L자: 한 모서리를 크게
-                float w = R(8.5f, 10.5f), d = R(6.5f, 8.5f);
-                Block(ch, info, new Vector2(sx() * (hw - w / 2), sx() * (hd - d / 2)), new Vector2(w, d), hw, hd);
-            }
-            else
-            {
-                // 가운데 섬 + 모서리 홈 하나
-                // 섬은 바깥 벽에서 3m 이상, 문 앞 통로(±2.6)에서 떨어뜨림. 마을이면 건물 두 채가 등을 맞댈 만큼 깊게
-                bool town = !(RunManager.Instance && RunManager.Instance.stageIndex == 0);
-                float w = R(4f, 6f), d = town ? R(5.2f, 6f) : R(3.2f, 4.5f);
-                Block(ch, info, new Vector2(sx() * R(2.6f + w / 2, hw - 3f - w / 2), sx() * R(2.6f + d / 2, hd - 3f - d / 2)), new Vector2(w, d), hw, hd);
-                float w2 = R(3.5f, 4.5f), d2 = R(3f, 4f);
-                Block(ch, info, new Vector2(sx() * (hw - w2 / 2), sx() * (hd - d2 / 2)), new Vector2(w2, d2), hw, hd);
+                else
+                    pos = new Vector2(S() * R(2.8f + W / 2, hw - 2.5f - W / 2), S() * R(2.8f + D / 2, hd - 2.5f - D / 2));
+                var r = new Rect(pos.x - W / 2, pos.y - D / 2, W, D);
+                // 문 앞 십자 통로 · 방 가운데 비움
+                if (r.xMin < 2.6f && r.xMax > -2.6f) continue;
+                if (r.yMin < 2.6f && r.yMax > -2.6f) continue;
+                if (Vector2.Distance(Vector2.zero, ClosestPoint(r, Vector2.zero)) < 4f) continue;
+                bool hit = false;
+                foreach (var o in local) if (r.xMin < o.xMax + 2f && r.xMax > o.xMin - 2f && r.yMin < o.yMax + 2f && r.yMax > o.yMin - 2f) hit = true;
+                if (hit) continue;
+                local.Add(r);
+                pool.Remove(lm);                                                     // 한 방에 같은 것 두 번 X
+                Kit.Place(ch, lm.name, info.root, new Vector3(pos.x, 0, pos.y), yaw);
+                info.blocks.Add(new Rect(info.center.x + r.x, info.center.z + r.y, W, D));
             }
         }
 
-        /// <summary>막힌 덩어리 하나: local = 방 기준 가운데, size = 가로 · 세로. 충돌 상자 + 안쪽 면 벽 모듈 + 위 뚜껑</summary>
-        static void Block(ChapterDef ch, RoomInfo info, Vector2 local, Vector2 size, float hw, float hd)
-        {
-            var rm = RunManager.Instance;
-            bool cliff = rm && rm.stageIndex == 0;
-            // 마을: 덩어리 위는 바깥 어둠(카메라 배경)과 같은 색으로 낮게 깔고, 둘레를 건물 정면이 둘러쌈 → "건물 뒤 = 방 밖"으로 읽힘
-            // (2026-11-17 사용자: 지붕 색 판이 정체불명으로 보임)
-            var top = cliff ? Mat(new Color(0.55f, 0.27f, 0.18f), 4) : Mat(new Color(0.08f, 0.07f, 0.11f), 0);
-            float bh = cliff ? 2.5f : 1.2f;
-            var go = Prim(PrimitiveType.Cube, "Block", info.root, new Vector3(local.x, bh / 2, local.y), new Vector3(size.x, bh, size.y), top);
-            info.blocks.Add(new Rect(info.center.x + local.x - size.x / 2, info.center.z + local.y - size.y / 2, size.x, size.y));
-            // 방 안쪽을 향한 면에만 벽 모듈 (바깥 벽과 겹치는 면은 건너뜀)
-            var sides = new[] { (new Vector2(1, 0), size.y), (new Vector2(-1, 0), size.y), (new Vector2(0, 1), size.x), (new Vector2(0, -1), size.x) };
-            foreach (var (n, len) in sides)
-            {
-                float edge = n.x != 0 ? local.x + n.x * size.x / 2 : local.y + n.y * size.y / 2;
-                float limit = n.x != 0 ? hw : hd;
-                if (Mathf.Abs(edge) >= limit - 0.05f) continue;
-                var pos = n.x != 0 ? new Vector3(edge, 1.25f, local.y) : new Vector3(local.x, 1.25f, edge);
-                var cube = Prim(PrimitiveType.Cube, "BlockFace", info.root, pos, n.x != 0 ? new Vector3(0.3f, 2.5f, len) : new Vector3(len, 2.5f, 0.3f), top, false);
-                // 짧은 면(마을)은 건물 대신 골목 울타리
-                Kit.TileWall(ch, cube, new Vector3(n.x, 0, n.y), !cliff && len < 2.9f && Kit.Has(ch, "AlleyFence") ? "AlleyFence" : null);
-            }
-            // 바위 지대면 위에 바위 몇 개 (뚜껑이 밋밋하지 않게)
-            if (cliff && Kit.Has(ch, "Rock_0"))
-                for (int i = 0; i < 2; i++)
-                    Kit.Place(ch, i == 0 ? "Rock_0" : "Rock_2", info.root, new Vector3(local.x + (i == 0 ? -0.25f : 0.3f) * size.x, 2.4f, local.y + (i == 0 ? 0.2f : -0.2f) * size.y), i * 130f, 1.1f, false);
-        }
+        static Vector2 ClosestPoint(Rect r, Vector2 p) => new(Mathf.Clamp(p.x, r.xMin, r.xMax), Mathf.Clamp(p.y, r.yMin, r.yMax));
 
         // ---------- 술집 홀 (중간 보스, 2026-11-17 사용자: 건물로 걸어 들어가 이어지게) ----------
         // 스테이지 2 마지막 방에서 복도를 지나 술집 여닫이문으로 들어감 → 홀 안에서 싸움 → 이기면 북쪽 뒷문이 열리고

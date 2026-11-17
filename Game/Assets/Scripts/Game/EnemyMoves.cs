@@ -225,7 +225,7 @@ namespace CatTang
         }
 
         // ---------- 폭탄병 ----------
-        public const float SandBombRadius = 1.8f, SandBombFlight = 1f;
+        public const float SandBombRadius = 1.8f, SandBombFlight = 0.8f, ThrowRelease = 0.34f;
 
         /// <summary>폭탄병 공격 고르기: 도약 자폭(기존) / 모래 폭탄 투척. 둘 다 안 되면 false</summary>
         bool BomberPick(PlayerController p, Vector3 dir, float dist)
@@ -253,14 +253,24 @@ namespace CatTang
         {
             busy = true;
             var at = p.transform.position; at.y = transform.position.y;
-            Anim("Attack");
-            Telegraph.Ring(at, SandBombRadius, SandBombFlight, Telegraph.Danger);
-            // 던지는 폭탄: 화약통 키트를 작게, 없으면 구
+            // 던지기 동작 (Ch1_BomberThrow): 팔을 젖혔다가 0.34초에 손을 떠남 → 그때까지 제자리에서 고양이를 바라봄
+            // (2026-11-17 사용자: 모션 없이 폭발하는 것 같음 — 예전엔 자폭 떨기 클립으로 바로 던졌음)
+            Anim("Throw");
+            float release = ThrowRelease / AtkMul;
+            Telegraph.Ring(at, SandBombRadius, release + SandBombFlight, Telegraph.Danger);
+            for (float w = 0; w < release; w += Time.deltaTime)
+            {
+                if (!p) break;
+                Face(Effects.Flat(at - transform.position));
+                yield return null;
+            }
+            // 던지는 폭탄: 블렌더 모래 폭탄(Kit/Ch1/SandBomb — 모래주머니 + 모래시계 뚜껑 + 불꽃 심지), 없으면 화약통을 작게, 그것도 없으면 구
             GameObject bomb = null;
-            var kit = Kit.Prefab(chapter, "Keg");
-            if (kit) { bomb = Instantiate(kit); bomb.transform.localScale *= 0.35f; foreach (var c in bomb.GetComponentsInChildren<Collider>()) Destroy(c); }
+            var sb = Kit.Prefab(chapter, "SandBomb");
+            var kit = sb ? sb : Kit.Prefab(chapter, "Keg");
+            if (kit) { bomb = Instantiate(kit); if (!sb) bomb.transform.localScale *= 0.35f; else bomb.transform.localScale *= 1.25f; foreach (var c in bomb.GetComponentsInChildren<Collider>()) Destroy(c); }
             else { bomb = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(bomb.GetComponent<Collider>()); bomb.transform.localScale = Vector3.one * 0.35f; }
-            var from = transform.position + Vector3.up * 1.2f;
+            var from = transform.position + Vector3.up * 1.4f + transform.forward * 0.3f;   // 손이 앞으로 휘둘러진 자리
             for (float t = 0; t < 1f; t += Time.deltaTime / SandBombFlight)
             {
                 if (!bomb) break;

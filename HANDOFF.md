@@ -98,9 +98,20 @@ Tripo 웹 요령: 직접 URL로 열면 고면수 모델 로딩에 20초쯤 걸�
 - **방 모양**: `RoomBuilder.AddShape` — 사각 15% · 모서리 홈 35% · L자 30% · 가운데 섬 20%(보스 · 술집 제외). 막힌 덩어리는 안쪽 면에 절벽/건물 벽 모듈, `RoomInfo.blocks`(월드 XZ Rect). `RunManager.ClampToRoom`이 밖으로 밀어냄(바깥 벽 쪽으로는 안 밂), 적 생성 · 소품도 피함.
 - **M 지도**: `Scripts/UI/MapView.cs` — GPT 양피지 판 · 방 타일 · 고양이 머리 아이콘(`Resources/UI/map/`, 프롬프트 `docs/images/ui_src/prompts/map_ui.txt`). 방 사이는 방 판과 같은 색 굵은 띠로 이음(세피리아식), 막힌 곳 어둡게, 안 간 방 흐림, 지금 방 금테.
 
+## 2026-11-17 오후 — 절차적 벽 · 지형지물 · 자폭병 던지기 · 브릿지
+
+- **원칙(사용자)**: Tripo는 몬스터 · 캐릭터(복잡한 형태 · 리깅 · 모션)만. 벽 · 바닥 · 소품은 블렌더 + Codex CLI(`codex exec -s workspace-write -` < `Art/tools/specs/*_spec.md`).
+- **절차적 건물 줄**: `Kit.BuildingRow` — 건물 정면 8종(`blender_kit_facades.py`)을 벽 길이에 맞춰 무작위로 이어 붙임(같은 건물 연속 X, 높이 ±, 물러남 0~0.7, 18% 골목, 남쪽 벽 낮춤). 절벽은 조각마다 높이 · 들여쓰기 · 폭 흔들기. 복도 벽도 TileWall로 덮음.
+- **방 28×24로 확대**(`RoomBuilder.RoomSize`, `CellSize` 38×34, `CellDepth` 34, 술집 = 방 크기).
+- **방 모양 = 큰 지형지물**: 덩어리로 깎던 방식은 "갈색 상자 · 이상함"이라 버림. `RoomBuilder.AddShape`가 방마다 1~3개 배치(모서리 쪽 틈 0.3~2.2m 또는 안쪽, 90°±15°, 문 앞 십자 ±2.6 · 가운데 반지름 4 비움). 황무지 = 바위 기둥 · 바위 더미 · 포장마차 잔해 · 광산 수레 · 죽은 나무, 마을 = 급수탑 · 역마차 · 우물 · 건초 수레 · 노점 · 목재 더미(`blender_kit_landmarks.py`, 빌더에서 4~6m로 키움). 발자국은 `RoomInfo.blocks`.
+- **자폭병 던지기**: 원인 = 투척에 자폭 떨기 클립(Attack)을 쓰고 예비 동작 없이 바로 폭탄이 날아감. `MakeThrowClip`(`Ch1_BomberThrow`, 0.34초 손 떠남) + 애니메이터 `Throw` 트리거/상태(빌더) + `BomberThrow`가 제자리에서 젖혔다 놓은 뒤 폭탄 비행. 폭탄 모델 `Kit_SandBomb`(모래주머니 + 모래시계 뚜껑 + 불꽃 심지, `blender_kit_sandbomb.py`). SetTrigger("Throw") → Throw 상태로 가는 것은 확인. 한 번 AI 투척 때 Attack 상태가 잡힌 적이 있음 → 남아 있던 Attack 트리거일 수 있으니 `BomberThrow` 시작에 `anim.ResetTrigger("Attack")` 추가를 검토.
+- **브릿지**: Tripo CLI 0.11.2(로그인 · `tripo doctor` 통과, 1000 크레딧). Unity Tripo Bridge 1.0.14 = `Game/Packages/com.tripo3d.unitybridge`(메뉴 Tools > Tripo Bridge). Blender Tripo Bridge 1.1.0 = Blender 5.3 사용자 애드온, 활성화됨(ws 60600).
+
 ## 남은 다음 작업
 
-0. VFX 조금 더 다듬기(2026-11-17 요청, 아직 안 함).
+0. **방 문을 나무 문 모델로 (2026-11-17 요청, 아직 안 함)**: 블렌더 + Codex로 나무 문(널빤지 + 쇠띠, 4.6m 폭 문짝) 모델링 → 지금 `RoomBuilder`의 노란 `Gate` 상자 대신 사용, **방을 클리어하면 부서짐**(판자 조각 파편 · 먼지, `RunManager.RoomCleared`에서 gates 끄는 곳). 술집 `SaloonGate` · `BackGate`도 같이 검토.
+1. 자폭병 던지기 실제 AI 투척으로 다시 확인(위 Attack 트리거 메모).
+2. VFX 조금 더 다듬기(2026-11-17 요청, 아직 안 함).
 
 1. **명암 그림으로 뽑은 6종(기본 3종 + 강화형 3종)을 플랫 컬러로 다시 생성.** GPT에 "같은 디자인, 명암 · 하이라이트 · 빛 없이 고유색만, 외곽선 유지"로 다시 그리기 → 디노이즈 → Tripo 생성 → 리토포 1만 → 리깅 → 내보내기 → `tripo_import.py` → 빌더.
 2. **공격 모션을 공격에 맞게 다시.** 사용자: "돌진 공격 같은 모션이 안 어울린다." 지금 AI 모션은 4~5초짜리라 0.8~1초로 빨리 돌림. Tripo 모션 길이 슬라이더를 1~2초로 줄이고, 동작별로 짧고 분명한 프롬프트로 다시 만들 것 (예: 돌진 = 몸을 낮추고 어깨로 들이받으며 앞으로 달려 나감 · 사격 = 총을 들어 한 발 쏘고 반동 · 자폭 = 웅크렸다 부풀어 오름 · 휘두르기 = 양팔로 크게 한 바퀴). 클립 이름 키워드는 `EnemyModelBuilder.Anims`에 맞추기.

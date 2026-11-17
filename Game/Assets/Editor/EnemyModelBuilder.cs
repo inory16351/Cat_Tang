@@ -78,6 +78,20 @@ namespace CatTang.EditorTools
             ("Kit_Facade_Barn", 5f, 180f, 'w', KitDir, "Facade_Barn"),
             ("Kit_Facade_Blue", 4f, 180f, 'w', KitDir, "Facade_Blue"),
             ("Kit_AlleyFence", 2f, 180f, 'w', KitDir, "AlleyFence"),
+            // 폭탄병이 던지는 모래 폭탄 (블렌더 + Codex, Art/tools/blender_kit_sandbomb.py)
+            ("Kit_SandBomb", 0.55f, 0f, 'h', KitDir, "SandBomb"),
+            // 방 모양을 만드는 큰 지형지물 (블렌더 + Codex, Art/tools/blender_kit_landmarks.py). 크기 = 예전 막힌 덩어리만큼(4~6m) 키운 가로 (2026-11-17 사용자: 저 정도 크기로)
+            ("Kit_LM_RockSpire", 5.8f, 180f, 'w', KitDir, "LM_RockSpire"),
+            ("Kit_LM_BoulderPile", 5.0f, 180f, 'w', KitDir, "LM_BoulderPile"),
+            ("Kit_LM_WagonWreck", 5.4f, 180f, 'w', KitDir, "LM_WagonWreck"),
+            ("Kit_LM_MineCart", 5.2f, 180f, 'w', KitDir, "LM_MineCart"),
+            ("Kit_LM_DeadTree", 4.2f, 180f, 'w', KitDir, "LM_DeadTree"),
+            ("Kit_LM_WaterTower", 4.0f, 180f, 'w', KitDir, "LM_WaterTower"),
+            ("Kit_LM_Stagecoach", 5.2f, 180f, 'w', KitDir, "LM_Stagecoach"),
+            ("Kit_LM_Well", 3.6f, 180f, 'w', KitDir, "LM_Well"),
+            ("Kit_LM_HayCart", 5.4f, 180f, 'w', KitDir, "LM_HayCart"),
+            ("Kit_LM_MarketStall", 5.2f, 180f, 'w', KitDir, "LM_MarketStall"),
+            ("Kit_LM_LumberPile", 5.2f, 180f, 'w', KitDir, "LM_LumberPile"),
         };
 
         // 애니메이터 구성: 공격 클립 키워드 · 공격 재생 시간(초) · 특수 클립 키워드 · 특수 시간 · 공격 반복 여부
@@ -102,6 +116,7 @@ namespace CatTang.EditorTools
             Directory.CreateDirectory(KitDir);
             MakeJumpClip();
             MakeStompClip();
+            MakeThrowClip();
             int made = 0;
             foreach (var m in Models)
                 if (Build(m.name, m.size, m.yaw, m.fit, m.outDir, m.outName)) made++;
@@ -338,6 +353,62 @@ namespace CatTang.EditorTools
             return clip;
         }
 
+        // ---------- 던지기 클립 (폭탄병 모래 폭탄) ----------
+        // 0~0.28 오른팔을 머리 뒤로 젖히고 몸을 뒤로 → 0.28~0.4 앞으로 휘둘러 놓음(0.34 = 손을 떠나는 순간, Enemy.ThrowRelease) → 0.6 따라 숙였다 복귀
+        const string ThrowPath = SrcDir + "Anim/Ch1_BomberThrow.anim";
+        public const float ThrowEnd = 0.6f;
+
+        [MenuItem("CatTang/폭탄병 던지기 클립 만들기")]
+        public static AnimationClip MakeThrowClip()
+        {
+            AnimationClip idle = null;
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
+                if (o is AnimationClip c && c.name == "idle") idle = c;
+            if (!idle) return null;
+            Directory.CreateDirectory(SrcDir + "Anim");
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(ThrowPath);
+            if (!clip) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, ThrowPath); }
+            clip.ClearCurves();
+            clip.name = "Ch1_BomberThrow";
+            const float end = ThrowEnd;
+            var keys = new Dictionary<string, float[][]>
+            {
+                // 몸통: 뒤로 젖힘 → 앞으로 숙이며 던짐 → 복귀
+                { "Spine Front-Back", new[] { new[] { 0f, 0.05f }, new[] { 0.28f, -0.4f }, new[] { 0.38f, 0.55f }, new[] { 0.48f, 0.45f }, new[] { end, 0.05f } } },
+                { "Chest Front-Back", new[] { new[] { 0f, 0f }, new[] { 0.28f, -0.35f }, new[] { 0.38f, 0.45f }, new[] { end, 0f } } },
+                { "Spine Twist Left-Right", new[] { new[] { 0f, 0f }, new[] { 0.28f, -0.45f }, new[] { 0.38f, 0.4f }, new[] { end, 0f } } },
+                // 던지는 팔(오른팔): 머리 위 뒤로 → 앞 아래로 휘두름
+                { "Right Shoulder Down-Up", new[] { new[] { 0f, 0f }, new[] { 0.28f, 0.8f }, new[] { 0.38f, 0.3f }, new[] { end, 0f } } },
+                { "Right Arm Down-Up", new[] { new[] { 0f, -0.4f }, new[] { 0.28f, 1f }, new[] { 0.34f, 0.7f }, new[] { 0.42f, -0.1f }, new[] { end, -0.4f } } },
+                { "Right Arm Front-Back", new[] { new[] { 0f, 0.25f }, new[] { 0.28f, -0.7f }, new[] { 0.34f, 0.3f }, new[] { 0.42f, 0.9f }, new[] { end, 0.25f } } },
+                { "Right Forearm Stretch", new[] { new[] { 0f, 0.65f }, new[] { 0.28f, -0.6f }, new[] { 0.34f, 0.6f }, new[] { 0.42f, 1f }, new[] { end, 0.65f } } },
+                // 반대 팔: 앞으로 뻗어 겨눔
+                { "Left Arm Down-Up", new[] { new[] { 0f, -0.4f }, new[] { 0.28f, 0.3f }, new[] { 0.4f, -0.3f }, new[] { end, -0.4f } } },
+                { "Left Arm Front-Back", new[] { new[] { 0f, 0.25f }, new[] { 0.28f, 0.9f }, new[] { 0.4f, -0.2f }, new[] { end, 0.25f } } },
+                // 다리: 앞발 내딛기
+                { "Left Upper Leg Front-Back", new[] { new[] { 0f, 0.6f }, new[] { 0.28f, 0.75f }, new[] { 0.38f, 0.9f }, new[] { end, 0.6f } } },
+                { "Right Upper Leg Front-Back", new[] { new[] { 0f, 0.6f }, new[] { 0.28f, 0.35f }, new[] { 0.38f, 0.45f }, new[] { end, 0.6f } } },
+            };
+            foreach (var b in AnimationUtility.GetCurveBindings(idle))
+            {
+                float v0 = AnimationUtility.GetEditorCurve(idle, b).Evaluate(0.3f);
+                AnimationCurve curve;
+                if (keys.TryGetValue(b.propertyName, out var ks))
+                {
+                    var kf = new Keyframe[ks.Length];
+                    for (int i = 0; i < ks.Length; i++) kf[i] = new Keyframe(ks[i][0], ks[i][1]);
+                    curve = new AnimationCurve(kf);
+                    for (int i = 0; i < kf.Length; i++) { AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.ClampedAuto); AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.ClampedAuto); }
+                }
+                else curve = new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
+                AnimationUtility.SetEditorCurve(clip, b, curve);
+            }
+            AnimationUtility.SetAnimationClipSettings(clip, new AnimationClipSettings { loopTime = false, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end });
+            EditorUtility.SetDirty(clip);
+            AssetDatabase.SaveAssets();
+            return clip;
+        }
+
         /// <summary>근육 이름에 맞는 키 곡선 (해당 없으면 null → 바탕 자세 유지). 좌우는 같게, 팔 · 다리 비대칭은 조금만</summary>
         static AnimationCurve KeysFor(string prop, float baseV)
         {
@@ -378,6 +449,7 @@ namespace CatTang.EditorTools
             ctrl.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
             ctrl.AddParameter("Special", AnimatorControllerParameterType.Trigger);
             ctrl.AddParameter("Busy", AnimatorControllerParameterType.Bool);
+            ctrl.AddParameter("Throw", AnimatorControllerParameterType.Trigger);
             var sm = ctrl.layers[0].stateMachine;
             var idle = sm.AddState("Idle"); idle.motion = FindClip("idle");
             var run = sm.AddState("Run"); run.motion = FindClip("run");
@@ -386,6 +458,8 @@ namespace CatTang.EditorTools
             t = run.AddTransition(idle); t.AddCondition(AnimatorConditionMode.Less, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.18f;
             AddAction(sm, idle, "Attack", FindClip(spec.atk), spec.atkDur, spec.atkLoop);
             AddAction(sm, idle, "Special", FindClip(spec.sp), spec.spDur, false);
+            // 폭탄병 모래 폭탄 투척 (2026-11-17: 떨기 클립으로 던져서 모션 없이 터지는 것처럼 보였음)
+            if (outName.Contains("Bomber")) AddAction(sm, idle, "Throw", FindClip("bomberthrow"), ThrowEnd, false);
             EditorUtility.SetDirty(ctrl);
             return ctrl;
         }
