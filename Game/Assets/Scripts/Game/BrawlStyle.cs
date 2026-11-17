@@ -1,5 +1,6 @@
-// 브롤 스타즈풍 그림체 시험 스위치 (2026-11-17 사용자: "하데스 느낌 말고 브롤 스타즈 느낌, 플랫하면서 가시성 높은 그림체". 지금 셰이더는 그대로 두고 시험)
-// - F8: 툰 셰이더 전역 _CatTangBrawl 켜고 끔 (기본 꺼짐 = 지금 모습 그대로). 재질 · 빌더는 안 건드림
+// 브롤 스타즈풍 그림체 (2026-11-17 사용자: "하데스 느낌 말고 브롤 스타즈 느낌" → 시험 후 **기본으로 확정**)
+// - 툰 셰이더 전역 _CatTangBrawl = 1이 기본 (예전 하데스풍 툰은 셰이더에 그대로 남아 있음 — 플레이 중 F8로 비교용 전환). 재질 · 빌더는 안 건드림
+// - 에디터 씬 화면도 같은 그림체로 보이게 Editor/BrawlStyleEditor가 켬
 // - 켜져 있는 동안 고양이 · 적(Health가 있는 것) 렌더러에 _BrawlActor = 1을 표시 → 셰이더가 캐릭터는 선명하게, 배경은 한 톤 낮고 단순하게
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -17,7 +18,7 @@ namespace CatTang
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
-            Set(false);                                   // 도메인 재로드가 꺼져 있어 전역 값이 남을 수 있음 → 시작은 항상 원래 모습
+            Set(true);                                    // 기본 = 브롤풍 (도메인 재로드가 꺼져 있어 전역 값이 남을 수 있음 → 시작할 때 항상 다시 넣음)
             var go = new GameObject("BrawlStyle");
             DontDestroyOnLoad(go);
             go.AddComponent<BrawlStyle>();
@@ -35,7 +36,7 @@ namespace CatTang
             if (kb != null && kb.f8Key.wasPressedThisFrame)
             {
                 Set(!On);
-                Debug.Log("[BrawlStyle] 브롤 스타즈풍 시험 모드 " + (On ? "켬" : "끔"));
+                Debug.Log("[BrawlStyle] 그림체: " + (On ? "브롤 스타즈풍 (기본)" : "예전 하데스풍 툰 (비교용)"));
                 nextTag = 0;
             }
             if (On && Time.unscaledTime >= nextTag) { nextTag = Time.unscaledTime + 0.5f; TagActors(); }
@@ -59,6 +60,6 @@ namespace CatTang
             }
         }
 
-        void OnDisable() => Set(false);
+        void OnDisable() => Set(true);                    // 플레이를 끝내도 에디터 화면은 기본 그림체로
     }
 }
