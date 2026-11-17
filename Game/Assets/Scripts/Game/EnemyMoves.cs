@@ -84,7 +84,8 @@ namespace CatTang
             }
             if (move.sqrMagnitude > 1f) move.Normalize();
             transform.position += move * spd * Time.deltaTime;
-            Face(dir);
+            // 걷는 방향을 바라봄 (옆걸음을 앞걸음 모션으로 미끄러지지 않게, 2026-11-17 사용자). 공격 예고 때만 고양이를 봄
+            Face(move.sqrMagnitude > 0.04f ? move.normalized : dir);
             if (Time.time >= nextAttack && dist < 14f)
             {
                 int a = Pick((0, dist > 9 ? 3f : 2f), (1, dist < 9 ? 2.5f : 1.5f));
@@ -166,12 +167,10 @@ namespace CatTang
                 nextFlank = Time.time + Random.Range(1.5f, 3f);
                 if (Random.value < 0.2f) pauseUntil = Time.time + Random.Range(0.25f, 0.45f);
             }
+            var md = dist > 3.5f ? Quaternion.Euler(0, flankAngle, 0) * dir : dir;
             if (Time.time >= pauseUntil && dist > 1.5f)
-            {
-                var md = dist > 3.5f ? Quaternion.Euler(0, flankAngle, 0) * dir : dir;
                 transform.position += md * Mathf.Min(spd * Time.deltaTime, dist - 1.5f);
-            }
-            Face(dir);
+            Face(Time.time >= pauseUntil ? md : dir);                 // 비스듬히 돌 때도 걷는 방향을 봄
             if (Time.time >= nextAttack && dist < BruteRange)
             {
                 int a = Pick((0, dist < 3.4f ? 0.5f : 2.5f), (1, dist < 3.4f ? 3f : 0f));
@@ -181,9 +180,25 @@ namespace CatTang
                     act = Act.Windup;                           // 기존 일직선 돌진 (BruteUpdate의 Windup → Charge → Recover)
                     lockDir = dir;
                     actUntil = Time.time + BruteWindup / AtkMul;
-                    Anim("Attack");
+                    Anim("Attack");                             // 발 구르기 클립 (Ch1_BruteStomp: 몸 숙이고 한 발로 땅 두 번 긁기)
+                    StartCoroutine(StompDust(actUntil));
                     tele = Telegraph.Lane(transform.position, dir, BruteChargeDist + 0.8f, 1.6f, actUntil - Time.time, Telegraph.Danger);
                 }
+            }
+        }
+
+        /// <summary>돌진 예고 동안 발 구르기: 발 구를 때마다 발밑 흙먼지 + 작은 흔들림 (발탄 돌진 전 발 구르기 느낌)</summary>
+        IEnumerator StompDust(float until)
+        {
+            float[] beats = { 0.2f, 0.4f, 0.55f };
+            float start = Time.time, len = Mathf.Max(0.1f, until - start);
+            foreach (var b in beats)
+            {
+                float at = start + len * b / 0.6f;
+                while (Time.time < at) { if (act != Act.Windup) yield break; yield return null; }
+                var side = Vector3.Cross(Vector3.up, lockDir).normalized;
+                FxBurst.Spawn(transform.position + side * 0.35f - lockDir * 0.3f + Vector3.up * 0.1f, 1.3f, FxBurst.Kind.Dust, new Color(0.9f, 0.75f, 0.5f));
+                CameraFollow.Shake(0.04f);
             }
         }
 

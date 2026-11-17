@@ -75,8 +75,9 @@ namespace CatTang.EditorTools
         {
             { "Ch1_Outlaw", ("revolver", 1.0f, null, 0, false) },
             { "Ch1_Outlaw_Plus", ("revolver", 0.9f, null, 0, false) },
-            { "Ch1_Brute", ("charges", 1.0f, "swings", 0.8f, false) },
-            { "Ch1_Brute_Plus", ("charges", 0.9f, "swings", 0.7f, false) },
+            // 깡패 Attack = 돌진 예고 발 구르기 (MakeStompClip, Enemy.BruteWindup 0.6초와 맞춤). 돌진 자체는 Run(이동 속도)로
+            { "Ch1_Brute", ("brutestomp", 0.6f, "swings", 0.8f, false) },
+            { "Ch1_Brute_Plus", ("brutestomp", 0.6f, "swings", 0.7f, false) },
             // 폭탄병 Special = 점프(웅크림 0.35 → 체공 0.55 → 착지). 클립은 MakeJumpClip이 근육 커브로 만듦 (Enemy.BomberCrouch · BomberAir와 맞춤)
             { "Ch1_Bomber", ("shakes", 0.8f, "bomberjump", 1.0f, true) },
             { "Ch1_Bomber_Plus", ("shakes", 0.7f, "bomberjump", 1.0f, true) },
@@ -90,6 +91,7 @@ namespace CatTang.EditorTools
             Directory.CreateDirectory(OutDir);
             Directory.CreateDirectory(KitDir);
             MakeJumpClip();
+            MakeStompClip();
             int made = 0;
             foreach (var m in Models)
                 if (Build(m.name, m.size, m.yaw, m.fit, m.outDir, m.outName)) made++;
@@ -265,6 +267,64 @@ namespace CatTang.EditorTools
             EditorUtility.SetDirty(clip);
             AssetDatabase.SaveAssets();
             Debug.Log($"[EnemyModelBuilder] {JumpPath} ({end}초)");
+            return clip;
+        }
+
+        // ---------- 발 구르기 클립 (깡패 돌진 예고, 2026-11-17 사용자: 발탄처럼 발 구르는 모션) ----------
+        // 0~0.12 몸을 낮게 숙임 → 오른발로 땅을 뒤로 긁고 쿵 내딛기 두 번(0.2 · 0.3 · 0.4 · 0.5) → 0.6 숙인 채 돌진 준비
+        const string StompPath = SrcDir + "Anim/Ch1_BruteStomp.anim";
+
+        [MenuItem("CatTang/깡패 발 구르기 클립 만들기")]
+        public static AnimationClip MakeStompClip()
+        {
+            AnimationClip idle = null;
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
+                if (o is AnimationClip c && c.name == "idle") idle = c;
+            if (!idle) return null;
+            Directory.CreateDirectory(SrcDir + "Anim");
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(StompPath);
+            if (!clip) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, StompPath); }
+            clip.ClearCurves();
+            clip.name = "Ch1_BruteStomp";
+            const float end = 0.6f;
+            var keys = new Dictionary<string, float[][]>
+            {
+                { "Spine Front-Back", new[] { new[] { 0f, 0.05f }, new[] { 0.12f, 0.55f }, new[] { 0.6f, 0.55f } } },
+                { "Chest Front-Back", new[] { new[] { 0f, 0f }, new[] { 0.12f, 0.35f }, new[] { 0.6f, 0.35f } } },
+                { "Head Nod Down-Up", new[] { new[] { 0f, 0f }, new[] { 0.12f, -0.35f }, new[] { 0.6f, -0.35f } } },
+                // 디딤발(왼발): 무릎 굽혀 버팀
+                { "Left Upper Leg Front-Back", new[] { new[] { 0f, 0.6f }, new[] { 0.12f, 0.85f }, new[] { 0.6f, 0.85f } } },
+                { "Left Lower Leg Stretch", new[] { new[] { 0f, 0.9f }, new[] { 0.12f, 0.4f }, new[] { 0.6f, 0.4f } } },
+                // 구르는 발(오른발): 뒤로 긁고 쿵 내딛기 두 번
+                { "Right Upper Leg Front-Back", new[] { new[] { 0f, 0.6f }, new[] { 0.12f, 0.75f }, new[] { 0.2f, 0.05f }, new[] { 0.3f, 0.9f }, new[] { 0.4f, 0.05f }, new[] { 0.5f, 0.9f }, new[] { 0.6f, 0.75f } } },
+                { "Right Lower Leg Stretch", new[] { new[] { 0f, 0.9f }, new[] { 0.2f, 0.15f }, new[] { 0.3f, 0.75f }, new[] { 0.4f, 0.15f }, new[] { 0.5f, 0.75f }, new[] { 0.6f, 0.5f } } },
+                { "Right Foot Up-Down", new[] { new[] { 0f, 0.1f }, new[] { 0.2f, -0.5f }, new[] { 0.3f, 0.3f }, new[] { 0.4f, -0.5f }, new[] { 0.5f, 0.3f }, new[] { 0.6f, 0.2f } } },
+                // 팔: 아래 · 앞으로 내려 들이받을 자세
+                { "Left Arm Down-Up", new[] { new[] { 0f, -0.4f }, new[] { 0.12f, -0.75f }, new[] { 0.6f, -0.75f } } },
+                { "Right Arm Down-Up", new[] { new[] { 0f, -0.4f }, new[] { 0.12f, -0.75f }, new[] { 0.6f, -0.75f } } },
+                { "Left Arm Front-Back", new[] { new[] { 0f, 0.25f }, new[] { 0.12f, 0.6f }, new[] { 0.6f, 0.6f } } },
+                { "Right Arm Front-Back", new[] { new[] { 0f, 0.25f }, new[] { 0.12f, 0.6f }, new[] { 0.6f, 0.6f } } },
+                { "Left Forearm Stretch", new[] { new[] { 0f, 0.65f }, new[] { 0.12f, 0.3f }, new[] { 0.6f, 0.3f } } },
+                { "Right Forearm Stretch", new[] { new[] { 0f, 0.65f }, new[] { 0.12f, 0.3f }, new[] { 0.6f, 0.3f } } },
+            };
+            foreach (var b in AnimationUtility.GetCurveBindings(idle))
+            {
+                float v0 = AnimationUtility.GetEditorCurve(idle, b).Evaluate(0.3f);
+                AnimationCurve curve;
+                if (keys.TryGetValue(b.propertyName, out var ks))
+                {
+                    var kf = new Keyframe[ks.Length];
+                    for (int i = 0; i < ks.Length; i++) kf[i] = new Keyframe(ks[i][0], ks[i][1]);
+                    curve = new AnimationCurve(kf);
+                    for (int i = 0; i < kf.Length; i++) { AnimationUtility.SetKeyLeftTangentMode(curve, i, AnimationUtility.TangentMode.ClampedAuto); AnimationUtility.SetKeyRightTangentMode(curve, i, AnimationUtility.TangentMode.ClampedAuto); }
+                }
+                else if (b.propertyName == "RootT.y") curve = new AnimationCurve(new Keyframe(0, v0), new Keyframe(0.12f, v0 - 0.12f), new Keyframe(end, v0 - 0.12f));
+                else curve = new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
+                AnimationUtility.SetEditorCurve(clip, b, curve);
+            }
+            AnimationUtility.SetAnimationClipSettings(clip, new AnimationClipSettings { loopTime = false, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end });
+            EditorUtility.SetDirty(clip);
+            AssetDatabase.SaveAssets();
             return clip;
         }
 
