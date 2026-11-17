@@ -44,7 +44,7 @@ namespace CatTang
         public static void Spawn(Vector3 a, Vector3 b, Color c, float width, bool doubleLine)
         {
             EnsureMats();
-            var go = new GameObject("Tracer");
+            var go = new GameObject("Tracer"); VividLayer.Set(go);
             var t = go.AddComponent<Tracer>();
             t.a = a; t.b = b; t.col = c;
             t.width = width;
@@ -59,7 +59,7 @@ namespace CatTang
 
         static LineRenderer Line(GameObject parent, string name, Material m, Vector3 a, Vector3 b)
         {
-            var go = new GameObject(name);
+            var go = new GameObject(name); VividLayer.Set(go);
             go.transform.SetParent(parent.transform, false);
             var lr = go.AddComponent<LineRenderer>();
             lr.sharedMaterial = m;

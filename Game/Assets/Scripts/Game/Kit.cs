@@ -86,8 +86,26 @@ namespace CatTang
         }
 
         /// <summary>바닥 타일을 격자로 깔기 (그림만, 충돌은 원래 바닥 상자)</summary>
+        /// <summary>바닥 (2026-11-17 사용자: 반복 이음매 없애기): 이어지는 흙 텍스처(Resources/Kit/Ch{장}/Ground.mat, Art/tools/ground_texture.py)를
+        /// 방 크기의 판 하나에 8m마다 반복해 깔고, 블렌더 바닥 조각(판자 · 자갈 · 마른 풀 · 모래 둔덕 · 해골 · 바위)을 무작위로 흩뿌려 반복을 깸.
+        /// 재질이 없으면 예전처럼 4m 타일을 격자로</summary>
         public static bool TileFloor(ChapterDef ch, Transform root, Vector2 size, GameObject floorCube, int seed)
         {
+            var mat = ch != null ? Resources.Load<Material>($"Kit/Ch{ch.Id}/Ground") : null;
+            if (mat)
+            {
+                var go = new GameObject("Ground");
+                go.transform.SetParent(root, false);
+                go.transform.localPosition = new Vector3(0, 0.01f, 0);
+                go.AddComponent<MeshFilter>().sharedMesh = GroundMesh(size, 8f, seed);
+                var mr = go.AddComponent<MeshRenderer>();
+                mr.sharedMaterial = mat;
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                ScatterGround(ch, root, size, seed);
+                var fr = floorCube ? floorCube.GetComponent<Renderer>() : null;
+                if (fr) fr.enabled = false;
+                return true;
+            }
             var prefab = Prefab(ch, "Floor");
             if (!prefab) return false;
             var b = LocalBounds(prefab);
@@ -108,6 +126,40 @@ namespace CatTang
             var r = floorCube ? floorCube.GetComponent<Renderer>() : null;
             if (r) r.enabled = false;
             return true;
+        }
+        static Mesh GroundMesh(Vector2 size, float tile, int seed)
+        {
+            var rnd = new System.Random(seed);
+            var off = new Vector2((float)rnd.NextDouble(), (float)rnd.NextDouble());
+            float hx = size.x / 2 + 1f, hz = size.y / 2 + 1f;            // 벽 밑까지 살짝 더 깔기
+            var m = new Mesh { name = "Ground" };
+            m.vertices = new[] { new Vector3(-hx, 0, -hz), new Vector3(hx, 0, -hz), new Vector3(-hx, 0, hz), new Vector3(hx, 0, hz) };
+            m.uv = new[] { new Vector2(-hx, -hz) / tile + off, new Vector2(hx, -hz) / tile + off, new Vector2(-hx, hz) / tile + off, new Vector2(hx, hz) / tile + off };
+            m.triangles = new[] { 0, 2, 1, 2, 3, 1 };
+            m.normals = new[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up };
+            m.RecalculateBounds();
+            return m;
+        }
+
+        static readonly string[] GroundBits = { "GroundPlanks", "Pebbles", "DryGrass", "SandDrift", "Skull", "Rock_1" };
+        static readonly float[] GroundWeight = { 1.2f, 2f, 2f, 1.5f, 0.35f, 0.8f };
+
+        /// <summary>바닥 조각 흩뿌리기: 넓이 약 14㎡당 하나, 무게대로 고르고 방향 · 크기 제각각 (충돌 없음)</summary>
+        static void ScatterGround(ChapterDef ch, Transform root, Vector2 size, int seed)
+        {
+            var rnd = new System.Random(seed * 7 + 3);
+            int n = Mathf.RoundToInt(size.x * size.y / 14f);
+            float total = 0; foreach (var w in GroundWeight) total += w;
+            var holder = new GameObject("GroundBits").transform;
+            holder.SetParent(root, false);
+            for (int i = 0; i < n; i++)
+            {
+                float r = (float)rnd.NextDouble() * total; int k = 0;
+                while (k < GroundWeight.Length - 1 && r > GroundWeight[k]) { r -= GroundWeight[k]; k++; }
+                if (!Has(ch, GroundBits[k])) continue;
+                var p = new Vector3(((float)rnd.NextDouble() - 0.5f) * (size.x - 1.5f), 0.02f, ((float)rnd.NextDouble() - 0.5f) * (size.y - 1.5f));
+                Place(ch, GroundBits[k], holder, p, rnd.Next(360), 0.75f + (float)rnd.NextDouble() * 0.5f, false);
+            }
         }
     }
 

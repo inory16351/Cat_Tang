@@ -62,6 +62,12 @@ namespace CatTang.EditorTools
             ("Kit_Rock_2", 1.8f, 0f, 'w', KitDir, "Rock_2"),
             ("Kit_Railing", 4f, 180f, 'w', KitDir, "Railing"),
             ("Kit_SaloonDoor", 2.4f, 180f, 'h', KitDir, "SaloonDoor"),
+            // 바닥 조각 (흩뿌려 반복을 깸, Art/tools/blender_kit_ground.py)
+            ("Kit_GroundPlanks", 2.2f, 0f, 'w', KitDir, "GroundPlanks"),
+            ("Kit_Pebbles", 1.4f, 0f, 'w', KitDir, "Pebbles"),
+            ("Kit_DryGrass", 1.0f, 0f, 'w', KitDir, "DryGrass"),
+            ("Kit_SandDrift", 2.4f, 0f, 'w', KitDir, "SandDrift"),
+            ("Kit_Skull", 0.8f, 0f, 'w', KitDir, "Skull"),
         };
 
         // 애니메이터 구성: 공격 클립 키워드 · 공격 재생 시간(초) · 특수 클립 키워드 · 특수 시간 · 공격 반복 여부

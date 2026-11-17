@@ -12,6 +12,7 @@ Shader "CatTang/Silhouette"
         Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
         Pass
         {
+            Tags { "LightMode" = "UniversalForward" }   // Vivid(후처리 뒤 RenderObjects)에서도 그려지게
             ZWrite On
             ZTest LEqual
             Cull Back

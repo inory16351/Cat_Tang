@@ -31,7 +31,7 @@ namespace CatTang
                 if (sh == null) return;
                 baseMat = new Material(sh);
             }
-            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad); VividLayer.Set(go);
             go.name = "FX_" + kind;
             Destroy(go.GetComponent<Collider>());
             go.transform.position = pos;

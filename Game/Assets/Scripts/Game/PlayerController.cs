@@ -74,6 +74,7 @@ namespace CatTang
             health.OnDamaged += Hurt;
             Tables.Load();
             if (model) { poser = model.GetComponent<KataPoser>(); anim = model.GetComponentInChildren<Animator>(); }
+            if (model) StartCoroutine(KeepVivid());
             if (!GetComponent<ReloadMotion>()) gameObject.AddComponent<ReloadMotion>();     // 스피드로더 장전 동작
         }
 
@@ -302,6 +303,13 @@ namespace CatTang
             }
             if (Time.timeScale > 0f) Time.timeScale = 1f;
             if (!ultimateActive) CameraFollow.Zoom(1f);
+        }
+
+        /// <summary>고양이 모델(총 · 코스튬이 나중에 붙어도)을 Vivid 레이어로: 후처리 뒤에 그려져 회색 · 붉은 화면에서도 제 색</summary>
+        IEnumerator KeepVivid()
+        {
+            var wait = new WaitForSecondsRealtime(0.5f);
+            while (model) { VividLayer.SetAll(model.gameObject); yield return wait; }
         }
 
         // ---------- 피격 피드백 (2026-11-16 사용자: 맞았을 때 확실하게) ----------

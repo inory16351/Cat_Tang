@@ -75,7 +75,7 @@ namespace CatTang
             }
             // 모델이 플레이어 발밑 기준이면 위치 보정
             root.transform.position = pos + (model.position - model.root.position);
-            a.Apply(1);
+            VividLayer.SetAll(a.gameObject); a.Apply(1);
             last = a;
         }
 
@@ -116,7 +116,7 @@ namespace CatTang
                 rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 a.rends.Add(rr);
             }
-            a.Apply(1);
+            VividLayer.SetAll(a.gameObject); a.Apply(1);
         }
 
         void Apply(float k)

@@ -20,6 +20,7 @@ Shader "CatTang/FX"
         Cull Off
         Pass
         {
+            Tags { "LightMode" = "UniversalForward" }   // Vivid(후처리 뒤 RenderObjects)에서도 그려지게
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag

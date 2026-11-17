@@ -24,6 +24,7 @@ namespace CatTang
             }
             if (!pf) return null;
             var go = Instantiate(pf, pos, rot);
+            VividLayer.SetAll(go);
             go.transform.localScale = Vector3.one * scale;
             var fx = go.GetComponent<FxEffect>();
             if (fx) fx.Play(tint);

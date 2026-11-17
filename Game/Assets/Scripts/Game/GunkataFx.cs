@@ -23,7 +23,7 @@ namespace CatTang
             // 런타임에 만든 재질 · 메시는 플레이 종료 때 파괴되므로, 하나라도 죽었으면 다시 만듦
             if (inited && fireMat && spikeMat && muzzleMat && sandMat && sootMat && lineMat && quad) return true;
             inited = true;
-            var sh = Shader.Find("Sprites/Default");
+            var sh = Shader.Find("CatTang/Sprite") ?? Shader.Find("Sprites/Default");   // URP 태그가 있어야 Vivid(후처리 뒤)에서도 그려짐
             smokeMats = Load("FX/smoke_", 2, sh, 3000);
             flashMats = Load("FX/flash_", 3, sh, 3003);
             lineMat = new Material(sh) { renderQueue = 3001 };
@@ -464,7 +464,7 @@ namespace CatTang
         static Material[] Load(string set)
         {
             if (sets.TryGetValue(set, out var m) && (m.Length == 0 || m[0])) return m;   // 지난 판에 파괴된 재질이면 다시 만듦
-            var sh = Shader.Find("Sprites/Default");
+            var sh = Shader.Find("CatTang/Sprite") ?? Shader.Find("Sprites/Default");   // URP 태그가 있어야 Vivid(후처리 뒤)에서도 그려짐
             var list = new System.Collections.Generic.List<Material>();
             for (int i = 0; i < 32; i++)
             {
@@ -479,7 +479,7 @@ namespace CatTang
         {
             var fr = Load(set);
             if (fr.Length == 0) return false;
-            var go = new GameObject("Flip_" + set);
+            var go = new GameObject("Flip_" + set); VividLayer.Set(go);
             go.AddComponent<MeshFilter>().sharedMesh = GunkataFx.Quad;
             var f = go.AddComponent<FxFlipbook>();
             f.mr = go.AddComponent<MeshRenderer>();
@@ -751,7 +751,7 @@ namespace CatTang
         public static FxMesh Spawn(Mesh mesh, Material mat, Vector3 pos, Quaternion rot, Vector3 size, float life, float delay, Vector3 drift, Kind kind)
         {
             if (!mesh || !mat) return null;
-            var go = new GameObject("Fx" + kind);
+            var go = new GameObject("Fx" + kind); VividLayer.Set(go);
             go.transform.SetPositionAndRotation(pos, rot);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var f = go.AddComponent<FxMesh>();
@@ -869,7 +869,7 @@ namespace CatTang
 
         public static void Spawn(Material mat, Vector3 pos, float size, float life, float delay, Vector3 drift, Style style, Vector3 dir = default)
         {
-            var go = new GameObject(style == Style.Smoke ? "Smoke" : style == Style.Flash ? "Flash" : "FirePuff");
+            var go = new GameObject(style == Style.Smoke ? "Smoke" : style == Style.Flash ? "Flash" : "FirePuff"); VividLayer.Set(go);
             go.transform.position = pos;
             go.AddComponent<MeshFilter>().sharedMesh = GunkataFx.quad;
             var s = go.AddComponent<FxSprite>();
@@ -950,7 +950,7 @@ namespace CatTang
 
         static FxLine Make(Color c, float life, int points)
         {
-            var go = new GameObject("FxLine");
+            var go = new GameObject("FxLine"); VividLayer.Set(go);
             var f = go.AddComponent<FxLine>();
             f.lr = go.AddComponent<LineRenderer>();
             f.lr.sharedMaterial = GunkataFx.LineMat;

@@ -103,6 +103,16 @@ namespace CatTang
         }
     }
 
+    /// <summary>Vivid 레이어 (2026-11-17 사용자: 닷지 액션 별도 렌더 레이어): URP 렌더러가 이 레이어를 후처리가 끝난 뒤 따로 그림
+    /// (PC_Renderer의 "Vivid Opaque/Transparent (후처리 뒤)" 기능, 일반 패스에서는 제외) → 극한 회피 회색 화면 · 피격 붉은 화면에서도 고양이와 고양이 쪽 이펙트는 제 색</summary>
+    public static class VividLayer
+    {
+        static int id = -2;
+        public static int Id { get { if (id == -2) id = LayerMask.NameToLayer("Vivid"); return id; } }
+        public static void Set(GameObject g) { if (g && Id >= 0) g.layer = Id; }
+        public static void SetAll(GameObject g) { if (!g || Id < 0) return; foreach (var t in g.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Id; }
+    }
+
     /// <summary>툰 불꽃 재질에 탄 색 입히기 (FxMesh · FxPart 공용)</summary>
     public static class FxTint
     {
