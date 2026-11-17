@@ -1,5 +1,9 @@
-// 적 공격 예고: 바닥에 빛 선으로 그림 (CatTang/AdditiveGlow). 시간이 지나며 안쪽이 차오르고, 끝나면 사라짐.
+// 적 공격 예고: 바닥에 그림. 시간이 지나며 안쪽이 차오르고, 끝나면 사라짐.
 // Ring = 원형 범위 (폭발 · 휘두르기), Lane = 직선 (돌진 경로), Aim = 가는 조준선 (사격)
+// 가시성 (2026-11-17 사용자: 주황 흙바닥에 묻힘):
+// - 색: 위험 = 진홍 분홍, 조준 = 보라 (주황 바닥의 보색 쪽)
+// - 범위 전체에 어두운 반투명 그림자 판 → 바닥과 분리, 진행도만큼 색 판이 차오름
+// - 밝은 빛 테두리 밑에 굵은 어두운 선을 덧댐 → 어떤 바닥에서도 테두리가 보임
 using UnityEngine;
 
 namespace CatTang
@@ -8,15 +12,80 @@ namespace CatTang
     {
         enum Shape { Ring, Lane, Sector }
         Shape shape;
-        LineRenderer outer, fill;
+        LineRenderer outer, fill, back;
+        MeshFilter areaBack, areaFill;
+        Mesh backMesh, fillMesh;
+        static Material darkMat;
         float born, life, radius, len, width, half;
         const int ArcN = 24;
         Color col;
         Transform follow;
         static Material mat;
 
-        public static readonly Color Danger = new(1f, 0.28f, 0.18f);
-        public static readonly Color Aim = new(1f, 0.75f, 0.3f);
+        public static readonly Color Danger = new(1f, 0.14f, 0.36f);   // 진홍 분홍
+        public static readonly Color Aim = new(0.82f, 0.38f, 1f);      // 보라
+        static readonly Color Shadow = new(0.06f, 0.02f, 0.08f, 0.34f);
+        static readonly Color Ink = new(0.05f, 0.01f, 0.07f, 0.9f);
+
+        static Material DarkMat()
+        {
+            if (!darkMat) darkMat = new Material(Shader.Find("CatTang/Sprite") ?? Shader.Find("Sprites/Default")) { renderQueue = 2999 };
+            return darkMat;
+        }
+
+        LineRenderer NewDarkLine(string name)
+        {
+            var lr = NewLine(transform, name);
+            lr.sharedMaterial = DarkMat();
+            return lr;
+        }
+
+        MeshFilter NewArea(string name, out Mesh mesh, float y)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = new Vector3(0, y, 0);
+            var mf = go.AddComponent<MeshFilter>();
+            mesh = new Mesh { name = name };
+            mesh.MarkDynamic();
+            mf.sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = DarkMat();
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            return mf;
+        }
+
+        /// <summary>로컬 평면 모양 메시: 원(반지름 r) · 부채꼴(반지름 r, ±half°, +Z가 가운데) · 직선(폭 w, 길이 l, +Z 방향)</summary>
+        void ShapeMesh(Mesh m, float r, float l, Color c)
+        {
+            var v = new System.Collections.Generic.List<Vector3>();
+            var t = new System.Collections.Generic.List<int>();
+            if (shape == Shape.Lane)
+            {
+                float hw = width / 2;
+                v.Add(new Vector3(-hw, 0, 0)); v.Add(new Vector3(hw, 0, 0)); v.Add(new Vector3(-hw, 0, l)); v.Add(new Vector3(hw, 0, l));
+                t.AddRange(new[] { 0, 2, 1, 2, 3, 1 });
+            }
+            else
+            {
+                v.Add(Vector3.zero);
+                int n = shape == Shape.Ring ? 40 : ArcN;
+                for (int i = 0; i <= n; i++)
+                {
+                    float a = shape == Shape.Ring ? i * 360f / n : Mathf.Lerp(-half, half, i / (float)n);
+                    v.Add(Quaternion.AngleAxis(a, Vector3.up) * Vector3.forward * r);
+                }
+                for (int i = 1; i <= n; i++) { t.Add(0); t.Add(i); t.Add(i + 1); }
+            }
+            var cs = new Color[v.Count];
+            for (int i = 0; i < cs.Length; i++) cs[i] = c;
+            m.Clear();
+            m.SetVertices(v);
+            m.SetTriangles(t, 0);
+            m.colors = cs;
+            m.RecalculateBounds();
+        }
 
         static LineRenderer NewLine(Transform parent, string name)
         {
@@ -86,6 +155,9 @@ namespace CatTang
         void Init()
         {
             born = Time.time;
+            areaBack = NewArea("AreaShadow", out backMesh, 0.025f);
+            areaFill = NewArea("AreaFill", out fillMesh, 0.03f);
+            back = NewDarkLine("OuterInk");
             outer = NewLine(transform, "Outer");
             fill = NewLine(transform, "Fill");
             if (shape == Shape.Ring)
@@ -134,8 +206,8 @@ namespace CatTang
         {
             float age = Time.time - born;
             float pulse = 0.65f + 0.35f * Mathf.Sin(grow ? age * Mathf.Lerp(18f, 60f, k) : age * 28f);
-            var edge = col * (0.55f + 0.45f * k * pulse); edge.a = 1;
-            var inner = col * (0.25f + 0.35f * k); inner.a = 1;
+            var edge = col * (1.0f + 0.5f * k * pulse); edge.a = 1;          // 처음부터 밝게 (가시성)
+            var inner = col * (0.6f + 0.5f * k); inner.a = 1;
             outer.startColor = outer.endColor = edge;
             fill.startColor = fill.endColor = inner;
             Vector3 o = transform.position + Vector3.up * 0.05f;
@@ -176,6 +248,16 @@ namespace CatTang
                 fill.SetPosition(0, o);
                 fill.SetPosition(1, o + f * Mathf.Max(0.05f, len * k));
             }
+            // 어두운 덧선 (테두리 밑) + 그림자 판 · 차오르는 색 판
+            back.loop = outer.loop;
+            back.positionCount = outer.positionCount;
+            for (int i = 0; i < outer.positionCount; i++) back.SetPosition(i, outer.GetPosition(i) - Vector3.up * 0.005f);
+            back.widthMultiplier = outer.widthMultiplier * 2.6f + 0.06f;
+            back.startColor = back.endColor = Ink;
+            float rOuter = shape == Shape.Ring && grow ? radius * Mathf.Lerp(0.15f, 1f, 1 - (1 - k) * (1 - k)) : radius;
+            ShapeMesh(backMesh, rOuter, len, Shadow);
+            var fc = col; fc.a = Mathf.Lerp(0.32f, 0.55f, k) * (0.85f + 0.15f * pulse);
+            ShapeMesh(fillMesh, shape == Shape.Ring ? (grow ? rOuter * Mathf.Lerp(0.5f, 0.95f, k) : radius * k) : radius * k, len * k, fc);
         }
     }
 }
