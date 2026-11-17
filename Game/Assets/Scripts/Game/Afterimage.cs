@@ -18,10 +18,15 @@ namespace CatTang
         bool moving, ownsMeshes = true;
         Color trailColor;
 
-        public static void Spawn(Transform model, Color c, float life = 0.35f)
+        /// <param name="vivid">고양이 쪽 잔상(Vivid 레이어: 회색 화면에서도 제 색). 몬스터 대시 잔상은 false</param>
+        public static void Spawn(Transform model, Color c, float life = 0.35f, bool vivid = true)
         {
-            if (model) SpawnAt(model, model.position, c, life);
+            if (!model) return;
+            nextVivid = vivid;
+            SpawnAt(model, model.position, c, life);
+            nextVivid = true;
         }
+        static bool nextVivid = true;
 
         public static void SpawnAt(Transform model, Vector3 pos, Color c, float life)
         {
@@ -75,7 +80,7 @@ namespace CatTang
             }
             // 모델이 플레이어 발밑 기준이면 위치 보정
             root.transform.position = pos + (model.position - model.root.position);
-            VividLayer.SetAll(a.gameObject); a.Apply(1);
+            if (nextVivid) VividLayer.SetAll(a.gameObject); a.Apply(1);
             last = a;
         }
 
@@ -116,7 +121,7 @@ namespace CatTang
                 rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 a.rends.Add(rr);
             }
-            VividLayer.SetAll(a.gameObject); a.Apply(1);
+            if (nextVivid) VividLayer.SetAll(a.gameObject); a.Apply(1);
         }
 
         void Apply(float k)

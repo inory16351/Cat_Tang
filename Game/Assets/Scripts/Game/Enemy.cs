@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CatTang
 {
     [RequireComponent(typeof(Health))]
-    public class Enemy : MonoBehaviour
+    public partial class Enemy : MonoBehaviour
     {
         public enum Kind { Outlaw, Brute, Bomber, Boss }
         public static readonly List<Enemy> All = new();
@@ -109,52 +109,14 @@ namespace CatTang
         // ---------- 태엽 무법자 ----------
         void OutlawUpdate(PlayerController p, Vector3 dir, float dist, float spd)
         {
-            if (act == Act.Roll)
+            // 강화형: 고양이가 조준하면 옆으로 대시(실루엣 잔상) 후 한 발 (예전 구르기 대체, EnemyMoves.OutlawDash)
+            if (elite && !busy && act == Act.Move && Time.time >= nextRoll && dist < 16f && Vector3.Angle(Effects.Flat(p.AimDir), -dir) < 10f)
             {
-                rollT += Time.deltaTime / 0.35f;
-                transform.position = Vector3.Lerp(rollFrom, rollTo, Mathf.SmoothStep(0, 1, rollT));
-                if (model) model.localRotation = Quaternion.Euler(0, 0, -360f * Mathf.Clamp01(rollT) * Mathf.Sign(Vector3.Dot(rollTo - rollFrom, transform.right))) * modelBaseRot;
-                if (rollT < 1f) return;
-                // 구른 뒤 바로 한 발
-                var d = Effects.Flat(p.transform.position - transform.position).normalized;
-                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, d, OutlawBulletSpeed, projectileDamage, 0, EnemyProjectile.Style.Revolver);
-                GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + d * 0.8f, d, 0.6f);
-                act = Act.Move;
-                nextAttack = Mathf.Max(nextAttack, Time.time + 0.8f);
-                return;
-            }
-            if (elite && act == Act.Move && Time.time >= nextRoll && dist < 16f && Vector3.Angle(Effects.Flat(p.AimDir), -dir) < 10f)
-            {
-                // 고양이가 조준하면 옆으로 구르며 한 발
-                act = Act.Roll;
-                rollT = 0;
-                rollFrom = transform.position;
-                var side = Vector3.Cross(Vector3.up, dir) * (Random.value < 0.5f ? 1 : -1);
-                rollTo = RunManager.Instance ? RunManager.Instance.ClampToRoom(rollFrom + side * RollDist, 1.2f) : rollFrom + side * RollDist;
                 nextRoll = Time.time + RollCooldown;
+                StartCoroutine(OutlawDash(p, dir));
                 return;
             }
-            if (act == Act.Windup)
-            {
-                Face(lockDir);
-                if (Time.time < actUntil) return;
-                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + lockDir * 0.7f, lockDir, OutlawBulletSpeed, projectileDamage, 0, EnemyProjectile.Style.Revolver);
-                GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + lockDir * 0.8f, lockDir, 0.6f);
-                act = Act.Move;
-                nextAttack = Time.time + shootInterval / AtkMul;
-                return;
-            }
-            float want = dist > 9 ? 1 : dist < 6 ? -1 : 0;
-            transform.position += dir * want * spd * Time.deltaTime;
-            Face(dir);
-            if (Time.time >= nextAttack && dist < 14f)
-            {
-                act = Act.Windup;
-                lockDir = dir;
-                actUntil = Time.time + OutlawAimTime;
-                Anim("Attack");
-                tele = Telegraph.Lane(transform.position + dir * 0.6f, dir, Mathf.Min(dist + 2f, 12f), 0.14f, OutlawAimTime, Telegraph.Aim);
-            }
+            OutlawThink(p, dir, dist, spd);           // 단발 조준 · 3점사 가중 랜덤 + 옆걸음 · 재배치 (EnemyMoves)
         }
 
         // ---------- 시계추 깡패 ----------
@@ -202,6 +164,7 @@ namespace CatTang
                     nextSpin = Time.time + 3.5f / AtkMul;
                     return;
             }
+            if (busy) return;                          // 내리찍기 중
             if (elite && Time.time >= nextSpin && dist < SpinRadius - 0.3f)
             {
                 act = Act.Spin;
@@ -210,16 +173,7 @@ namespace CatTang
                 tele = Telegraph.Ring(transform.position, SpinRadius, actUntil - Time.time, Telegraph.Danger, transform);
                 return;
             }
-            if (dist > 1.5f) transform.position += dir * Mathf.Min(spd * Time.deltaTime, dist - 1.5f);
-            Face(dir);
-            if (Time.time >= nextAttack && dist < BruteRange)
-            {
-                act = Act.Windup;
-                lockDir = dir;
-                actUntil = Time.time + BruteWindup / AtkMul;
-                Anim("Attack");
-                tele = Telegraph.Lane(transform.position, dir, BruteChargeDist + 0.8f, 1.6f, actUntil - Time.time, Telegraph.Danger);
-            }
+            BruteThink(p, dir, dist, spd);            // 일직선 돌진 · 내리찍기 가중 랜덤 + 우회 접근 (EnemyMoves)
         }
 
         // ---------- 모래시계 폭탄병 ----------
@@ -283,20 +237,10 @@ namespace CatTang
                     return;
                 }
             }
+            if (busy) return;                          // 모래 폭탄 투척 중
             if (dist > 0.9f) transform.position += dir * Mathf.Min(spd * Time.deltaTime, dist - 0.9f);
             Face(dir);
-            if (dist < BomberLeapRange && Time.time >= nextAttack)
-            {
-                // 착지 자리 = 지금 고양이 자리 (사거리까지만, 방 안으로). 웅크리는 순간부터 그 자리에 작은 조준 표시
-                var target = transform.position + dir * Mathf.Min(dist, BomberLeapRange);
-                var rm = RunManager.Instance;
-                leapTo = rm ? rm.ClampToRoom(target, 1.2f) : target;
-                leapTo.y = transform.position.y;
-                act = Act.Windup;
-                actUntil = Time.time + BomberCrouch / AtkMul;
-                Anim("Special");                              // 점프 클립: 웅크림 → 이륙 → 공중 → 착지
-                tele = Telegraph.Ring(leapTo, 0.6f, (actUntil - Time.time) + BomberAir, Telegraph.Aim).NoGlint();
-            }
+            BomberPick(p, dir, dist);                  // 도약 자폭 · 모래 폭탄 투척 가중 랜덤 (EnemyMoves)
         }
 
         void Explode(PlayerController p)
