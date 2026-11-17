@@ -47,6 +47,8 @@ namespace CatTang
 
         RoomBuilder.StageLayout layout;
         RoomBuilder.RoomInfo current;
+        public RoomBuilder.StageLayout Layout => layout;           // M 키 지도용
+        public RoomBuilder.RoomInfo CurrentRoom => current;
         readonly List<Enemy> alive = new();
         int wavesLeft;
         bool merchantSeen, stageDone;
@@ -57,6 +59,7 @@ namespace CatTang
         {
             Instance = this;
             Tables.Load();
+            gameObject.AddComponent<MapView>();                     // M 키 전체 지도
         }
 
         void Start()
@@ -192,7 +195,7 @@ namespace CatTang
                 do
                 {
                     pos = c + new Vector3(Random.Range(-current.size.x / 2 + 2.5f, current.size.x / 2 - 2.5f), 0, Random.Range(-current.size.y / 2 + 2.5f, current.size.y / 2 - 2.5f));
-                } while (Effects.Flat(pos - player.transform.position).magnitude < 5f && ++tries < 10);
+                } while ((Effects.Flat(pos - player.transform.position).magnitude < 5f || current.Blocked(pos, 1.2f)) && ++tries < 14);
                 spots.Add(pos);
                 Telegraph.Ring(pos, 0.7f, WavePreview, Telegraph.Aim);
             }
@@ -211,6 +214,19 @@ namespace CatTang
             float hx = Mathf.Max(0.5f, current.size.x / 2 - inset), hz = Mathf.Max(0.5f, current.size.y / 2 - inset);
             p.x = Mathf.Clamp(p.x, current.center.x - hx, current.center.x + hx);
             p.z = Mathf.Clamp(p.z, current.center.z - hz, current.center.z + hz);
+            // 방 모양으로 깎인 곳(막힌 덩어리) 밖으로 밀어냄
+            foreach (var b in current.blocks)
+            {
+                var e = new Rect(b.x - inset, b.y - inset, b.width + inset * 2, b.height + inset * 2);
+                if (!e.Contains(new Vector2(p.x, p.z))) continue;
+                // 바깥 벽에 붙은 면 쪽으로는 밀지 않음 (방 밖으로 튕겨 나가던 문제)
+                float big = 1e6f;
+                float dl = e.xMin >= current.center.x - hx ? p.x - e.xMin : big, dr = e.xMax <= current.center.x + hx ? e.xMax - p.x : big;
+                float dd = e.yMin >= current.center.z - hz ? p.z - e.yMin : big, du = e.yMax <= current.center.z + hz ? e.yMax - p.z : big;
+                float m = Mathf.Min(Mathf.Min(dl, dr), Mathf.Min(dd, du));
+                if (m >= big) continue;
+                if (m == dl) p.x = e.xMin; else if (m == dr) p.x = e.xMax; else if (m == dd) p.z = e.yMin; else p.z = e.yMax;
+            }
             return p;
         }
 

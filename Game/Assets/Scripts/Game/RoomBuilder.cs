@@ -108,6 +108,12 @@ namespace CatTang
             public Vector3 farSide = Vector3.forward;       // 다음 방(또는 출구 문)이 놓일 방향
             public bool entered, cleared;
             public bool midBoss;                            // 술집 홀 (중간 보스): 스테이지 2 마지막 방 뒤에 붙어 있음
+            public readonly List<Rect> blocks = new();       // 방 모양으로 깎인 막힌 덩어리 (월드 XZ, Rect.x = 최소 x · y = 최소 z)
+            public bool Blocked(Vector3 p, float pad = 0f)
+            {
+                foreach (var b in blocks) if (p.x > b.xMin - pad && p.x < b.xMax + pad && p.z > b.yMin - pad && p.z < b.yMax + pad) return true;
+                return false;
+            }
             public GameObject entranceGate, backGate;       // 술집 입구 · 뒷문 (평소 닫힘)
             public bool Contains(Vector3 p, float inset = 1.6f)
             {
@@ -213,7 +219,8 @@ namespace CatTang
                         }
                     }
                 }
-                if (KitProps(ch, info.root, hw, hd, rnd, boss)) { layout.rooms.Add(info); continue; }
+                if (!boss) AddShape(ch, info, rnd);
+                if (KitProps(ch, info, hw, hd, rnd, boss)) { layout.rooms.Add(info); continue; }
                 int props = boss ? 8 : 7;
                 for (int k = 0; k < props; k++)
                 {
@@ -221,6 +228,7 @@ namespace CatTang
                     float z = (float)(rnd.NextDouble() * 2 - 1) * (hd - 2.5f);
                     if (Mathf.Abs(x) < 3.2f && Mathf.Abs(z) < 3.2f) continue;                // 가운데 비움
                     if (Mathf.Abs(x) < 3f || Mathf.Abs(z) < 3f) continue;                    // 문 앞 통로 비움
+                    if (info.Blocked(info.center + new Vector3(x, 0, z), 1f)) continue;
                     Prop(ch.Prop, info.root, new Vector3(x, 0, z), rnd);
                 }
                 layout.rooms.Add(info);
@@ -235,6 +243,67 @@ namespace CatTang
         }
 
         static Vector2Int saloonDir;
+
+        // ---------- 방 모양 (2026-11-17 사용자: 완전 사각형 말고) ----------
+        // 사각 그대로 15% · 모서리 홈 35% · L자 30% · 가운데 섬 20%. 막힌 덩어리는 안쪽 면에 절벽(스테이지 1) · 건물 벽 모듈을 둘러 보이게 하고
+        // 위는 바위 · 지붕 색 뚜껑. 문 앞 통로(벽 가운데 ±2.3)와 방 가운데는 비워 둠. 적 생성 · 이동은 RunManager가 막힌 곳을 피함
+        static void AddShape(ChapterDef ch, RoomInfo info, System.Random rnd)
+        {
+            float hw = info.size.x / 2, hd = info.size.y / 2;
+            double roll = rnd.NextDouble();
+            float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+            int sx() => rnd.Next(2) == 0 ? -1 : 1;
+            if (roll < 0.15) return;
+            if (roll < 0.5)
+            {
+                // 모서리 홈: 네 모서리 중 2~4곳
+                foreach (var c in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
+                {
+                    if (rnd.NextDouble() < 0.35) continue;
+                    float w = R(3.5f, 5f), d = R(3f, 4.2f);
+                    Block(ch, info, new Vector2(c.x * (hw - w / 2), c.y * (hd - d / 2)), new Vector2(w, d), hw, hd);
+                }
+            }
+            else if (roll < 0.8)
+            {
+                // L자: 한 모서리를 크게
+                float w = R(7.5f, 9f), d = R(5.5f, 7f);
+                Block(ch, info, new Vector2(sx() * (hw - w / 2), sx() * (hd - d / 2)), new Vector2(w, d), hw, hd);
+            }
+            else
+            {
+                // 가운데 섬 + 모서리 홈 하나
+                float w = R(3f, 4.2f), d = R(3f, 4f);
+                Block(ch, info, new Vector2(sx() * R(4.5f, 6.5f), sx() * R(3f, 4.5f)), new Vector2(w, d), hw, hd);
+                float w2 = R(3.5f, 4.5f), d2 = R(3f, 4f);
+                Block(ch, info, new Vector2(sx() * (hw - w2 / 2), sx() * (hd - d2 / 2)), new Vector2(w2, d2), hw, hd);
+            }
+        }
+
+        /// <summary>막힌 덩어리 하나: local = 방 기준 가운데, size = 가로 · 세로. 충돌 상자 + 안쪽 면 벽 모듈 + 위 뚜껑</summary>
+        static void Block(ChapterDef ch, RoomInfo info, Vector2 local, Vector2 size, float hw, float hd)
+        {
+            var rm = RunManager.Instance;
+            bool cliff = rm && rm.stageIndex == 0;
+            var top = Mat(cliff ? new Color(0.55f, 0.27f, 0.18f) : new Color(0.33f, 0.2f, 0.14f), 4);
+            var go = Prim(PrimitiveType.Cube, "Block", info.root, new Vector3(local.x, 1.25f, local.y), new Vector3(size.x, 2.5f, size.y), top);
+            info.blocks.Add(new Rect(info.center.x + local.x - size.x / 2, info.center.z + local.y - size.y / 2, size.x, size.y));
+            // 방 안쪽을 향한 면에만 벽 모듈 (바깥 벽과 겹치는 면은 건너뜀)
+            var sides = new[] { (new Vector2(1, 0), size.y), (new Vector2(-1, 0), size.y), (new Vector2(0, 1), size.x), (new Vector2(0, -1), size.x) };
+            foreach (var (n, len) in sides)
+            {
+                float edge = n.x != 0 ? local.x + n.x * size.x / 2 : local.y + n.y * size.y / 2;
+                float limit = n.x != 0 ? hw : hd;
+                if (Mathf.Abs(edge) >= limit - 0.05f) continue;
+                var pos = n.x != 0 ? new Vector3(edge, 1.25f, local.y) : new Vector3(local.x, 1.25f, edge);
+                var cube = Prim(PrimitiveType.Cube, "BlockFace", info.root, pos, n.x != 0 ? new Vector3(0.3f, 2.5f, len) : new Vector3(len, 2.5f, 0.3f), top, false);
+                Kit.TileWall(ch, cube, new Vector3(n.x, 0, n.y));
+            }
+            // 바위 지대면 위에 바위 몇 개 (뚜껑이 밋밋하지 않게)
+            if (cliff && Kit.Has(ch, "Rock_0"))
+                for (int i = 0; i < 2; i++)
+                    Kit.Place(ch, i == 0 ? "Rock_0" : "Rock_2", info.root, new Vector3(local.x + (i == 0 ? -0.25f : 0.3f) * size.x, 2.4f, local.y + (i == 0 ? 0.2f : -0.2f) * size.y), i * 130f, 1.1f, false);
+        }
 
         // ---------- 술집 홀 (중간 보스, 2026-11-17 사용자: 건물로 걸어 들어가 이어지게) ----------
         // 스테이지 2 마지막 방에서 복도를 지나 술집 여닫이문으로 들어감 → 홀 안에서 싸움 → 이기면 북쪽 뒷문이 열리고
@@ -318,8 +387,9 @@ namespace CatTang
         /// 키트 소품 배치 (1장 기획서): 화약통 방마다 2~4개 · 부서지는 엄폐물(마차 · 상자 · 울타리) · 녹은 시계 장식(벽 쪽).
         /// 후보 자리 중 일부에만 놓음 (가운데 · 문 앞 통로는 비움). 키트가 없으면 false
         /// </summary>
-        static bool KitProps(ChapterDef ch, Transform root, float hw, float hd, System.Random rnd, bool boss)
+        static bool KitProps(ChapterDef ch, RoomInfo info, float hw, float hd, System.Random rnd, bool boss)
         {
+            var root = info.root;
             if (!Kit.Has(ch, "Keg")) return false;
             var spots = new List<Vector3>();
             for (float x = -hw + 3f; x <= hw - 3f; x += 3f)
@@ -327,6 +397,7 @@ namespace CatTang
                 {
                     if (Mathf.Abs(x) < 3.2f && Mathf.Abs(z) < 3.2f) continue;            // 가운데 비움
                     if (Mathf.Abs(x) < 2.6f || Mathf.Abs(z) < 2.6f) continue;            // 문 앞 통로 비움
+                    if (info.Blocked(info.center + new Vector3(x, 0, z), 1.2f)) continue;   // 방 모양으로 깎인 곳
                     spots.Add(new Vector3(x, 0, z));
                 }
             for (int i = spots.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); (spots[i], spots[j]) = (spots[j], spots[i]); }
