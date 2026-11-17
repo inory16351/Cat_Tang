@@ -69,3 +69,32 @@ for _ in range(30):
 img[crack] = [120, 66, 40]
 Image.fromarray(img.astype(np.uint8)).save(os.path.join(OUT, 'ground_ch1.png'))
 print('saved', os.path.join(OUT, 'ground_ch1.png'))
+
+# ---------- 술집 실내 마루 (이어지는 나무 판자) ----------
+rng2 = np.random.default_rng(23)
+rows = 8                                            # 1024 안에 판자 8줄 (가장자리에서 이어짐)
+wood = np.array([[150, 92, 56], [132, 80, 48], [116, 68, 40], [168, 104, 62]], dtype=np.float32)
+img2 = np.zeros((N, N, 3), np.float32)
+grain = periodic_noise([(1, 0.4), (32, 1.0), (64, 0.5)])
+for r in range(rows):
+    y0, y1 = r * N // rows, (r + 1) * N // rows
+    # 판자 이음매: 줄마다 2~3개, 위치는 원환(0~1)
+    cuts = np.sort(rng2.random(rng2.integers(2, 4)))
+    xs = np.arange(N) / N
+    seg = np.searchsorted(cuts, xs) % len(cuts)
+    for sidx in range(len(cuts)):
+        tone = wood[rng2.integers(0, 4)] * rng2.uniform(0.93, 1.07)
+        cols = seg == sidx
+        img2[y0:y1, cols] = tone
+    g = grain[y0:y1]
+    img2[y0:y1] *= (0.9 + 0.2 * (g > 0.55))[..., None]       # 나뭇결 띠 (2단)
+    img2[y0:y0 + 6] *= 0.62                                   # 판자 사이 홈
+    for c in cuts:
+        cx = int(c * N)
+        img2[y0:y1, max(0, cx - 2):cx + 2] *= 0.6               # 판자 끝 이음매
+    for c in cuts:                                            # 못 자국
+        for dy in (14, (y1 - y0) - 18):
+            cx = (int(c * N) + 10) % N
+            img2[y0 + dy:y0 + dy + 5, cx:cx + 5] = [70, 50, 40]
+Image.fromarray(np.clip(img2, 0, 255).astype(np.uint8)).save(os.path.join(OUT, 'saloon_floor.png'))
+print('saved saloon_floor.png')

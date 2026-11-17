@@ -107,6 +107,8 @@ namespace CatTang
             public readonly List<GameObject> gates = new();
             public Vector3 farSide = Vector3.forward;       // 다음 방(또는 출구 문)이 놓일 방향
             public bool entered, cleared;
+            public bool midBoss;                            // 술집 홀 (중간 보스): 스테이지 2 마지막 방 뒤에 붙어 있음
+            public GameObject entranceGate, backGate;       // 술집 입구 · 뒷문 (평소 닫힘)
             public bool Contains(Vector3 p, float inset = 1.6f)
             {
                 var d = p - center;
@@ -122,9 +124,14 @@ namespace CatTang
 
         static readonly Vector2Int[] Dirs = { new(0, 1), new(1, 0), new(-1, 0) };   // 북 · 동 · 서 (남쪽으로는 안 감)
 
-        public static StageLayout BuildStage(ChapterDef ch, int roomCount, int seed, bool boss, Vector2? sizeOverride = null)
+        /// <param name="origin">스테이지를 지을 월드 위치 (첫 방 가운데)</param>
+        /// <param name="entrySouth">첫 방 남쪽 벽을 열어 둠 (술집 뒷문에서 걸어 들어옴)</param>
+        /// <param name="saloonAfter">마지막 방 뒤에 술집 홀(중간 보스)을 붙여 지음</param>
+        public static StageLayout BuildStage(ChapterDef ch, int roomCount, int seed, bool boss, Vector2? sizeOverride = null,
+            Vector3 origin = default, bool entrySouth = false, bool saloonAfter = false)
         {
             var layout = new StageLayout { root = new GameObject(boss ? "Stage_Boss" : "Stage").transform };
+            layout.root.position = origin;
             var rnd = new System.Random(seed);
             var cells = new List<Vector2Int> { Vector2Int.zero };
             if (!boss)
@@ -147,12 +154,21 @@ namespace CatTang
             for (int i = 0; i < cells.Count; i++)
             {
                 var c = cells[i];
-                var info = new RoomInfo { center = new Vector3(c.x * cellSize.x, 0, c.y * cellSize.y), size = roomSize };
+                var local = new Vector3(c.x * cellSize.x, 0, c.y * cellSize.y);
+                var info = new RoomInfo { center = origin + local, size = roomSize };
                 info.root = new GameObject(boss ? "Room_Boss" : $"Room_{i + 1}").transform;
                 info.root.SetParent(layout.root, false);
-                info.root.localPosition = info.center;
-                var prev = i > 0 ? cells[i - 1] - c : (Vector2Int?)null;
+                info.root.localPosition = local;
+                var prev = i > 0 ? cells[i - 1] - c : (entrySouth ? new Vector2Int(0, -1) : (Vector2Int?)null);
                 var next = i < cells.Count - 1 ? cells[i + 1] - c : (Vector2Int?)null;
+                if (saloonAfter && i == cells.Count - 1)
+                {
+                    saloonDir = Vector2Int.zero;
+                    foreach (var d in Dirs) if (!cells.Contains(c + d) && !cells.Contains(c + d + Vector2Int.up) && (prev == null || prev.Value != d)) { saloonDir = d; break; }   // 술집 뒷문 너머 칸(스테이지 3 첫 방)도 비어 있어야
+                    if (saloonDir == Vector2Int.zero)
+                        foreach (var d in Dirs) if (!cells.Contains(c + d) && (prev == null || prev.Value != d)) { saloonDir = d; break; }
+                    if (saloonDir != Vector2Int.zero) next = saloonDir;
+                }
                 info.farSide = next.HasValue ? new Vector3(next.Value.x, 0, next.Value.y) : (prev.HasValue ? new Vector3(-prev.Value.x, 0, -prev.Value.y) : Vector3.forward);
                 float hw = roomSize.x / 2, hd = roomSize.y / 2;
                 var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(roomSize.x, 0.2f, roomSize.y), floor);
@@ -209,7 +225,93 @@ namespace CatTang
                 }
                 layout.rooms.Add(info);
             }
+            if (saloonAfter && cells.Count > 0 && saloonDir != Vector2Int.zero)
+            {
+                var lastCell = cells[cells.Count - 1];
+                BuildSaloon(ch, layout, origin + new Vector3((lastCell.x + saloonDir.x) * cellSize.x, 0, (lastCell.y + saloonDir.y) * cellSize.y),
+                    new Vector3(-saloonDir.x, 0, -saloonDir.y), cellSize, seed);
+            }
             return layout;
+        }
+
+        static Vector2Int saloonDir;
+
+        // ---------- 술집 홀 (중간 보스, 2026-11-17 사용자: 건물로 걸어 들어가 이어지게) ----------
+        // 스테이지 2 마지막 방에서 복도를 지나 술집 여닫이문으로 들어감 → 홀 안에서 싸움 → 이기면 북쪽 뒷문이 열리고
+        // 그 너머에 스테이지 3이 이어 지어짐 (RunManager). 실내: 나무 마루 · 판자벽, 바깥 입구 쪽은 건물 정면
+        public static readonly Vector2 SaloonSize = new(26, 20);    // 깊이 20 = 일반 방과 같아 복도 길이가 맞음
+        public const float CellDepth = 30f;               // 방 칸 간격 (스테이지 3을 뒷문 너머에 붙일 때)
+
+        static void BuildSaloon(ChapterDef ch, StageLayout layout, Vector3 center, Vector3 entrance, Vector2 cellSize, int seed)
+        {
+            var rnd = new System.Random(seed + 77);
+            var size = SaloonSize;
+            var info = new RoomInfo { center = center, size = size, midBoss = true, farSide = Vector3.forward };
+            info.root = new GameObject("Saloon").transform;
+            info.root.SetParent(layout.root, false);
+            info.root.position = center;
+            float hw = size.x / 2, hd = size.y / 2;
+            var wall = Mat(new Color(0.42f, 0.26f, 0.16f), 4);
+            var gateM = Mat(new Color(0.55f, 0.33f, 0.19f), 4);
+            var floorM = Mat(new Color(0.5f, 0.32f, 0.2f), 0);
+            var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(size.x, 0.2f, size.y), floorM);
+            Kit.TileFloor(ch, info.root, size, floorGo, seed, "SaloonFloor", false);
+            var ent = new Vector2Int(Mathf.RoundToInt(entrance.x), Mathf.RoundToInt(entrance.z));
+            var back = new Vector2Int(0, 1);
+            foreach (var side in new[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
+            {
+                bool open = side == ent || side == back;
+                bool horizontal = side.y != 0;
+                float len = horizontal ? size.x : size.y;
+                var pos = new Vector3(side.x * hw, 1.25f, side.y * hd);
+                var inward = new Vector3(-side.x, 0, -side.y);
+                if (!open)
+                {
+                    Kit.TileWall(ch, Prim(PrimitiveType.Cube, "Wall", info.root, pos, horizontal ? new Vector3(len, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, len), wall), inward, "PlankWall");
+                    continue;
+                }
+                float seg = len / 2 - 2.3f;
+                for (int k = -1; k <= 1; k += 2)
+                {
+                    var off = horizontal ? new Vector3(k * (2.3f + seg / 2), 0, 0) : new Vector3(0, 0, k * (2.3f + seg / 2));
+                    var cube = Prim(PrimitiveType.Cube, "Wall", info.root, pos + off, horizontal ? new Vector3(seg, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, seg), wall);
+                    Kit.TileWall(ch, cube, inward, "PlankWall");
+                    if (side == ent) Kit.TileWall(ch, cube, -inward, "Wall", false);     // 바깥에서 보면 술집 건물 정면
+                }
+                // 문: 여닫이 술집 문(장식) + 막는 문짝(평소 닫힘 → RunManager가 열어 줌)
+                float doorYaw = Quaternion.LookRotation(inward).eulerAngles.y;
+                if (side == ent) Kit.Place(ch, "SaloonDoor", info.root, pos - new Vector3(0, 1.25f, 0) - inward * 0.1f, doorYaw, 1f, false);
+                var gate = Prim(PrimitiveType.Cube, side == ent ? "SaloonGate" : "BackGate", info.root, pos, horizontal ? new Vector3(4.6f, 2.5f, 0.5f) : new Vector3(0.5f, 2.5f, 4.6f), gateM);
+                info.gates.Add(gate);
+                if (side == ent) info.entranceGate = gate; else info.backGate = gate;
+                // 복도: 입구 쪽은 스테이지 2 마지막 방이 이미 지음. 뒷문 쪽은 스테이지 3 첫 방(깊이 20)의 남쪽 벽까지
+                if (side == back)
+                {
+                    float gapLen = CellDepth - hd - 10f;
+                    var mid = new Vector3(0, 0, hd + gapLen / 2);
+                    var cor = new GameObject("BackCorridor").transform;
+                    cor.SetParent(info.root, false);
+                    cor.localPosition = Vector3.zero;
+                    var cf = Prim(PrimitiveType.Cube, "Floor", cor, mid + Vector3.down * 0.1f, new Vector3(4.6f, 0.2f, gapLen + 0.4f), floorM);
+                    var cg = new GameObject("CorridorGround").transform; cg.SetParent(cor, false); cg.localPosition = mid;
+                    Kit.TileFloor(ch, cg, new Vector2(4.6f, gapLen + 0.4f), cf, seed + 5, "Ground", false);
+                    for (int k = -1; k <= 1; k += 2)
+                        Prim(PrimitiveType.Cube, "Wall", cor, mid + new Vector3(k * 2.6f, 1.25f, 0), new Vector3(0.6f, 2.5f, gapLen + 0.4f), wall);
+                }
+            }
+            // 실내 소품: 뒷벽 양쪽 카운터(보스가 그 사이에서 나옴), 모서리 술통 더미, 화약통 · 상자
+            Kit.Place(ch, "BarCounter", info.root, new Vector3(-7f, 0, hd - 2.2f), 180f);
+            Kit.Place(ch, "BarCounter", info.root, new Vector3(7f, 0, hd - 2.2f), 180f);
+            Kit.Place(ch, "BarrelStack", info.root, new Vector3(-hw + 1.6f, 0, hd - 1.8f), 30f);
+            Kit.Place(ch, "BarrelStack", info.root, new Vector3(hw - 1.6f, 0, -hd + 1.8f), 200f);
+            Kit.Place(ch, "Crates", info.root, new Vector3(hw - 2f, 0, hd - 2.4f), 15f);
+            var kegs = new List<Vector3> { new(-6f, 0, -2f), new(6f, 0, -1.5f), new(-9f, 0, 3f), new(9f, 0, 2.5f) };
+            for (int i = 0; i < 2; i++)
+            {
+                var kp = kegs[rnd.Next(kegs.Count)]; kegs.Remove(kp);
+                var kg = Kit.Place(ch, "Keg", info.root, kp, rnd.Next(360)); if (kg) PowderKeg.Make(kg);
+            }
+            layout.rooms.Add(info);
         }
 
         /// <summary>

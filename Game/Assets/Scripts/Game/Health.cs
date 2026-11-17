@@ -131,6 +131,7 @@ namespace CatTang
                 bool on = Mathf.Repeat(Time.unscaledTime * 14f, 1f) < 0.55f;
                 hurtK = on ? Mathf.Lerp(0.45f, 0.85f, left) : 0.1f * left;
             }
+            if (mpb == null || rends == null) RefreshRenderers();       // Awake 전에 불린 경우 (비활성으로 만들어진 오브젝트 등)
             for (int i = 0; i < rends.Length; i++)
             {
                 if (!rends[i]) continue;

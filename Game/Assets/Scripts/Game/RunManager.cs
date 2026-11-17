@@ -96,21 +96,33 @@ namespace CatTang
             ui?.Toast("중간 보스 — 태엽 현상금 사냥꾼");
         }
 
-        void BuildStage(int index, RewardKind reward)
+        void BuildStage(int index, RewardKind reward) => BuildStage(index, reward, null);
+
+        // 술집(중간 보스) 뒷문 너머에 이어 지은 스테이지 3: 첫 방에 들어가면 지나온 스테이지 2 · 술집을 지움
+        RoomBuilder.StageLayout oldLayout;
+
+        /// <param name="attachOrigin">있으면 순간이동 없이 그 자리(술집 뒷문 너머)에 이어 지음</param>
+        void BuildStage(int index, RewardKind reward, Vector3? attachOrigin)
         {
             IsMidBossRoom = false;
-            if (layout != null && layout.root) Destroy(layout.root.gameObject);
+            if (attachOrigin.HasValue) oldLayout = layout;
+            else if (layout != null && layout.root) Destroy(layout.root.gameObject);
             foreach (var e in alive) if (e) Destroy(e.gameObject);
             alive.Clear();
             stageIndex = index;
             pendingReward = reward;
             stageDone = false;
             int rooms = IsBossRoom ? 1 : Random.Range(4, 6);
-            layout = RoomBuilder.BuildStage(Chapter, rooms, chapter * 1000 + index * 37 + Random.Range(0, 999), IsBossRoom);
+            // 스테이지 2 마지막 방 뒤에 술집 홀(중간 보스)을 붙여 지음 (2026-11-17 사용자: 건물로 걸어 들어가 이어지게)
+            bool saloon = index == 1 && HasMidBoss && !midBossDone;
+            layout = RoomBuilder.BuildStage(Chapter, rooms, chapter * 1000 + index * 37 + Random.Range(0, 999), IsBossRoom, null,
+                attachOrigin ?? Vector3.zero, attachOrigin.HasValue, saloon);
+            var hallRoom = layout.rooms.Find(r => r.midBoss);
+            if (hallRoom != null) { if (hallRoom.entranceGate) hallRoom.entranceGate.SetActive(true); if (hallRoom.backGate) hallRoom.backGate.SetActive(true); }
             current = null;
             roomIndex = 0;
             var r0 = layout.rooms[0];
-            player.Teleport(r0.center - r0.farSide * (r0.size.y / 2 - 3) + Vector3.up * 0.3f);
+            if (!attachOrigin.HasValue) player.Teleport(r0.center - r0.farSide * (r0.size.y / 2 - 3) + Vector3.up * 0.3f);
             if (IsBossRoom) Music.Play("bgm_boss");
             ui?.Toast(IsBossRoom ? Chapter.BossName : $"{chapter}장 · 스테이지 {index + 1}/{Stages} — 방 {rooms}개");
         }
@@ -129,11 +141,18 @@ namespace CatTang
 
         void EnterRoom(int i)
         {
+            if (oldLayout != null) { if (oldLayout.root) Destroy(oldLayout.root.gameObject); oldLayout = null; }   // 지나온 술집 · 스테이지 2 정리
             current = layout.rooms[i];
             current.entered = true;
             roomIndex = i;
             inCombat = true;
             foreach (var g in current.gates) g.SetActive(true);
+            if (current.midBoss)
+            {
+                IsMidBossRoom = true;                     // 술집 홀: 들어서면 문이 닫히고 중간 보스
+                Music.Play("bgm_boss");
+                ui?.Toast("중간 보스 — 태엽 현상금 사냥꾼");
+            }
             wavesLeft = IsBossRoom || IsMidBossRoom ? 1 : (stageIndex >= 2 ? 3 : Random.value < 0.5f ? 2 : 3);   // 방마다 웨이브 2~3번 (1장 기획서)
             StartCoroutine(SpawnSoon());
         }
@@ -211,7 +230,17 @@ namespace CatTang
             current.cleared = true;
             foreach (var g in current.gates) g.SetActive(false);
             player.ResetCylinder();
-            if (layout.rooms.Any(r => !r.cleared)) { ui?.Toast("다음 방으로"); return; }
+            if (current.midBoss)
+            {
+                // 술집에서 이김: 뒷문이 열리고 그 앞에 다음 보상 문 → 고르면 뒷문 너머에 스테이지 3이 이어 지어짐
+                midBossDone = true;
+                stageDone = true;
+                ui?.Toast("태엽 현상금 사냥꾼을 쓰러뜨렸다 (+30 골드) — 뒷문이 열렸다");
+                player.inv.gold += 30;
+                SpawnDoors();
+                return;
+            }
+            if (layout.rooms.Any(r => !r.cleared && !r.midBoss)) { ui?.Toast("다음 방으로"); return; }
             stageDone = true;
             if (IsMidBossRoom)
             {
@@ -255,6 +284,15 @@ namespace CatTang
         {
             bool merchant = Random.value < 0.15f || (!merchantSeen && stageIndex == Stages - 2);   // 상인 15% · 챕터당 최소 1번 (1장 기획서)
             if (merchant) SpawnMerchant();
+            // 스테이지 2: 문 고르기 대신 술집 문이 열림 (걸어 들어가면 중간 보스)
+            var hall = layout?.rooms.Find(r => r.midBoss && !r.cleared);
+            if (hall != null)
+            {
+                if (hall.entranceGate) hall.entranceGate.SetActive(false);
+                stageDone = false;
+                ui?.Toast("술집 문이 열렸다 — 들어가면 중간 보스");
+                return;
+            }
             SpawnDoors();
         }
 
@@ -388,6 +426,15 @@ namespace CatTang
             {
                 afterMidBoss = d.reward;
                 BuildMidBoss();
+                return;
+            }
+            var hall = layout?.rooms.Find(r => r.midBoss && r.cleared);
+            if (hall != null)
+            {
+                // 술집 뒷문 너머에 다음 스테이지를 이어 지음 (순간이동 없음). 고르지 않은 문들은 치움
+                foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
+                BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward, hall.center + new Vector3(0, 0, RoomBuilder.CellDepth));
+                ui?.Toast("뒷문 너머로");
                 return;
             }
             BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward);

@@ -55,12 +55,12 @@ namespace CatTang
         }
 
         /// <summary>벽 한 줄을 모듈로 채움: 충돌용 상자는 그대로 두고 그림만 모듈로 바꿈. inward = 방 안쪽 방향</summary>
-        public static bool TileWall(ChapterDef ch, GameObject wallCube, Vector3 inward)
+        public static bool TileWall(ChapterDef ch, GameObject wallCube, Vector3 inward, string module = null, bool hideCube = true)
         {
-            // 스테이지 1(황무지 절벽길)은 절벽 바위 모듈, 그 뒤(마을)는 건물 정면 모듈
+            // 스테이지 1(황무지 절벽길)은 절벽 바위 모듈, 그 뒤(마을)는 건물 정면 모듈. module을 주면 그것 (술집 실내 = PlankWall)
             var rm = RunManager.Instance;
             bool cliff = rm && rm.stageIndex == 0 && !rm.IsMidBossRoom && Has(ch, "Cliff");
-            var prefab = Prefab(ch, cliff ? "Cliff" : "Wall");
+            var prefab = Prefab(ch, module ?? (cliff ? "Cliff" : "Wall"));
             if (!prefab || !wallCube) return false;
             var t = wallCube.transform;
             bool alongX = t.localScale.x >= t.localScale.z;
@@ -81,7 +81,7 @@ namespace CatTang
                 go.transform.localScale = new Vector3(w / modW, 1, 1);
             }
             var r = wallCube.GetComponent<Renderer>();
-            if (r) r.enabled = false;
+            if (r && hideCube) r.enabled = false;
             return true;
         }
 
@@ -89,9 +89,9 @@ namespace CatTang
         /// <summary>바닥 (2026-11-17 사용자: 반복 이음매 없애기): 이어지는 흙 텍스처(Resources/Kit/Ch{장}/Ground.mat, Art/tools/ground_texture.py)를
         /// 방 크기의 판 하나에 8m마다 반복해 깔고, 블렌더 바닥 조각(판자 · 자갈 · 마른 풀 · 모래 둔덕 · 해골 · 바위)을 무작위로 흩뿌려 반복을 깸.
         /// 재질이 없으면 예전처럼 4m 타일을 격자로</summary>
-        public static bool TileFloor(ChapterDef ch, Transform root, Vector2 size, GameObject floorCube, int seed)
+        public static bool TileFloor(ChapterDef ch, Transform root, Vector2 size, GameObject floorCube, int seed, string material = "Ground", bool scatter = true)
         {
-            var mat = ch != null ? Resources.Load<Material>($"Kit/Ch{ch.Id}/Ground") : null;
+            var mat = ch != null ? Resources.Load<Material>($"Kit/Ch{ch.Id}/{material}") : null;
             if (mat)
             {
                 var go = new GameObject("Ground");
@@ -101,7 +101,7 @@ namespace CatTang
                 var mr = go.AddComponent<MeshRenderer>();
                 mr.sharedMaterial = mat;
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                ScatterGround(ch, root, size, seed);
+                if (scatter) ScatterGround(ch, root, size, seed);
                 var fr = floorCube ? floorCube.GetComponent<Renderer>() : null;
                 if (fr) fr.enabled = false;
                 return true;
