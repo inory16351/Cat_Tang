@@ -1,0 +1,9 @@
+Create ONE image file named head_dash.png in the current directory (use your image generation tool and save it here; do not draw it with code — after generating you may only crop/resize/save). Square 512x512.
+
+A tiny game UI GLYPH that floats above the player character's head and shows one remaining DASH charge. Three of them are lined up overlapping like "<<<", so it must read instantly at a very small size (about 40 pixels tall on screen).
+Design: ONE single bold CHEVRON pointing LEFT, shaped like the "<" sign — thick chunky arms (each arm about 22% of the canvas thick), a slightly sharp tip, the two open ends cut at a slant, a little hand-drawn irregularity.
+Colors: the chevron body is almost pure WHITE (#F4F7FA) with one flat light cool-grey shade band (#C9D2DC) along its lower edge (flat cel shading, no gradient), and a tiny white highlight. The game tints it, so keep the body light and neutral (NO cyan, NO gold).
+Outline: a THICK very dark ink outline (#1A1222) all around, like the attached HUD reference style.
+No text, no letters, no numbers, no extra symbols, nothing else on the canvas.
+Centered, the chevron fills about 75% of the canvas height.
+Background outside the chevron: perfectly flat solid magenta #FF00FF (no gradient, no shadow on the background, no glow bleeding onto it).

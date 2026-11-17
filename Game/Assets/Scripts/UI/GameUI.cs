@@ -75,7 +75,9 @@ namespace CatTang
             {
                 hud = new GameObject("HudView").AddComponent<HudView>();
                 hud.transform.SetParent(transform, false);
+                hud.lift = HudLift;                                   // 장전 HUD 밑에 경험치 바 자리
                 hud.Build(hudRoot, 1080);
+                HeadDash.Create(this);                                // 고양이 머리 위 남은 대시 '<<<'
             }
             BuildTop();
             if (!village) TraitHud.Build(hudRoot, new Vector2(30, -262));     // 활성 특성 목록 (마우스 올리면 효과)
@@ -268,13 +270,14 @@ namespace CatTang
             bossName = UIKit.Label("Name", bossBar.transform, new Vector2(0.5f, 1), new Vector2(0, 6), new Vector2(900, 40), 30, TextAnchor.MiddleCenter, true, UIKit.Gold);
             bossBar.SetActive(false);
             roomText = UIKit.Label("Room", hudRoot, new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(900, 44), 28, TextAnchor.MiddleCenter, true, UIKit.Cream);
-            nextText = UIKit.Label("Next", hudRoot, new Vector2(0.5f, 0), new Vector2(0, 285), new Vector2(1000, 36), 22, TextAnchor.MiddleCenter);
-            heatText = UIKit.Label("Heat", hudRoot, new Vector2(0.5f, 0), new Vector2(390, 40), new Vector2(260, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Gold);
+            float up = village ? 0 : HudLift - 4f;                       // 장전 HUD가 경험치 바만큼 올라간 만큼 같이
+            nextText = UIKit.Label("Next", hudRoot, new Vector2(0.5f, 0), new Vector2(0, 285 + up), new Vector2(1000, 36), 22, TextAnchor.MiddleCenter);
+            heatText = UIKit.Label("Heat", hudRoot, new Vector2(0.5f, 0), new Vector2(390, 40 + up), new Vector2(260, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Gold);
             skillText = UIKit.Label("Skill", hudRoot, new Vector2(1, 0), new Vector2(-30, 30), new Vector2(420, 130), 20, TextAnchor.LowerRight);
             var help = UIKit.Label("Help", hudRoot, new Vector2(0, 0), new Vector2(26, 26), new Vector2(560, 150), 18, TextAnchor.LowerLeft, false, new Color(1, 1, 1, 0.55f));
             help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\nR 완벽 장전 · 우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리";
             // 상호작용 안내
-            prompt = UIKit.Img("Prompt", hudRoot, "button", new Vector2(0.5f, 0), new Vector2(0, 340), new Vector2(460, 84), true, 2.2f).gameObject;
+            prompt = UIKit.Img("Prompt", hudRoot, "button", new Vector2(0.5f, 0), new Vector2(0, 340 + up), new Vector2(460, 84), true, 2.2f).gameObject;
             promptText = UIKit.Label("Text", prompt.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 2), new Vector2(420, 60), 28, TextAnchor.MiddleCenter, true);
             prompt.SetActive(false);
             if (village)
@@ -387,19 +390,23 @@ namespace CatTang
             toastText.text = "";
         }
 
-        // ---------- 경험치 바 (세피리아식, 대시 칸 아래) ----------
+        // ---------- 경험치 바 (세피리아식, 화면 아래 장전 HUD 밑 — 2026-11-17 사용자: 대시 칸 아래 → 장전 UI 아래) ----------
         // 그림 = Codex UI/xp_bar (놋쇠 틀 + 왼쪽 레벨 배지). 안쪽 빈 홈(XpSlot, 그림 비율)에 청록 채움을 왼쪽부터, 배지 가운데(XpBadge)에 레벨 숫자
         public static readonly Rect XpSlot = new(0.106f, 0.38f, 0.832f, 0.24f);       // x, y(아래부터), w, h — 그림 기준 비율 (docs/tools/ui_xp_cut.py로 잰 홈 안쪽)
         public static readonly Vector2 XpBadge = new(0.048f, 0.506f);
         static readonly Color XpColor = new(0.42f, 0.92f, 1f);
-        const float XpW = 470f;
+        const float XpW = 470f, XpBottom = 6f;
+        static float XpH { get { var spr = UIKit.Spr("xp_bar"); return spr ? XpW * spr.rect.height / spr.rect.width : 44f; } }
+        /// <summary>장전 HUD를 화면 아래에서 띄우는 높이 = 경험치 바 높이 + 여백</summary>
+        static float HudLift => XpBottom + XpH + 2f;
         Image xpFill; RectTransform xpFillRt; Text xpLevel; float xpFillW, xpShown; int xpLastLevel;
 
         void BuildXpBar()
         {
+            if (village) return;
             var spr = UIKit.Spr("xp_bar");
-            float h = spr ? XpW * spr.rect.height / spr.rect.width : 44f;
-            var root = UIKit.MakeRect("XpBar", hudRoot, new Vector2(0, 1), new Vector2(28, -246), new Vector2(XpW, h), new Vector2(0, 1));
+            float h = XpH;
+            var root = UIKit.MakeRect("XpBar", hudRoot, new Vector2(0.5f, 0), new Vector2(0, XpBottom), new Vector2(XpW, h), new Vector2(0.5f, 0));
             if (!spr)
             {
                 var bg = root.gameObject.AddComponent<Image>(); bg.color = new Color(0.1f, 0.07f, 0.13f, 0.85f); bg.raycastTarget = false;

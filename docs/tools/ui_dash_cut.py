@@ -23,3 +23,11 @@ if __name__ == '__main__':
     icon.thumbnail((256, 256), Image.LANCZOS)
     icon.save(os.path.join(OUT, 'dash_icon.png'))
     print('icon', icon.size)
+    # 머리 위 남은 대시 '<' 한 칸 (프롬프트 prompts/head_dash.txt, HeadDash가 3개를 겹쳐 '<<<'로 씀)
+    hd_path = os.path.join(src, 'head_dash.png')
+    if os.path.exists(hd_path):
+        hd = keyed(hd_path)
+        hd = hd.crop(hd.getbbox())
+        hd.thumbnail((128, 128), Image.LANCZOS)
+        hd.save(os.path.join(OUT, 'head_dash.png'))
+        print('head_dash', hd.size)

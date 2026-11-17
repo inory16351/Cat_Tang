@@ -22,6 +22,7 @@ namespace CatTang
     public class HudView : MonoBehaviour
     {
         public float heightRatio = 0.25f;
+        public float lift = 4f;                          // 화면 아래에서 띄우는 높이 (밑에 경험치 바가 들어감, GameUI.HudLift)
 
         HudLayout L;
         RectTransform root, cylL, cylR, hand;
@@ -45,7 +46,7 @@ namespace CatTang
             root.pivot = new Vector2(0.5f, 0);
             root.sizeDelta = new Vector2(L.width, L.height);
             root.localScale = Vector3.one * scale;
-            root.anchoredPosition = new Vector2(0, 4);
+            root.anchoredPosition = new Vector2(0, lift);
 
             Img("BaseEmpty", root, "HUD/base_gauge_empty_toon", new Vector2(L.width / 2, L.height / 2), new Vector2(0.5f, 0.5f));
             texFull = Resources.Load<Texture2D>("HUD/base_gauge_full_toon");

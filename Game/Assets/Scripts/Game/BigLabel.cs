@@ -2,6 +2,7 @@
 // 월드 TextMesh(얇고 지형에 가려짐) 대신 화면 UI 배지: 어두운 원판 + 금테 + 굵은 외곽선 숫자, 월드 대상을 따라다님
 // - 글이 바뀌면 툭 커졌다 돌아오고(펀치), 위험 색이면 빠르게 맥동
 // - text 비우면 숨김. TextMesh와 같은 모양(text · color · gameObject)이라 기존 기믹 코드를 거의 그대로 씀
+// - 고양이를 따라다니는 배지는 offset 높이 대신 머리 위 대시 줄(HeadDash) 바로 위에 붙음
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -35,7 +36,8 @@ namespace CatTang
 
         public Color color { get => col; set { col = value; if (label) label.color = value; if (ring) ring.color = value; } }
 
-        static Canvas Canvas()
+        /// <summary>월드 대상을 따라다니는 화면 UI 캔버스 (BigLabel · HeadDash 같이 씀)</summary>
+        public static Canvas Canvas()
         {
             if (canvas) return canvas;
             UIKit.Init();
@@ -106,6 +108,9 @@ namespace CatTang
             foreach (Transform c in transform) c.gameObject.SetActive(show);
             if (!show) return;
             RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)canvas.transform, sp, null, out var lp);
+            // 고양이 머리 위 배지(현상금 표식 등)는 머리 위 대시 '<<<' 줄 바로 위에 (2026-11-17 사용자)
+            var pc = PlayerController.Instance;
+            if (target && pc && target == pc.transform && HeadDash.TryAbove(150f * 1.12f * sizeMul, out var above)) lp = above;
             // 화면 밖으로 나가지 않게 가장자리 안쪽에 붙잡음 (키 큰 보스 얼굴이 화면 위로 잘리지 않게)
             var half = ((RectTransform)canvas.transform).rect.size / 2f;
             float m = 95f * sizeMul;

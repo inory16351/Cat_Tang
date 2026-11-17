@@ -6,6 +6,7 @@ Shader "CatTang/Sprite"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4   // 기본 LEqual. 머리 위 UI(HeadDash)는 Always(8)로 벽에 안 가려지게
     }
     SubShader
     {
@@ -16,6 +17,7 @@ Shader "CatTang/Sprite"
             Tags { "LightMode" = "UniversalForward" }
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
+            ZTest [_ZTest]
             Cull Off
             HLSLPROGRAM
             #pragma vertex vert
