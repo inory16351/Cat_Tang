@@ -57,3 +57,21 @@
 - 배경 재질은 셰이더 `_Saturation` · `_Brightness`로 톤 조절 가능 (`Editor/EnvTone.cs`, 지금은 원래 값 1).
 - 적은 빨간 바깥 테두리가 자동으로 붙음 (`EnemyModelBuilder.EnemyEdge`).
 - 관련 파일: `Art/tools/specs/` (명세) · `Art/tools/blender_*.py` (Codex가 쓴 스크립트) · `Art/tools/tripo_import.py` (Tripo 가져오기) · `Game/Assets/Editor/EnemyModelBuilder.cs` (프리팹 빌더) · `Game/Assets/Editor/ModelPalette.cs` (배색표).
+
+## 5. Tripo CLI로 캐릭터 만들기 (2026-11-17, 2장부터)
+
+웹 대신 CLI(`tripo`, API 크레딧)를 씀. **H3.1 모델이 P2보다 훨씬 쌈** (이미지 생성 40 + 리깅 25 = 마리당 약 65 크레딧, P2는 생성만 100~130).
+
+1. 원화: ChatGPT 웹에서 정면 전신 · A자 자세 · 밝은 회색 배경 · 명암 없는 플랫 컬러 시트(3종 한 장) → 화면 확대 캡처로 한 명씩 자르기
+   → `python Art/tools/keep_main.py <캡처.png> Art/tripo_input/ch2/<이름>.png` (옆 캐릭터 조각 지움) → `python Art/tools/denoise.py ...` → `<이름>_dn.png`
+2. 생성 + 리깅 (백그라운드로 여러 개 동시에):
+   `tripo make <이름>_dn.png --model tripo-v3.1 -p texture=true -p texture_quality=detailed -p face_limit=12000 --then "rig-check,rig:model=rig-v3.0,spec=mixamo,out_format=fbx" --name Ch2_X -o Art/models/ch2/Ch2_X --json --yes --no-open`
+3. 들여오기: `python Art/tools/tripo_cli_import.py Ch2_X` → `Game/Assets/Art/Characters/Ch2/Ch2_X.fbx` + FBX에 박힌 텍스처를 꺼낸 `Ch2_X_basecolor.jpg`
+4. Unity: FBX를 Humanoid로(아바타 생성, 재질 가져오기 끔) → 메뉴 `CatTang/2장 프리팹 만들기 (Tripo + 블렌더)` → `Resources/Enemies/Ch2_*.prefab` · `Resources/Kit/Ch2/*.prefab`
+- 잔액: `tripo balance`. 크레딧이 모자라면 Chrome에서 Tripo 웹(studio.tripo3d.ai)으로.
+
+## 6. 배색 · 테두리 규칙 (2026-11-17)
+
+- **맵 = 따뜻하게, 몬스터 = 차갑게.** 몬스터는 모든 챕터에서 '시간의 하수인' 공통 색(차가운 보라 · 청회색 + 놋쇠 + 진홍 포인트). 맵 배색표(`ModelPalette.ChN`)에는 보라 · 파랑을 쓰지 않음.
+- **바깥 테두리 = 위협 신호.** 몬스터 = 빨간 바깥 테두리(`EnemyEdge`, 스텐실 4). 쏘면 터지는 물체 = 주황 ↔ 노랑 맥동 바깥 테두리(`Scripts/Game/DangerEdge.cs`, 스텐실 5). 맵 · 일반 소품에는 바깥 테두리 없음.
+- 폭발물 목록은 빌더 `EnemyModelBuilder.Explosives` (프리팹에 `DangerEdge`가 붙음). 1장 화약통은 `PowderKeg.Make`가 붙임.

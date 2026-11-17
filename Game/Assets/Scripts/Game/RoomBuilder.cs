@@ -263,6 +263,14 @@ namespace CatTang
         {
             var rm = RunManager.Instance;
             var pool = new List<(string name, float w, float d)>();
+            if (Ch2Kit.Is(ch))
+            {
+                // 2장: 장소별 지형지물 (크기는 프리팹 경계로 잼). 객차 방은 객차를 나란히
+                Ch2Kit.Coaches(ch, info, rnd);
+                foreach (var n in Ch2Kit.Landmarks())
+                    if (Kit.Has(ch, n)) { var lb = Kit.LocalBounds(Kit.Prefab(ch, n)); pool.Add((n, lb.size.x, lb.size.z)); }
+            }
+            else
             foreach (var lm in rm && rm.stageIndex == 0 ? BadlandsLM : TownLM) if (Kit.Has(ch, lm.name)) pool.Add(lm);
             if (pool.Count == 0) return;
             float hw = info.size.x / 2, hd = info.size.y / 2;
@@ -391,6 +399,7 @@ namespace CatTang
         static bool KitProps(ChapterDef ch, RoomInfo info, float hw, float hd, System.Random rnd, bool boss)
         {
             var root = info.root;
+            if (Ch2Kit.Is(ch)) { Ch2Kit.Props(ch, info, hw, hd, rnd, boss); return true; }
             if (!Kit.Has(ch, "Keg")) return false;
             var spots = new List<Vector3>();
             for (float x = -hw + 3f; x <= hw - 3f; x += 3f)
@@ -466,10 +475,12 @@ namespace CatTang
             go.transform.localPosition = pos;
             // 1장: 한쪽 바닥에서 술집 카운터가 솟아오르며 상인 등장 (키트가 있을 때)
             var rm = RunManager.Instance;
-            if (rm && Kit.Has(rm.Chapter, "BarCounter"))
+            // 2장: 바닥에서 매표 창구(매표소 직원)가 솟아오름
+            string counter = rm && Kit.Has(rm.Chapter, "TicketBooth") ? "TicketBooth" : "BarCounter";
+            if (rm && Kit.Has(rm.Chapter, counter))
             {
                 var dir = Effects.Flat(-pos).normalized;
-                Kit.Place(rm.Chapter, "BarCounter", go.transform, Vector3.zero, Quaternion.LookRotation(dir.sqrMagnitude > 0 ? dir : Vector3.forward).eulerAngles.y);
+                Kit.Place(rm.Chapter, counter, go.transform, Vector3.zero, Quaternion.LookRotation(dir.sqrMagnitude > 0 ? dir : Vector3.forward).eulerAngles.y);
                 go.AddComponent<RiseUp>();
                 Interactable.WorldIcon(go.transform, "UI/coin", new Vector3(0, 3.3f, 0), 0.8f);
                 return go;

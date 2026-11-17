@@ -12,7 +12,7 @@ namespace CatTang
     [RequireComponent(typeof(Health))]
     public partial class Enemy : MonoBehaviour
     {
-        public enum Kind { Outlaw, Brute, Bomber, Boss }
+        public enum Kind { Outlaw, Brute, Bomber, Boss, Conductor, Porter, Signal }   // 뒤 셋 = 2장 (EnemyCh2.cs)
         public static readonly List<Enemy> All = new();
 
         public Kind kind = Kind.Outlaw;
@@ -49,6 +49,7 @@ namespace CatTang
         Act act = Act.Move;
         float actUntil, charged;
         Vector3 lockDir;
+        readonly HashSet<Health> chargeProps = new();
         bool chargeHit;
         Telegraph tele;
         float bobT;
@@ -89,6 +90,9 @@ namespace CatTang
                 case Kind.Outlaw: OutlawUpdate(p, dir, dist, spd); break;
                 case Kind.Brute: BruteUpdate(p, dir, dist, spd); break;
                 case Kind.Bomber: BomberUpdate(p, dir, dist, spd); break;
+                case Kind.Conductor: ConductorUpdate(p, dir, dist, spd); break;
+                case Kind.Porter: PorterUpdate(p, dir, dist, spd); break;
+                case Kind.Signal: SignalUpdate(p, dir, dist, spd); break;
                 case Kind.Boss:
                     if (!brain) brain = GetComponent<BossBrain>();
                     if (brain) brain.Tick(p, dir, dist, spd); else BossUpdate(p, dir, dist, spd);
@@ -126,7 +130,7 @@ namespace CatTang
             {
                 case Act.Windup:
                     Face(lockDir);
-                    if (Time.time >= actUntil) { act = Act.Charge; charged = 0; chargeHit = false; }
+                    if (Time.time >= actUntil) { act = Act.Charge; charged = 0; chargeHit = false; chargeProps.Clear(); }
                     return;
                 case Act.Charge:
                 {
@@ -137,6 +141,7 @@ namespace CatTang
                     if (rm) transform.position = rm.ClampToRoom(transform.position, 1.2f);
                     float moved = (transform.position - before).magnitude;
                     charged += step;
+                    PropHit.Area(transform.position + lockDir * 0.8f, 1.3f, contactDamage, chargeProps);   // 돌진 길의 엄폐물 · 폭발물
                     if (!chargeHit && Effects.Flat(p.transform.position - transform.position).magnitude < 1.5f)   // 몸이 커져(반지름 0.95) 판정도 넓힘
                     {
                         chargeHit = true;
@@ -159,6 +164,7 @@ namespace CatTang
                     if (model && !anim) StartCoroutine(SpinModel());
                     if (Effects.Flat(p.transform.position - transform.position).magnitude <= SpinRadius) p.health.TakeDamage(contactDamage);
                     GunkataFx.Swirl(transform.position + Vector3.up, SpinRadius, 540f);
+                    PropHit.Area(transform.position, SpinRadius, contactDamage);
                     act = Act.Recover;
                     actUntil = Time.time + 0.5f;
                     nextSpin = Time.time + 3.5f / AtkMul;
@@ -249,6 +255,7 @@ namespace CatTang
             if (p && p.health.Alive && Effects.Flat(p.transform.position - transform.position).magnitude <= BomberRadius)
                 p.health.TakeDamage(contactDamage);
             if (elite) MeltPuddle.Spawn(transform.position, BomberRadius, SandLife, SandSlow, new Color(0.92f, 0.78f, 0.45f));   // 모래 장판
+            PropHit.Area(transform.position, BomberRadius, contactDamage);
             selfDestruct = true;
             health.hp = 0;
             Die(health);
@@ -282,15 +289,15 @@ namespace CatTang
             {
                 // 애니메이터가 걷기 · 동작을 맡음. 돌진 중엔 앞으로 살짝 숙이기만
                 anim.SetFloat("Speed", Mathf.Clamp01(moveSpeed / Mathf.Max(0.5f, speed)));
-                float lean2 = act == Act.Charge ? 12f : 0f;
+                float lean2 = act == Act.Charge ? 12f : 0f;          // 짐꾼 빈틈 자세는 전용 내리찍기 클립이 맡음
                 model.localRotation = Quaternion.Slerp(model.localRotation, Quaternion.Euler(lean2, 0, 0) * modelBaseRot, 12f * Time.deltaTime);
                 if (act != Act.Fuse && act != Act.Roll) model.localScale = modelScale;
                 if (act != Act.Roll) model.localPosition = Vector3.zero;
                 return;
             }
             float k = Mathf.Clamp01(moveSpeed / Mathf.Max(0.5f, speed));
-            bobT += Time.deltaTime * (kind == Kind.Bomber ? 16f : kind == Kind.Brute ? 8f : 10f) * Mathf.Max(0.25f, k);
-            float lean = act == Act.Charge ? 18f : act == Act.Windup && kind == Kind.Brute ? -10f : 0f;
+            bobT += Time.deltaTime * (kind == Kind.Bomber ? 16f : kind == Kind.Brute || kind == Kind.Porter ? 8f : 10f) * Mathf.Max(0.25f, k);
+            float lean = act == Act.Charge ? 18f : act == Act.Windup && kind == Kind.Brute ? -10f : PorterOpen ? 20f : 0f;
             model.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(bobT)) * 0.12f * k, 0);
             model.localRotation = Quaternion.Euler(lean, 0, Mathf.Sin(bobT) * 6f * k) * modelBaseRot;
             if (act != Act.Fuse) model.localScale = modelScale;
@@ -309,10 +316,32 @@ namespace CatTang
         // 넉백 · 이동 뒤에 방 밖으로 나가지 않게 붙잡음 (보스는 몸이 커서 벽에서 더 띄움)
         void LateUpdate()
         {
+            if (health.Alive && kind != Kind.Boss) Separate();
             var rm = RunManager.Instance;
             if (!rm || !health.Alive) return;
             var p = rm.ClampToRoom(transform.position, kind == Kind.Boss ? 3f : 1.2f);
             if ((p - transform.position).sqrMagnitude > 0.000001f) transform.position = p;
+        }
+
+        // 서로 겹치지 않게 (2026-11-17 사용자: 세피리아처럼 — 한 덩어리로 뭉쳐 오지 않음). 몸 반지름 합보다 가까우면 서로 조금씩 밀어냄,
+        // 보스와 겹치면 하수인만 비켜남. 돌진 · 도약 · 대시 중엔 안 밂
+        float bodyR = -1;
+        void Separate()
+        {
+            if (Dashing || act == Act.Charge || act == Act.Leap || act == Act.Fuse) return;
+            if (bodyR < 0) { var cc = GetComponent<CapsuleCollider>(); bodyR = cc ? cc.radius : 0.6f; }
+            var push = Vector3.zero;
+            foreach (var o in All)
+            {
+                if (o == this || !o || !o.health.Alive) continue;
+                if (o.bodyR < 0) { var oc = o.GetComponent<CapsuleCollider>(); o.bodyR = oc ? oc.radius : 0.6f; }
+                var d = Effects.Flat(transform.position - o.transform.position);
+                float need = (bodyR + o.bodyR) * 1.1f, m = d.magnitude;
+                if (m >= need) continue;
+                var away = m > 1e-3f ? d / m : Quaternion.Euler(0, GetInstanceID() % 360, 0) * Vector3.forward;
+                push += away * (need - m) * (o.kind == Kind.Boss ? 1f : 0.5f);
+            }
+            if (push.sqrMagnitude > 1e-6f) transform.position += Vector3.ClampMagnitude(push, 4f * Time.deltaTime);
         }
 
         void Fan(int count, float offset, float spd)

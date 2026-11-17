@@ -1,0 +1,3090 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1e790-618c-7483-8568-e4d1eb709a5a
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch2_landmarks.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece.
+Read `Art/tools/specs/_ch2_common.md` first: it has the material names, coordinate and export rules you must follow.
+
+## Goal
+LARGE obstacle landmarks placed inside combat rooms (28 x 24 m) of the stopped station to break up the rectangle and give cover (players walk around them, solid), plus the boss arena floor. Each must read instantly from a high camera.
+
+## Pieces (footprint W x D x H in m)
+1. `LM_Coach` (10 x 3.2 x 3.6): a stopped passenger CARRIAGE whose long front side (+Y) is OPEN / cut away like a dollhouse so the interior is visible: `wood` / `paint_green` body, `roof_tin` curved roof, `iron_dark` bogies with wheels, `window_lit` windows on the closed back side, 3 rows of `leather` seats inside, `brass` handrails, carriage floor 0.5 m high, two little `iron` step boxes in front.
+2. `LM_Locomotive` (9 x 3.4 x 4.2): front part of a stopped black steam locomotive: `iron_dark` boiler, big `brass` round headlight with a `clock_face` lens, `soot` smokestack with a frozen `steam` puff above it, `cloth_red` painted cowcatcher, `iron` wheels with connecting rods.
+3. `LM_WaterCrane` (3 x 3 x 6): railway water tower: `wood` tank on `iron` legs, swinging spout arm, `rust` streaks, a frozen `steam` water-droplet blob under the spout.
+4. `LM_CoalPile` (4.5 x 3.5 x 1.8): heap of `coal` lumps with a `wood_dark` retaining board and an `iron` shovel stuck in it.
+5. `LM_LuggageCart` (4 x 1.8 x 2.0): long flat baggage cart (`wood` bed, `iron` wheels and handle) loaded with a leaning stack of `leather` / `canvas` suitcases and trunks, top two cases frozen mid-fall above the stack.
+6. `LM_SignalGantry` (5 x 1.2 x 4.5): `iron` lattice signal gantry with two signal heads (`signal_red`, `signal_amber`, `signal_green` lenses); legs are the solid part.
+7. `Turntable` (diameter 24 m, height 0.3): the BOSS ARENA floor: a round `stone` pit edge ring 0.6 m wide, inner deck of `wood_dark` planks, two `rail_steel` track pairs crossing in a + through the center (along X and Y), a `brass` center hub with gear teeth, `iron` edge rail ring. Origin at center, top surface at Z = 0 (the deck sinks below 0).
+8. `PlatformEdge` (8 x 1.2 x 0.5): raised stone platform edge segment (`stone` slab, `paint_cream` safety line along the top front, `stone_dark` face).
+
+Keep each under ~4000 triangles (Turntable ~6000).
+
+codex
+I’ll read the shared spec and repository instructions, create the script, then run it in Blender and check that all eight pieces export.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content Art/tools/specs/_ch2_common.md; rg --files -g AGENTS.md -g '*blender*' Art/tools .agents .codex" in C:\Project\Cat_Tang
+ exited 1 in 1131ms:
+## Common rules (chapter 2 "The Stopped Station")
+Setting: a western-era steam railway station where time STOPPED a second before departure (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+Signature accent: things frozen mid-motion (a puff of steam hanging still, a suitcase stuck in mid-air) and small brass clock/gear details. Chunky silhouettes, no tiny detail, slightly hand-made irregularity (seeded random per piece). BEVEL modifier (0.02-0.04, 2 segments) on wood/metal parts.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`wood`, `wood_dark`, `wood_light`, `iron`, `iron_dark`, `rust`, `brass`, `rail_steel`, `brick`, `brick_dark`, `stone`, `stone_dark`, `roof_tin`, `soot`, `coal`, `window`, `window_lit`, `glass_lamp`, `canvas`, `leather`, `leather_dark`, `cloth_red`, `paint_cream`, `paint_green`, `clock_face`, `steam`, `signal_red`, `signal_amber`, `signal_green`.
+`steam` = frozen white puffs; `window_lit` / `glass_lamp` = warm glowing glass.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece.
+Each piece = ONE joined mesh object named exactly as listed, exported to its own FBX `Game/Assets/Art/Characters/Ch2/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end.
+Use `Art/tools/blender_kit_landmarks.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:45
++ Get-Content Art/tools/specs/_ch2_common.md; rg --files -g AGENTS.md - ...
++                                             ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -Path C:\\AGENTS.md,C:\\Project\\AGENTS.md,C:\\Project\\Cat_Tang\\AGENTS.md,Art\\AGENTS.md,Art\\tools\\AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { "'$_.FullName; Get-Content -LiteralPath $_.FullName }; Get-Content Art/tools/blender_kit_landmarks.py; Get-ChildItem Art/tools -Filter '"'*ch2*'" in C:\Project\Cat_Tang
+ succeeded in 211ms:
+# ?쒕? 媛쒖쿃吏???뱀븘?대━??????꾪룓臾?11醫낆쓣 ?앹꽦?섍퀬 FBX濡???ν빀?덈떎.
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_landmarks.py
+"""Deterministic, texture-free, ground-centred chapter-one landmark kit.
+
+No input assets or add-ons are needed. Every exported asset is a single mesh;
+construction meshes are deliberately chunky enough for a high gameplay camera.
+"""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch1'
+COLORS = {
+    'wood_dark': (0.33, 0.19, 0.12), 'wood': (0.55, 0.33, 0.19),
+    'wood_light': (0.72, 0.48, 0.28), 'iron': (0.24, 0.22, 0.25),
+    'brass': (0.85, 0.62, 0.25), 'gold_drip': (1.0, 0.78, 0.22),
+    'rock': (0.66, 0.34, 0.22), 'rock_dark': (0.46, 0.22, 0.15),
+    'rock_light': (0.8, 0.52, 0.34), 'sand': (0.84, 0.64, 0.4),
+    'hay': (0.9, 0.74, 0.35), 'canvas': (0.85, 0.76, 0.6),
+    'cloth_red': (0.7, 0.15, 0.13), 'cloth_teal': (0.25, 0.5, 0.5),
+    'bone': (0.92, 0.88, 0.78), 'water': (0.3, 0.55, 0.65),
+    'ore': (0.45, 0.4, 0.42),
+}
+MATS = {}
+PARTS = []
+RNG = random.Random(0)
+SERIAL = 0
+HARD = {'wood_dark', 'wood', 'wood_light', 'iron', 'brass'}
+
+
+def material_setup():
+    for name, color in COLORS.items():
+        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+        mat.use_nodes = True
+        mat.diffuse_color = (*color, 1)
+        bsdf = mat.node_tree.nodes.get('Principled BSDF')
+        bsdf.inputs['Base Color'].default_value = (*color, 1)
+        bsdf.inputs['Roughness'].default_value = 0.85
+        bsdf.inputs['Metallic'].default_value = 0.0
+        MATS[name] = mat
+
+
+def mesh(label, verts, faces, mat, bevel=False):
+    global SERIAL
+    SERIAL += 1
+    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(data.name, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[mat])
+    if bevel and mat in HARD:
+        mod = obj.modifiers.new('Hand softened edges', 'BEVEL')
+        mod.width = 0.025
+        mod.segments = 2
+        mod.limit_method = 'ANGLE'
+        mod.angle_limit = math.radians(35)
+    PARTS.append(obj)
+    return obj
+
+
+def transform(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    m = Matrix.Translation(Vector(loc))
+    from mathutils import Euler
+    m = m @ Euler(rot).to_matrix().to_4x4()
+    obj.data.transform(m)
+    return obj
+
+
+def box(label, loc, size, mat='wood', rot=(0, 0, 0), bevel=True):
+    x, y, z = (s / 2 for s in size)
+    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
+             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+    obj = mesh(label, verts, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+                             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)], mat, bevel)
+    return transform(obj, loc, rot)
+
+
+def cone(label, loc, radius, depth, mat='wood', top=None, n=10,
+         rot=(0, 0, 0), bevel=True):
+    top = radius if top is None else top
+    verts = [(r * math.cos(i * math.tau / n), r * math.sin(i * math.tau / n), z)
+             for r, z in [(radius, -depth / 2), (top, depth / 2)] for i in range(n)]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
+    return transform(mesh(label, verts, faces, mat, bevel), loc, rot)
+
+
+def rod(label, a, b, radius, mat='wood', end=None, n=8):
+    a, b = Vector(a), Vector(b)
+    obj = cone(label, (0, 0, 0), radius, (b - a).length, mat, end, n)
+    rotation = (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4()
+    obj.data.transform(Matrix.Translation((a + b) / 2) @ rotation)
+    return obj
+
+
+def beam(label, a, b, width, depth=None, mat='wood'):
+    a, b = Vector(a), Vector(b)
+    obj = box(label, (0, 0, 0), (width, depth or width, (b - a).length), mat)
+    obj.data.transform(Matrix.Translation((a + b) / 2) @
+                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
+    return obj
+
+
+def lump(label, loc, size, mat='rock', irregular=0.12, subdivisions=2):
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=subdivisions, radius=1.0)
+    for v in bm.verts:
+        v.co *= 1 + RNG.uniform(-irregular, irregular)
+        v.co.x *= size[0] / 2
+        v.co.y *= size[1] / 2
+        v.co.z *= size[2] / 2
+        v.co += Vector(loc)
+        # Contact rocks and hay stay above the common ground plane.
+        v.co.z = max(0.0, v.co.z)
+    bm.verts.ensure_lookup_table()
+    verts = [tuple(v.co) for v in bm.verts]
+    faces = [tuple(v.index for v in f.verts) for f in bm.faces]
+    bm.free()
+    return mesh(label, verts, faces, mat)
+
+
+def tube(label, points, radii, mat='wood_dark', n=7, bevel=False):
+    """A continuous faceted tube, including closed ends and crooked joints."""
+    verts = []
+    previous_x = None
+    for k, p in enumerate(points):
+        tangent = Vector(points[min(k + 1, len(points) - 1)]) - Vector(points[max(0, k - 1)])
+        tangent.normalize()
+        # Transport the section frame along the branch. Independent track
+        # quaternions can flip their roll at near-vertical inflections, twisting
+        # a trunk into self-intersecting sheets instead of a solid wooden limb.
+        if previous_x is None:
+            reference = Vector((0, 1, 0)) if abs(tangent.y) < .95 else Vector((1, 0, 0))
+            basis_x = reference.cross(tangent).normalized()
+        else:
+            basis_x = previous_x - tangent * previous_x.dot(tangent)
+            if basis_x.length < .001:
+                reference = Vector((0, 1, 0)) if abs(tangent.y) < .95 else Vector((1, 0, 0))
+                basis_x = reference.cross(tangent)
+            basis_x.normalize()
+        basis_y = tangent.cross(basis_x).normalized()
+        previous_x = basis_x
+        for j in range(n):
+            a = j * math.tau / n
+            v = Vector(p) + radii[k] * (basis_x * math.cos(a) + basis_y * math.sin(a))
+            if k == 0 and abs(p[2]) < 1e-6:
+                v.z = 0.0
+            verts.append(tuple(v))
+    faces = [tuple(reversed(range(n)))]
+    for k in range(len(points) - 1):
+        for j in range(n):
+            a, b = k * n + j, k * n + (j + 1) % n
+            faces.append((a, b, b + n, a + n))
+    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
+    return mesh(label, verts, faces, mat, bevel)
+
+
+def ring(label, loc, radius, thickness, width, mat='iron', axis='Z', n=14):
+    """Square-section hoop: cheap, readable rims instead of dense tori."""
+    verts = []
+    for z, r in [(-width / 2, radius - thickness), (-width / 2, radius),
+                 (width / 2, radius), (width / 2, radius - thickness)]:
+        for j in range(n):
+            verts.append((r * math.cos(j * math.tau / n),
+                          r * math.sin(j * math.tau / n), z))
+    faces = []
+    for k in range(4):
+        for j in range(n):
+            faces.append((k * n + j, k * n + (j + 1) % n,
+                          ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j))
+    rot = (0, math.pi / 2, 0) if axis == 'X' else ((math.pi / 2, 0, 0) if axis == 'Y' else (0, 0, 0))
+    return transform(mesh(label, verts, faces, mat, True), loc, rot)
+
+
+def drip(x, y, z, length=0.38, lean=(0.02, 0.01)):
+    tube('Gold melting trail', [(x, y, z), (x + lean[0], y + lean[1], z - length * .4),
+                               (x + lean[0] * 1.5, y + lean[1] * 1.5, z - length)],
+         [.07, .045, .045], 'gold_drip', 7)
+    lump('Gold hanging drop', (x + lean[0] * 1.5, y + lean[1] * 1.5, z - length),
+         (.15, .13, .19), 'gold_drip', .02)
+
+
+def wheel(loc, radius=.58, axis='X', broken=False):
+    x, y, z = loc
+    ring('Iron tire', loc, radius, .065, .16, 'iron', axis, 12)
+    ring('Timber wheel rim', loc, radius - .055, .09, .18, 'wood_light', axis, 12)
+    rot = (0, math.pi / 2, 0) if axis == 'X' else ((math.pi / 2, 0, 0) if axis == 'Y' else (0, 0, 0))
+    cone('Wheel hub', loc, .13, .27, 'wood_dark', n=10, rot=rot)
+    for j in range(8):
+        if broken and j in (1, 2, 3):
+            continue
+        a = j * math.tau / 8
+        r = radius - .12
+        offset = (0, r * math.cos(a), r * math.sin(a)) if axis == 'X' else (
+            (r * math.cos(a), 0, r * math.sin(a)) if axis == 'Y' else (r * math.cos(a), r * math.sin(a), 0))
+        beam('Wheel spoke', loc, tuple(Vector(loc) + Vector(offset)), .065, .08, 'wood_light')
+
+
+def barrel(loc, scale=1, lying=False):
+    start = len(PARTS)
+    s = scale
+    tube('Barrel staves', [(0, 0, -.4*s), (0, 0, 0), (0, 0, .4*s)],
+         [.27*s, .34*s, .27*s], 'wood', 10, True)
+    cone('Barrel lid', (0, 0, .4*s), .26*s, .055*s, 'wood_light', n=10)
+    for z in [-.27, .27]:
+        ring('Barrel iron binding', (0, 0, z*s), .315*s, .04*s, .07*s, n=10)
+    rotation = Matrix.Rotation(math.pi / 2 if lying else 0, 4, 'Y')
+    for obj in PARTS[start:]:
+        obj.data.transform(Matrix.Translation(Vector(loc)) @ rotation)
+
+
+def crate(loc, size=(.65, .6, .65), mat='wood'):
+    x, y, z = loc
+    sx, sy, sz = size
+    box('Crate solid core', loc, size, mat)
+    for a in [-1, 1]:
+        box('Crate face upright', (x+a*sx*.38, y+sy/2+.025, z), (.075, .055, sz), 'wood_light')
+    beam('Crate diagonal strap', (x-sx*.4, y+sy/2+.055, z-sz*.38),
+         (x+sx*.4, y+sy/2+.055, z+sz*.38), .075, .045, 'wood_dark')
+
+
+def rock_spire():
+    # Seven contiguous courses per hoodoo make its horizontal erosion readable.
+    for cx, cy, height, base in [(-.75, .1, 3.6, .9), (.85, -.3, 2.7, .76), (.4, .95, 1.9, .66)]:
+        n = 9
+        phase = RNG.random()
+        rings = []
+        for k in range(8):
+            t = k/7
+            radius = base * [1, .82, .72, .65, .57, .62, .84, .65][k]
+            ox, oy = .13*math.sin(t*4+phase), .09*math.sin(t*6)
+            rings.append([(cx+ox+radius*(1+RNG.uniform(-.12,.12))*math.cos(j*math.tau/n),
+                           cy+oy+radius*.84*(1+RNG.uniform(-.1,.1))*math.sin(j*math.tau/n),
+                           height*t) for j in range(n)])
+        for k in range(7):
+            verts = rings[k]+rings[k+1]
+            faces = [tuple(reversed(range(n))), tuple(range(n,2*n))]
+            faces += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
+            mesh('Sandstone erosion course', verts, faces, ['rock','rock_light','rock','rock_dark','rock','rock_light','rock'][k])
+    for x,y,s in [(-1.55,-.65,.85),(1.5,.65,.8),(-.85,1.25,.7),(1.35,-1,.75)]:
+        lump('Loose talus', (x,y,.25), (s,s*.8,.65), 'rock_dark')
+    drip(-.77,.59,3.44,.55, (.025,.035))
+
+
+def boulder_pile():
+    for x,y,z,size,mat in [(-.85,-.25,.7,(1.75,1.65,1.65),'rock_dark'),
+                           (.55,-.4,.75,(1.8,1.65,1.8),'rock'),
+                           (-.1,.55,1.35,(1.9,1.55,1.65),'rock'),
+                           (1.05,.65,.5,(1.15,1.1,1.1),'rock_dark'),
+                           (-1.15,.7,.35,(1.15,1.1,.85),'rock')]:
+        lump('Faceted sandstone boulder', (x,y,z), size, mat, .18)
+    for j in range(6):
+        a = j*2.4
+        p = (-.95,-.8,.65)
+        q = (-.95+.5*math.cos(a),-.8+.4*math.sin(a),1.25+RNG.random()*.5)
+        rod('Dry bush twig', p,q,.035,'wood_dark',.013,6)
+        rod('Dry bush fork', tuple(Vector(p).lerp(Vector(q),.65)),
+            (q[0]+.19,q[1]+.13,q[2]+.12),.018,'wood_dark',.006,5)
+    # Broad forehead, long nasal bone, dark recessed sockets and sweeping horns.
+    lump('Cow skull forehead', (.25,1.12,.73), (.65,.24,.5), 'bone', .04)
+    lump('Cow skull long nose', (.25,1.24,.48), (.3,.25,.55), 'bone', .04)
+    for sign in [-1,1]:
+        lump('Skull eye socket', (.25+sign*.19,1.255,.74), (.17,.055,.16), 'rock_dark', .01)
+        tube('Cow horn', [(.25+sign*.26,1.1,.88),(.25+sign*.55,1.06,1.01),
+                          (.25+sign*.7,1.04,1.26)], [.11,.07,.012], 'bone', 7)
+    drip(.67,.7,1.94,.32)
+
+
+def wagon_wreck():
+    start = len(PARTS)
+    # Build a complete wagon in local coordinates, then topple the whole assembly.
+    box('Wagon underframe', (0,0,.6), (2.55,1.15,.2), 'wood_dark')
+    for j in range(6):
+        box('Uneven wagon floor plank', (-1.12+j*.45,0,.76), (.43,1.3,.13),
+            'wood_light' if j%3==0 else 'wood', (0,RNG.uniform(-.018,.018),0))
+    for side in [-1,1]:
+        box('Wagon bed side', (0,side*.64,.99), (2.55,.11,.42), 'wood')
+    for x in [-.9,.9]:
+        rod('Wagon axle', (x,-.88,.48),(x,.88,.48),.075,'iron')
+    wheel((-.9,.83,.5),.51,'Y')
+    wheel((.9,-.83,.5),.51,'Y',True)
+    for x in [-1.1,-.35,.4,1.1]:
+        points=[(x,.65*math.cos(j*math.pi/8),1.13+.85*math.sin(j*math.pi/8)) for j in range(9)]
+        tube('Exposed wagon hoop', points,[.045]*9,'wood_light',6,True)
+    # A thick canvas panel with a conspicuous jagged missing section.
+    verts=[]
+    for x in [-1.16,-.4,.38,1.15]:
+        for j in range(7):
+            a=(j+1)*math.pi/8
+            verts.append((x,.68*math.cos(a),1.13+.89*math.sin(a)))
+    faces=[]
+    for i in range(3):
+        for j in range(6):
+            if (i,j) in {(1,3),(1,4),(2,4),(2,5)}:
+                continue
+            a=i*7+j
+            faces.append((a,a+7,a+8,a+1))
+    cloth=mesh('Torn canvas wagon cover',verts,faces,'canvas')
+    solid=cloth.modifiers.new('Canvas edge thickness','SOLIDIFY'); solid.thickness=.035
+    rotation=Matrix.Rotation(math.radians(65),4,'X')
+    for obj in PARTS[start:]:
+        obj.data.transform(Matrix.Translation(Vector((-.55,.1,0))) @ rotation)
+    # Set the overturned shell on the ground before placing the spilled cargo.
+    lowest=min(v.co.z for obj in PARTS[start:] for v in obj.data.vertices)
+    for obj in PARTS[start:]:
+        obj.data.transform(Matrix.Translation((0,0,-lowest)))
+    wheel((1.48,.82,.13),.59,'Z',True)
+    barrel((1.5,-.5,.33),.9,True)
+    barrel((.7,1.05,.36),.8,False)
+    crate((1.6,-1.13,.3),(.64,.6,.6))
+    # Attach the melt to the overturned canvas in world space, then let it hang
+    # vertically under gravity rather than rotating the drip with the wreck.
+    anchor = Matrix.Translation(Vector((-.55,.1,-lowest))) @ rotation @ Vector((-.75,-.47,1.85))
+    drip(*anchor, .29)
+
+
+def mine_cart():
+    for x in [-1.8,-.9,0,.9,1.8]:
+        box('Rail sleeper',(x,0,.11),(.25,2.05,.22),'wood_dark', (0,0,RNG.uniform(-.025,.025)))
+    for y in [-.68,.68]:
+        box('Iron rail',(0,y,.26),(4.3,.12,.18),'iron')
+    for x in [-.62,.62]:
+        for y in [-.69,.69]:
+            cone('Cart flanged wheel',(x,y,.49),.27,.16,'iron',n=10,rot=(math.pi/2,0,0))
+    box('Cart chassis',(0,0,.62),(1.9,1.4,.2),'wood_dark')
+    # Closed tapered box, with ore above the rim instead of a hollow gameplay gap.
+    verts=[(x,y,z) for z,sx,sy in [(.68,.78,.55),(1.45,1.02,.72)]
+           for x,y in [(-sx,-sy),(sx,-sy),(sx,sy),(-sx,sy)]]
+    mesh('Iron ore cart body',verts,[(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)],'iron',True)
+    for y in [-.73,.73]:
+        box('Cart rim',(0,y,1.46),(2.1,.085,.12),'wood')
+        for x in [-.8,0,.8]:
+            box('Cart side timber',(x,y,1.08),(.13,.09,.65),'wood')
+    for i in range(9):
+        x=(i%3-1)*.53; y=(i//3-1)*.4
+        lump('Big ore lump',(x,y,1.52+(.15 if i==4 else 0)),(.65,.56,.55),'ore',.2)
+    for i in range(4):
+        box('Stacked mine timber',(-1.35,.25,.22+i*.2),(.4,1.55,.18),'wood', (0,0,RNG.uniform(-.035,.035)))
+    beam('Leaning pickaxe handle',(.65,.95,.1),(.1,.81,1.58),.07,mat='wood_light')
+    tube('Pickaxe iron head',[(-.42,.82,1.43),(-.14,.82,1.62),(.18,.82,1.65),(.49,.82,1.5)],
+         [.025,.07,.07,.018],'iron',6,True)
+    box('Lantern post',(1.69,-.55,.94),(.12,.12,1.88),'wood_dark')
+    beam('Lantern bracket',(1.69,-.55,1.87),(1.31,-.55,1.87),.07,mat='iron')
+    box('Lantern glowing glass',(1.31,-.55,1.53),(.22,.22,.3),'brass')
+    for z in [1.34,1.72]:
+        cone('Lantern cap',(1.31,-.55,z),.2,.09,'iron',n=6)
+    for x in [1.18,1.44]:
+        beam('Lantern cage',(x,-.68,1.36),(x,-.68,1.7),.035,mat='iron')
+    drip(.83,.8,1.45,.3)
+
+
+def dead_tree():
+    tube('Twisting dead trunk',[(0,0,0),(-.14,-.08,.7),(.05,.05,1.45),(-.18,.04,2.15),
+                              (.05,.03,2.85),(-.12,.12,3.45),(.08,.15,3.98)],
+         [.49,.38,.29,.25,.19,.11,.018],'wood_dark',8,True)
+    branches=[([(-.05,0,1.25),(-.68,.12,1.9),(-1.05,.08,2.15),(-1.42,.24,2.6)],[.23,.16,.09,.018]),
+              ([(-.15,.04,2.1),(.58,.02,2.45),(1.04,-.08,2.48),(1.4,-.12,2.87)],[.21,.14,.085,.016]),
+              ([(0,.03,2.8),(.43,.62,3.04),(.64,.83,3.6)],[.16,.09,.015]),
+              ([(-.1,.04,2.12),(-.45,-.6,2.64),(-.92,-.94,2.88),(-1.05,-1.04,3.2)],[.18,.12,.06,.012]),
+              ([(-.11,.12,3.4),(-.64,.16,3.58),(-.83,.12,3.87)],[.1,.07,.014])]
+    for points,radii in branches:
+        tube('Crooked bare branch',points,radii,'wood_dark',7,True)
+    tube('Forked branch tip',[(1.02,-.08,2.48),(1.13,.2,2.85),(1.06,.34,3.08)],
+         [.08,.045,.012],'wood',6,True)
+    for j in range(8):
+        a=j*math.tau/8
+        x,y=1.12*math.cos(a),1.1*math.sin(a)
+        lump('Tree root ring stone',(x,y,.16),(.62,.5,.4),'rock_dark' if j%3==0 else 'rock')
+    for j in range(4):
+        a=j*math.tau/4+.4
+        tube('Exposed tree root',[(0,0,.32),(.6*math.cos(a),.6*math.sin(a),.14),
+                                 (.95*math.cos(a),.95*math.sin(a),.04)], [.2,.1,.025],'wood_dark',6,True)
+    tube('Hanging frayed rope',[(-1.02,.11,2.18),(-1.07,.15,1.8),(-1.02,.13,1.3),(-1.09,.12,.95)],
+         [.035]*4,'canvas',7)
+    for j in range(3):
+        rod('Rope fray',(-1.09,.12,.98),(-1.18+j*.07,.14,.78+abs(j-1)*.07),.013,'canvas',.004,5)
+    drip(1.39,-.12,2.84,.43)
+
+
+def water_tower():
+    for x in [-1,1]:
+        for y in [-1,1]:
+            beam('Splayed tower leg',(x*1.26,y*1.26,.04),(x*.86,y*.86,2.54),.22,mat='wood_dark')
+    for y in [-1,1]:
+        beam('Tower X brace',(-1.16,y*1.16,.35),(.88,y*.88,2.24),.12,mat='wood')
+        beam('Tower X brace',(1.16,y*1.16,.35),(-.88,y*.88,2.24),.12,mat='wood')
+    for x in [-1,1]:
+        beam('Tower side brace',(x*1.15,-1.15,.4),(x*.88,.88,2.22),.12,mat='wood')
+    box('Tank deck',(0,0,2.46),(2.5,2.5,.18),'wood_dark')
+    cone('Tank solid interior',(0,0,3.22),1.07,1.4,'wood_dark',n=16)
+    # Real individual vertical staves, rather than a plain cylinder texture.
+    for j in range(16):
+        a=j*math.tau/16
+        box('Tank vertical stave',(1.095*math.cos(a),1.095*math.sin(a),3.22),
+            (.14,.43,1.38),['wood','wood_light','wood'][j%3],(0,0,a))
+    for z in [2.66,3.22,3.8]:
+        ring('Tank iron hoop',(0,0,z),1.19,.055,.1,'iron',n=16)
+    cone('Tank conical roof',(0,0,4.12),1.36,.77,'wood_dark',top=.035,n=16)
+    for j in range(8):
+        a=j*math.tau/8
+        rod('Roof shingle seam',(1.33*math.cos(a),1.33*math.sin(a),3.76),
+            (.12*math.cos(a),.12*math.sin(a),4.49),.025,'wood',.012,5)
+    for x in [-.34,.34]:
+        beam('Tower ladder side',(x,1.53,.04),(x,1.23,2.9),.075,mat='wood_light')
+    for j in range(9):
+        z=.24+j*.3
+        y=1.53-z/2.9*.3
+        beam('Tower ladder rung',(-.34,y,z),(.34,y,z),.065,mat='wood_light')
+    tube('Water spout pipe',[(.92,.22,2.88),(1.45,.22,2.88),(1.55,.22,2.69),(1.55,.22,1.55)],
+         [.095]*4,'iron',8,True)
+    lump('Small water puddle',(1.45,.3,.035),(.75,1.05,.07),'water',.15)
+    drip(.42,1.12,3.63,.42)
+
+
+def stagecoach():
+    # Front is +Y: the front bench and smaller front axle clearly identify it.
+    box('Coach chassis',(0,0,.65),(3.6,1.55,.2),'wood_dark')
+    for y in [-.65,.65]:
+        rod('Coach axle',(-1.93,y,.61),(1.93,y,.61),.075,'iron')
+        for x in [-1.86,1.86]:
+            wheel((x,y,.61),.59,'X')
+    box('Red coach cabin',(0,-.13,1.37),(3.02,1.33,1.26),'cloth_red')
+    for x in [-1.55,1.55]:
+        for y in [-.82,.56]:
+            box('Cabin corner post',(x,y,1.43),(.12,.12,1.47),'wood_dark')
+    for x in [-1.57,1.57]:
+        box('Coach side upper window',(x,-.2,1.69),(.035,.75,.43),'iron')
+        for y in [-.6,.2]:
+            box('Window brass side trim',(x,y,1.69),(.065,.06,.52),'brass')
+        for z in [1.44,1.94]:
+            box('Window brass sill',(x,-.2,z),(.065,.85,.065),'brass')
+        box('Cabin brass waist trim',(x,-.13,1.11),(.065,1.36,.075),'brass')
+    for x in [-.73,.73]:
+        box('Front coach window',(x,.553,1.69),(.73,.04,.4),'iron')
+    box('Coach roof',(0,-.13,2.12),(3.38,1.55,.18),'wood_dark')
+    for x in [-1.59,1.59]:
+        box('Roof luggage rail',(x,-.16,2.28),(.07,1.5,.1),'brass')
+    for x in [-.85,.12]:
+        crate((x,-.25,2.4),(.72,.85,.46),'wood_dark')
+    lump('Tied canvas roof bundle',(.98,-.2,2.4),(.86,.85,.46),'canvas',.06)
+    for x in [.76,1.16]:
+        tube('Bundle rope tie',[(x,.2,2.21),(x,.2,2.48),(x,-.2,2.64),(x,-.6,2.48),(x,-.6,2.21)],
+             [.025]*5,'wood_light',5,True)
+    box('Driver platform',(0,.98,.86),(2.36,.42,.14),'wood_dark')
+    box('Driver padded bench',(0,.87,1.2),(2.25,.48,.18),'wood_dark')
+    box('Driver bench back',(0,.61,1.41),(2.25,.12,.47),'cloth_red')
+    drip(-1.61,.47,1.98,.32)
+
+
+def well():
+    # A dark recessed centre gives the opening depth, while a solid bottom closes it.
+    cone('Well dark recess',(0,0,.18),.76,.34,'rock_dark',n=12,bevel=False)
+    for course in range(3):
+        for j in range(10):
+            a=(j+(course%2)*.5)*math.tau/10
+            box('Well stone block',(.85*math.cos(a),.85*math.sin(a),.19+course*.27),
+                (.36,.58,.27),'rock_light',(0,0,a),False)
+    ring('Well dark stone rim',(0,0,.96),1.08,.3,.21,'rock_dark',n=12)
+    for x in [-1.05,1.05]:
+        box('Well roof post',(x,0,1.4),(.17,.19,2.8),'wood_dark')
+    rod('Well windlass',(-1.14,0,1.64),(1.14,0,1.64),.115,'wood_light',n=10)
+    rod('Crank arm',(1.25,0,1.64),(1.25,0,1.29),.055,'iron')
+    rod('Crank grip',(1.25,0,1.29),(1.47,0,1.29),.07,'wood')
+    tube('Well winding rope',[(.2,0,1.66),(.2,.025,1.2),(.2,.025,.68)], [.029]*3,'canvas',6)
+    # Broad individually overlapping roof courses, each pair forming a gable.
+    for sign in [-1,1]:
+        for j in range(3):
+            y=sign*(.21+j*.34)
+            z=2.88-abs(y)*.55
+            box('Well roof shingle course',(0,y,z),(2.74,.43,.1),
+                'wood_dark' if j%2==0 else 'wood',(sign*-.5,0,0))
+    cone('Well bucket',(-.6,.88,1.18),.18,.35,'wood',top=.23,n=8)
+    ring('Bucket binding',(-.6,.88,1.25),.225,.035,.045,'iron',n=8)
+    tube('Bucket iron handle',[(-.81,.88,1.32),(-.81,.88,1.62),(-.39,.88,1.62),(-.39,.88,1.32)],
+         [.022]*4,'iron',6,True)
+    box('Trough bottom',(.14,-1.22,.16),(1.8,.49,.2),'wood_dark')
+    for y in [-1.48,-.96]:
+        box('Trough side',(.14,y,.37),(1.92,.09,.43),'wood')
+    for x in [-.77,1.05]:
+        box('Trough end',(x,-1.22,.37),(.1,.5,.43),'wood_light')
+    box('Trough water',(.14,-1.22,.4),(1.66,.41,.025),'water',bevel=False)
+    drip(.63,1.04,1.01,.3)
+
+
+def hay_cart():
+    box('Farm cart underframe',(-.55,-.15,.62),(2.65,1.65,.2),'wood_dark')
+    for j in range(6):
+        box('Farm cart bed plank',(-1.68+j*.46,-.15,.79),(.44,1.8,.13),'wood',
+            (0,RNG.uniform(-.018,.018),RNG.uniform(-.012,.012)))
+    for x in [-1.67,.57]:
+        rod('Farm cart axle',(x,-1.21,.5),(x,.93,.5),.075,'iron')
+        for y in [-1.14,.87]:
+            wheel((x,y,.51),.5,'Y')
+    for x in [-1.75,.7]:
+        box('Hay cart end board',(x,-.15,1.06),(.12,1.8,.48),'wood')
+    for y in [-.99,.69]:
+        box('Hay cart low side',(-.55,y,.98),(2.7,.1,.3),'wood')
+    for x,y,z,s in [(-1.13,-.12,1.23,(1.4,1.6,.95)),(.03,-.12,1.25,(1.4,1.65,1.05)),
+                     (-.56,-.12,1.75,(1.7,1.4,1.0))]:
+        lump('Heaped loose hay',(x,y,z),s,'hay',.14)
+    for x,y,z in [(1.38,-.68,.36),(1.38,.21,.36),(1.38,-.24,1.07)]:
+        box('Square compressed hay bale',(x,y,z),(.98,.78,.69),'hay', (0,0,RNG.uniform(-.03,.03)),False)
+        for yy in [y-.22,y+.22]:
+            box('Bale binding top',(x,yy,z+.35),(.99,.035,.025),'wood_dark')
+            for xx in [x-.495,x+.495]:
+                box('Bale binding side',(xx,yy,z),(.025,.035,.69),'wood_dark')
+    beam('Pitchfork wooden handle',(-.66,.1,1.35),(-.36,.18,2.4),.065,mat='wood_dark')
+    beam('Pitchfork iron socket',(-.36,.18,2.35),(-.32,.18,2.53),.065,mat='iron')
+    beam('Pitchfork crossbar',(-.57,.18,2.53),(-.07,.18,2.53),.045,mat='iron')
+    for x in [-.55,-.39,-.23,-.07]:
+        rod('Pitchfork tine',(x,.18,2.53),(x+.04,.18,2.83),.025,'iron',.009,6)
+    drip(.35,.69,1.5,.35)
+
+
+def market_stall():
+    for x in [-1.85,1.85]:
+        for y in [-.94,.94]:
+            box('Market canopy post',(x,y,1.27),(.14,.14,2.54),'wood_dark')
+    box('Solid market counter',(0,.12,.55),(3.65,1.18,1.1),'wood')
+    for x in [-1.45,-.73,0,.73,1.45]:
+        box('Counter front board',(x,.738,.54),(.68,.1,1.04),'wood_light',
+            (0,RNG.uniform(-.015,.015),RNG.uniform(-.015,.015)))
+    box('Market countertop',(0,.12,1.13),(3.95,1.4,.16),'wood_dark')
+    for i in range(3):
+        x=-1.18+i*1.18
+        box('Produce crate base',(x,.17,1.25),(.95,.9,.14),'wood')
+        for yy in [-.3,.64]:
+            box('Produce crate wall',(x,yy,1.39),(1.0,.06,.24),'wood_light')
+        for xx in [x-.48,x+.48]:
+            box('Produce crate end',(xx,.17,1.39),(.07,.9,.24),'wood_light')
+        for j in range(5):
+            lump('Chunky market produce',(x+(j%3-1)*.23,-.01+(j//3)*.3,1.49),
+                 (.31,.32,.29),['cloth_red','hay','cloth_teal'][i],.06,1)
+    # Shallow pitched awning, with alternating solid coloured fabric strips.
+    for j in range(8):
+        x=-1.89+j*.54
+        verts=[(x-.27,-1.2,2.36),(x+.27,-1.2,2.36),(x+.27,0,2.7),(x-.27,0,2.7),
+               (x-.27,1.23,2.36),(x+.27,1.23,2.36),
+               (x-.27,1.23,2.14+(.035 if j%2 else 0)),(x+.27,1.23,2.14+(.035 if j%2 else 0))]
+        obj=mesh('Striped canopy',verts,[(0,1,2,3),(3,2,5,4),(4,5,7,6)],'canvas' if j%2==0 else 'cloth_teal')
+        mod=obj.modifiers.new('Canopy thickness','SOLIDIFY'); mod.thickness=.035
+    for x in [-1.03,-.37]:
+        rod('Sign iron hanger',(x,1.02,2.43),(x,1.02,1.99),.022,'iron',n=6)
+    box('Hanging stall sign',(-.7,1.04,1.89),(1.12,.12,.38),'wood_light',(0,0,.035))
+    # A simple raised three-lobed fruit emblem reads without tiny lettering.
+    for dx,dz in [(-.16,0),(.14,0),(0,.08)]:
+        lump('Sign fruit emblem',(-.7+dx,1.115,1.88+dz),(.2,.045,.18),'cloth_red',.01,1)
+    drip(1.54,1.26,2.31,.33)
+
+
+def lumber_pile():
+    for x in [-1.38,.8]:
+        box('Lumber ground sleeper',(x,-.37,.1),(.22,1.62,.2),'wood_dark')
+    for layer in range(4):
+        for j in range(3):
+            box('Stacked sawn plank',(-.3+RNG.uniform(-.08,.08),-.95+j*.45,.27+layer*.21),
+                (3.45+RNG.uniform(-.18,.18),.41,.17),['wood','wood_light'][j%2],
+                (0,0,RNG.uniform(-.012,.012)))
+    for j in range(3):
+        y=-.85+j*.49
+        rod('Stacked round log',(-1.85,y,1.12),(1.22,y,1.12),.235,'wood_dark',n=9)
+        for x in [-1.855,1.225]:
+            cone('Visible log cut face',(x,y,1.12),.217,.025,'wood_light',n=9,rot=(0,math.pi/2,0))
+            cone('Log end heartwood',(x+(-.016 if x<0 else .016),y,1.12),.1,.012,'wood',n=8,rot=(0,math.pi/2,0))
+    # A full-size trestle in front gives this pile an instantly readable workshop use.
+    for x in [-.98,.53]:
+        for y in [.45,1.08]:
+            beam('Sawhorse splayed leg',(x,y,.02),(x,.77,.8),.12,mat='wood')
+    box('Sawhorse top',(-.23,.77,.84),(2.04,.21,.18),'wood_dark')
+    # Saw blade has a chunky serrated lower edge and a wooden grip at one end.
+    verts=[(-.76,.75,1.07),(.35,.75,1.27),(.35,.75,1.04)]
+    for j in range(12):
+        verts.append((.35-j*.1,.75,1.04-j*.015-(.07 if j%2 else 0)))
+    obj=mesh('Saw toothed steel blade',verts,[tuple(range(len(verts)))],'iron',True)
+    mod=obj.modifiers.new('Saw blade thickness','SOLIDIFY'); mod.thickness=.035
+    ring('Saw wooden handle',(.52,.75,1.18),.2,.075,.09,'wood_light','Y',8)
+    for i in range(2):
+        box('Leaning loose board',(1.52+i*.24,.3, .68),(.25,.16,1.56),'wood_light' if i else 'wood',
+            (math.radians(-25),math.radians(16+i*6),math.radians(-8)))
+    drip(-1.32,.33,1.31,.35)
+
+
+SPECS = [
+    ('Kit_LM_RockSpire', (5.0,4.0,3.6), rock_spire),
+    ('Kit_LM_BoulderPile', (4.0,3.5,2.2), boulder_pile),
+    ('Kit_LM_WagonWreck', (5.0,3.5,2.2), wagon_wreck),
+    ('Kit_LM_MineCart', (4.5,3.0,2.0), mine_cart),
+    ('Kit_LM_DeadTree', (3.5,3.5,4.0), dead_tree),
+    ('Kit_LM_WaterTower', (4.0,4.0,4.6), water_tower),
+    ('Kit_LM_Stagecoach', (5.0,2.6,2.6), stagecoach),
+    ('Kit_LM_Well', (3.2,3.2,2.9), well),
+    ('Kit_LM_HayCart', (5.0,3.4,2.4), hay_cart),
+    ('Kit_LM_MarketStall', (4.5,3.0,2.7), market_stall),
+    ('Kit_LM_LumberPile', (4.5,2.6,1.7), lumber_pile),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def finish(name, limits):
+    # Apply every component's bevel before joining: its 0.025 m width is in metres.
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in PARTS:
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name = name
+    obj.data.name = name + '_Mesh'
+
+    # Dense wheel/bracing combinations get a bounded reduction after beveling.
+    # Material boundaries remain locked so the cel-shaded colour blocking survives.
+    count = triangles(obj)
+    if count > 5800:
+        mod = obj.modifiers.new('Landmark triangle budget', 'DECIMATE')
+        mod.ratio = 5650 / count
+        mod.delimit = {'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    if triangles(obj) > 6000:
+        raise RuntimeError(f'{name}: triangle budget exceeded: {triangles(obj)}')
+
+    coords = [v.co for v in obj.data.vertices]
+    low = Vector(tuple(min(v[i] for v in coords) for i in range(3)))
+    high = Vector(tuple(max(v[i] for v in coords) for i in range(3)))
+    span = high-low
+    # Keep every finished prop at its requested height; only compress horizontal
+    # axes when procedural irregularity or a rim would cross the allowed bounds.
+    sx, sy, sz = min(1, limits[0]/span.x), min(1, limits[1]/span.y), limits[2]/span.z
+    centre = (low+high)/2
+    for v in coords:
+        v.x = (v.x-centre.x)*sx
+        v.y = (v.y-centre.y)*sy
+        v.z = (v.z-low.z)*sz
+    # A common mathematically flat support plane for the lowest contact vertices.
+    for v in coords:
+        if v.z < .00001:
+            v.z = 0
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(obj.data)
+    bm.free()
+    for face in obj.data.polygons:
+        face.use_smooth = False
+    obj.data.update()
+    obj.location = (0,0,0)
+    obj.rotation_euler = (0,0,0)
+    obj.scale = (1,1,1)
+    bpy.context.view_layer.update()
+    dims = tuple(obj.dimensions)
+    assert dims[0] <= limits[0]+.02 and dims[1] <= limits[1]+.02, (name,dims,limits)
+    assert abs(dims[2]-limits[2]) < .002, (name,dims,limits)
+    assert abs(min(v.co.z for v in obj.data.vertices)) < 1e-5
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+    assert any(m and m.name == 'gold_drip' for m in obj.data.materials), name
+    obj['footprint_m'] = list(limits[:2])
+    obj['height_m'] = limits[2]
+    obj['front'] = '+Y'
+    obj['chapter'] = 'Dusty frontier, melting gold'
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    destination = OUTPUT / f'{name}.fbx'
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size > 1024, destination
+    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d, 4) for d in dims)}', flush=True)
+    return obj
+
+
+def main():
+    global PARTS, RNG
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=False)
+    bpy.context.scene.unit_settings.system = 'METRIC'
+    bpy.context.scene.unit_settings.scale_length = 1.0
+    material_setup()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    exported = []
+    for index, (name, limits, build) in enumerate(SPECS):
+        PARTS = []
+        RNG = random.Random(71023+index*7919)
+        build()
+        exported.append(finish(name, limits))
+    assert len(exported) == 11
+    assert len([o for o in bpy.context.scene.objects if o.type == 'MESH']) == 11
+    assert not any(o.type in {'CAMERA','LIGHT'} for o in bpy.context.scene.objects)
+    print('DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -Force -Name; Get-ChildItem Art/tools/specs -Name; git status --short; Test-Path 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'; Get-ChildItem Art/tools -Filter 'blender_kit_ch2*'" in C:\Project\Cat_Tang
+ succeeded in 207ms:
+.git
+Art
+docs
+Game
+.gitignore
+.mcp.json
+HANDOFF.md
+kit_ch2_landmarks.log
+kit_ch2_landmarks_spec.md
+kit_ch2_props.log
+kit_ch2_props_spec.md
+kit_ch2_station.log
+kit_ch2_station_spec.md
+kit_facades_spec.md
+kit_ground.log
+kit_ground_spec.md
+kit_heart.log
+kit_heart_spec.md
+kit_landmarks_spec.md
+kit_props.log
+kit_props_spec.md
+kit_sandbomb_spec.md
+kit_simple.log
+kit_simple_spec.md
+kit_woodgate.log
+kit_woodgate_spec.md
+_ch2_common.md
+ M Game/Assets/Scripts/Game/Kit.cs
+ M "docs/1159_2\354\236\245_\352\270\260\355\232\215\354\204\234_20261117_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? Art/tools/specs/_ch2_common.md
+?? Art/tools/specs/kit_ch2_landmarks.log
+?? Art/tools/specs/kit_ch2_landmarks_spec.md
+?? Art/tools/specs/kit_ch2_props.log
+?? Art/tools/specs/kit_ch2_props_spec.md
+?? Art/tools/specs/kit_ch2_station.log
+?? Art/tools/specs/kit_ch2_station_spec.md
+?? Game/Assets/Scripts/Game/DangerEdge.cs
+True
+
+codex
+The spec requires all materials to stay grey, with their names defining the in-game colors. I’ll cut away the coach’s front roof section to expose the seats, and keep the turntable’s highest surfaces at Z = 0.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py
+diff --git a/Art/tools/blender_kit_ch2_landmarks.py b/Art/tools/blender_kit_ch2_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..d95fc7bfa2d6a761db7bf8424d211332de4f0d2e
+--- /dev/null
++++ b/Art/tools/blender_kit_ch2_landmarks.py
+@@ -0,0 +1,614 @@
++# 멈춘 역의 대형 장애물 6종, 보스 회전대와 승강장 경계를 생성합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py
++"""Standalone Blender 5.x, deterministic metre-scale chapter-two FBX kit.
++
++The room-facing side is +Y. Locomotive travel is +X, exposing its running
++gear to the room. All role materials deliberately have identical grey shaders.
++Only meshes are exported; disconnected details remain in one joined object.
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2'
++ROLES = set('wood wood_dark wood_light iron iron_dark rust brass rail_steel '
++            'brick brick_dark stone stone_dark roof_tin soot coal window '
++            'window_lit glass_lamp canvas leather leather_dark cloth_red '
++            'paint_cream paint_green clock_face steam signal_red signal_amber '
++            'signal_green'.split())
++MATERIALS = {}
++PARTS = []
++RNG = random.Random(20261117)
++SERIAL = 0
++METAL_WOOD = set('wood wood_dark wood_light iron iron_dark rust brass '
++                 'rail_steel roof_tin paint_green paint_cream cloth_red'.split())
++
++
++def setup_materials():
++    for name in sorted(ROLES):
++        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes.get('Principled BSDF')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .85
++        shader.inputs['Metallic'].default_value = 0
++        MATERIALS[name] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False, top_only=False):
++    global SERIAL
++    assert role in ROLES, role
++    SERIAL += 1
++    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(data.name, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATERIALS[role])
++    if bevel and role in METAL_WOOD:
++        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
++        mod.width = .025
++        mod.segments = 2
++        mod.affect = 'EDGES'
++        mod.use_clamp_overlap = True
++        if top_only:
++            # Soften the exposed upper perimeter; the buried bottom stays cheap.
++            weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
++            top = max(v.co.z for v in data.vertices)
++            for edge in data.edges:
++                if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
++                    weights.data[edge.index].value = 1
++            mod.limit_method = 'WEIGHT'
++        else:
++            mod.limit_method = 'ANGLE'
++            mod.angle_limit = math.radians(40)
++    PARTS.append(obj)
++    return obj
++
++
++def move(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role='wood', rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role='iron', n=12, top=None,
++             rot=(0, 0, 0), bevel=True):
++    top = radius if top is None else top
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for r, z in [(radius, -depth / 2), (top, depth / 2)] for j in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def rod(label, a, b, radius, role='iron', n=8, bevel=False):
++    a, b = Vector(a), Vector(b)
++    obj = cylinder(label, (0, 0, 0), radius, (b - a).length, role,
++                   n=n, bevel=bevel)
++    obj.data.transform(Matrix.Translation((a + b) / 2) @
++                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def beam(label, a, b, width, role='iron', depth=None, bevel=True):
++    a, b = Vector(a), Vector(b)
++    obj = box(label, (0, 0, 0), (width, depth or width, (b - a).length), role,
++              bevel=bevel)
++    obj.data.transform(Matrix.Translation((a + b) / 2) @
++                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def ring(label, loc, radius, thickness, height, role='iron', n=24,
++         rot=(0, 0, 0), bevel=False):
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for r, z in [(radius - thickness, -height / 2), (radius, -height / 2),
++                          (radius, height / 2), (radius - thickness, height / 2)]
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def tube(label, points, radii, role='iron', n=8, bevel=False):
++    verts = []
++    previous = None
++    for k, p in enumerate(points):
++        tangent = (Vector(points[min(k + 1, len(points) - 1)]) -
++                   Vector(points[max(0, k - 1)])).normalized()
++        if previous is None:
++            reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++            u = reference.cross(tangent).normalized()
++        else:
++            u = (previous - tangent * previous.dot(tangent)).normalized()
++        v = tangent.cross(u).normalized()
++        previous = u
++        for j in range(n):
++            a = j * math.tau / n
++            verts.append(tuple(Vector(p) + radii[k] * (u * math.cos(a) + v * math.sin(a))))
++    faces = [tuple(reversed(range(n)))]
++    for k in range(len(points) - 1):
++        for j in range(n):
++            a, b = k * n + j, k * n + (j + 1) % n
++            faces.append((a, b, b + n, a + n))
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    return mesh(label, verts, faces, role, bevel)
++
++
++def lump(label, loc, size, role, detail=1, irregular=.08, ground=False):
++    bm = bmesh.new()
++    bmesh.ops.create_icosphere(bm, subdivisions=detail, radius=1)
++    for v in bm.verts:
++        v.co *= 1 + RNG.uniform(-irregular, irregular)
++        for axis in range(3):
++            v.co[axis] = v.co[axis] * size[axis] / 2 + loc[axis]
++        if ground:
++            v.co.z = max(0, v.co.z)
++    bm.verts.ensure_lookup_table()
++    result = mesh(label, [tuple(v.co) for v in bm.verts],
++                  [tuple(v.index for v in f.verts) for f in bm.faces], role)
++    bm.free()
++    return result
++
++
++def clock(label, loc, radius, normal=(0, 1, 0)):
++    start = len(PARTS)
++    cylinder(label + ' bezel', (0, 0, 0), radius, .13, 'brass', n=16)
++    cylinder(label + ' lens', (0, 0, .076), radius * .79, .025,
++             'clock_face', n=16, bevel=False)
++    for j in range(4):
++        a = j * math.pi / 2
++        box('Clock hour marker', (radius * .61 * math.cos(a),
++                                 radius * .61 * math.sin(a), .097),
++            (.055, .10, .022), 'iron_dark', (0, 0, a), bevel=False)
++    beam('Frozen clock minute hand', (0, 0, .115), (0, radius * .51, .115),
++         .045, 'iron_dark', bevel=False)
++    beam('Frozen clock hour hand', (0, 0, .12), (radius * .32, -.08, .12),
++         .05, 'iron_dark', bevel=False)
++    rotation = Vector(normal).to_track_quat('Z', 'Y').to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(Matrix.Translation(Vector(loc)) @ rotation)
++
++
++def coach():
++    # Axle bearings and low bogies leave the specified floor exactly 0.5m high.
++    for x in [-3.35, 3.35]:
++        box('Coach bogie', (x, 0, .24), (1.75, 2.45, .25), 'iron_dark')
++        for dx in [-.55, .55]:
++            rod('Coach axle', (x + dx, -1.25, .24), (x + dx, 1.25, .24), .075, 'iron_dark')
++            for y in [-1.26, 1.26]:
++                cylinder('Coach wheel', (x + dx, y, .24), .24, .16,
++                         'iron_dark', n=10, rot=(math.pi / 2, 0, 0), bevel=False)
++    box('Wood carriage floor top 0.5m', (0, -.13, .425), (9.6, 2.82, .15), 'wood')
++    for x in [-4.9, 4.9]:
++        box('Coupler block', (x, -.1, .32), (.2, .36, .2), 'iron_dark')
++    box('Closed green back wall', (0, -1.49, 1.67), (9.6, .16, 2.34), 'paint_green')
++    box('Back wood lower panel', (0, -1.385, .96), (9.55, .07, .85), 'wood')
++    box('Back brass waist rail', (0, -1.33, 1.43), (9.5, .06, .065), 'brass', bevel=False)
++    for x in [-3.72, -1.86, 0, 1.86, 3.72]:
++        box('Back window frame', (x, -1.475, 2.12), (1.48, .20, 1.03), 'wood_dark')
++        box('Back lit window', (x, -1.475, 2.12), (1.25, .23, .8), 'window_lit', bevel=False)
++        box('Window center mullion', (x, -1.345, 2.12), (.06, .05, .83), 'wood', bevel=False)
++    for x in [-4.72, 4.72]:
++        box('Closed wooden carriage end', (x, -.2, 1.61), (.16, 2.58, 2.22), 'paint_green')
++        box('End wooden panel', (x, -.2, .98), (.21, 2.5, .83), 'wood')
++    # Three transverse bench rows: paired leather cushions, broad tall backs.
++    for x in [-2.75, 0, 2.75]:
++        box('Bench wood pedestal', (x, -.12, .72), (.95, 1.96, .44), 'wood_dark')
++        for y in [-.65, .41]:
++            box('Leather bench cushion', (x, y, 1.01), (1.12, .93, .20), 'leather')
++        box('Leather transverse row back', (x - .48, -.12, 1.34), (.19, 2.02, .66),
++            'leather', (0, -.08, 0))
++        for y in [-1.14, .93]:
++            rod('Brass seat handrail upright', (x - .39, y, .98), (x - .39, y, 1.51), .045, 'brass')
++            rod('Brass seat handrail', (x - .39, y, 1.51), (x + .44, y, 1.51), .045, 'brass')
++    # A volumetric half-barrel shell on the BACK only. No front canopy hides seats.
++    sections = []
++    for j in range(9):
++        a = j * math.pi / 16
++        sections.append((-1.6 * math.cos(a), 2.78 + .82 * math.sin(a)))
++    cross = sections + [(y, z - .085) for y, z in reversed(sections)]
++    n = len(cross)
++    verts = [(x, y, z) for x in [-4.88, 4.88] for y, z in cross]
++    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    mesh('Cutaway curved tin roof', verts, faces, 'roof_tin', True)
++    box('Cut roof front lip', (0, -.02, 3.54), (9.8, .07, .10), 'roof_tin')
++    for x in [-3.5, 3.5]:
++        box('Iron boarding step', (x, 1.24, .12), (1.12, .72, .24), 'iron')
++        rod('Boarding brass grab', (x + .66, .95, .56), (x + .66, .95, 1.67), .055, 'brass')
++
++
++def locomotive():
++    box('Locomotive chassis', (-.15, 0, .91), (8.35, 2.7, .3), 'iron_dark')
++    # Side-facing running gear is the primary high-camera read.
++    for y in [-1.36, 1.36]:
++        for x in [-2.72, -.7, 1.32]:
++            ring('Driving wheel tire', (x, y, .74), .74, .13, .18,
++                 'iron', n=14, rot=(math.pi / 2, 0, 0))
++            cylinder('Driving wheel hub', (x, y, .74), .18, .24, 'iron',
++                     n=10, rot=(math.pi / 2, 0, 0), bevel=False)
++            for j in range(6):
++                a = j * math.tau / 6
++                rod('Broad wheel spoke', (x, y, .74),
++                    (x + .61 * math.cos(a), y, .74 + .61 * math.sin(a)), .065, 'iron', n=6)
++        beam('Connecting rod', (-2.72, y * 1.12, .89), (1.32, y * 1.12, .89),
++             .15, 'iron', depth=.1)
++        for x in [-2.72, -.7, 1.32]:
++            cylinder('Rod crank pin', (x, y * 1.15, .89), .11, .10,
++                     'brass', n=8, rot=(math.pi / 2, 0, 0), bevel=False)
++        cylinder('Front pilot wheel', (3.18, y, .4), .4, .17,
++                 'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++    cylinder('Black boiler', (-.05, 0, 2.12), 1.05, 5.8, 'iron_dark',
++             n=16, rot=(0, math.pi / 2, 0))
++    for x in [-2.5, -.4, 2.52]:
++        ring('Boiler iron band', (x, 0, 2.12), 1.085, .055, .12,
++             'iron', n=16, rot=(0, math.pi / 2, 0))
++    cylinder('Smokebox front', (2.93, 0, 2.12), .94, .16, 'iron_dark',
++             n=16, rot=(0, math.pi / 2, 0))
++    box('Rear firebox', (-3.63, 0, 1.88), (1.42, 2.38, 1.78), 'iron_dark')
++    box('Firebox shoulder cap', (-3.63, 0, 2.87), (1.68, 2.65, .22), 'iron_dark')
++    cylinder('Steam dome', (-1.05, 0, 3.14), .39, .53, 'iron_dark', n=12, top=.3)
++    cylinder('Flared soot chimney', (1.52, 0, 3.23), .25, .77,
++             'soot', top=.42, n=12, bevel=False)
++    ring('Chimney lip', (1.52, 0, 3.62), .45, .10, .15, 'soot', n=12)
++    for loc, size in [((1.52, 0, 3.88), (.65, .6, .55)),
++                      ((1.11, -.05, 4.03), (.72, .65, .5)),
++                      ((.73, -.12, 4.08), (.55, .52, .4))]:
++        lump('Frozen detached steam puff', loc, size, 'steam', detail=2, irregular=.04)
++    # The large lens turns slightly toward +Y so its circle reads from the room.
++    clock('Round locomotive headlight', (3.05, .39, 2.77), .48, (1, .65, .12))
++    for y in [-1.08, 1.08]:
++        rod('Boiler side handrail', (-2.62, y, 2.62), (2.4, y, 2.62), .045, 'brass')
++    # Solid wedge, with chunky slats proud of the sloping red pilot face.
++    verts = [(3.25, -1.58, .13), (4.5, -1.58, .13), (3.25, -1.58, .94),
++             (3.25, 1.58, .13), (4.5, 1.58, .13), (3.25, 1.58, .94)]
++    mesh('Solid red cowcatcher wedge', verts,
++         [(0, 2, 1), (3, 4, 5), (0, 1, 4, 3), (1, 2, 5, 4), (2, 0, 3, 5)],
++         'cloth_red', True)
++    for y in [-1.38, -.92, -.46, 0, .46, .92, 1.38]:
++        beam('Red cowcatcher slat', (3.28, y, .98), (4.45, y, .22),
++             .13, 'cloth_red', bevel=False)
++
++
++def water_crane():
++    cx, cy = -.30, -.27
++    for sx in [-1, 1]:
++        for sy in [-1, 1]:
++            bottom = (cx + sx * 1.03, cy + sy * 1.04, .09)
++            top = (cx + sx * .75, cy + sy * .75, 4.28)
++            box('Tower iron foot', (bottom[0], bottom[1], .09), (.34, .34, .18), 'iron')
++            beam('Tower splayed iron leg', bottom, top, .19, 'iron')
++    for sy in [-1, 1]:
++        for sign in [-1, 1]:
++            beam('Tower X bracing', (cx - sign * .99, cy + sy * .99, .42),
++                 (cx + sign * .76, cy + sy * .76, 4.03), .10, 'iron', bevel=False)
++    for sx in [-1, 1]:
++        beam('Tower side diagonal', (cx + sx * .99, cy - .99, .42),
++             (cx + sx * .76, cy + .76, 4.03), .10, 'iron', bevel=False)
++    box('Tank support deck', (cx, cy, 4.20), (2.38, 2.38, .19), 'iron')
++    cylinder('Solid wooden water tank', (cx, cy, 5.01), 1.08, 1.48, 'wood', n=16)
++    for j in range(16):
++        a = j * math.tau / 16
++        rod('Tank stave joint', (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 4.32),
++            (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 5.68),
++            .018, 'wood_dark', n=4)
++    for z in [4.39, 5.0, 5.62]:
++        ring('Tank iron hoop', (cx, cy, z), 1.14, .065, .12, 'iron', n=16)
++    cylinder('Tank shallow wooden lid', (cx, cy, 5.87), 1.18, .26,
++             'wood_dark', top=.12, n=16)
++    for a, length in [(.48, .52), (1.12, .79), (1.92, .39), (2.5, .60)]:
++        x, y = cx + 1.09 * math.cos(a), cy + 1.09 * math.sin(a)
++        box('Broad tank rust streak', (x, y, 5.53 - length / 2),
++            (.04, .14, length), 'rust', (0, 0, a), bevel=False)
++    cylinder('Spout swivel', (.62, .48, 4.65), .24, .40, 'iron', n=10)
++    tube('Swinging water spout', [(.59, .48, 4.72), (1.13, 1.12, 4.72),
++                                (1.28, 1.29, 4.52), (1.28, 1.29, 3.88)],
++         [.16, .16, .16, .19], 'iron', n=8, bevel=True)
++    rod('Spout brace', (.59, .48, 5.05), (1.13, 1.12, 4.69), .055, 'iron')
++    # Isolated droplet, not a continuous stream: time stopped during the pour.
++    lump('Frozen water droplet', (1.28, 1.29, 3.46), (.30, .30, .55),
++         'steam', detail=2, irregular=.025)
++    clock('Tower valve clock', (.38, .88, 4.28), .20)
++
++
++def coal_pile():
++    lump('Solid coal heap core', (0, -.05, .50), (4.35, 3.25, 1.30),
++         'coal', detail=2, irregular=.12, ground=True)
++    for j in range(22):
++        a = j * 2.399963
++        r = math.sqrt((j + .5) / 22)
++        x, y = 1.83 * r * math.cos(a), 1.32 * r * math.sin(a)
++        z = .37 + .75 * (1 - r * r)
++        s = RNG.uniform(.58, .9)
++        lump('Angular exposed coal chunk', (x, y, z), (s, s * .85, s * .8),
++             'coal', irregular=.17, ground=True)
++    lump('Coal crown lump', (-.2, -.08, 1.35), (.93, .87, .8), 'coal', irregular=.09)
++    box('Coal retaining board', (0, 1.44, .33), (4.5, .17, .66), 'wood_dark')
++    for x in [-1.95, 0, 1.95]:
++        box('Retaining board iron stake', (x, 1.56, .38), (.14, .17, .76), 'iron')
++    # An oversized spade blade and D grip read clearly against the broad heap.
++    box('Shovel blade', (.83, .65, .66), (.44, .10, .56),
++        'iron', (0, -.35, -.08))
++    rod('Iron shovel shaft', (.88, .65, .8), (1.25, .65, 1.58), .052, 'iron')
++    ring('Shovel D grip', (1.29, .65, 1.68), .17, .045, .08,
++         'iron', n=8, rot=(math.pi / 2, 0, 0))
++
++
++def suitcase(loc, size, role, rot=(0, 0, 0)):
++    start = len(PARTS)
++    sx, sy, sz = size
++    box('Baggage case', (0, 0, 0), size, role)
++    strap = 'canvas' if role == 'leather' else 'leather'
++    for x in [-sx * .30, sx * .30]:
++        box('Case top strap', (x, 0, sz / 2 + .012), (.08, sy + .025, .026), strap, bevel=False)
++        box('Case front strap', (x, sy / 2 + .012, 0), (.08, .026, sz), strap, bevel=False)
++        box('Case brass clasp', (x, sy / 2 + .033, .025), (.12, .035, .11), 'brass', bevel=False)
++    tube('Case carrying handle', [(-.13, sy / 2, 0), (-.13, sy / 2 + .13, 0),
++                                  (.13, sy / 2 + .13, 0), (.13, sy / 2, 0)],
++         [.032] * 4, 'iron', n=6)
++    matrix = Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(matrix)
++
++
++def luggage_cart():
++    for x in [-1.27, 1.17]:
++        rod('Cart axle', (x, -.77, .28), (x, .77, .28), .075)
++        for y in [-.78, .78]:
++            cylinder('Baggage cart wheel', (x, y, .28), .28, .18,
++                     'iron', n=12, rot=(math.pi / 2, 0, 0))
++    box('Baggage cart frame', (-.12, 0, .43), (3.55, 1.56, .18), 'iron')
++    for j in range(5):
++        box('Baggage bed plank', (-.12, -.64 + j * .32, .57), (3.65, .30, .13), 'wood')
++    tube('Iron cart push handle', [(1.57, -.64, .53), (1.92, -.64, 1.14),
++                                 (1.92, .64, 1.14), (1.57, .64, .53)],
++         [.065] * 4, 'iron', n=8, bevel=True)
++    suitcase((-.92, -.05, .82), (1.36, 1.10, .39), 'leather', (0, 0, -.05))
++    suitcase((.53, -.10, .86), (1.25, 1.10, .46), 'canvas', (0, -.08, .03))
++    suitcase((-.60, -.10, 1.23), (1.15, .86, .36), 'canvas', (0, .15, -.12))
++    suitcase((.56, .0, 1.29), (.93, .87, .30), 'leather', (.08, -.13, .13))
++    # Visible air gaps separate both falling cases from the supported stack.
++    suitcase((-1.11, .04, 1.83), (.86, .63, .30), 'leather', (.17, -.30, -.23))
++    suitcase((.40, .03, 1.92), (.78, .57, .28), 'canvas', (-.14, .35, .23))
++
++
++def signal_gantry():
++    for x in [-2.2, 2.2]:
++        box('Solid gantry foot', (x, 0, .12), (.60, 1.2, .24), 'iron')
++        box('Solid gantry column', (x, 0, 2.05), (.32, .44, 3.86), 'iron')
++        for z in [.7, 1.5, 2.3, 3.1]:
++            box('Column flange', (x, 0, z), (.41, .51, .09), 'iron', bevel=False)
++    for z in [3.77, 4.39]:
++        box('Gantry truss chord', (0, -.09, z), (5, .28, .18), 'iron')
++    for j in range(8):
++        x = -2.4 + j * .6
++        beam('Lattice diagonal', (x, -.09, 3.86 if j % 2 == 0 else 4.30),
++             (x + .6, -.09, 4.30 if j % 2 == 0 else 3.86), .085,
++             'iron', bevel=False)
++    for x in [-1.16, 1.16]:
++        box('Tall signal backing', (x, .19, 3.62), (.62, .28, 1.76), 'iron_dark')
++        for z, role in [(4.17, 'signal_red'), (3.62, 'signal_amber'), (3.07, 'signal_green')]:
++            cylinder('Signal lens socket', (x, .365, z), .235, .12,
++                     'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++            cylinder('Signal colored lens', (x, .44, z), .185, .07,
++                     role, n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++            box('Signal rain hood', (x, .40, z + .22), (.53, .38, .075), 'iron_dark')
++
++
++def clip_x(poly, cut, keep_greater):
++    """Clip a convex polygon to a plank boundary without stair-stepped ends."""
++    result = []
++    for a, b in zip(poly, poly[1:] + poly[:1]):
++        inside_a = a[0] >= cut if keep_greater else a[0] <= cut
++        inside_b = b[0] >= cut if keep_greater else b[0] <= cut
++        if inside_a:
++            result.append(a)
++        if inside_a != inside_b:
++            t = (cut - a[0]) / (b[0] - a[0])
++            result.append((cut, a[1] + t * (b[1] - a[1])))
++    return result
++
++
++def turntable():
++    # Only this asset has a top-centred origin: everything lies in [-0.3, 0].
++    ring('Stone pit edge 0.6m wide', (0, 0, -.15), 12, .6, .30, 'stone', n=96)
++    cylinder('Solid recessed deck substrate', (0, 0, -.195), 11.4, .21,
++             'wood_dark', n=64, bevel=False)
++    circle = [(11.35 * math.cos(j * math.tau / 96), 11.35 * math.sin(j * math.tau / 96))
++              for j in range(96)]
++    for j in range(54):
++        low = -11.35 + j * 22.7 / 54 + .009
++        high = -11.35 + (j + 1) * 22.7 / 54 - .009
++        poly = clip_x(clip_x(circle, low, True), high, False)
++        if len(poly) < 3:
++            continue
++        n = len(poly)
++        verts = [(x, y, z) for z in [-.18, -.06] for x, y in poly]
++        faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++        faces += [(k, (k + 1) % n, (k + 1) % n + n, k + n) for k in range(n)]
++        mesh('Circle-clipped deck plank', verts, faces, 'wood_dark', True, True)
++    ring('Iron deck edge rail', (0, 0, -.045), 11.4, .075, .09, 'iron', n=96)
++    # Two standard-gauge track pairs cross at grade. Split Y rails exactly at
++    # the X rail heads, avoiding overlapping coplanar crossing faces.
++    gauge = .75
++    end = math.sqrt(11.28 ** 2 - (gauge + .08) ** 2)
++    for offset in [-gauge, gauge]:
++        box('X track rail foot', (0, offset, -.082), (end * 2, .18, .025), 'rail_steel', bevel=False)
++        box('X track rail web', (0, offset, -.048), (end * 2, .055, .065), 'rail_steel', bevel=False)
++        box('X track rail head', (0, offset, -.021), (end * 2, .12, .032), 'rail_steel')
++        for start, stop in [(-end, -gauge - .09), (-gauge + .09, gauge - .09), (gauge + .09, end)]:
++            center, length = (start + stop) / 2, stop - start
++            box('Y track rail foot', (offset, center, -.082), (.18, length, .025), 'rail_steel', bevel=False)
++        for start, stop in [(-end, -gauge - .06), (-gauge + .06, gauge - .06), (gauge + .06, end)]:
++            center, length = (start + stop) / 2, stop - start
++            box('Y track rail web', (offset, center, -.048), (.055, length, .065), 'rail_steel', bevel=False)
++            box('Y track rail head', (offset, center, -.021), (.12, length, .032), 'rail_steel')
++    cylinder('Brass central hub', (0, 0, -.04), .56, .08, 'brass', n=32)
++    for j in range(16):
++        a = j * math.tau / 16
++        box('Brass hub gear tooth', (.60 * math.cos(a), .60 * math.sin(a), -.045),
++            (.20, .14, .09), 'brass', (0, 0, a), bevel=False)
++    cylinder('Center axle cap', (0, 0, -.015), .21, .03, 'brass', n=16)
++    for j in range(8):
++        a = j * math.tau / 8
++        cylinder('Hub bolt', (.39 * math.cos(a), .39 * math.sin(a), -.012),
++                 .045, .024, 'iron', n=6, bevel=False)
++
++
++def platform_edge():
++    box('Platform stone slab', (0, 0, .25), (8, 1.2, .5), 'stone', bevel=False)
++    # Thin overlays end exactly at the slab bounds; the stone remains solid.
++    box('Dark room-facing platform face', (0, .591, .225), (8, .018, .45), 'stone_dark', bevel=False)
++    for j in range(8):
++        x = -3.5 + j
++        box('Top stone coping', (x, 0, .468), (.982, 1.18, .064), 'stone', bevel=False)
++        box('Cream safety line', (x, .40, .494), (.982, .19, .012), 'paint_cream')
++    for x in [-3, -2, -1, 0, 1, 2, 3]:
++        box('Face stone mortar joint', (x, .602, .22), (.022, .003, .42), 'stone', bevel=False)
++
++
++SPECS = [
++    ('LM_Coach', (10, 3.2, 3.6), coach),
++    ('LM_Locomotive', (9, 3.4, 4.2), locomotive),
++    ('LM_WaterCrane', (3, 3, 6), water_crane),
++    ('LM_CoalPile', (4.5, 3.5, 1.8), coal_pile),
++    ('LM_LuggageCart', (4, 1.8, 2), luggage_cart),
++    ('LM_SignalGantry', (5, 1.2, 4.5), signal_gantry),
++    ('Turntable', (24, 24, .3), turntable),
++    ('PlatformEdge', (8, 1.2, .5), platform_edge),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dimensions):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name = name
++    obj.data.name = name + '_Mesh'
++    budget = 6000 if name == 'Turntable' else 4000
++    count = triangles(obj)
++    # Material-delimited reduction is a fallback for Blender tessellation
++    # differences. Main forms already use economical hand-authored topology.
++    for attempt in range(3):
++        if count <= budget:
++            break
++        mod = obj.modifiers.new('Preserve silhouette within triangle budget', 'DECIMATE')
++        mod.ratio = (budget - 100) / count
++        mod.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++        count = triangles(obj)
++    assert count <= budget, (name, count, budget)
++    coords = [v.co for v in obj.data.vertices]
++    low = Vector([min(v[i] for v in coords) for i in range(3)])
++    high = Vector([max(v[i] for v in coords) for i in range(3)])
++    span = high - low
++    center = (low + high) / 2
++    scale = Vector([dimensions[i] / span[i] for i in range(3)])
++    for v in coords:
++        v.x = (v.x - center.x) * scale.x
++        v.y = (v.y - center.y) * scale.y
++        v.z = (v.z - (high.z if name == 'Turntable' else low.z)) * scale.z
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    bm.to_mesh(obj.data)
++    bm.free()
++    for face in obj.data.polygons:
++        face.use_smooth = False
++    obj.data.update()
++    obj.location = (0, 0, 0)
++    obj.rotation_euler = (0, 0, 0)
++    obj.scale = (1, 1, 1)
++    bpy.context.view_layer.update()
++    assert all(abs(obj.dimensions[i] - dimensions[i]) < .001 for i in range(3)), name
++    assert all(math.isfinite(c) for v in coords for c in v), name
++    assert all(m and m.name in ROLES for m in obj.data.materials), name
++    if name == 'Turntable':
++        assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-5
++        assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-5
++    else:
++        assert abs(min(v.co.z for v in obj.data.vertices)) < 1e-5
++    # Joining must not accidentally introduce open construction surfaces.
++    check = bmesh.new()
++    check.from_mesh(obj.data)
++    assert all(e.is_manifold for e in check.edges), (name, 'open mesh component')
++    check.free()
++    obj['dimensions_m'] = list(dimensions)
++    obj['front'] = '+Y'
++    obj['chapter'] = 'The Stopped Station'
++    obj['origin_rule'] = 'top center' if name == 'Turntable' else 'bottom center'
++    obj['solid_obstacle'] = name.startswith('LM_')
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    destination = OUTPUT / f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024, destination
++    print(f'EXPORTED {name} {triangles(obj)} '
++          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def main():
++    global PARTS, RNG
++    bpy.ops.object.select_all(action='SELECT')
++    bpy.ops.object.delete(use_global=False)
++    bpy.context.scene.unit_settings.system = 'METRIC'
++    bpy.context.scene.unit_settings.scale_length = 1
++    setup_materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    exported = []
++    for index, (name, dimensions, build) in enumerate(SPECS):
++        PARTS = []
++        RNG = random.Random(261117 + index * 7919)
++        build()
++        exported.append(finish(name, dimensions))
++    assert [obj.name for obj in exported] == [spec[0] for spec in SPECS]
++    assert len(bpy.context.scene.objects) == len(SPECS)
++    assert all(obj.type == 'MESH' for obj in bpy.context.scene.objects)
++    for mat in MATERIALS.values():
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 2189ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py:37: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_Coach.fbx'
+export finished in 0.0053 sec.
+EXPORTED LM_Coach 1908 (10.0, 3.2, 3.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_Locomotive.fbx'
+export finished in 0.0059 sec.
+EXPORTED LM_Locomotive 3584 (9.0, 3.4, 4.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_WaterCrane.fbx'
+export finished in 0.0067 sec.
+EXPORTED LM_WaterCrane 2004 (3.0, 3.0, 6.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_CoalPile.fbx'
+export finished in 0.0043 sec.
+EXPORTED LM_CoalPile 772 (4.5, 3.5, 1.8)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_LuggageCart.fbx'
+export finished in 0.0049 sec.
+EXPORTED LM_LuggageCart 1708 (4.0, 1.8, 2.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_SignalGantry.fbx'
+export finished in 0.0043 sec.
+EXPORTED LM_SignalGantry 1112 (5.0, 1.2, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_Turntable.fbx'
+export finished in 0.0070 sec.
+EXPORTED Turntable 5116 (24.0, 24.0, 0.3)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_PlatformEdge.fbx'
+export finished in 0.0038 sec.
+EXPORTED PlatformEdge 428 (8.0, 1.2, 0.5)
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+All eight pieces exported successfully with the requested dimensions and within their triangle budgets. The turntable is 5,116 triangles; the largest obstacle is 3,584. I’ll now check the exported FBXs and their silhouettes from a high camera.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$landmarkCheck = @'"'
+import bpy, math, os
+from pathlib import Path
+from mathutils import Vector
+root = Path(r'C:/Project/Cat_Tang')
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete(use_global=False)
+specs = [('LM_Coach',(10,3.2,3.6)), ('LM_Locomotive',(9,3.4,4.2)), ('LM_WaterCrane',(3,3,6)), ('LM_CoalPile',(4.5,3.5,1.8)), ('LM_LuggageCart',(4,1.8,2)), ('LM_SignalGantry',(5,1.2,4.5)), ('Turntable',(24,24,.3)), ('PlatformEdge',(8,1.2,.5))]
+positions = [(-6,8,0),(6,8,0),(-8,0,0),(-2,0,0),(4,0,0),(10,0,0),(-5,-10,0),(7,-9,0)]
+for (name,dims), pos in zip(specs,positions):
+    before = set(bpy.context.scene.objects)
+    bpy.ops.import_scene.fbx(filepath=str(root / 'Game/Assets/Art/Characters/Ch2' / ('Kit_'+name+'.fbx')))
+    imported = list(set(bpy.context.scene.objects) - before)
+    assert len(imported)==1 and imported[0].type=='MESH', (name, imported)
+    obj = imported[0]
+    assert obj.name==name, (name,obj.name)
+    assert all(abs(obj.dimensions[i]-dims[i])<.002 for i in range(3)), (name,tuple(obj.dimensions))
+    world = [obj.matrix_world @ v.co for v in obj.data.vertices]
+    bottom, top = min(v.z for v in world),max(v.z for v in world)
+    assert abs(top if name=='Turntable' else bottom)<.002, (name,bottom,top)
+    for mat in obj.data.materials:
+        assert all(abs(c-.5)<1e-6 for c in mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value[:3])
+    obj.data.calc_loop_triangles()
+    print('VERIFIED_FBX',name,len(obj.data.loop_triangles),tuple(round(x,3) for x in obj.dimensions),flush=True)
+    if name=='Turntable': obj.scale *= .46
+    obj.location = pos
+scene=bpy.context.scene
+scene.render.engine='BLENDER_WORKBENCH'
+scene.display.shading.light='STUDIO'
+scene.display.shading.studiolight_rotate_z=.4
+scene.display.shading.color_type='MATERIAL'
+scene.display.shading.show_shadows=True
+scene.display.shading.show_cavity=True
+scene.display.shading.cavity_type='BOTH'
+scene.display.shading.curvature_ridge_factor=1.5
+scene.display.shading.curvature_valley_factor=1.4
+scene.display.shading.show_object_outline=True
+scene.display.shading.background_type='WORLD'
+scene.world.color=(.18,.18,.18)
+bpy.ops.object.camera_add(location=(17,31,47))
+cam=bpy.context.object
+cam.rotation_euler=(Vector((0,0,1))-cam.location).to_track_quat('-Z','Y').to_euler()
+cam.data.type='ORTHO'
+cam.data.ortho_scale=37
+scene.camera=cam
+scene.render.resolution_x=1800
+scene.render.resolution_y=1500
+scene.render.resolution_percentage=100
+scene.render.image_settings.file_format='PNG'
+scene.render.filepath=str(Path(os.environ['TEMP']) / 'ch2_landmarks_inspect.png')
+bpy.ops.render.render(write_still=True)
+print('PREVIEW',scene.render.filepath,flush=True)
+'@; & 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr "'$landmarkCheck' in C:\Project\Cat_Tang
+ succeeded in 1599ms:
+Traceback (most recent call last):
+  File "<string>", line 16, in <module>
+AssertionError: ('LM_Coach', (10.0, 3.6000001430511475, 3.200000047683716))
+FBX version: 7400
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr \"import bpy; bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False); bpy.ops.import_scene.fbx(filepath=r'C:/Project/Cat_Tang/Game/Assets/Art/Characters/Ch2/Kit_LM_Coach.fbx', bake_space_transform=True); o=bpy.context.selected_objects[0]; print('DIMS',tuple(o.dimensions),'LOC',o.location,'ROT',o.rotation_euler,'MATRIX',o.matrix_world); print('BOUNDS', [(min(v.co[i] for v in o.data.vertices),max(v.co[i] for v in o.data.vertices)) for i in range(3)])\"" in C:\Project\Cat_Tang
+ succeeded in 1645ms:
+FBX version: 7400
+DIMS (10.0, 3.200000047683716, 3.6000001430511475) LOC <Vector (0.0000, 0.0000, 0.0000)> ROT <Euler (x=0.0000, y=-0.0000, z=0.0000), order='XYZ'> MATRIX <Matrix 4x4 (1.0000, 0.0000, 0.0000, 0.0000)
+            (0.0000, 1.0000, 0.0000, 0.0000)
+            (0.0000, 0.0000, 1.0000, 0.0000)
+            (0.0000, 0.0000, 0.0000, 1.0000)>
+BOUNDS [(-5.0, 5.0), (-1.600000023841858, 1.600000023841858), (0.0, 3.6000001430511475)]
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$landmarkCheck = @'"'
+import bpy, os
+from pathlib import Path
+from mathutils import Vector
+root=Path(r'C:/Project/Cat_Tang')
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete(use_global=False)
+specs=[('LM_Coach',(10,3.2,3.6)),('LM_Locomotive',(9,3.4,4.2)),('LM_WaterCrane',(3,3,6)),('LM_CoalPile',(4.5,3.5,1.8)),('LM_LuggageCart',(4,1.8,2)),('LM_SignalGantry',(5,1.2,4.5)),('Turntable',(24,24,.3)),('PlatformEdge',(8,1.2,.5))]
+positions=[(-6,8,0),(6,8,0),(-8,0,0),(-2,0,0),(4,0,0),(10,0,0),(-5,-10,0),(7,-9,0)]
+for (name,dims),pos in zip(specs,positions):
+    before=set(bpy.context.scene.objects)
+    bpy.ops.import_scene.fbx(filepath=str(root/'Game/Assets/Art/Characters/Ch2'/('Kit_'+name+'.fbx')),bake_space_transform=True)
+    imported=list(set(bpy.context.scene.objects)-before)
+    assert len(imported)==1 and imported[0].type=='MESH',name
+    obj=imported[0]
+    assert obj.name==name,(name,obj.name)
+    assert all(abs(obj.dimensions[i]-dims[i])<.002 for i in range(3)),(name,tuple(obj.dimensions))
+    world=[obj.matrix_world @ v.co for v in obj.data.vertices]
+    bottom,top=min(v.z for v in world),max(v.z for v in world)
+    assert abs(top if name=='Turntable' else bottom)<.002,(name,bottom,top)
+    for mat in obj.data.materials:
+        assert all(abs(c-.5)<1e-6 for c in mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value[:3])
+    obj.data.calc_loop_triangles()
+    print('VERIFIED_FBX',name,len(obj.data.loop_triangles),tuple(round(x,3) for x in obj.dimensions),flush=True)
+    if name=='Turntable': obj.scale *= .46
+    obj.location=pos
+scene=bpy.context.scene
+scene.render.engine='BLENDER_WORKBENCH'
+scene.display.shading.light='STUDIO'
+scene.display.shading.studiolight_rotate_z=.4
+scene.display.shading.color_type='MATERIAL'
+scene.display.shading.show_shadows=True
+scene.display.shading.show_cavity=True
+scene.display.shading.cavity_type='BOTH'
+scene.display.shading.curvature_ridge_factor=1.5
+scene.display.shading.curvature_valley_factor=1.4
+scene.display.shading.show_object_outline=True
+scene.display.shading.background_type='WORLD'
+scene.world.color=(.18,.18,.18)
+bpy.ops.object.camera_add(location=(17,31,47))
+cam=bpy.context.object
+cam.rotation_euler=(Vector((0,0,1))-cam.location).to_track_quat('-Z','Y').to_euler()
+cam.data.type='ORTHO'
+cam.data.ortho_scale=37
+scene.camera=cam
+scene.render.resolution_x=1800
+scene.render.resolution_y=1500
+scene.render.resolution_percentage=100
+scene.render.image_settings.file_format='PNG'
+scene.render.filepath=str(Path(os.environ['TEMP'])/'ch2_landmarks_inspect.png')
+bpy.ops.render.render(write_still=True)
+print('PREVIEW',scene.render.filepath,flush=True)
+'@; & 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr "'$landmarkCheck' in C:\Project\Cat_Tang
+ succeeded in 5042ms:
+FBX version: 7400
+VERIFIED_FBX LM_Coach 1908 (10.0, 3.2, 3.6)
+FBX version: 7400
+VERIFIED_FBX LM_Locomotive 3584 (9.0, 3.4, 4.2)
+FBX version: 7400
+VERIFIED_FBX LM_WaterCrane 2004 (3.0, 3.0, 6.0)
+FBX version: 7400
+VERIFIED_FBX LM_CoalPile 772 (4.5, 3.5, 1.8)
+FBX version: 7400
+VERIFIED_FBX LM_LuggageCart 1708 (4.0, 1.8, 2.0)
+FBX version: 7400
+VERIFIED_FBX LM_SignalGantry 1112 (5.0, 1.2, 4.5)
+FBX version: 7400
+VERIFIED_FBX Turntable 5116 (24.0, 24.0, 0.3)
+FBX version: 7400
+VERIFIED_FBX PlatformEdge 428 (8.0, 1.2, 0.5)
+00:04.750  render           | Saved: 'C:\Users\user\AppData\Local\Temp\ch2_landmarks_inspect.png'
+PREVIEW C:\Users\user\AppData\Local\Temp\ch2_landmarks_inspect.png
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short; Get-ChildItem Game/Assets/Art/Characters/Ch2/Kit_*.fbx | Select-Object Name,Length' in C:\Project\Cat_Tang
+ succeeded in 251ms:
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/ModelPalette.cs
+ M Game/Assets/Scripts/Game/Kit.cs
+ M "docs/1159_2\354\236\245_\352\270\260\355\232\215\354\204\234_20261117_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? Art/tools/blender_kit_ch2_landmarks.py
+?? Art/tools/blender_kit_ch2_props.py
+?? Art/tools/blender_kit_ch2_station.py
+?? Art/tools/keep_main.py
+?? Art/tools/specs/_ch2_common.md
+?? Art/tools/specs/kit_ch2_landmarks.log
+?? Art/tools/specs/kit_ch2_landmarks_spec.md
+?? Art/tools/specs/kit_ch2_props.log
+?? Art/tools/specs/kit_ch2_props_spec.md
+?? Art/tools/specs/kit_ch2_station.log
+?? Art/tools/specs/kit_ch2_station_spec.md
+?? Art/tools/tripo_cli_import.py
+?? Art/tripo_input/ch2/
+?? Game/Assets/Art/Characters/Ch2.meta
+?? Game/Assets/Art/Characters/Ch2/
+?? Game/Assets/Resources/Enemies/Ch2_Conductor.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Conductor.prefab.meta
+?? Game/Assets/Resources/Kit/Ch2.meta
+?? Game/Assets/Resources/Kit/Ch2/
+?? Game/Assets/Scripts/Game/DangerEdge.cs
+?? Game/Assets/Scripts/Game/DangerEdge.cs.meta
+
+Name                    Length
+----                    ------
+Kit_Bench.fbx            49356
+Kit_Crates.fbx           36604
+Kit_FloatLuggage.fbx     27900
+Kit_LM_Coach.fbx         41996
+Kit_LM_CoalPile.fbx      36444
+Kit_LM_Locomotive.fbx    65500
+Kit_LM_LuggageCart.fbx   45724
+Kit_LM_SignalGantry.fbx  29036
+Kit_LM_WaterCrane.fbx    51212
+Kit_LuggagePile.fbx      47276
+Kit_MineCart.fbx         43100
+Kit_PlatformEdge.fbx     20348
+Kit_RailTrack.fbx        24892
+Kit_SignalLamp.fbx       41916
+Kit_StationClock.fbx     46956
+Kit_SteamValve.fbx       55324
+Kit_TicketBooth.fbx      64012
+Kit_Turntable.fbx        72828
+
+
+
+codex
+The FBX checks passed. The preview showed that the deck planks made one track pair hard to distinguish, and the platform’s safety line was coplanar with the stone. I’ll angle the planks and raise the line slightly while keeping the specified dimensions.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py
+diff --git a/Art/tools/blender_kit_ch2_landmarks.py b/Art/tools/blender_kit_ch2_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..44394ea1ee6c136dbc5e0add4e303dbb13224300
+--- /dev/null
++++ b/Art/tools/blender_kit_ch2_landmarks.py
+@@ -0,0 +1,616 @@
++# 멈춘 역의 대형 장애물 6종, 보스 회전대와 승강장 경계를 생성합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py
++"""Standalone Blender 5.x, deterministic metre-scale chapter-two FBX kit.
++
++The room-facing side is +Y. Locomotive travel is +X, exposing its running
++gear to the room. All role materials deliberately have identical grey shaders.
++Only meshes are exported; disconnected details remain in one joined object.
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2'
++ROLES = set('wood wood_dark wood_light iron iron_dark rust brass rail_steel '
++            'brick brick_dark stone stone_dark roof_tin soot coal window '
++            'window_lit glass_lamp canvas leather leather_dark cloth_red '
++            'paint_cream paint_green clock_face steam signal_red signal_amber '
++            'signal_green'.split())
++MATERIALS = {}
++PARTS = []
++RNG = random.Random(20261117)
++SERIAL = 0
++METAL_WOOD = set('wood wood_dark wood_light iron iron_dark rust brass '
++                 'rail_steel roof_tin paint_green paint_cream cloth_red'.split())
++
++
++def setup_materials():
++    for name in sorted(ROLES):
++        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes.get('Principled BSDF')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .85
++        shader.inputs['Metallic'].default_value = 0
++        MATERIALS[name] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False, top_only=False):
++    global SERIAL
++    assert role in ROLES, role
++    SERIAL += 1
++    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(data.name, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATERIALS[role])
++    if bevel and role in METAL_WOOD:
++        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
++        mod.width = .025
++        mod.segments = 2
++        mod.affect = 'EDGES'
++        mod.use_clamp_overlap = True
++        if top_only:
++            # Soften the exposed upper perimeter; the buried bottom stays cheap.
++            weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
++            top = max(v.co.z for v in data.vertices)
++            for edge in data.edges:
++                if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
++                    weights.data[edge.index].value = 1
++            mod.limit_method = 'WEIGHT'
++        else:
++            mod.limit_method = 'ANGLE'
++            mod.angle_limit = math.radians(40)
++    PARTS.append(obj)
++    return obj
++
++
++def move(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role='wood', rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role='iron', n=12, top=None,
++             rot=(0, 0, 0), bevel=True):
++    top = radius if top is None else top
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for r, z in [(radius, -depth / 2), (top, depth / 2)] for j in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def rod(label, a, b, radius, role='iron', n=8, bevel=False):
++    a, b = Vector(a), Vector(b)
++    obj = cylinder(label, (0, 0, 0), radius, (b - a).length, role,
++                   n=n, bevel=bevel)
++    obj.data.transform(Matrix.Translation((a + b) / 2) @
++                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def beam(label, a, b, width, role='iron', depth=None, bevel=True):
++    a, b = Vector(a), Vector(b)
++    obj = box(label, (0, 0, 0), (width, depth or width, (b - a).length), role,
++              bevel=bevel)
++    obj.data.transform(Matrix.Translation((a + b) / 2) @
++                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def ring(label, loc, radius, thickness, height, role='iron', n=24,
++         rot=(0, 0, 0), bevel=False):
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for r, z in [(radius - thickness, -height / 2), (radius, -height / 2),
++                          (radius, height / 2), (radius - thickness, height / 2)]
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def tube(label, points, radii, role='iron', n=8, bevel=False):
++    verts = []
++    previous = None
++    for k, p in enumerate(points):
++        tangent = (Vector(points[min(k + 1, len(points) - 1)]) -
++                   Vector(points[max(0, k - 1)])).normalized()
++        if previous is None:
++            reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++            u = reference.cross(tangent).normalized()
++        else:
++            u = (previous - tangent * previous.dot(tangent)).normalized()
++        v = tangent.cross(u).normalized()
++        previous = u
++        for j in range(n):
++            a = j * math.tau / n
++            verts.append(tuple(Vector(p) + radii[k] * (u * math.cos(a) + v * math.sin(a))))
++    faces = [tuple(reversed(range(n)))]
++    for k in range(len(points) - 1):
++        for j in range(n):
++            a, b = k * n + j, k * n + (j + 1) % n
++            faces.append((a, b, b + n, a + n))
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    return mesh(label, verts, faces, role, bevel)
++
++
++def lump(label, loc, size, role, detail=1, irregular=.08, ground=False):
++    bm = bmesh.new()
++    bmesh.ops.create_icosphere(bm, subdivisions=detail, radius=1)
++    for v in bm.verts:
++        v.co *= 1 + RNG.uniform(-irregular, irregular)
++        for axis in range(3):
++            v.co[axis] = v.co[axis] * size[axis] / 2 + loc[axis]
++        if ground:
++            v.co.z = max(0, v.co.z)
++    bm.verts.ensure_lookup_table()
++    result = mesh(label, [tuple(v.co) for v in bm.verts],
++                  [tuple(v.index for v in f.verts) for f in bm.faces], role)
++    bm.free()
++    return result
++
++
++def clock(label, loc, radius, normal=(0, 1, 0)):
++    start = len(PARTS)
++    cylinder(label + ' bezel', (0, 0, 0), radius, .13, 'brass', n=16)
++    cylinder(label + ' lens', (0, 0, .076), radius * .79, .025,
++             'clock_face', n=16, bevel=False)
++    for j in range(4):
++        a = j * math.pi / 2
++        box('Clock hour marker', (radius * .61 * math.cos(a),
++                                 radius * .61 * math.sin(a), .097),
++            (.055, .10, .022), 'iron_dark', (0, 0, a), bevel=False)
++    beam('Frozen clock minute hand', (0, 0, .115), (0, radius * .51, .115),
++         .045, 'iron_dark', bevel=False)
++    beam('Frozen clock hour hand', (0, 0, .12), (radius * .32, -.08, .12),
++         .05, 'iron_dark', bevel=False)
++    rotation = Vector(normal).to_track_quat('Z', 'Y').to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(Matrix.Translation(Vector(loc)) @ rotation)
++
++
++def coach():
++    # Axle bearings and low bogies leave the specified floor exactly 0.5m high.
++    for x in [-3.35, 3.35]:
++        box('Coach bogie', (x, 0, .24), (1.75, 2.45, .25), 'iron_dark')
++        for dx in [-.55, .55]:
++            rod('Coach axle', (x + dx, -1.25, .24), (x + dx, 1.25, .24), .075, 'iron_dark')
++            for y in [-1.26, 1.26]:
++                cylinder('Coach wheel', (x + dx, y, .24), .24, .16,
++                         'iron_dark', n=10, rot=(math.pi / 2, 0, 0), bevel=False)
++    box('Wood carriage floor top 0.5m', (0, -.13, .425), (9.6, 2.82, .15), 'wood')
++    for x in [-4.9, 4.9]:
++        box('Coupler block', (x, -.1, .32), (.2, .36, .2), 'iron_dark')
++    box('Closed green back wall', (0, -1.49, 1.67), (9.6, .16, 2.34), 'paint_green')
++    box('Back wood lower panel', (0, -1.385, .96), (9.55, .07, .85), 'wood')
++    box('Back brass waist rail', (0, -1.33, 1.43), (9.5, .06, .065), 'brass', bevel=False)
++    for x in [-3.72, -1.86, 0, 1.86, 3.72]:
++        box('Back window frame', (x, -1.475, 2.12), (1.48, .20, 1.03), 'wood_dark')
++        box('Back lit window', (x, -1.475, 2.12), (1.25, .23, .8), 'window_lit', bevel=False)
++        box('Window center mullion', (x, -1.345, 2.12), (.06, .05, .83), 'wood', bevel=False)
++    for x in [-4.72, 4.72]:
++        box('Closed wooden carriage end', (x, -.2, 1.61), (.16, 2.58, 2.22), 'paint_green')
++        box('End wooden panel', (x, -.2, .98), (.21, 2.5, .83), 'wood')
++    # Three transverse bench rows: paired leather cushions, broad tall backs.
++    for x in [-2.75, 0, 2.75]:
++        box('Bench wood pedestal', (x, -.12, .72), (.95, 1.96, .44), 'wood_dark')
++        for y in [-.65, .41]:
++            box('Leather bench cushion', (x, y, 1.01), (1.12, .93, .20), 'leather')
++        box('Leather transverse row back', (x - .48, -.12, 1.34), (.19, 2.02, .66),
++            'leather', (0, -.08, 0))
++        for y in [-1.14, .93]:
++            rod('Brass seat handrail upright', (x - .39, y, .98), (x - .39, y, 1.51), .045, 'brass')
++            rod('Brass seat handrail', (x - .39, y, 1.51), (x + .44, y, 1.51), .045, 'brass')
++    # A volumetric half-barrel shell on the BACK only. No front canopy hides seats.
++    sections = []
++    for j in range(9):
++        a = j * math.pi / 16
++        sections.append((-1.6 * math.cos(a), 2.78 + .82 * math.sin(a)))
++    cross = sections + [(y, z - .085) for y, z in reversed(sections)]
++    n = len(cross)
++    verts = [(x, y, z) for x in [-4.88, 4.88] for y, z in cross]
++    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    mesh('Cutaway curved tin roof', verts, faces, 'roof_tin', True)
++    box('Cut roof front lip', (0, -.02, 3.54), (9.8, .07, .10), 'roof_tin')
++    for x in [-3.5, 3.5]:
++        box('Iron boarding step', (x, 1.24, .12), (1.12, .72, .24), 'iron')
++        rod('Boarding brass grab', (x + .66, .95, .56), (x + .66, .95, 1.67), .055, 'brass')
++
++
++def locomotive():
++    box('Locomotive chassis', (-.15, 0, .91), (8.35, 2.7, .3), 'iron_dark')
++    # Side-facing running gear is the primary high-camera read.
++    for y in [-1.36, 1.36]:
++        for x in [-2.72, -.7, 1.32]:
++            ring('Driving wheel tire', (x, y, .74), .74, .13, .18,
++                 'iron', n=14, rot=(math.pi / 2, 0, 0))
++            cylinder('Driving wheel hub', (x, y, .74), .18, .24, 'iron',
++                     n=10, rot=(math.pi / 2, 0, 0), bevel=False)
++            for j in range(6):
++                a = j * math.tau / 6
++                rod('Broad wheel spoke', (x, y, .74),
++                    (x + .61 * math.cos(a), y, .74 + .61 * math.sin(a)), .065, 'iron', n=6)
++        beam('Connecting rod', (-2.72, y * 1.12, .89), (1.32, y * 1.12, .89),
++             .15, 'iron', depth=.1)
++        for x in [-2.72, -.7, 1.32]:
++            cylinder('Rod crank pin', (x, y * 1.15, .89), .11, .10,
++                     'brass', n=8, rot=(math.pi / 2, 0, 0), bevel=False)
++        cylinder('Front pilot wheel', (3.18, y, .4), .4, .17,
++                 'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++    cylinder('Black boiler', (-.05, 0, 2.12), 1.05, 5.8, 'iron_dark',
++             n=16, rot=(0, math.pi / 2, 0))
++    for x in [-2.5, -.4, 2.52]:
++        ring('Boiler iron band', (x, 0, 2.12), 1.085, .055, .12,
++             'iron', n=16, rot=(0, math.pi / 2, 0))
++    cylinder('Smokebox front', (2.93, 0, 2.12), .94, .16, 'iron_dark',
++             n=16, rot=(0, math.pi / 2, 0))
++    box('Rear firebox', (-3.63, 0, 1.88), (1.42, 2.38, 1.78), 'iron_dark')
++    box('Firebox shoulder cap', (-3.63, 0, 2.87), (1.68, 2.65, .22), 'iron_dark')
++    cylinder('Steam dome', (-1.05, 0, 3.14), .39, .53, 'iron_dark', n=12, top=.3)
++    cylinder('Flared soot chimney', (1.52, 0, 3.23), .25, .77,
++             'soot', top=.42, n=12, bevel=False)
++    ring('Chimney lip', (1.52, 0, 3.62), .45, .10, .15, 'soot', n=12)
++    for loc, size in [((1.52, 0, 3.88), (.65, .6, .55)),
++                      ((1.11, -.05, 4.03), (.72, .65, .5)),
++                      ((.73, -.12, 4.08), (.55, .52, .4))]:
++        lump('Frozen detached steam puff', loc, size, 'steam', detail=2, irregular=.04)
++    # The large lens turns slightly toward +Y so its circle reads from the room.
++    clock('Round locomotive headlight', (3.05, .39, 2.77), .48, (1, .65, .12))
++    for y in [-1.08, 1.08]:
++        rod('Boiler side handrail', (-2.62, y, 2.62), (2.4, y, 2.62), .045, 'brass')
++    # Solid wedge, with chunky slats proud of the sloping red pilot face.
++    verts = [(3.25, -1.58, .13), (4.5, -1.58, .13), (3.25, -1.58, .94),
++             (3.25, 1.58, .13), (4.5, 1.58, .13), (3.25, 1.58, .94)]
++    mesh('Solid red cowcatcher wedge', verts,
++         [(0, 2, 1), (3, 4, 5), (0, 1, 4, 3), (1, 2, 5, 4), (2, 0, 3, 5)],
++         'cloth_red', True)
++    for y in [-1.38, -.92, -.46, 0, .46, .92, 1.38]:
++        beam('Red cowcatcher slat', (3.28, y, .98), (4.45, y, .22),
++             .13, 'cloth_red', bevel=False)
++
++
++def water_crane():
++    cx, cy = -.30, -.27
++    for sx in [-1, 1]:
++        for sy in [-1, 1]:
++            bottom = (cx + sx * 1.03, cy + sy * 1.04, .09)
++            top = (cx + sx * .75, cy + sy * .75, 4.28)
++            box('Tower iron foot', (bottom[0], bottom[1], .09), (.34, .34, .18), 'iron')
++            beam('Tower splayed iron leg', bottom, top, .19, 'iron')
++    for sy in [-1, 1]:
++        for sign in [-1, 1]:
++            beam('Tower X bracing', (cx - sign * .99, cy + sy * .99, .42),
++                 (cx + sign * .76, cy + sy * .76, 4.03), .10, 'iron', bevel=False)
++    for sx in [-1, 1]:
++        beam('Tower side diagonal', (cx + sx * .99, cy - .99, .42),
++             (cx + sx * .76, cy + .76, 4.03), .10, 'iron', bevel=False)
++    box('Tank support deck', (cx, cy, 4.20), (2.38, 2.38, .19), 'iron')
++    cylinder('Solid wooden water tank', (cx, cy, 5.01), 1.08, 1.48, 'wood', n=16)
++    for j in range(16):
++        a = j * math.tau / 16
++        rod('Tank stave joint', (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 4.32),
++            (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 5.68),
++            .018, 'wood_dark', n=4)
++    for z in [4.39, 5.0, 5.62]:
++        ring('Tank iron hoop', (cx, cy, z), 1.14, .065, .12, 'iron', n=16)
++    cylinder('Tank shallow wooden lid', (cx, cy, 5.87), 1.18, .26,
++             'wood_dark', top=.12, n=16)
++    for a, length in [(.48, .52), (1.12, .79), (1.92, .39), (2.5, .60)]:
++        x, y = cx + 1.09 * math.cos(a), cy + 1.09 * math.sin(a)
++        box('Broad tank rust streak', (x, y, 5.53 - length / 2),
++            (.04, .14, length), 'rust', (0, 0, a), bevel=False)
++    cylinder('Spout swivel', (.62, .48, 4.65), .24, .40, 'iron', n=10)
++    tube('Swinging water spout', [(.59, .48, 4.72), (1.13, 1.12, 4.72),
++                                (1.28, 1.29, 4.52), (1.28, 1.29, 3.88)],
++         [.16, .16, .16, .19], 'iron', n=8, bevel=True)
++    rod('Spout brace', (.59, .48, 5.05), (1.13, 1.12, 4.69), .055, 'iron')
++    # Isolated droplet, not a continuous stream: time stopped during the pour.
++    lump('Frozen water droplet', (1.28, 1.29, 3.46), (.30, .30, .55),
++         'steam', detail=2, irregular=.025)
++    clock('Tower valve clock', (.38, .88, 4.28), .20)
++
++
++def coal_pile():
++    lump('Solid coal heap core', (0, -.05, .50), (4.35, 3.25, 1.30),
++         'coal', detail=2, irregular=.12, ground=True)
++    for j in range(22):
++        a = j * 2.399963
++        r = math.sqrt((j + .5) / 22)
++        x, y = 1.83 * r * math.cos(a), 1.32 * r * math.sin(a)
++        z = .37 + .75 * (1 - r * r)
++        s = RNG.uniform(.58, .9)
++        lump('Angular exposed coal chunk', (x, y, z), (s, s * .85, s * .8),
++             'coal', irregular=.17, ground=True)
++    lump('Coal crown lump', (-.2, -.08, 1.35), (.93, .87, .8), 'coal', irregular=.09)
++    box('Coal retaining board', (0, 1.44, .33), (4.5, .17, .66), 'wood_dark')
++    for x in [-1.95, 0, 1.95]:
++        box('Retaining board iron stake', (x, 1.56, .38), (.14, .17, .76), 'iron')
++    # An oversized spade blade and D grip read clearly against the broad heap.
++    box('Shovel blade', (.83, .65, .66), (.44, .10, .56),
++        'iron', (0, -.35, -.08))
++    rod('Iron shovel shaft', (.88, .65, .8), (1.25, .65, 1.58), .052, 'iron')
++    ring('Shovel D grip', (1.29, .65, 1.68), .17, .045, .08,
++         'iron', n=8, rot=(math.pi / 2, 0, 0))
++
++
++def suitcase(loc, size, role, rot=(0, 0, 0)):
++    start = len(PARTS)
++    sx, sy, sz = size
++    box('Baggage case', (0, 0, 0), size, role)
++    strap = 'canvas' if role == 'leather' else 'leather'
++    for x in [-sx * .30, sx * .30]:
++        box('Case top strap', (x, 0, sz / 2 + .012), (.08, sy + .025, .026), strap, bevel=False)
++        box('Case front strap', (x, sy / 2 + .012, 0), (.08, .026, sz), strap, bevel=False)
++        box('Case brass clasp', (x, sy / 2 + .033, .025), (.12, .035, .11), 'brass', bevel=False)
++    tube('Case carrying handle', [(-.13, sy / 2, 0), (-.13, sy / 2 + .13, 0),
++                                  (.13, sy / 2 + .13, 0), (.13, sy / 2, 0)],
++         [.032] * 4, 'iron', n=6)
++    matrix = Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(matrix)
++
++
++def luggage_cart():
++    for x in [-1.27, 1.17]:
++        rod('Cart axle', (x, -.77, .28), (x, .77, .28), .075)
++        for y in [-.78, .78]:
++            cylinder('Baggage cart wheel', (x, y, .28), .28, .18,
++                     'iron', n=12, rot=(math.pi / 2, 0, 0))
++    box('Baggage cart frame', (-.12, 0, .43), (3.55, 1.56, .18), 'iron')
++    for j in range(5):
++        box('Baggage bed plank', (-.12, -.64 + j * .32, .57), (3.65, .30, .13), 'wood')
++    tube('Iron cart push handle', [(1.57, -.64, .53), (1.92, -.64, 1.14),
++                                 (1.92, .64, 1.14), (1.57, .64, .53)],
++         [.065] * 4, 'iron', n=8, bevel=True)
++    suitcase((-.92, -.05, .82), (1.36, 1.10, .39), 'leather', (0, 0, -.05))
++    suitcase((.53, -.10, .86), (1.25, 1.10, .46), 'canvas', (0, -.08, .03))
++    suitcase((-.60, -.10, 1.14), (1.15, .86, .36), 'canvas', (0, .15, -.12))
++    suitcase((.56, .0, 1.18), (.93, .87, .30), 'leather', (.08, -.13, .13))
++    # Visible air gaps separate both falling cases from the supported stack.
++    suitcase((-1.11, .04, 1.83), (.86, .63, .30), 'leather', (.17, -.30, -.23))
++    suitcase((.40, .03, 1.92), (.78, .57, .28), 'canvas', (-.14, .35, .23))
++
++
++def signal_gantry():
++    for x in [-2.2, 2.2]:
++        box('Solid gantry foot', (x, 0, .12), (.60, 1.2, .24), 'iron')
++        box('Solid gantry column', (x, 0, 2.05), (.32, .44, 3.86), 'iron')
++        for z in [.7, 1.5, 2.3, 3.1]:
++            box('Column flange', (x, 0, z), (.41, .51, .09), 'iron', bevel=False)
++    for z in [3.77, 4.39]:
++        box('Gantry truss chord', (0, -.09, z), (5, .28, .18), 'iron')
++    for j in range(8):
++        x = -2.4 + j * .6
++        beam('Lattice diagonal', (x, -.09, 3.86 if j % 2 == 0 else 4.30),
++             (x + .6, -.09, 4.30 if j % 2 == 0 else 3.86), .085,
++             'iron', bevel=False)
++    for x in [-1.16, 1.16]:
++        box('Tall signal backing', (x, .19, 3.62), (.62, .28, 1.76), 'iron_dark')
++        for z, role in [(4.17, 'signal_red'), (3.62, 'signal_amber'), (3.07, 'signal_green')]:
++            cylinder('Signal lens socket', (x, .365, z), .235, .12,
++                     'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++            cylinder('Signal colored lens', (x, .44, z), .185, .07,
++                     role, n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++            box('Signal rain hood', (x, .40, z + .22), (.53, .38, .075), 'iron_dark')
++
++
++def clip_x(poly, cut, keep_greater):
++    """Clip a convex polygon to a plank boundary without stair-stepped ends."""
++    result = []
++    for a, b in zip(poly, poly[1:] + poly[:1]):
++        inside_a = a[0] >= cut if keep_greater else a[0] <= cut
++        inside_b = b[0] >= cut if keep_greater else b[0] <= cut
++        if inside_a:
++            result.append(a)
++        if inside_a != inside_b:
++            t = (cut - a[0]) / (b[0] - a[0])
++            result.append((cut, a[1] + t * (b[1] - a[1])))
++    return result
++
++
++def turntable():
++    # Only this asset has a top-centred origin: everything lies in [-0.3, 0].
++    ring('Stone pit edge 0.6m wide', (0, 0, -.15), 12, .6, .30, 'stone', n=96)
++    cylinder('Solid recessed deck substrate', (0, 0, -.195), 11.4, .21,
++             'wood_dark', n=64, bevel=False)
++    circle = [(11.35 * math.cos(j * math.tau / 96), 11.35 * math.sin(j * math.tau / 96))
++              for j in range(96)]
++    for j in range(54):
++        low = -11.35 + j * 22.7 / 54 + .009
++        high = -11.35 + (j + 1) * 22.7 / 54 - .009
++        poly = clip_x(clip_x(circle, low, True), high, False)
++        if len(poly) < 3:
++            continue
++        n = len(poly)
++        verts = [(x, y, z) for z in [-.18, -.06] for x, y in poly]
++        faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++        faces += [(k, (k + 1) % n, (k + 1) % n + n, k + n) for k in range(n)]
++        # Diagonal planks distinguish BOTH orthogonal rail pairs at high angles.
++        plank = mesh('Circle-clipped deck plank', verts, faces, 'wood_dark', True, True)
++        plank.data.transform(Matrix.Rotation(math.pi / 4, 4, 'Z'))
++    ring('Iron deck edge rail', (0, 0, -.045), 11.4, .075, .09, 'iron', n=96)
++    # Two standard-gauge track pairs cross at grade. Split Y rails exactly at
++    # the X rail heads, avoiding overlapping coplanar crossing faces.
++    gauge = .75
++    end = math.sqrt(11.28 ** 2 - (gauge + .08) ** 2)
++    for offset in [-gauge, gauge]:
++        box('X track rail foot', (0, offset, -.082), (end * 2, .18, .025), 'rail_steel', bevel=False)
++        box('X track rail web', (0, offset, -.048), (end * 2, .055, .065), 'rail_steel', bevel=False)
++        box('X track rail head', (0, offset, -.021), (end * 2, .12, .032), 'rail_steel')
++        for start, stop in [(-end, -gauge - .09), (-gauge + .09, gauge - .09), (gauge + .09, end)]:
++            center, length = (start + stop) / 2, stop - start
++            box('Y track rail foot', (offset, center, -.082), (.18, length, .025), 'rail_steel', bevel=False)
++        for start, stop in [(-end, -gauge - .06), (-gauge + .06, gauge - .06), (gauge + .06, end)]:
++            center, length = (start + stop) / 2, stop - start
++            box('Y track rail web', (offset, center, -.048), (.055, length, .065), 'rail_steel', bevel=False)
++            box('Y track rail head', (offset, center, -.021), (.12, length, .032), 'rail_steel')
++    cylinder('Brass central hub', (0, 0, -.04), .56, .08, 'brass', n=32)
++    for j in range(16):
++        a = j * math.tau / 16
++        box('Brass hub gear tooth', (.60 * math.cos(a), .60 * math.sin(a), -.045),
++            (.20, .14, .09), 'brass', (0, 0, a), bevel=False)
++    cylinder('Center axle cap', (0, 0, -.015), .21, .03, 'brass', n=16)
++    for j in range(8):
++        a = j * math.tau / 8
++        cylinder('Hub bolt', (.39 * math.cos(a), .39 * math.sin(a), -.012),
++                 .045, .024, 'iron', n=6, bevel=False)
++
++
++def platform_edge():
++    box('Platform stone slab', (0, -.01, .218), (8, 1.18, .436), 'stone', bevel=False)
++    # Adjacent volumes avoid coplanar grey/recolourable faces and z-fighting.
++    box('Dark room-facing platform face', (0, .59, .218), (8, .02, .436), 'stone_dark', bevel=False)
++    for j in range(8):
++        x = -3.5 + j
++        box('Top stone coping', (x, 0, .462), (.982, 1.2, .052), 'stone', bevel=False)
++        box('Cream safety line', (x, .40, .494), (.982, .19, .012), 'paint_cream')
++    for x in [-3, -2, -1, 0, 1, 2, 3]:
++        box('Face stone mortar joint', (x, .5995, .22), (.022, .003, .42), 'stone', bevel=False)
++
++
++SPECS = [
++    ('LM_Coach', (10, 3.2, 3.6), coach),
++    ('LM_Locomotive', (9, 3.4, 4.2), locomotive),
++    ('LM_WaterCrane', (3, 3, 6), water_crane),
++    ('LM_CoalPile', (4.5, 3.5, 1.8), coal_pile),
++    ('LM_LuggageCart', (4, 1.8, 2), luggage_cart),
++    ('LM_SignalGantry', (5, 1.2, 4.5), signal_gantry),
++    ('Turntable', (24, 24, .3), turntable),
++    ('PlatformEdge', (8, 1.2, .5), platform_edge),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dimensions):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name = name
++    obj.data.name = name + '_Mesh'
++    budget = 6000 if name == 'Turntable' else 4000
++    count = triangles(obj)
++    # Material-delimited reduction is a fallback for Blender tessellation
++    # differences. Main forms already use economical hand-authored topology.
++    for attempt in range(3):
++        if count <= budget:
++            break
++        mod = obj.modifiers.new('Preserve silhouette within triangle budget', 'DECIMATE')
++        mod.ratio = (budget - 100) / count
++        mod.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++        count = triangles(obj)
++    assert count <= budget, (name, count, budget)
++    coords = [v.co for v in obj.data.vertices]
++    low = Vector([min(v[i] for v in coords) for i in range(3)])
++    high = Vector([max(v[i] for v in coords) for i in range(3)])
++    span = high - low
++    center = (low + high) / 2
++    scale = Vector([dimensions[i] / span[i] for i in range(3)])
++    for v in coords:
++        v.x = (v.x - center.x) * scale.x
++        v.y = (v.y - center.y) * scale.y
++        v.z = (v.z - (high.z if name == 'Turntable' else low.z)) * scale.z
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    bm.to_mesh(obj.data)
++    bm.free()
++    for face in obj.data.polygons:
++        face.use_smooth = False
++    obj.data.update()
++    obj.location = (0, 0, 0)
++    obj.rotation_euler = (0, 0, 0)
++    obj.scale = (1, 1, 1)
++    bpy.context.view_layer.update()
++    assert all(abs(obj.dimensions[i] - dimensions[i]) < .001 for i in range(3)), name
++    assert all(math.isfinite(c) for v in coords for c in v), name
++    assert all(m and m.name in ROLES for m in obj.data.materials), name
++    if name == 'Turntable':
++        assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-5
++        assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-5
++    else:
++        assert abs(min(v.co.z for v in obj.data.vertices)) < 1e-5
++    # Joining must not accidentally introduce open construction surfaces.
++    check = bmesh.new()
++    check.from_mesh(obj.data)
++    assert all(e.is_manifold for e in check.edges), (name, 'open mesh component')
++    check.free()
++    obj['dimensions_m'] = list(dimensions)
++    obj['front'] = '+Y'
++    obj['chapter'] = 'The Stopped Station'
++    obj['origin_rule'] = 'top center' if name == 'Turntable' else 'bottom center'
++    obj['solid_obstacle'] = name.startswith('LM_')
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    destination = OUTPUT / f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024, destination
++    print(f'EXPORTED {name} {triangles(obj)} '
++          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def main():
++    global PARTS, RNG
++    bpy.ops.object.select_all(action='SELECT')
++    bpy.ops.object.delete(use_global=False)
++    bpy.context.scene.unit_settings.system = 'METRIC'
++    bpy.context.scene.unit_settings.scale_length = 1
++    setup_materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    exported = []
++    for index, (name, dimensions, build) in enumerate(SPECS):
++        PARTS = []
++        RNG = random.Random(261117 + index * 7919)
++        build()
++        exported.append(finish(name, dimensions))
++    assert [obj.name for obj in exported] == [spec[0] for spec in SPECS]
++    assert len(bpy.context.scene.objects) == len(SPECS)
++    assert all(obj.type == 'MESH' for obj in bpy.context.scene.objects)
++    for mat in MATERIALS.values():
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 2005ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py:37: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_Coach.fbx'
+export finished in 0.0062 sec.
+EXPORTED LM_Coach 1908 (10.0, 3.2, 3.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_Locomotive.fbx'
+export finished in 0.0062 sec.
+EXPORTED LM_Locomotive 3584 (9.0, 3.4, 4.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_WaterCrane.fbx'
+export finished in 0.0053 sec.
+EXPORTED LM_WaterCrane 2004 (3.0, 3.0, 6.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_CoalPile.fbx'
+export finished in 0.0048 sec.
+EXPORTED LM_CoalPile 772 (4.5, 3.5, 1.8)
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py", line 616, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py", line 606, in main
+    exported.append(finish(name, dimensions))
+                    ~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py", line 560, in finish
+    assert all(math.isfinite(c) for v in coords for c in v), name
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: LM_LuggageCart
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py
+diff --git a/Art/tools/blender_kit_ch2_landmarks.py b/Art/tools/blender_kit_ch2_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..eb008c90b76264a05b85351f4d23a05727cedd63
+--- /dev/null
++++ b/Art/tools/blender_kit_ch2_landmarks.py
+@@ -0,0 +1,617 @@
++# 멈춘 역의 대형 장애물 6종, 보스 회전대와 승강장 경계를 생성합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py
++"""Standalone Blender 5.x, deterministic metre-scale chapter-two FBX kit.
++
++The room-facing side is +Y. Locomotive travel is +X, exposing its running
++gear to the room. All role materials deliberately have identical grey shaders.
++Only meshes are exported; disconnected details remain in one joined object.
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2'
++ROLES = set('wood wood_dark wood_light iron iron_dark rust brass rail_steel '
++            'brick brick_dark stone stone_dark roof_tin soot coal window '
++            'window_lit glass_lamp canvas leather leather_dark cloth_red '
++            'paint_cream paint_green clock_face steam signal_red signal_amber '
++            'signal_green'.split())
++MATERIALS = {}
++PARTS = []
++RNG = random.Random(20261117)
++SERIAL = 0
++METAL_WOOD = set('wood wood_dark wood_light iron iron_dark rust brass '
++                 'rail_steel roof_tin paint_green paint_cream cloth_red'.split())
++
++
++def setup_materials():
++    for name in sorted(ROLES):
++        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes.get('Principled BSDF')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .85
++        shader.inputs['Metallic'].default_value = 0
++        MATERIALS[name] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False, top_only=False):
++    global SERIAL
++    assert role in ROLES, role
++    SERIAL += 1
++    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(data.name, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATERIALS[role])
++    if bevel and role in METAL_WOOD:
++        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
++        mod.width = .025
++        mod.segments = 2
++        mod.affect = 'EDGES'
++        mod.use_clamp_overlap = True
++        if top_only:
++            # Soften the exposed upper perimeter; the buried bottom stays cheap.
++            weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
++            top = max(v.co.z for v in data.vertices)
++            for edge in data.edges:
++                if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
++                    weights.data[edge.index].value = 1
++            mod.limit_method = 'WEIGHT'
++        else:
++            mod.limit_method = 'ANGLE'
++            mod.angle_limit = math.radians(40)
++    PARTS.append(obj)
++    return obj
++
++
++def move(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role='wood', rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role='iron', n=12, top=None,
++             rot=(0, 0, 0), bevel=True):
++    top = radius if top is None else top
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for r, z in [(radius, -depth / 2), (top, depth / 2)] for j in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def rod(label, a, b, radius, role='iron', n=8, bevel=False):
++    a, b = Vector(a), Vector(b)
++    obj = cylinder(label, (0, 0, 0), radius, (b - a).length, role,
++                   n=n, bevel=bevel)
++    obj.data.transform(Matrix.Translation((a + b) / 2) @
++                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def beam(label, a, b, width, role='iron', depth=None, bevel=True):
++    a, b = Vector(a), Vector(b)
++    obj = box(label, (0, 0, 0), (width, depth or width, (b - a).length), role,
++              bevel=bevel)
++    obj.data.transform(Matrix.Translation((a + b) / 2) @
++                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def ring(label, loc, radius, thickness, height, role='iron', n=24,
++         rot=(0, 0, 0), bevel=False):
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for r, z in [(radius - thickness, -height / 2), (radius, -height / 2),
++                          (radius, height / 2), (radius - thickness, height / 2)]
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
++
++
++def tube(label, points, radii, role='iron', n=8, bevel=False):
++    verts = []
++    previous = None
++    for k, p in enumerate(points):
++        tangent = (Vector(points[min(k + 1, len(points) - 1)]) -
++                   Vector(points[max(0, k - 1)])).normalized()
++        if previous is None:
++            reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++            u = reference.cross(tangent).normalized()
++        else:
++            u = (previous - tangent * previous.dot(tangent)).normalized()
++        v = tangent.cross(u).normalized()
++        previous = u
++        for j in range(n):
++            a = j * math.tau / n
++            verts.append(tuple(Vector(p) + radii[k] * (u * math.cos(a) + v * math.sin(a))))
++    faces = [tuple(reversed(range(n)))]
++    for k in range(len(points) - 1):
++        for j in range(n):
++            a, b = k * n + j, k * n + (j + 1) % n
++            faces.append((a, b, b + n, a + n))
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    return mesh(label, verts, faces, role, bevel)
++
++
++def lump(label, loc, size, role, detail=1, irregular=.08, ground=False):
++    bm = bmesh.new()
++    bmesh.ops.create_icosphere(bm, subdivisions=detail, radius=1)
++    for v in bm.verts:
++        v.co *= 1 + RNG.uniform(-irregular, irregular)
++        for axis in range(3):
++            v.co[axis] = v.co[axis] * size[axis] / 2 + loc[axis]
++        if ground:
++            v.co.z = max(0, v.co.z)
++    bm.verts.ensure_lookup_table()
++    result = mesh(label, [tuple(v.co) for v in bm.verts],
++                  [tuple(v.index for v in f.verts) for f in bm.faces], role)
++    bm.free()
++    return result
++
++
++def clock(label, loc, radius, normal=(0, 1, 0)):
++    start = len(PARTS)
++    cylinder(label + ' bezel', (0, 0, 0), radius, .13, 'brass', n=16)
++    cylinder(label + ' lens', (0, 0, .076), radius * .79, .025,
++             'clock_face', n=16, bevel=False)
++    for j in range(4):
++        a = j * math.pi / 2
++        box('Clock hour marker', (radius * .61 * math.cos(a),
++                                 radius * .61 * math.sin(a), .097),
++            (.055, .10, .022), 'iron_dark', (0, 0, a), bevel=False)
++    beam('Frozen clock minute hand', (0, 0, .115), (0, radius * .51, .115),
++         .045, 'iron_dark', bevel=False)
++    beam('Frozen clock hour hand', (0, 0, .12), (radius * .32, -.08, .12),
++         .05, 'iron_dark', bevel=False)
++    rotation = Vector(normal).to_track_quat('Z', 'Y').to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(Matrix.Translation(Vector(loc)) @ rotation)
++
++
++def coach():
++    # Axle bearings and low bogies leave the specified floor exactly 0.5m high.
++    for x in [-3.35, 3.35]:
++        box('Coach bogie', (x, 0, .24), (1.75, 2.45, .25), 'iron_dark')
++        for dx in [-.55, .55]:
++            rod('Coach axle', (x + dx, -1.25, .24), (x + dx, 1.25, .24), .075, 'iron_dark')
++            for y in [-1.26, 1.26]:
++                cylinder('Coach wheel', (x + dx, y, .24), .24, .16,
++                         'iron_dark', n=10, rot=(math.pi / 2, 0, 0), bevel=False)
++    box('Wood carriage floor top 0.5m', (0, -.13, .425), (9.6, 2.82, .15), 'wood')
++    for x in [-4.9, 4.9]:
++        box('Coupler block', (x, -.1, .32), (.2, .36, .2), 'iron_dark')
++    box('Closed green back wall', (0, -1.49, 1.67), (9.6, .16, 2.34), 'paint_green')
++    box('Back wood lower panel', (0, -1.385, .96), (9.55, .07, .85), 'wood')
++    box('Back brass waist rail', (0, -1.33, 1.43), (9.5, .06, .065), 'brass', bevel=False)
++    for x in [-3.72, -1.86, 0, 1.86, 3.72]:
++        box('Back window frame', (x, -1.475, 2.12), (1.48, .20, 1.03), 'wood_dark')
++        box('Back lit window', (x, -1.475, 2.12), (1.25, .23, .8), 'window_lit', bevel=False)
++        box('Window center mullion', (x, -1.345, 2.12), (.06, .05, .83), 'wood', bevel=False)
++    for x in [-4.72, 4.72]:
++        box('Closed wooden carriage end', (x, -.2, 1.61), (.16, 2.58, 2.22), 'paint_green')
++        box('End wooden panel', (x, -.2, .98), (.21, 2.5, .83), 'wood')
++    # Three transverse bench rows: paired leather cushions, broad tall backs.
++    for x in [-2.75, 0, 2.75]:
++        box('Bench wood pedestal', (x, -.12, .72), (.95, 1.96, .44), 'wood_dark')
++        for y in [-.65, .41]:
++            box('Leather bench cushion', (x, y, 1.01), (1.12, .93, .20), 'leather')
++        box('Leather transverse row back', (x - .48, -.12, 1.34), (.19, 2.02, .66),
++            'leather', (0, -.08, 0))
++        for y in [-1.14, .93]:
++            rod('Brass seat handrail upright', (x - .39, y, .98), (x - .39, y, 1.51), .045, 'brass')
++            rod('Brass seat handrail', (x - .39, y, 1.51), (x + .44, y, 1.51), .045, 'brass')
++    # A volumetric half-barrel shell on the BACK only. No front canopy hides seats.
++    sections = []
++    for j in range(9):
++        a = j * math.pi / 16
++        sections.append((-1.6 * math.cos(a), 2.78 + .82 * math.sin(a)))
++    cross = sections + [(y, z - .085) for y, z in reversed(sections)]
++    n = len(cross)
++    verts = [(x, y, z) for x in [-4.88, 4.88] for y, z in cross]
++    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    mesh('Cutaway curved tin roof', verts, faces, 'roof_tin', True)
++    box('Cut roof front lip', (0, -.02, 3.54), (9.8, .07, .10), 'roof_tin')
++    for x in [-3.5, 3.5]:
++        box('Iron boarding step', (x, 1.24, .12), (1.12, .72, .24), 'iron')
++        rod('Boarding brass grab', (x + .66, .95, .56), (x + .66, .95, 1.67), .055, 'brass')
++
++
++def locomotive():
++    box('Locomotive chassis', (-.15, 0, .91), (8.35, 2.7, .3), 'iron_dark')
++    # Side-facing running gear is the primary high-camera read.
++    for y in [-1.36, 1.36]:
++        for x in [-2.72, -.7, 1.32]:
++            ring('Driving wheel tire', (x, y, .74), .74, .13, .18,
++                 'iron', n=14, rot=(math.pi / 2, 0, 0))
++            cylinder('Driving wheel hub', (x, y, .74), .18, .24, 'iron',
++                     n=10, rot=(math.pi / 2, 0, 0), bevel=False)
++            for j in range(6):
++                a = j * math.tau / 6
++                rod('Broad wheel spoke', (x, y, .74),
++                    (x + .61 * math.cos(a), y, .74 + .61 * math.sin(a)), .065, 'iron', n=6)
++        beam('Connecting rod', (-2.72, y * 1.12, .89), (1.32, y * 1.12, .89),
++             .15, 'iron', depth=.1)
++        for x in [-2.72, -.7, 1.32]:
++            cylinder('Rod crank pin', (x, y * 1.15, .89), .11, .10,
++                     'brass', n=8, rot=(math.pi / 2, 0, 0), bevel=False)
++        cylinder('Front pilot wheel', (3.18, y, .4), .4, .17,
++                 'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++    cylinder('Black boiler', (-.05, 0, 2.12), 1.05, 5.8, 'iron_dark',
++             n=16, rot=(0, math.pi / 2, 0))
++    for x in [-2.5, -.4, 2.52]:
++        ring('Boiler iron band', (x, 0, 2.12), 1.085, .055, .12,
++             'iron', n=16, rot=(0, math.pi / 2, 0))
++    cylinder('Smokebox front', (2.93, 0, 2.12), .94, .16, 'iron_dark',
++             n=16, rot=(0, math.pi / 2, 0))
++    box('Rear firebox', (-3.63, 0, 1.88), (1.42, 2.38, 1.78), 'iron_dark')
++    box('Firebox shoulder cap', (-3.63, 0, 2.87), (1.68, 2.65, .22), 'iron_dark')
++    cylinder('Steam dome', (-1.05, 0, 3.14), .39, .53, 'iron_dark', n=12, top=.3)
++    cylinder('Flared soot chimney', (1.52, 0, 3.23), .25, .77,
++             'soot', top=.42, n=12, bevel=False)
++    ring('Chimney lip', (1.52, 0, 3.62), .45, .10, .15, 'soot', n=12)
++    for loc, size in [((1.52, 0, 3.88), (.65, .6, .55)),
++                      ((1.11, -.05, 4.03), (.72, .65, .5)),
++                      ((.73, -.12, 4.08), (.55, .52, .4))]:
++        lump('Frozen detached steam puff', loc, size, 'steam', detail=2, irregular=.04)
++    # The large lens turns slightly toward +Y so its circle reads from the room.
++    clock('Round locomotive headlight', (3.05, .39, 2.77), .48, (1, .65, .12))
++    for y in [-1.08, 1.08]:
++        rod('Boiler side handrail', (-2.62, y, 2.62), (2.4, y, 2.62), .045, 'brass')
++    # Solid wedge, with chunky slats proud of the sloping red pilot face.
++    verts = [(3.25, -1.58, .13), (4.5, -1.58, .13), (3.25, -1.58, .94),
++             (3.25, 1.58, .13), (4.5, 1.58, .13), (3.25, 1.58, .94)]
++    mesh('Solid red cowcatcher wedge', verts,
++         [(0, 2, 1), (3, 4, 5), (0, 1, 4, 3), (1, 2, 5, 4), (2, 0, 3, 5)],
++         'cloth_red', True)
++    for y in [-1.38, -.92, -.46, 0, .46, .92, 1.38]:
++        beam('Red cowcatcher slat', (3.28, y, .98), (4.45, y, .22),
++             .13, 'cloth_red', bevel=False)
++
++
++def water_crane():
++    cx, cy = -.30, -.27
++    for sx in [-1, 1]:
++        for sy in [-1, 1]:
++            bottom = (cx + sx * 1.03, cy + sy * 1.04, .09)
++            top = (cx + sx * .75, cy + sy * .75, 4.28)
++            box('Tower iron foot', (bottom[0], bottom[1], .09), (.34, .34, .18), 'iron')
++            beam('Tower splayed iron leg', bottom, top, .19, 'iron')
++    for sy in [-1, 1]:
++        for sign in [-1, 1]:
++            beam('Tower X bracing', (cx - sign * .99, cy + sy * .99, .42),
++                 (cx + sign * .76, cy + sy * .76, 4.03), .10, 'iron', bevel=False)
++    for sx in [-1, 1]:
++        beam('Tower side diagonal', (cx + sx * .99, cy - .99, .42),
++             (cx + sx * .76, cy + .76, 4.03), .10, 'iron', bevel=False)
++    box('Tank support deck', (cx, cy, 4.20), (2.38, 2.38, .19), 'iron')
++    cylinder('Solid wooden water tank', (cx, cy, 5.01), 1.08, 1.48, 'wood', n=16)
++    for j in range(16):
++        a = j * math.tau / 16
++        rod('Tank stave joint', (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 4.32),
++            (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 5.68),
++            .018, 'wood_dark', n=4)
++    for z in [4.39, 5.0, 5.62]:
++        ring('Tank iron hoop', (cx, cy, z), 1.14, .065, .12, 'iron', n=16)
++    cylinder('Tank shallow wooden lid', (cx, cy, 5.87), 1.18, .26,
++             'wood_dark', top=.12, n=16)
++    for a, length in [(.48, .52), (1.12, .79), (1.92, .39), (2.5, .60)]:
++        x, y = cx + 1.09 * math.cos(a), cy + 1.09 * math.sin(a)
++        box('Broad tank rust streak', (x, y, 5.53 - length / 2),
++            (.04, .14, length), 'rust', (0, 0, a), bevel=False)
++    cylinder('Spout swivel', (.62, .48, 4.65), .24, .40, 'iron', n=10)
++    tube('Swinging water spout', [(.59, .48, 4.72), (1.13, 1.12, 4.72),
++                                (1.28, 1.29, 4.52), (1.28, 1.29, 3.88)],
++         [.16, .16, .16, .19], 'iron', n=8, bevel=True)
++    rod('Spout brace', (.59, .48, 5.05), (1.13, 1.12, 4.69), .055, 'iron')
++    # Isolated droplet, not a continuous stream: time stopped during the pour.
++    lump('Frozen water droplet', (1.28, 1.29, 3.46), (.30, .30, .55),
++         'steam', detail=2, irregular=.025)
++    clock('Tower valve clock', (.38, .88, 4.28), .20)
++
++
++def coal_pile():
++    lump('Solid coal heap core', (0, -.05, .50), (4.35, 3.25, 1.30),
++         'coal', detail=2, irregular=.12, ground=True)
++    for j in range(22):
++        a = j * 2.399963
++        r = math.sqrt((j + .5) / 22)
++        x, y = 1.83 * r * math.cos(a), 1.32 * r * math.sin(a)
++        z = .37 + .75 * (1 - r * r)
++        s = RNG.uniform(.58, .9)
++        lump('Angular exposed coal chunk', (x, y, z), (s, s * .85, s * .8),
++             'coal', irregular=.17, ground=True)
++    lump('Coal crown lump', (-.2, -.08, 1.35), (.93, .87, .8), 'coal', irregular=.09)
++    box('Coal retaining board', (0, 1.44, .33), (4.5, .17, .66), 'wood_dark')
++    for x in [-1.95, 0, 1.95]:
++        box('Retaining board iron stake', (x, 1.56, .38), (.14, .17, .76), 'iron')
++    # An oversized spade blade and D grip read clearly against the broad heap.
++    box('Shovel blade', (.83, .65, .66), (.44, .10, .56),
++        'iron', (0, -.35, -.08))
++    rod('Iron shovel shaft', (.88, .65, .8), (1.25, .65, 1.58), .052, 'iron')
++    ring('Shovel D grip', (1.29, .65, 1.68), .17, .045, .08,
++         'iron', n=8, rot=(math.pi / 2, 0, 0))
++
++
++def suitcase(loc, size, role, rot=(0, 0, 0)):
++    start = len(PARTS)
++    sx, sy, sz = size
++    box('Baggage case', (0, 0, 0), size, role)
++    strap = 'canvas' if role == 'leather' else 'leather'
++    for x in [-sx * .30, sx * .30]:
++        box('Case top strap', (x, 0, sz / 2 + .012), (.08, sy + .025, .026), strap, bevel=False)
++        box('Case front strap', (x, sy / 2 + .012, 0), (.08, .026, sz), strap, bevel=False)
++        box('Case brass clasp', (x, sy / 2 + .033, .025), (.12, .035, .11), 'brass', bevel=False)
++    tube('Case carrying handle', [(-.13, sy / 2, 0), (-.13, sy / 2 + .13, 0),
++                                  (.13, sy / 2 + .13, 0), (.13, sy / 2, 0)],
++         [.032] * 4, 'iron', n=6)
++    matrix = Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(matrix)
++
++
++def luggage_cart():
++    for x in [-1.27, 1.17]:
++        rod('Cart axle', (x, -.77, .28), (x, .77, .28), .075)
++        for y in [-.78, .78]:
++            cylinder('Baggage cart wheel', (x, y, .28), .28, .18,
++                     'iron', n=12, rot=(math.pi / 2, 0, 0))
++    box('Baggage cart frame', (-.12, 0, .43), (3.55, 1.56, .18), 'iron')
++    for j in range(5):
++        box('Baggage bed plank', (-.12, -.64 + j * .32, .57), (3.65, .30, .13), 'wood')
++    tube('Iron cart push handle', [(1.57, -.64, .53), (1.92, -.64, 1.14),
++                                 (1.92, .64, 1.14), (1.57, .64, .53)],
++         [.065] * 4, 'iron', n=8, bevel=True)
++    suitcase((-.92, -.05, .82), (1.36, 1.10, .39), 'leather', (0, 0, -.05))
++    suitcase((.53, -.10, .86), (1.25, 1.10, .46), 'canvas', (0, -.08, .03))
++    suitcase((-.60, -.10, 1.14), (1.15, .86, .36), 'canvas', (0, .15, -.12))
++    suitcase((.56, .0, 1.18), (.93, .87, .30), 'leather', (.08, -.13, .13))
++    # Visible air gaps separate both falling cases from the supported stack.
++    suitcase((-1.11, .04, 1.83), (.86, .63, .30), 'leather', (.17, -.30, -.23))
++    suitcase((.40, .03, 1.92), (.78, .57, .28), 'canvas', (-.14, .35, .23))
++
++
++def signal_gantry():
++    for x in [-2.2, 2.2]:
++        box('Solid gantry foot', (x, 0, .12), (.60, 1.2, .24), 'iron')
++        box('Solid gantry column', (x, 0, 2.05), (.32, .44, 3.86), 'iron')
++        for z in [.7, 1.5, 2.3, 3.1]:
++            box('Column flange', (x, 0, z), (.41, .51, .09), 'iron', bevel=False)
++    for z in [3.77, 4.39]:
++        box('Gantry truss chord', (0, -.09, z), (5, .28, .18), 'iron')
++    for j in range(8):
++        x = -2.4 + j * .6
++        beam('Lattice diagonal', (x, -.09, 3.86 if j % 2 == 0 else 4.30),
++             (x + .6, -.09, 4.30 if j % 2 == 0 else 3.86), .085,
++             'iron', bevel=False)
++    for x in [-1.16, 1.16]:
++        box('Tall signal backing', (x, .19, 3.62), (.62, .28, 1.76), 'iron_dark')
++        for z, role in [(4.17, 'signal_red'), (3.62, 'signal_amber'), (3.07, 'signal_green')]:
++            cylinder('Signal lens socket', (x, .365, z), .235, .12,
++                     'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++            cylinder('Signal colored lens', (x, .44, z), .185, .07,
++                     role, n=12, rot=(math.pi / 2, 0, 0), bevel=False)
++            box('Signal rain hood', (x, .40, z + .22), (.53, .38, .075), 'iron_dark')
++
++
++def clip_x(poly, cut, keep_greater):
++    """Clip a convex polygon to a plank boundary without stair-stepped ends."""
++    result = []
++    for a, b in zip(poly, poly[1:] + poly[:1]):
++        inside_a = a[0] >= cut if keep_greater else a[0] <= cut
++        inside_b = b[0] >= cut if keep_greater else b[0] <= cut
++        if inside_a:
++            result.append(a)
++        if inside_a != inside_b:
++            t = (cut - a[0]) / (b[0] - a[0])
++            result.append((cut, a[1] + t * (b[1] - a[1])))
++    return result
++
++
++def turntable():
++    # Only this asset has a top-centred origin: everything lies in [-0.3, 0].
++    ring('Stone pit edge 0.6m wide', (0, 0, -.15), 12, .6, .30, 'stone', n=96)
++    cylinder('Solid recessed deck substrate', (0, 0, -.195), 11.4, .21,
++             'wood_dark', n=64, bevel=False)
++    circle = [(11.35 * math.cos(j * math.tau / 96), 11.35 * math.sin(j * math.tau / 96))
++              for j in range(96)]
++    for j in range(54):
++        low = -11.35 + j * 22.7 / 54 + .009
++        high = -11.35 + (j + 1) * 22.7 / 54 - .009
++        poly = clip_x(clip_x(circle, low, True), high, False)
++        if len(poly) < 3:
++            continue
++        n = len(poly)
++        verts = [(x, y, z) for z in [-.18, -.06] for x, y in poly]
++        faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
++        faces += [(k, (k + 1) % n, (k + 1) % n + n, k + n) for k in range(n)]
++        # Diagonal planks distinguish BOTH orthogonal rail pairs at high angles.
++        plank = mesh('Circle-clipped deck plank', verts, faces, 'wood_dark', True, True)
++        plank.data.transform(Matrix.Rotation(math.pi / 4, 4, 'Z'))
++    ring('Iron deck edge rail', (0, 0, -.045), 11.4, .075, .09, 'iron', n=96)
++    # Two standard-gauge track pairs cross at grade. Split Y rails exactly at
++    # the X rail heads, avoiding overlapping coplanar crossing faces.
++    gauge = .75
++    end = math.sqrt(11.28 ** 2 - (gauge + .08) ** 2)
++    for offset in [-gauge, gauge]:
++        box('X track rail foot', (0, offset, -.082), (end * 2, .18, .025), 'rail_steel', bevel=False)
++        box('X track rail web', (0, offset, -.048), (end * 2, .055, .065), 'rail_steel', bevel=False)
++        box('X track rail head', (0, offset, -.021), (end * 2, .12, .032), 'rail_steel')
++        for start, stop in [(-end, -gauge - .09), (-gauge + .09, gauge - .09), (gauge + .09, end)]:
++            center, length = (start + stop) / 2, stop - start
++            box('Y track rail foot', (offset, center, -.082), (.18, length, .025), 'rail_steel', bevel=False)
++        for start, stop in [(-end, -gauge - .06), (-gauge + .06, gauge - .06), (gauge + .06, end)]:
++            center, length = (start + stop) / 2, stop - start
++            box('Y track rail web', (offset, center, -.048), (.055, length, .065), 'rail_steel', bevel=False)
++            box('Y track rail head', (offset, center, -.021), (.12, length, .032), 'rail_steel')
++    cylinder('Brass central hub', (0, 0, -.04), .56, .08, 'brass', n=32)
++    for j in range(16):
++        a = j * math.tau / 16
++        box('Brass hub gear tooth', (.60 * math.cos(a), .60 * math.sin(a), -.045),
++            (.20, .14, .09), 'brass', (0, 0, a), bevel=False)
++    cylinder('Center axle cap', (0, 0, -.015), .21, .03, 'brass', n=16)
++    for j in range(8):
++        a = j * math.tau / 8
++        cylinder('Hub bolt', (.39 * math.cos(a), .39 * math.sin(a), -.012),
++                 .045, .024, 'iron', n=6, bevel=False)
++
++
++def platform_edge():
++    box('Platform stone slab', (0, -.01, .218), (8, 1.18, .436), 'stone', bevel=False)
++    # Adjacent volumes avoid coplanar grey/recolourable faces and z-fighting.
++    box('Dark room-facing platform face', (0, .59, .218), (8, .02, .436), 'stone_dark', bevel=False)
++    for j in range(8):
++        x = -3.5 + j
++        box('Top stone coping', (x, 0, .462), (.982, 1.2, .052), 'stone', bevel=False)
++        box('Cream safety line', (x, .40, .494), (.982, .19, .012), 'paint_cream')
++    for x in [-3, -2, -1, 0, 1, 2, 3]:
++        box('Face stone mortar joint', (x, .5995, .22), (.022, .003, .42), 'stone', bevel=False)
++
++
++SPECS = [
++    ('LM_Coach', (10, 3.2, 3.6), coach),
++    ('LM_Locomotive', (9, 3.4, 4.2), locomotive),
++    ('LM_WaterCrane', (3, 3, 6), water_crane),
++    ('LM_CoalPile', (4.5, 3.5, 1.8), coal_pile),
++    ('LM_LuggageCart', (4, 1.8, 2), luggage_cart),
++    ('LM_SignalGantry', (5, 1.2, 4.5), signal_gantry),
++    ('Turntable', (24, 24, .3), turntable),
++    ('PlatformEdge', (8, 1.2, .5), platform_edge),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dimensions):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name = name
++    obj.data.name = name + '_Mesh'
++    budget = 6000 if name == 'Turntable' else 4000
++    count = triangles(obj)
++    # Material-delimited reduction is a fallback for Blender tessellation
++    # differences. Main forms already use economical hand-authored topology.
++    for attempt in range(3):
++        if count <= budget:
++            break
++        mod = obj.modifiers.new('Preserve silhouette within triangle budget', 'DECIMATE')
++        mod.ratio = (budget - 100) / count
++        mod.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++        count = triangles(obj)
++    assert count <= budget, (name, count, budget)
++    coords = [v.co for v in obj.data.vertices]
++    low = Vector([min(v[i] for v in coords) for i in range(3)])
++    high = Vector([max(v[i] for v in coords) for i in range(3)])
++    span = high - low
++    center = (low + high) / 2
++    scale = Vector([dimensions[i] / span[i] for i in range(3)])
++    for v in coords:
++        v.x = (v.x - center.x) * scale.x
++        v.y = (v.y - center.y) * scale.y
++        v.z = (v.z - (high.z if name == 'Turntable' else low.z)) * scale.z
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    bm.to_mesh(obj.data)
++    bm.free()
++    for face in obj.data.polygons:
++        face.use_smooth = False
++    obj.data.update()
++    obj.location = (0, 0, 0)
++    obj.rotation_euler = (0, 0, 0)
++    obj.scale = (1, 1, 1)
++    bpy.context.view_layer.update()
++    assert all(abs(obj.dimensions[i] - dimensions[i]) < .001 for i in range(3)), name
++    # BMesh replaced the datablock's vertex storage; do not reuse old RNA refs.
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    assert all(m and m.name in ROLES for m in obj.data.materials), name
++    if name == 'Turntable':
++        assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-5
++        assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-5
++    else:
++        assert abs(min(v.co.z for v in obj.data.vertices)) < 1e-5
++    # Joining must not accidentally introduce open construction surfaces.
++    check = bmesh.new()
++    check.from_mesh(obj.data)
++    assert all(e.is_manifold for e in check.edges), (name, 'open mesh component')
++    check.free()
++    obj['dimensions_m'] = list(dimensions)
++    obj['front'] = '+Y'
++    obj['chapter'] = 'The Stopped Station'
++    obj['origin_rule'] = 'top center' if name == 'Turntable' else 'bottom center'
++    obj['solid_obstacle'] = name.startswith('LM_')
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    destination = OUTPUT / f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024, destination
++    print(f'EXPORTED {name} {triangles(obj)} '
++          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def main():
++    global PARTS, RNG
++    bpy.ops.object.select_all(action='SELECT')
++    bpy.ops.object.delete(use_global=False)
++    bpy.context.scene.unit_settings.system = 'METRIC'
++    bpy.context.scene.unit_settings.scale_length = 1
++    setup_materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    exported = []
++    for index, (name, dimensions, build) in enumerate(SPECS):
++        PARTS = []
++        RNG = random.Random(261117 + index * 7919)
++        build()
++        exported.append(finish(name, dimensions))
++    assert [obj.name for obj in exported] == [spec[0] for spec in SPECS]
++    assert len(bpy.context.scene.objects) == len(SPECS)
++    assert all(obj.type == 'MESH' for obj in bpy.context.scene.objects)
++    for mat in MATERIALS.values():
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 2314ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_landmarks.py:37: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_Coach.fbx'
+export finished in 0.0057 sec.
+EXPORTED LM_Coach 1908 (10.0, 3.2, 3.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_Locomotive.fbx'
+export finished in 0.0061 sec.
+EXPORTED LM_Locomotive 3584 (9.0, 3.4, 4.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_WaterCrane.fbx'
+export finished in 0.0053 sec.
+EXPORTED LM_WaterCrane 2004 (3.0, 3.0, 6.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_CoalPile.fbx'
+export finished in 0.0041 sec.
+EXPORTED LM_CoalPile 772 (4.5, 3.5, 1.8)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_LuggageCart.fbx'
+export finished in 0.0047 sec.
+EXPORTED LM_LuggageCart 1708 (4.0, 1.8, 2.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_LM_SignalGantry.fbx'
+export finished in 0.0043 sec.
+EXPORTED LM_SignalGantry 1112 (5.0, 1.2, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_Turntable.fbx'
+export finished in 0.0061 sec.
+EXPORTED Turntable 5116 (24.0, 24.0, 0.3)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_PlatformEdge.fbx'
+export finished in 0.0036 sec.
+EXPORTED PlatformEdge 428 (8.0, 1.2, 0.5)
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$landmarkPreview = @'"'
+import bpy, os
+from pathlib import Path
+from mathutils import Vector
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete(use_global=False)
+for name,loc,scale in [('Turntable',(-4,0,0),.5),('LM_LuggageCart',(5,3,0),1),('PlatformEdge',(4,-3,0),1)]:
+    bpy.ops.import_scene.fbx(filepath='C:/Project/Cat_Tang/Game/Assets/Art/Characters/Ch2/Kit_'+name+'.fbx',bake_space_transform=True)
+    obj=bpy.context.selected_objects[0]
+    assert all(abs(c)<100 for v in obj.data.vertices for c in v.co)
+    obj.location=loc
+    obj.scale *= scale
+scene=bpy.context.scene
+scene.render.engine='BLENDER_WORKBENCH'
+shading=scene.display.shading
+shading.light='STUDIO'
+shading.color_type='MATERIAL'
+shading.show_shadows=True
+shading.show_cavity=True
+shading.cavity_type='BOTH'
+shading.curvature_ridge_factor=1.5
+shading.curvature_valley_factor=1.4
+shading.show_object_outline=True
+bpy.ops.object.camera_add(location=(12,22,35))
+cam=bpy.context.object
+cam.rotation_euler=(Vector((0,0,0))-cam.location).to_track_quat('-Z','Y').to_euler()
+cam.data.type='ORTHO'
+cam.data.ortho_scale=23
+scene.camera=cam
+scene.render.resolution_x=1400
+scene.render.resolution_y=1000
+scene.render.resolution_percentage=100
+scene.render.filepath=str(Path(os.environ['TEMP'])/'ch2_landmarks_final.png')
+bpy.ops.render.render(write_still=True)
+'@; & 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr "'$landmarkPreview' in C:\Project\Cat_Tang
+ succeeded in 5094ms:
+00:04.797  render           | Saved: 'C:\Users\user\AppData\Local\Temp\ch2_landmarks_final.png'
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+Created [blender_kit_ch2_landmarks.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch2_landmarks.py) and ran the exact Blender command successfully through `DONE`.
+
+All eight FBXs exported to `Game/Assets/Art/Characters/Ch2/`. Verified dimensions, origins, grey role materials, single-mesh exports, and high-camera appearance.
+
+All pieces meet their triangle budgets: obstacles ≤3,584; Turntable 5,116.
+tokens used
+55,249
+Created [blender_kit_ch2_landmarks.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch2_landmarks.py) and ran the exact Blender command successfully through `DONE`.
+
+All eight FBXs exported to `Game/Assets/Art/Characters/Ch2/`. Verified dimensions, origins, grey role materials, single-mesh exports, and high-camera appearance.
+
+All pieces meet their triangle budgets: obstacles ≤3,584; Turntable 5,116.
+EXIT 0

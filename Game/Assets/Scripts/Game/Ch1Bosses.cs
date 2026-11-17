@@ -42,6 +42,7 @@ namespace CatTang
             Telegraph.Ring(at, radius, delay, Telegraph.Danger);
             yield return new WaitForSeconds(delay);
             FxBurst.Spawn(at + Vector3.up * 0.3f, radius * 1.2f, FxBurst.Kind.Explosion);
+            PropHit.Area(at, radius, dmg);
             var p = PlayerController.Instance;
             if (p && p.health.Alive && Effects.Flat(p.transform.position - at).magnitude <= radius) p.health.TakeDamage(dmg);
         }

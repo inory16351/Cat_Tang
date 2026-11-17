@@ -11,7 +11,20 @@ namespace CatTang
 {
     public class EnemyProjectile : MonoBehaviour
     {
-        public enum Style { Orb, Revolver, Pellet, Sniper, Needle, Numeral }
+        public enum Style { Orb, Revolver, Pellet, Sniper, Needle, Numeral, Ticket }
+
+        /// <summary>살아 있는 적 탄 (신호수+ 정지 구역이 훑음)</summary>
+        public static readonly List<EnemyProjectile> All = new();
+        /// <summary>고양이에게 맞았을 때 추가 효과 (차장+ 검표 펀치: 대시 충전 멈춤)</summary>
+        public System.Action<PlayerController> OnHitPlayer;
+        /// <summary>엄폐물 · 화약통을 뚫고 지나감 (벽엔 막힘)</summary>
+        public bool pierceCover;
+        /// <summary>이 시각까지 제자리에 멈춤 (정지 구역). 풀리면 원래 방향으로 다시 날아감</summary>
+        public float frozenUntil;
+        public Vector3 Dir => dir;
+
+        void OnEnable() => All.Add(this);
+        void OnDisable() => All.Remove(this);
 
         Vector3 dir;
         float speed, damage, dieAt, rangeLeft, born, haloSize, length;
@@ -24,14 +37,14 @@ namespace CatTang
         static string TexName(Style s) => s switch
         {
             Style.Revolver => "revolver", Style.Pellet => "pellet", Style.Sniper => "sniper",
-            Style.Needle => "needle", Style.Numeral => "dial", _ => "orb",
+            Style.Needle => "needle", Style.Numeral => "dial", Style.Ticket => "ticket", _ => "orb",
         };
 
         // 화면에서의 길이(m)
         static float LengthOf(Style s) => s switch
         {
             Style.Revolver => 1.5f, Style.Pellet => 0.7f, Style.Sniper => 3.6f,
-            Style.Needle => 2.0f, Style.Numeral => 1.6f, _ => 1.9f,
+            Style.Needle => 2.0f, Style.Numeral => 1.6f, Style.Ticket => 1.5f, _ => 1.9f,
         };
 
         static Color ColorOf(Style s) => s switch
@@ -41,6 +54,7 @@ namespace CatTang
             Style.Sniper => new Color(1f, 0.2f, 0.4f),
             Style.Needle => new Color(0.75f, 0.4f, 1f),
             Style.Numeral => new Color(0.9f, 0.5f, 1f),
+            Style.Ticket => new Color(1f, 0.3f, 0.55f),
             _ => new Color(0.8f, 0.35f, 1f),
         };
 
@@ -194,13 +208,21 @@ namespace CatTang
 
         void Update()
         {
+            if (Time.time < frozenUntil)
+            {
+                // 정지 구역: 제자리에서 살짝 떨림, 사라지는 시각도 멈춘 만큼 미룸
+                dieAt += Time.deltaTime;
+                if (sprite) sprite.localPosition = new Vector3(Mathf.Sin(Time.time * 70f) * 0.02f, 0, 0);
+                return;
+            }
+            if (sprite && sprite.localPosition != Vector3.zero) sprite.localPosition = Vector3.zero;
             float step = speed * Time.deltaTime;
             if (Physics.Raycast(transform.position, dir, out var hit, step + 0.2f, ~0, QueryTriggerInteraction.Ignore))
             {
                 var hp = hit.collider.GetComponentInParent<Health>();
                 if (hp == null) { Pop(hit.point); return; }                                                     // 벽
-                // 엄폐물 · 화약통은 적 탄을 막음 (맞으면 깎임)
-                if (!hp.isPlayer && !hp.GetComponent<Enemy>()) { hp.TakeDamage(damage); Pop(hit.point); return; }
+                // 엄폐물 · 화약통은 적 탄을 막음 (맞으면 깎임). 관통 탄은 깎기만 하고 지나감
+                if (!hp.isPlayer && !hp.GetComponent<Enemy>() && !pierceCover) { hp.HitFrom(dir); hp.TakeDamage(damage); Pop(hit.point); return; }
             }
             transform.position += dir * step;
             rangeLeft -= step;
@@ -212,7 +234,9 @@ namespace CatTang
                 float hitR = style == Style.Pellet ? 0.45f : 0.55f;
                 if (d.sqrMagnitude < hitR * hitR)
                 {
+                    float before = pl.health.hp;
                     pl.health.TakeDamage(damage);
+                    if (OnHitPlayer != null && pl.health.hp < before) OnHitPlayer(pl);   // 실제로 맞았을 때만 (회피 · 저스트 회피 제외)
                     Pop(transform.position);
                     return;
                 }

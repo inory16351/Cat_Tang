@@ -1,0 +1,720 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1e7da-ad3d-7c71-9aa4-eacb02850cc2
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_xpgem.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_xpgem.py`
+After writing it, RUN it once with that command and fix errors until it exports.
+Use `Art/tools/blender_kit_heart.py` as a reference for the setup / materials / bevel / FBX-export style (same conventions).
+
+## Goal
+An EXPERIENCE GEM that pops out of every killed enemy in a top-down cel-shaded roguelite (time-themed: clocks, brass, gears; the hero is a gunslinger cat).
+Many of them fly around at once, spinning, seen from a high camera at very small size (about 0.35 m tall in game) → a crisp, instantly readable crystal silhouette, chunky facets, no tiny detail.
+
+## Design: `Kit_XpGem` (one mesh object, about 0.35 m tall, origin at the CENTER of the gem, Blender Z-up, long axis along Z)
+- Body: an elongated faceted crystal shard — a hexagonal bipyramid (6 sides), top point taller than bottom point (about 60/40), with a slightly wider middle belt (a short hexagonal prism band between the two pyramids). FLAT shading (hard facets) so the cel shader shows clear light/dark faces. Material `gem_teal`.
+- Inner glow core: a smaller copy of the bipyramid (about 55% size) inside, material `gem_core` — it shows through nothing (the outer body is opaque), so instead make the outer body's belt band a separate ring of faces with material `gem_light` (a lighter teal stripe around the middle) so it reads as a gem with a bright band.
+- A tiny `gold` clock-hand mark on BOTH broad faces of the belt: a short thin bar (minute hand) and a shorter bar (hour hand) meeting at a small round dot, protruding ~0.004, like an engraved clock hand. Keep it very simple (3 small parts per side).
+- Two small `gold` caps: a thin hexagonal ring at the top and bottom of the belt band (brass setting), very thin.
+- Keep under ~800 triangles.
+
+## Colors (flat Principled BSDF base colors, NO textures), materials named exactly:
+`gem_teal` (0.25, 0.85, 0.95), `gem_light` (0.7, 1.0, 1.0), `gem_core` (0.9, 1.0, 1.0), `gold` (1.0, 0.78, 0.22).
+For `gem_teal` and `gem_light` also set Emission Color = same and Emission Strength 0.5 (it should glow a little).
+
+## Export
+- Join into ONE mesh object named `Kit_XpGem`, recalc normals outward, export FBX to `Game/Assets/Art/Characters/Ch1/Kit_XpGem.fbx` with
+  `axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+- No cameras/lights. Print `EXPORTED Kit_XpGem <tris> <dims>` and `DONE`.
+- Short Korean header comment at the top of the script (what it makes, how to run).
+
+codex
+참고 스크립트의 재질·베벨·내보내기 방식을 확인한 뒤, 경험치 보석 스크립트 하나만 작성하고 Blender로 실행해 FBX 출력까지 확인하겠습니다.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location; rg --files -g AGENTS.md -g blender_kit_heart.py -g blender_kit_xpgem.py -g '*heart*' Art .agents .codex" in C:\Project\Cat_Tang
+ exited 1 in 1357ms:
+
+Path               
+----               
+C:\Project\Cat_Tang
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:15
++ Get-Location; rg --files -g AGENTS.md -g blender_kit_heart.py -g blen ...
++               ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath Art/tools/blender_kit_heart.py' in C:\Project\Cat_Tang
+ succeeded in 0ms:
+# ?묐㈃ ??옄? ?뱀븘?대━??湲??뚮몢由ш? ?덈뒗 ?듯넻??泥대젰 ?섑듃瑜?留뚮벊?덈떎.
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_heart.py
+
+import math
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / "Game/Assets/Art/Characters/Ch1/Kit_Heart.fbx"
+PARTS = []
+MATERIALS = {}
+COLORS = {
+    "heart_red": (0.92, 0.18, 0.22),
+    "heart_light": (1.0, 0.62, 0.62),
+    "gold": (1.0, 0.78, 0.22),
+    "cream": (1.0, 0.95, 0.85),
+}
+HALF_DEPTH = 0.14
+
+
+def setup():
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete(use_global=False)
+    for material in list(bpy.data.materials):
+        bpy.data.materials.remove(material)
+    bpy.context.scene.unit_settings.system = "METRIC"
+    bpy.context.scene.unit_settings.scale_length = 1.0
+    for name, color in COLORS.items():
+        material = bpy.data.materials.new(name)
+        material.use_nodes = True
+        material.diffuse_color = (*color, 1.0)
+        shader = material.node_tree.nodes.get("Principled BSDF")
+        shader.inputs["Base Color"].default_value = (*color, 1.0)
+        shader.inputs["Roughness"].default_value = {
+            "heart_red": 0.38, "heart_light": 0.2, "gold": 0.3, "cream": 0.6,
+        }[name]
+        if name == "heart_red":
+            shader.inputs["Emission Color"].default_value = (*color, 1.0)
+            shader.inputs["Emission Strength"].default_value = 0.4
+        MATERIALS[name] = material
+
+
+def register(obj, name, material, smooth=False):
+    obj.name = name
+    obj.data.materials.append(MATERIALS[material])
+    for face in obj.data.polygons:
+        face.use_smooth = smooth
+    PARTS.append(obj)
+    return obj
+
+
+def mesh_part(name, vertices, faces, material, smooth=False):
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    return register(obj, name, material, smooth)
+
+
+def bevel(obj):
+    modifier = obj.modifiers.new("Soft handmade edges", "BEVEL")
+    modifier.width = 0.004
+    modifier.segments = 2
+    modifier.limit_method = "ANGLE"
+    modifier.angle_limit = math.radians(30)
+    modifier.use_clamp_overlap = True
+
+
+def sphere(name, center, scale, material, segments=12, rings=6):
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=segments, ring_count=rings, radius=1.0, location=center
+    )
+    obj = bpy.context.object
+    for vertex in obj.data.vertices:
+        vertex.co.x *= scale[0]
+        vertex.co.y *= scale[1]
+        vertex.co.z *= scale[2]
+    return register(obj, name, material, smooth=True)
+
+
+def heart_outline():
+    # Eight tangent-matched cubic arcs give a rounded cleft and a soft pointed tip.
+    arcs = [
+        ((0, 0.155), (0.045, 0.155), (0.07, 0.275), (0.15, 0.275)),
+        ((0.15, 0.275), (0.245, 0.275), (0.3, 0.21), (0.3, 0.1)),
+        ((0.3, 0.1), (0.3, -0.005), (0.205, -0.105), (0.14, -0.16)),
+        ((0.14, -0.16), (0.075, -0.215), (0.023, -0.275), (0, -0.275)),
+        ((0, -0.275), (-0.023, -0.275), (-0.075, -0.215), (-0.14, -0.16)),
+        ((-0.14, -0.16), (-0.205, -0.105), (-0.3, -0.005), (-0.3, 0.1)),
+        ((-0.3, 0.1), (-0.3, 0.21), (-0.245, 0.275), (-0.15, 0.275)),
+        ((-0.15, 0.275), (-0.07, 0.275), (-0.045, 0.155), (0, 0.155)),
+    ]
+    outline = []
+    for arc in arcs:
+        points = [Vector(point) for point in arc]
+        for index in range(6):
+            t = index / 6
+            u = 1 - t
+            outline.append(u ** 3 * points[0] + 3 * u * u * t * points[1]
+                           + 3 * u * t * t * points[2] + t ** 3 * points[3])
+    return outline
+
+
+def build_body(outline):
+    # Elliptical sections close at both face centers, with a shared equatorial ring.
+    vertices = []
+    faces = []
+    count = len(outline)
+    for latitude in range(-4, 5):
+        angle = latitude * math.pi / 10
+        radius = math.cos(angle)
+        y = HALF_DEPTH * math.sin(angle)
+        vertices.extend((point.x * radius, y, point.y * radius) for point in outline)
+    for ring in range(8):
+        for index in range(count):
+            a = ring * count + index
+            b = ring * count + (index + 1) % count
+            faces.append((a, b, b + count, a + count))
+    for ring, side in ((0, -1), (8, 1)):
+        pole = len(vertices)
+        vertices.append((0, side * HALF_DEPTH, 0))
+        for index in range(count):
+            faces.append((pole, ring * count + index, ring * count + (index + 1) % count))
+    return mesh_part("Inflated red heart", vertices, faces, "heart_red", smooth=True)
+
+
+def face_depth(body, x, z):
+    # Raycast the actual low-poly surface so each highlight hugs the cushion.
+    hit, location, normal, index = body.ray_cast(
+        Vector((x, -0.5, z)), Vector((0, 1, 0))
+    )
+    assert hit, "Face detail lies outside the heart"
+    return abs(location.y)
+
+
+def build_highlights(body):
+    for side in (-1, 1):
+        # Mirror the lobe so the highlight reads upper-left when viewing either face.
+        obj = sphere("Glossy lobe highlight %d" % side, (0, 0, 0),
+                     (1, 1, 1), "heart_light", segments=10)
+        for vertex in obj.data.vertices:
+            unit = vertex.co.copy()
+            tilt = math.radians(-side * 22)
+            dx = 0.027 * unit.x
+            dz = 0.052 * unit.z
+            x = side * 0.155 + dx * math.cos(tilt) + dz * math.sin(tilt)
+            z = 0.16 - dx * math.sin(tilt) + dz * math.cos(tilt)
+            y = side * (face_depth(body, x, z) + 0.002 + 0.008 * unit.y)
+            vertex.co = (x, y, z)
+        obj.data.update()
+
+
+def build_crosses():
+    # Union outline of two 0.100 x 0.030 crossing bars avoids overlapping top faces.
+    long = 0.05
+    short = 0.015
+    outline = [
+        (-short, long), (short, long), (short, short), (long, short),
+        (long, -short), (short, -short), (short, -long), (-short, -long),
+        (-short, -short), (-long, -short), (-long, short), (-short, short),
+    ]
+    for side in (-1, 1):
+        vertices = [(x, side * y, z) for y in (0.133, 0.155) for x, z in outline]
+        count = len(outline)
+        faces = [tuple(reversed(range(count))), tuple(range(count, 2 * count))]
+        for index in range(count):
+            following = (index + 1) % count
+            faces.append((index, following, following + count, index + count))
+        obj = mesh_part("Embossed cream cross %d" % side, vertices, faces, "cream")
+        bevel(obj)
+
+
+def tube(name, points, radii, material, sides=6, closed=False, depth_scale=1.0):
+    points = [Vector(point) for point in points]
+    vertices = []
+    faces = []
+    for index, point in enumerate(points):
+        if closed:
+            tangent = points[(index + 1) % len(points)] - points[(index - 1) % len(points)]
+        else:
+            tangent = points[min(index + 1, len(points) - 1)] - points[max(index - 1, 0)]
+        tangent.normalize()
+        normal = tangent.cross(Vector((0, 1, 0))).normalized()
+        binormal = tangent.cross(normal).normalized()
+        for side in range(sides):
+            angle = math.tau * side / sides
+            offset = normal * math.cos(angle) + binormal * depth_scale * math.sin(angle)
+            vertices.append(point + radii[index] * offset)
+    for ring in range(len(points) if closed else len(points) - 1):
+        following = (ring + 1) % len(points)
+        for side in range(sides):
+            a = ring * sides + side
+            b = ring * sides + (side + 1) % sides
+            c = following * sides + (side + 1) % sides
+            d = following * sides + side
+            faces.append((a, b, c, d))
+    if not closed:
+        faces.append(tuple(reversed(range(sides))))
+        faces.append(tuple((len(points) - 1) * sides + side for side in range(sides)))
+    return mesh_part(name, vertices, faces, material, smooth=True)
+
+
+def build_gold(outline):
+    points = [(point.x * 1.006, 0, point.y * 1.006) for point in outline]
+    tube("Thin brass silhouette setting", points, [0.007] * len(points), "gold",
+         closed=True, depth_scale=1.6)
+    # A single pendant of melted gold hangs from the outer right lobe.
+    tube("Elongated melting gold teardrop",
+         [(0.299, 0, 0.125), (0.307, 0, 0.1), (0.31, 0, 0.065),
+          (0.313, 0, 0.025), (0.313, 0, -0.012)],
+         [0.01, 0.011, 0.009, 0.008, 0.013], "gold", sides=8)
+    sphere("Rounded gold drip end", (0.313, 0, -0.024),
+           (0.018, 0.017, 0.027), "gold", segments=10, rings=6)
+
+
+def finish_and_export():
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in PARTS:
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        for modifier in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name = "Kit_Heart"
+    obj.data.name = "Kit_Heart"
+
+    # The red heart's center remains the spin pivot even with the asymmetric drip.
+    bpy.context.scene.cursor.location = (0, 0, 0)
+    bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+    bpy.context.view_layer.update()
+    scale = 0.6 / obj.dimensions.x
+    obj.scale = (scale, scale, scale)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert all(len(edge.link_faces) == 2 for edge in bm.edges), "Unclosed mesh component"
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    obj.data.calc_loop_triangles()
+    triangles = len(obj.data.loop_triangles)
+    bpy.context.view_layer.update()
+    dimensions = tuple(round(value, 4) for value in obj.dimensions)
+    assert triangles < 2500, "Triangle budget exceeded: %d" % triangles
+    assert abs(obj.dimensions.x - 0.6) < 0.0001
+    assert obj.location.length < 0.000001
+    assert set(material.name for material in obj.data.materials) == set(COLORS)
+    assert len(bpy.context.scene.objects) == 1 and obj.type == "MESH"
+
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.export_scene.fbx(
+        filepath=str(OUTPUT), use_selection=True,
+        axis_forward="-Z", axis_up="Y", apply_scale_options="FBX_SCALE_UNITS",
+        bake_space_transform=True, object_types={"MESH"}, use_mesh_modifiers=True,
+        mesh_smooth_type="FACE", add_leaf_bones=False, bake_anim=False
+    )
+    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 0
+    print("EXPORTED Kit_Heart %d %s" % (triangles, dimensions))
+    print("DONE")
+
+
+def main():
+    setup()
+    outline = heart_outline()
+    body = build_body(outline)
+    # Face raycasts need the newly linked body's evaluated transform.
+    bpy.context.view_layer.update()
+    build_highlights(body)
+    build_crosses()
+    build_gold(outline)
+    finish_and_export()
+
+
+if __name__ == "__main__":
+    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$paths = @('"'C:/AGENTS.md','C:/Project/AGENTS.md','C:/Project/Cat_Tang/AGENTS.md','C:/Project/Cat_Tang/Art/AGENTS.md','C:/Project/Cat_Tang/Art/tools/AGENTS.md'); foreach ("'$path in $paths) { if (Test-Path -LiteralPath $path) { Write-Output $path; Get-Content -LiteralPath $path } }; git status --short; Test-Path -LiteralPath '"'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'" in C:\Project\Cat_Tang
+ succeeded in 277ms:
+ M Art/README.md
+ M Game/Assets/Data/Tables/Chapter.csv
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/ModelPalette.cs
+ M Game/Assets/Scripts/Game/Ch1Bosses.cs
+ M Game/Assets/Scripts/Game/Enemy.cs
+ M Game/Assets/Scripts/Game/EnemyFactory.cs
+ M Game/Assets/Scripts/Game/EnemyMoves.cs
+ M Game/Assets/Scripts/Game/EnemyProjectile.cs
+ M Game/Assets/Scripts/Game/Health.cs
+ M Game/Assets/Scripts/Game/HeartPickup.cs
+ M Game/Assets/Scripts/Game/Kit.cs
+ M Game/Assets/Scripts/Game/PlayerController.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M Game/Assets/Scripts/UI/GameUI.cs
+ M HANDOFF.md
+ M "docs/1159_1\354\236\245_\352\270\260\355\232\215\354\204\234_20261117_\354\240\225\354\212\271\354\232\264_Ver02.pptx"
+ M "docs/1159_2\354\236\245_\352\270\260\355\232\215\354\204\234_20261117_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+ M docs/tools/build_ch2_ppt.js
+?? Art/tools/blender_kit_ch2_landmarks.py
+?? Art/tools/blender_kit_ch2_props.py
+?? Art/tools/blender_kit_ch2_station.py
+?? Art/tools/ground_texture_ch2.py
+?? Art/tools/keep_main.py
+?? Art/tools/specs/_ch2_common.md
+?? Art/tools/specs/kit_ch2_landmarks.log
+?? Art/tools/specs/kit_ch2_landmarks_spec.md
+?? Art/tools/specs/kit_ch2_props.log
+?? Art/tools/specs/kit_ch2_props_spec.md
+?? Art/tools/specs/kit_ch2_station.log
+?? Art/tools/specs/kit_ch2_station_spec.md
+?? Art/tools/specs/kit_xpgem.log
+?? Art/tools/specs/kit_xpgem_spec.md
+?? Art/tools/tripo_cli_import.py
+?? Art/tripo_input/ch2/
+?? Game/Assets/Art/Characters/Ch2.meta
+?? Game/Assets/Art/Characters/Ch2/
+?? Game/Assets/Art/Env/Ch2.meta
+?? Game/Assets/Art/Env/Ch2/
+?? Game/Assets/Editor/PorterRig.cs
+?? Game/Assets/Editor/PorterRig.cs.meta
+?? Game/Assets/Resources/Enemies/Ch2_Boss.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Boss.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch2_Conductor.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Conductor.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch2_Conductor_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Conductor_Plus.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch2_MidBoss.prefab
+?? Game/Assets/Resources/Enemies/Ch2_MidBoss.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch2_Porter.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Porter.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch2_Porter_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Porter_Plus.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch2_Signal.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Signal.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch2_Signal_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch2_Signal_Plus.prefab.meta
+?? Game/Assets/Resources/FX/bullets/ticket.png
+?? Game/Assets/Resources/FX/bullets/ticket.png.meta
+?? Game/Assets/Resources/Kit/Ch2.meta
+?? Game/Assets/Resources/Kit/Ch2/
+?? Game/Assets/Resources/UI/heal_icon.png
+?? Game/Assets/Resources/UI/heal_icon.png.meta
+?? Game/Assets/Resources/UI/xp_bar.png
+?? Game/Assets/Resources/UI/xp_bar.png.meta
+?? Game/Assets/Resources/UI/xp_orb.png
+?? Game/Assets/Resources/UI/xp_orb.png.meta
+?? Game/Assets/Scripts/Game/Ch2Kit.cs
+?? Game/Assets/Scripts/Game/Ch2Kit.cs.meta
+?? Game/Assets/Scripts/Game/DangerEdge.cs
+?? Game/Assets/Scripts/Game/DangerEdge.cs.meta
+?? Game/Assets/Scripts/Game/DestroyMesh.cs
+?? Game/Assets/Scripts/Game/DestroyMesh.cs.meta
+?? Game/Assets/Scripts/Game/EnemyCh2.cs
+?? Game/Assets/Scripts/Game/EnemyCh2.cs.meta
+?? Game/Assets/Scripts/Game/FootGround.cs
+?? Game/Assets/Scripts/Game/FootGround.cs.meta
+?? Game/Assets/Scripts/Game/PropHit.cs
+?? Game/Assets/Scripts/Game/PropHit.cs.meta
+?? Game/Assets/Scripts/Game/RunManagerXp.cs
+?? Game/Assets/Scripts/Game/RunManagerXp.cs.meta
+?? Game/Assets/Scripts/Game/SignalBlast.cs
+?? Game/Assets/Scripts/Game/SignalBlast.cs.meta
+?? Game/Assets/Scripts/Game/StopZone.cs
+?? Game/Assets/Scripts/Game/StopZone.cs.meta
+?? Game/Assets/Scripts/Game/XpOrb.cs
+?? Game/Assets/Scripts/Game/XpOrb.cs.meta
+?? docs/images/ui_src/heal_icon.png
+?? docs/images/ui_src/prompts/xp_ui.log
+?? docs/images/ui_src/prompts/xp_ui.txt
+?? docs/images/ui_src/xp_bar.png
+?? docs/images/ui_src/xp_orb.png
+?? docs/tools/fx_ticket_bullet.py
+?? docs/tools/ui_xp_cut.py
+True
+
+codex
+보석 높이는 0.35m로 맞추고, 위·아래 끝의 길이를 60:40으로 잡겠습니다. 외피는 불투명한 평면 셰이딩으로 만들고, 밝은 청록색 띠와 양면의 작은 시곗바늘로 시간 테마를 표현하겠습니다.
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_xpgem.py
+diff --git a/Art/tools/blender_kit_xpgem.py b/Art/tools/blender_kit_xpgem.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..cfe72a7e4255b05f0cbda029293e5a3ac78bcb52
+--- /dev/null
++++ b/Art/tools/blender_kit_xpgem.py
+@@ -0,0 +1,236 @@
++# 청록색 결정과 황동 시곗바늘로 경험치 보석을 만들고 FBX로 내보냅니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_xpgem.py
++
++import math
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / "Game/Assets/Art/Characters/Ch1/Kit_XpGem.fbx"
++PARTS = []
++MATERIALS = {}
++COLORS = {
++    "gem_teal": (0.25, 0.85, 0.95),
++    "gem_light": (0.7, 1.0, 1.0),
++    "gem_core": (0.9, 1.0, 1.0),
++    "gold": (1.0, 0.78, 0.22),
++}
++HEIGHT = 0.35
++RADIUS = 0.092
++BELT_HEIGHT = 0.040
++# Center the tip-to-tip bounds at the spin origin, retaining 60/40 pyramids.
++BELT_CENTER = -0.1 * (HEIGHT - BELT_HEIGHT)
++BELT_BOTTOM = BELT_CENTER - BELT_HEIGHT / 2
++BELT_TOP = BELT_CENTER + BELT_HEIGHT / 2
++APOTHEM = RADIUS * math.cos(math.pi / 6)
++
++
++def setup():
++    bpy.ops.object.select_all(action="SELECT")
++    bpy.ops.object.delete(use_global=False)
++    for material in list(bpy.data.materials):
++        bpy.data.materials.remove(material)
++    PARTS.clear()
++    MATERIALS.clear()
++    bpy.context.scene.unit_settings.system = "METRIC"
++    bpy.context.scene.unit_settings.scale_length = 1.0
++    for name, color in COLORS.items():
++        material = bpy.data.materials.new(name)
++        material.use_nodes = True
++        material.diffuse_color = (*color, 1.0)
++        shader = material.node_tree.nodes.get("Principled BSDF")
++        shader.inputs["Base Color"].default_value = (*color, 1.0)
++        shader.inputs["Roughness"].default_value = 0.3 if name == "gold" else 0.38
++        if name in {"gem_teal", "gem_light"}:
++            shader.inputs["Emission Color"].default_value = (*color, 1.0)
++            shader.inputs["Emission Strength"].default_value = 0.5
++        # Opaque facets: the inner core is deliberately enclosed, not transparent.
++        shader.inputs["Alpha"].default_value = 1.0
++        shader.inputs["Transmission Weight"].default_value = 0.0
++        MATERIALS[name] = material
++
++
++def mesh_part(name, vertices, faces, material):
++    mesh = bpy.data.meshes.new(name)
++    mesh.from_pydata(vertices, [], faces)
++    mesh.update()
++    obj = bpy.data.objects.new(name, mesh)
++    bpy.context.collection.objects.link(obj)
++    obj.data.materials.append(MATERIALS[material])
++    for face in mesh.polygons:
++        face.use_smooth = False
++    PARTS.append(obj)
++    return obj
++
++
++def hex_ring(radius, z):
++    # Opposite broad faces lie in the XZ plane, facing +/-Y.
++    return [(radius * math.cos(math.tau * index / 6),
++             radius * math.sin(math.tau * index / 6), z) for index in range(6)]
++
++
++def build_crystal(name, scale, material, bright_belt=False):
++    vertices = hex_ring(RADIUS, BELT_BOTTOM) + hex_ring(RADIUS, BELT_TOP)
++    vertices += [(0, 0, -HEIGHT / 2), (0, 0, HEIGHT / 2)]
++    vertices = [tuple(scale * value for value in vertex) for vertex in vertices]
++    faces = []
++    for index in range(6):
++        following = (index + 1) % 6
++        faces.append((12, following, index))
++        faces.append((index, following, following + 6, index + 6))
++        faces.append((13, index + 6, following + 6))
++    obj = mesh_part(name, vertices, faces, material)
++    if bright_belt:
++        # A separate ring of six opaque faces provides the visible glow stripe.
++        obj.data.materials.append(MATERIALS["gem_light"])
++        for index in range(6):
++            obj.data.polygons[3 * index + 1].material_index = 1
++    return obj
++
++
++def bevel(obj):
++    # Same applied bevel convention as the heart, scaled for the small brass mark.
++    modifier = obj.modifiers.new("Soft handmade edges", "BEVEL")
++    modifier.width = 0.0004
++    modifier.segments = 1
++    modifier.limit_method = "ANGLE"
++    modifier.angle_limit = math.radians(30)
++    modifier.use_clamp_overlap = True
++
++
++def build_caps():
++    # Closed, genuinely hollow hexagonal rings; no disks cover the bright belt.
++    for name, z in (("Lower brass setting", BELT_BOTTOM),
++                    ("Upper brass setting", BELT_TOP)):
++        vertices = []
++        for height, radius in ((z - 0.0015, RADIUS - 0.0015),
++                               (z - 0.0015, RADIUS + 0.002),
++                               (z + 0.0015, RADIUS - 0.0015),
++                               (z + 0.0015, RADIUS + 0.002)):
++            vertices.extend(hex_ring(radius, height))
++        faces = []
++        for index in range(6):
++            following = (index + 1) % 6
++            faces.extend([
++                (index, following, following + 6, index + 6),
++                (index + 12, index + 18, following + 18, following + 12),
++                (index, index + 12, following + 12, following),
++                (index + 6, following + 6, following + 18, index + 18),
++            ])
++        mesh_part(name, vertices, faces, "gold")
++
++
++def clock_bar(name, side, start, end, width):
++    direction = (Vector(end) - Vector(start)).normalized()
++    across = Vector((-direction.y, direction.x)) * width / 2
++    outline = [Vector(start) - across, Vector(end) - across,
++               Vector(end) + across, Vector(start) + across]
++    # Embed the underside slightly; the visible relief is exactly 4 mm deep.
++    vertices = [(side * point.x, side * (APOTHEM + depth), point.y)
++                for depth in (-0.0005, 0.004) for point in outline]
++    faces = [(3, 2, 1, 0), (4, 5, 6, 7)]
++    for index in range(4):
++        following = (index + 1) % 4
++        faces.append((index, following, following + 4, index + 4))
++    obj = mesh_part(name, vertices, faces, "gold")
++    bevel(obj)
++
++
++def clock_dot(side, pivot):
++    vertices = []
++    sides = 12
++    for depth in (-0.0005, 0.004):
++        for index in range(sides):
++            angle = math.tau * index / sides
++            vertices.append((side * (pivot[0] + 0.0035 * math.cos(angle)),
++                             side * (APOTHEM + depth),
++                             pivot[1] + 0.0035 * math.sin(angle)))
++    faces = [tuple(reversed(range(sides))), tuple(range(sides, 2 * sides))]
++    for index in range(sides):
++        following = (index + 1) % sides
++        faces.append((index, following, following + sides, index + sides))
++    mesh_part("Clock pivot %d" % side, vertices, faces, "gold")
++
++
++def build_clock_marks():
++    pivot = (0, BELT_CENTER - 0.006)
++    for side in (-1, 1):
++        for name, length, angle, width in (
++                ("Minute hand", 0.018, 15, 0.003),
++                ("Hour hand", 0.012, 65, 0.0035)):
++            angle = math.radians(angle)
++            end = (pivot[0] + length * math.sin(angle),
++                   pivot[1] + length * math.cos(angle))
++            clock_bar("%s %d" % (name, side), side, pivot, end, width)
++        clock_dot(side, pivot)
++
++
++def finish_and_export():
++    bpy.ops.object.select_all(action="DESELECT")
++    for obj in PARTS:
++        bpy.context.view_layer.objects.active = obj
++        obj.select_set(True)
++        for modifier in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=modifier.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name = "Kit_XpGem"
++    obj.data.name = "Kit_XpGem"
++    bpy.context.scene.cursor.location = (0, 0, 0)
++    bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
++    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
++
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert all(len(edge.link_faces) == 2 for edge in bm.edges), "Unclosed mesh component"
++    bm.to_mesh(obj.data)
++    bm.free()
++    for face in obj.data.polygons:
++        face.use_smooth = False
++    obj.data.update()
++    obj.data.calc_loop_triangles()
++    triangles = len(obj.data.loop_triangles)
++    bpy.context.view_layer.update()
++    dimensions = tuple(round(value, 4) for value in obj.dimensions)
++    assert triangles < 800, "Triangle budget exceeded: %d" % triangles
++    assert abs(obj.dimensions.z - HEIGHT) < 0.000001
++    assert obj.dimensions.z > max(obj.dimensions.x, obj.dimensions.y)
++    assert obj.location.length < 0.000001
++    bounds = [Vector(corner) for corner in obj.bound_box]
++    assert (bounds[0] + bounds[6]).length < 0.000001, "Off-center spin origin"
++    assert set(material.name for material in obj.data.materials) == set(COLORS)
++    assert len(bpy.context.scene.objects) == 1 and obj.type == "MESH"
++    assert not obj.modifiers
++
++    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
++    bpy.ops.export_scene.fbx(
++        filepath=str(OUTPUT), use_selection=True,
++        axis_forward="-Z", axis_up="Y", apply_scale_options="FBX_SCALE_UNITS",
++        bake_space_transform=True, object_types={"MESH"}, use_mesh_modifiers=True,
++        mesh_smooth_type="FACE", add_leaf_bones=False, bake_anim=False
++    )
++    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 0
++    print("EXPORTED Kit_XpGem %d %s" % (triangles, dimensions))
++    print("DONE")
++
++
++def main():
++    setup()
++    build_crystal("Faceted teal crystal", 1.0, "gem_teal", bright_belt=True)
++    build_crystal("Enclosed glow core", 0.55, "gem_core")
++    build_caps()
++    build_clock_marks()
++    finish_and_export()
++
++
++if __name__ == "__main__":
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_xpgem.py" in C:\Project\Cat_Tang
+ succeeded in 1562ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_xpgem.py:43: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch1\\Kit_XpGem.fbx'
+export finished in 0.0039 sec.
+EXPORTED Kit_XpGem 408 (0.188, 0.1673, 0.35)
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+Created [blender_kit_xpgem.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_xpgem.py) and successfully ran the requested Blender command.
+
+Exported [Kit_XpGem.fbx](/C:/Project/Cat_Tang/Game/Assets/Art/Characters/Ch1/Kit_XpGem.fbx): one mesh, 408 triangles, dimensions **0.188 × 0.1673 × 0.35 m**. Validation passed; Blender printed `DONE`.
+tokens used
+20,109
+Created [blender_kit_xpgem.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_xpgem.py) and successfully ran the requested Blender command.
+
+Exported [Kit_XpGem.fbx](/C:/Project/Cat_Tang/Game/Assets/Art/Characters/Ch1/Kit_XpGem.fbx): one mesh, 408 triangles, dimensions **0.188 × 0.1673 × 0.35 m**. Validation passed; Blender printed `DONE`.

@@ -55,6 +55,43 @@ namespace CatTang.EditorTools
             { "cream", new Color(1f, 0.95f, 0.85f) },
         };
 
+        // 2장 (멈춘 기차역, 2026-11-17 사용자: 맵 = 따뜻하게 · 몬스터 = 차갑게). 몬스터가 차가운 보라 · 청회색이므로 맵엔 보라 · 파랑을 쓰지 않음
+        public static readonly Dictionary<string, Color> Ch2 = new()
+        {
+            { "wood", new Color(0.55f, 0.36f, 0.22f) },
+            { "wood_dark", new Color(0.32f, 0.2f, 0.13f) },
+            { "wood_light", new Color(0.74f, 0.52f, 0.32f) },
+            { "iron", new Color(0.32f, 0.28f, 0.26f) },
+            { "iron_dark", new Color(0.18f, 0.16f, 0.15f) },
+            { "rust", new Color(0.64f, 0.31f, 0.15f) },
+            { "brass", new Color(0.88f, 0.65f, 0.28f) },
+            { "rail_steel", new Color(0.52f, 0.48f, 0.44f) },
+            { "brick", new Color(0.62f, 0.31f, 0.2f) },
+            { "brick_dark", new Color(0.43f, 0.21f, 0.14f) },
+            { "stone", new Color(0.66f, 0.59f, 0.5f) },
+            { "stone_dark", new Color(0.45f, 0.39f, 0.33f) },
+            { "roof_tin", new Color(0.52f, 0.46f, 0.4f) },
+            { "soot", new Color(0.15f, 0.13f, 0.12f) },
+            { "coal", new Color(0.11f, 0.1f, 0.1f) },
+            { "window", new Color(0.18f, 0.14f, 0.12f) },
+            { "window_lit", new Color(1f, 0.74f, 0.36f) },
+            { "glass_lamp", new Color(1f, 0.83f, 0.46f) },
+            { "canvas", new Color(0.84f, 0.74f, 0.56f) },
+            { "leather", new Color(0.6f, 0.33f, 0.18f) },
+            { "leather_dark", new Color(0.37f, 0.2f, 0.12f) },
+            { "cloth_red", new Color(0.74f, 0.19f, 0.14f) },
+            { "paint_cream", new Color(0.92f, 0.84f, 0.66f) },
+            { "paint_green", new Color(0.36f, 0.46f, 0.28f) },
+            { "clock_face", new Color(0.97f, 0.91f, 0.77f) },
+            { "steam", new Color(0.96f, 0.94f, 0.9f) },
+            { "signal_red", new Color(0.96f, 0.2f, 0.14f) },
+            { "signal_amber", new Color(1f, 0.7f, 0.15f) },
+            { "signal_green", new Color(0.32f, 0.85f, 0.4f) },
+        };
+
+        /// <summary>지금 빌드하는 챕터의 배색표 (빌더가 챕터마다 바꿔 끼움)</summary>
+        public static Dictionary<string, Color> Active = Ch1;
+
         /// <summary>회색 재질이면 이름으로 배색표 색을 돌려줌 (블렌더 중복 접미사 .001 등은 떼고 찾음)</summary>
         public static bool TryResolve(Material src, Color flat, out Color color)
         {
@@ -63,8 +100,8 @@ namespace CatTang.EditorTools
             Color.RGBToHSV(flat, out _, out float s, out _);
             if (s > 0.06f) return false;                                   // 색이 이미 칠해진 모델 → 그대로
             string key = Regex.Replace(src.name.ToLowerInvariant(), @"(\.\d+|\s*\(instance\))$", "");
-            if (Ch1.TryGetValue(key, out color)) return true;
-            Debug.LogWarning($"[ModelPalette] 배색표에 없는 재질 이름: {src.name} — 회색 그대로 (ModelPalette.Ch1에 추가)");
+            if (Active.TryGetValue(key, out color)) return true;
+            Debug.LogWarning($"[ModelPalette] 배색표에 없는 재질 이름: {src.name} — 회색 그대로 (ModelPalette 배색표에 추가)");
             color = flat;
             return false;
         }

@@ -1,0 +1,10 @@
+Create THREE image files in the current directory using your image generation tool and save them here (do not draw them with code; use the image generation tool, then you may only crop/resize/save):
+
+Style for all three: match the attached HUD reference exactly — chunky brass/gold steampunk pieces with rivets, thick dark ink outline, flat cel shading, warm gold highlights. No text, no letters, no numbers anywhere.
+Background outside the object: perfectly flat solid magenta #FF00FF (no gradient, no shadow on the background, no glow bleeding onto it).
+
+1) xp_bar.png — 1536x256 pixels. An EXPERIENCE GAUGE for a game HUD: a long horizontal brass frame (rivets, small gear details on both ends) whose inside is ONE long empty slot filled with flat very dark purple #1A1222 (the game fills it with color from the left, so the slot must be plain, straight-edged, and clearly visible). On the LEFT end, overlapping the frame, a round brass badge with a gear-toothed rim whose center is a plain flat dark purple #1A1222 circle (the game writes the level number there). The whole gauge fills about 90% of the width, centered vertically.
+
+2) heal_icon.png — 512x512 pixels. A HEAL reward icon: a round glass potion bottle with a brass clockwork cap and a small brass gear, filled with bright red liquid, a little white heart shape glowing on the glass. Centered, filling about 80% of the canvas.
+
+3) xp_orb.png — 256x256 pixels. A small EXPERIENCE GEM that enemies drop: a faceted teal-cyan crystal shard with a tiny gold clock-hand mark inside, bright and readable at small size. Centered, filling about 70% of the canvas.

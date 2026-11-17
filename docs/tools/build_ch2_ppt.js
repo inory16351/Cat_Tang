@@ -91,12 +91,15 @@ function build() {
         for (let k = 0; k < 4; k++) D.circle(s, bx + 0.75 + k * 0.28, cy + (k % 2 ? 0.05 : -0.05), 0.09, "FFFFFF", { tr: 55, line: STEAM });
         D.mob(s, bx + sz - 0.35, cy);
       }],
-      ["공중에 멈춘 짐", "쏘면 그림자가 커지며 아래로 낙하", "야적장 / 승강장 / 객차 · 2~4개\n0.6초 뒤 낙하 · 반경 1.5m\n피해 적 40 / 고양이 15", (bx, by, sz) => {
-        const cx = bx + sz / 2, cy = by + sz / 2;
-        D.circle(s, cx, cy + 0.3, 0.42, RED, { tr: 60, line: RED, dash: "dash" });
-        D.rect(s, cx - 0.22, cy - 0.55, 0.44, 0.3, "8A5A3A", { line: TXT });
-        D.line(s, cx, cy - 0.2, 0, 0.35, GOLD, { end: "triangle", dash: "dash" });
-        D.mob(s, cx + 0.2, cy + 0.38);
+      // 2026-11-17: 위에서 떨어지는 방식 → 맞은 방향과 반대로 날아가 폭발 (고양이 탄 → 짐 → 적 쪽 범위 폭발)
+      ["공중에 멈춘 짐", "피격 시 피격 방향과 반대로 날아가 폭발", "야적장 / 승강장 / 객차 · 2~4개\n범위형 피해 · 반경 1.5m\n피해 적 40 / 고양이 15", (bx, by, sz) => {
+        const cy = by + sz / 2;
+        D.cat(s, bx + 0.12, cy, 0.09);
+        D.line(s, bx + 0.24, cy, 0.3, 0, GOLD, { end: "triangle", width: 1 });
+        D.rect(s, bx + 0.58, cy - 0.15, 0.44, 0.3, "8A5A3A", { line: TXT });
+        D.line(s, bx + 1.06, cy, 0.38, 0, GOLD, { end: "triangle", dash: "dash" });
+        D.circle(s, bx + sz - 0.32, cy, 0.42, RED, { tr: 60, line: RED, dash: "dash" });
+        D.mob(s, bx + sz - 0.32, cy);
       }],
       ["선로 위 광차", "쏘면 선로를 따라 질주하며 경로의 적을 들이받음", "야적장 / 기관고 · 1~2개\n12m/초 질주 → 끝에서 부서짐\n피해 적 50 / 고양이 15", (bx, by, sz) => {
         const cy = by + sz / 2;
@@ -125,7 +128,8 @@ function build() {
       text(s, o[2], { x: 0.6 + i * 3.06 + 0.2, y: 4.85, w: W - 0.4, h: 0.85, fontSize: 10.5, color: MUTED });
     });
     D.card(s, 0.6, 5.85, 12.1, 0.95, PURPLE);
-    text(s, [{ text: "공통  ", options: { bold: true, color: GOLD } }, { text: "적과 고양이 모두 피해 / 쏘는 순간 예고 표시(증기 방향 / 낙하 그림자 / 광차 경로 / 선로 빛) / 후보 자리 중 일부에만 배치" }], { x: 0.85, y: 5.85, w: 11.7, h: 0.95, fontSize: 13, valign: "middle" });
+    text(s, [{ text: "공통  ", options: { bold: true, color: GOLD } }, { text: "적과 고양이 모두 피해 / 증기 밸브 · 짐 · 광차는 몬스터 공격에도 발동
+발동 순간 예고 표시(증기 방향 / 짐 비행 경로 / 광차 경로 / 선로 빛) / 후보 자리 중 일부에만 배치" }], { x: 0.85, y: 5.85, w: 11.7, h: 0.95, fontSize: 13, valign: "middle" });
     D.legend(s, 8.0, 1.2);
   }
 

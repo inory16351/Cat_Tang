@@ -18,6 +18,12 @@ namespace CatTang
         public event Action OnTimeLockEnd;            // 시간에 갇힌 상태가 풀릴 때
         public event Action OnJustDodge;              // 대시 중에 맞을 뻔함
         public event Action OnChanceDodge;            // 확률 회피 성공
+        /// <summary>탄이 날아온 방향(탄 진행 방향)을 받아 막으면 true (2장 짐꾼 트렁크 방패). 고양이 사격이 맞기 전에 물어봄</summary>
+        public Func<Vector3, bool> BlockFrom;
+        /// <summary>마지막으로 맞은 방향(맞힌 쪽 → 이 물체, 수평)과 시각. 공중 짐이 이 방향으로 날아감</summary>
+        public Vector3 lastHitDir;
+        public float lastHitAt = -99f;
+        public void HitFrom(Vector3 dir) { dir.y = 0; if (dir.sqrMagnitude < 1e-6f) return; lastHitDir = dir.normalized; lastHitAt = Time.time; }
 
         public bool Alive => hp > 0;
         public float SlowMul => Time.time < slowUntil ? 1f - slowAmount : 1f;
@@ -40,6 +46,7 @@ namespace CatTang
         int marks, markMax = 10;
         bool wasLocked;
         Vector3 knock;
+        CharacterController cc;
         readonly List<(float at, float dmg)> delayed = new();
         Renderer[] rends;
         MaterialPropertyBlock mpb;
@@ -119,7 +126,10 @@ namespace CatTang
             if (wasLocked && !TimeLocked) { wasLocked = false; OnTimeLockEnd?.Invoke(); }
             if (knock.sqrMagnitude > 0.0001f)
             {
-                transform.position += knock * Time.deltaTime * 8f;
+                // 고양이는 CharacterController로 밀어 벽을 뚫고 방 밖으로 나가지 않게 (적은 Enemy.LateUpdate가 방 안으로 붙잡음)
+                var step = knock * Time.deltaTime * 8f;
+                if (isPlayer && !cc) cc = GetComponent<CharacterController>();
+                if (isPlayer && cc && cc.enabled) cc.Move(step); else transform.position += step;
                 knock = Vector3.Lerp(knock, Vector3.zero, Time.deltaTime * 8f);
             }
             bool flash = !isPlayer && Time.time < flashUntil;

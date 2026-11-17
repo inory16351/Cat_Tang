@@ -19,7 +19,7 @@ namespace CatTang
         public System.Action<System.Action> applyThen;
     }
 
-    public class RunManager : MonoBehaviour
+    public partial class RunManager : MonoBehaviour
     {
         public static RunManager Instance;
         public const int Stages = 4;
@@ -132,6 +132,7 @@ namespace CatTang
 
         void Update()
         {
+            TryLevelUp();                                                   // 쌓인 레벨 업이 있고 다른 창이 없으면 3택 창 (RunManagerXp)
             if (runOver || layout == null || inCombat || stageDone) return;
             for (int i = 0; i < layout.rooms.Count; i++)
             {
@@ -202,7 +203,7 @@ namespace CatTang
             yield return new WaitForSeconds(WavePreview);
             spawning = false;
             if (runOver || current == null) yield break;
-            foreach (var pos in spots) alive.Add(EnemyFactory.RandomMinion(pos, Chapter, elite: midBossDone && stageIndex >= 2));   // 중간 보스 뒤 하수인은 전부 강화형
+            foreach (var pos in spots) alive.Add(EnemyFactory.RandomMinion(pos, Chapter, elite: (midBossDone || !HasMidBoss) && stageIndex >= 2));   // 중간 보스 뒤 하수인은 전부 강화형 (중간 보스가 아직 없는 장은 스테이지 3부터)
         }
 
         public void AddEnemy(Enemy e) { if (e) alive.Add(e); }
@@ -235,7 +236,8 @@ namespace CatTang
             alive.Remove(e);
             alive.RemoveAll(x => x == null);
             if (e && e.kind != Enemy.Kind.Boss) player.inv.gold += Random.Range(2, 5);
-            if (e && (e.kind != Enemy.Kind.Boss || IsMidBossRoom)) HeartPickup.TryDrop(e, e.kind == Enemy.Kind.Boss);   // 하트: 일반 6% · 강화형 10% · 중간 보스 확정
+            if (e && (e.kind != Enemy.Kind.Boss || IsMidBossRoom)) HeartPickup.TryDrop(e, e.kind == Enemy.Kind.Boss);   // 하트: 일반 2% · 강화형 3% · 중간 보스 확정
+            if (e) DropXp(e);                                                                           // 경험치 보석 (RunManagerXp)
             if (!inCombat || alive.Count > 0 || spawning) return;
             if (wavesLeft > 0) { StartCoroutine(SpawnWave()); return; }
             RoomCleared();
@@ -286,20 +288,21 @@ namespace CatTang
 
         void GrantFixed(RewardKind k)
         {
-            if (k == RewardKind.Armor)
-            {
-                // 방어구 단계 +1: 단계표대로 최대 체력 · 방어력이 오르고 오른 체력만큼 회복
-                player.armorLevel++;
-                player.health.maxHp = player.MaxHp;
-                player.health.Heal(PlayerController.ArmorHpPerLevel);
-                FxBurst.Spawn(player.transform.position + Vector3.up, 2.4f, FxBurst.Kind.Gold, new Color(0.7f, 0.85f, 1f));
-                ui?.Toast($"방어구 강화 — {player.armorLevel}단계 (체력 +{PlayerController.ArmorHpPerLevel:0} · 방어력 +{PlayerController.ArmorDefPerLevel:0})");
-                return;
-            }
+            if (k == RewardKind.Armor) { ArmorUp(); return; }
             int n = FixedAmount(k);
             if (k == RewardKind.Gold) player.inv.gold += n; else shardsThisRun += n;
             FxBurst.Spawn(player.transform.position + Vector3.up, 2.2f, FxBurst.Kind.Gold, k == RewardKind.Gold ? new Color(1f, 0.82f, 0.3f) : new Color(0.6f, 0.85f, 1f));
             ui?.Toast($"스테이지 보상 — {RoomDoor.NameOf(k)} +{n}");
+        }
+
+        /// <summary>방어구 단계 +1: 단계표대로 최대 체력 · 방어력이 오르고 오른 체력만큼 회복 (스테이지 보상 · 레벨 업 보상 공용)</summary>
+        void ArmorUp()
+        {
+            player.armorLevel++;
+            player.health.maxHp = player.MaxHp;
+            player.health.Heal(PlayerController.ArmorHpPerLevel);
+            FxBurst.Spawn(player.transform.position + Vector3.up, 2.4f, FxBurst.Kind.Gold, new Color(0.7f, 0.85f, 1f));
+            ui?.Toast($"방어구 강화 — {player.armorLevel}단계 (체력 +{PlayerController.ArmorHpPerLevel:0} · 방어력 +{PlayerController.ArmorDefPerLevel:0})");
         }
 
         void AfterReward()

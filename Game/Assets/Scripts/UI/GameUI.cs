@@ -244,6 +244,7 @@ namespace CatTang
             dodgeText = UIKit.Label("DodgeCrit", hudRoot, new Vector2(0, 1), new Vector2(270, -196), new Vector2(420, 44), 26, TextAnchor.MiddleLeft, true, DashOn);
             dodgeText.rectTransform.pivot = new Vector2(0, 0.5f);
             dodgeText.gameObject.SetActive(false);
+            BuildXpBar();
             // 골드 · 시간의 조각 (오른쪽 위)
             var coin = UIKit.Img("Coin", hudRoot, "coin", new Vector2(1, 1), new Vector2(-300, -60), new Vector2(64, 64));
             coin.rectTransform.pivot = new Vector2(0.5f, 0.5f);
@@ -323,7 +324,10 @@ namespace CatTang
                     bool full = dc >= i + 1;
                     bool filling = !full && i == Mathf.FloorToInt(dc);
                     dashFill[i].fillAmount = full ? 1f : filling ? dp : 0f;
-                    dashFill[i].color = full ? DashPipOn : new Color(0.62f, 0.66f, 0.7f, 0.85f);
+                    dashFill[i].color = full ? DashPipOn
+                        : filling && player.DashLocked ? Color.Lerp(new Color(0.62f, 0.66f, 0.7f, 0.85f), new Color(1f, 0.25f, 0.4f, 0.95f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 18f))   // 검표 펀치: 충전 멈춤 깜빡임
+                        : new Color(0.62f, 0.66f, 0.7f, 0.85f);
+                    if (filling && player.DashLocked) dashFill[i].fillAmount = Mathf.Max(0.15f, dp);
                     if (full && !dashWasFull[i]) dashPop[i] = 1f;
                     dashWasFull[i] = full;
                     dashPop[i] = Mathf.MoveTowards(dashPop[i], 0, Time.unscaledDeltaTime * 4f);
@@ -339,6 +343,7 @@ namespace CatTang
                 dash[i].transform.localScale = Vector3.one * (full ? 1f : 0.85f);
             }
             // 충전 바: 전체 대시 게이지 (칸 수 + 진행)
+            UpdateXpBar();
             float total = Mathf.Clamp01((dc + (dc >= player.dashMax ? 0 : dp)) / Mathf.Max(1, player.dashMax));
             dashBar.rectTransform.sizeDelta = new Vector2(198 * total, 6);
             goldText.text = player.inv.gold.ToString();
@@ -381,6 +386,52 @@ namespace CatTang
             for (float a = 1; a > 0; a -= Time.unscaledDeltaTime * 2) { toastText.color = new Color(UIKit.Gold.r, UIKit.Gold.g, UIKit.Gold.b, a); yield return null; }
             toastText.text = "";
         }
+
+        // ---------- 경험치 바 (세피리아식, 대시 칸 아래) ----------
+        // 그림 = Codex UI/xp_bar (놋쇠 틀 + 왼쪽 레벨 배지). 안쪽 빈 홈(XpSlot, 그림 비율)에 청록 채움을 왼쪽부터, 배지 가운데(XpBadge)에 레벨 숫자
+        public static readonly Rect XpSlot = new(0.106f, 0.38f, 0.832f, 0.24f);       // x, y(아래부터), w, h — 그림 기준 비율 (docs/tools/ui_xp_cut.py로 잰 홈 안쪽)
+        public static readonly Vector2 XpBadge = new(0.048f, 0.506f);
+        static readonly Color XpColor = new(0.42f, 0.92f, 1f);
+        const float XpW = 470f;
+        Image xpFill; RectTransform xpFillRt; Text xpLevel; float xpFillW, xpShown; int xpLastLevel;
+
+        void BuildXpBar()
+        {
+            var spr = UIKit.Spr("xp_bar");
+            float h = spr ? XpW * spr.rect.height / spr.rect.width : 44f;
+            var root = UIKit.MakeRect("XpBar", hudRoot, new Vector2(0, 1), new Vector2(28, -246), new Vector2(XpW, h), new Vector2(0, 1));
+            if (!spr)
+            {
+                var bg = root.gameObject.AddComponent<Image>(); bg.color = new Color(0.1f, 0.07f, 0.13f, 0.85f); bg.raycastTarget = false;
+            }
+            if (spr)
+            {
+                var fr = UIKit.MakeRect("Frame", root, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(XpW, h)).gameObject.AddComponent<Image>();
+                fr.sprite = spr; fr.raycastTarget = false;
+                var shd = fr.gameObject.AddComponent<Shadow>(); shd.effectColor = new Color(0.05f, 0.03f, 0.08f, 0.75f); shd.effectDistance = new Vector2(3, -3);
+            }
+            // 채움: 틀 위, 홈 안쪽에 왼쪽부터 (홈이 불투명한 짙은 보라라 틀 밑에 깔면 안 보임)
+            xpFillW = XpW * XpSlot.width;
+            xpFill = UIKit.MakeRect("Fill", root, new Vector2(0, 0), new Vector2(XpW * XpSlot.x, h * XpSlot.y), new Vector2(0, h * XpSlot.height), new Vector2(0, 0)).gameObject.AddComponent<Image>();
+            xpFill.color = XpColor; xpFill.raycastTarget = false;
+            xpFillRt = xpFill.rectTransform;
+            xpLevel = UIKit.Label("Level", root, new Vector2(0, 0), new Vector2(XpW * XpBadge.x, h * XpBadge.y), new Vector2(80, 50), 22, TextAnchor.MiddleCenter, true, UIKit.Gold);
+            xpLevel.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        }
+
+        void UpdateXpBar()
+        {
+            var rm = RunManager.Instance;
+            if (!xpFill || !rm) return;
+            if (rm.level != xpLastLevel) { if (xpLastLevel > 0) xpShown = 0; xpLastLevel = rm.level; }
+            xpShown = Mathf.MoveTowards(xpShown, rm.XpProgress, Time.unscaledDeltaTime * 1.5f);
+            xpFillRt.sizeDelta = new Vector2(Mathf.Max(0, xpFillW * xpShown), xpFillRt.sizeDelta.y);
+            xpFill.enabled = xpShown > 0.005f;
+            xpLevel.text = rm.level.ToString();
+        }
+
+        /// <summary>창(보상 · 상점 · 보관함 · 결과 등)이 열려 있음 — 레벨 업 창은 닫힌 뒤에 뜸</summary>
+        public bool ScreenOpen => current || resultsOpen;
 
         // ---------- 화면 열고 닫기 ----------
         bool resultsOpen;

@@ -54,6 +54,14 @@ namespace CatTang
         /// <summary>일반 적 웨이브 구성: 무법자 = 챕터 사격형 비율 + 10%, 폭탄병 25%, 나머지 깡패</summary>
         public static Enemy RandomMinion(Vector3 pos, ChapterDef ch, bool elite = false)
         {
+            if (ch != null && ch.Id == 2)
+            {
+                // 2장: 차장 40% · 짐꾼 30% · 신호수 30% (세 종류가 처음부터 섞여 나옴)
+                float r2 = Random.value;
+                if (r2 < 0.4f) return Conductor(pos, ch, elite);
+                if (r2 < 0.7f) return Porter(pos, ch, elite);
+                return Signal(pos, ch, elite);
+            }
             float r = Random.value, outlaw = Mathf.Clamp01(ch.ShooterRatio + 0.1f);
             if (r < outlaw) return Outlaw(pos, ch, elite);
             if (r < outlaw + 0.25f) return Bomber(pos, ch, elite);
@@ -139,6 +147,62 @@ namespace CatTang
             }
             e.speed = 4.5f;
             e.contactDamage = 12 * ch.DmgMul;
+            if (elite) MakeElite(e, plus);
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // ---------- 2장 (멈춘 기차역) — 체력 · 피해는 레벨 디자인 md 2장 값 그대로 (챕터 배율 안 곱함). 강화형 1.5배는 MakeElite ----------
+        // 몸 판정은 1장 같은 역할 적과 같은 비율 (모델 키: 차장 2.7 · 짐꾼 2.9 · 신호수 1.9, EnemyModelBuilder.Models2)
+
+        /// <summary>도형 대신: 모델이 없을 때 쓰는 단순 몸통</summary>
+        static void Proto2(Enemy e, ChapterDef ch, Color body, float h, float w)
+        {
+            var m = ProtoModel(e);
+            Part(PrimitiveType.Capsule, m, new Vector3(0, h * 0.4f, 0), new Vector3(w, h * 0.4f, w * 0.85f), M(body));
+            Part(PrimitiveType.Cylinder, m, new Vector3(0, h * 0.86f, 0), new Vector3(w * 0.9f, 0.05f, w * 0.9f), M(new Color(0.2f, 0.18f, 0.25f)));
+        }
+
+        // 태엽 차장: 원거리 · 이속 2.8 · 7~10m 유지 · 승차권 3갈래 2.5초마다 · 발당 피해 10 · 내구 60
+        public static Enemy Conductor(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Root("Enemy_Conductor", pos, 60, Enemy.Kind.Conductor, 0.55f, 2.6f);
+            if (!AttachModelFor(e, "Ch2_Conductor", elite, out bool plus)) Proto2(e, ch, new Color(0.35f, 0.32f, 0.45f), 2.2f, 0.6f);
+            e.chapter = ch;
+            e.speed = 2.8f;
+            e.projectileDamage = 10;
+            e.shootInterval = Enemy.TicketInterval;
+            if (elite) MakeElite(e, plus);
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // 트렁크 짐꾼: 방패 근접 · 이속 3.2 · 정면 120° 탄 막음 · 내리찍기 피해 15 · 내구 160
+        public static Enemy Porter(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Root("Enemy_Porter", pos, 160, Enemy.Kind.Porter, 0.95f, 2.8f);
+            if (!AttachModelFor(e, "Ch2_Porter", elite, out bool plus))
+            {
+                Proto2(e, ch, new Color(0.32f, 0.3f, 0.4f), 2.4f, 1.1f);
+                Part(PrimitiveType.Cube, e.transform.Find("Model"), new Vector3(0, 1.1f, 0.75f), new Vector3(1.2f, 0.9f, 0.35f), M(new Color(0.55f, 0.35f, 0.2f)));   // 트렁크 방패
+            }
+            e.chapter = ch;
+            e.speed = 3.2f;
+            e.contactDamage = 15;
+            if (elite) MakeElite(e, plus);
+            e.GetComponent<Health>().BlockFrom = e.PorterBlocks;
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // 신호수: 설치형 · 이속 3.0 · 8m 유지 · 4초마다 신호등 2개 · 폭발 피해 12 · 내구 60
+        public static Enemy Signal(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Root("Enemy_Signal", pos, 60, Enemy.Kind.Signal, 0.6f, 1.9f);
+            if (!AttachModelFor(e, "Ch2_Signal", elite, out bool plus)) Proto2(e, ch, new Color(0.38f, 0.33f, 0.42f), 1.6f, 0.6f);
+            e.chapter = ch;
+            e.speed = 3f;
+            e.projectileDamage = 12;
             if (elite) MakeElite(e, plus);
             e.GetComponent<Health>().RefreshRenderers();
             return e;

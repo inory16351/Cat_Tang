@@ -15,7 +15,8 @@ namespace CatTang.EditorTools
 {
     public static class EnemyModelBuilder
     {
-        const string SrcDir = "Assets/Art/Characters/Ch1/";
+        const string Ch1Src = "Assets/Art/Characters/Ch1/";
+        static string SrcDir = Ch1Src;                       // 지금 빌드하는 챕터의 원본 폴더 (2장 빌드 중엔 Ch2)
         const string OutDir = "Assets/Resources/Enemies/";
 
         const string KitDir = "Assets/Resources/Kit/Ch1/";
@@ -84,6 +85,7 @@ namespace CatTang.EditorTools
             ("Kit_WoodGate", 4.6f, 180f, 'w', KitDir, "WoodGate"),
             // 체력 회복 하트 (적 처치 드롭 · 상인, blender_kit_heart.py) — HeartPickup이 띄워 돌림
             ("Kit_Heart", 0.6f, 0f, 'w', KitDir, "Heart"),
+            ("Kit_XpGem", 0.35f, 0f, 'h', KitDir, "XpGem"),          // 경험치 보석 (blender_kit_xpgem.py, XpOrb가 씀)
             // 방 모양을 만드는 큰 지형지물 (블렌더 + Codex, Art/tools/blender_kit_landmarks.py). 크기 = 예전 막힌 덩어리만큼(4~6m) 키운 가로 (2026-11-17 사용자: 저 정도 크기로)
             ("Kit_LM_RockSpire", 5.8f, 180f, 'w', KitDir, "LM_RockSpire"),
             ("Kit_LM_BoulderPile", 5.0f, 180f, 'w', KitDir, "LM_BoulderPile"),
@@ -111,7 +113,113 @@ namespace CatTang.EditorTools
             { "Ch1_Bomber_Plus", ("shakes", 0.7f, "bomberjump", 1.0f, true) },
             { "Ch1_MidBoss", ("shotgun", 1.0f, "revolver", 1.2f, false) },
             { "Ch1_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
+            // 2장: 전용 모션이 없으면 1장 클립을 키워드로 돌려 씀 (Tripo 모션을 받으면 키워드만 바꾸면 됨)
+            { "Ch2_Conductor", ("revolver", 0.9f, null, 0, false) },
+            { "Ch2_Conductor_Plus", ("revolver", 0.8f, null, 0, false) },
+            // 짐꾼: 전용 클립 (PorterRig — 팔은 트렁크 든 자세 고정). Attack = 방패 돌진 · Special = 내리찍기 · Throw = 트렁크 던지기
+            { "Ch2_Porter", ("ch2_porterbash", PorterRig.BashEnd, "ch2_porterslam", PorterRig.SlamEnd, false) },
+            { "Ch2_Porter_Plus", ("ch2_porter_plusbash", PorterRig.BashEnd, "ch2_porter_plusslam", PorterRig.SlamEnd, false) },
+            { "Ch2_Signal", ("bomberthrow", 0.6f, null, 0, false) },
+            { "Ch2_Signal_Plus", ("bomberthrow", 0.6f, null, 0, false) },
+            { "Ch2_MidBoss", ("swings", 1.0f, "revolver", 1.0f, false) },
+            { "Ch2_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
         };
+
+        // ---------- 2장 (멈춘 기차역, 2026-11-17) ----------
+        // 원본: Art/Characters/Ch2 (Tripo 캐릭터 Ch2_* · 블렌더 + Codex 키트 Kit_*), 배색표 ModelPalette.Ch2 (맵 = 따뜻한 녹 · 놋쇠 · 검댕, 보라 X)
+        // 적 키는 1장 같은 역할의 비율을 따름: 차장 ≈ 무법자 · 짐꾼 ≈ 깡패 · 신호수 ≈ 폭탄병
+        const string Ch2Src = "Assets/Art/Characters/Ch2/";
+        const string Kit2Dir = "Assets/Resources/Kit/Ch2/";
+
+        static readonly (string name, float size, float yaw, char fit, string outDir, string outName)[] Models2 =
+        {
+            ("Ch2_Conductor", 2.7f, 0f, 'h', OutDir, "Ch2_Conductor"),
+            ("Ch2_Porter", 2.9f, 0f, 'h', OutDir, "Ch2_Porter"),
+            ("Ch2_Signal", 1.9f, 0f, 'h', OutDir, "Ch2_Signal"),
+            ("Ch2_Conductor_Plus", 3.0f, 0f, 'h', OutDir, "Ch2_Conductor_Plus"),
+            ("Ch2_Porter_Plus", 3.2f, 0f, 'h', OutDir, "Ch2_Porter_Plus"),
+            ("Ch2_Signal_Plus", 2.2f, 0f, 'h', OutDir, "Ch2_Signal_Plus"),
+            ("Ch2_MidBoss", 4.0f, 0f, 'h', OutDir, "Ch2_MidBoss"),
+            ("Ch2_Boss", 6.5f, 0f, 'h', OutDir, "Ch2_Boss"),
+            // 역 벽면 (blender_kit_ch2_station.py) — 폭이 정확해야 줄이 맞음
+            ("Kit_Facade_StationHall", 8f, 180f, 'w', Kit2Dir, "Facade_StationHall"),
+            ("Kit_Facade_Waiting", 6f, 180f, 'w', Kit2Dir, "Facade_Waiting"),
+            ("Kit_Facade_Warehouse", 7f, 180f, 'w', Kit2Dir, "Facade_Warehouse"),
+            ("Kit_Facade_EngineShed", 9f, 180f, 'w', Kit2Dir, "Facade_EngineShed"),
+            ("Kit_Facade_Canopy", 8f, 180f, 'w', Kit2Dir, "Facade_Canopy"),
+            ("Kit_Facade_Ticket", 5f, 180f, 'w', Kit2Dir, "Facade_Ticket"),
+            ("Kit_Wall", 4f, 180f, 'w', Kit2Dir, "Wall"),
+            ("Kit_Cliff_Embankment", 6f, 180f, 'w', Kit2Dir, "Cliff"),
+            // 소품 · 폭발물 (blender_kit_ch2_props.py)
+            ("Kit_SteamValve", 1.6f, 180f, 'h', Kit2Dir, "SteamValve"),
+            ("Kit_FloatLuggage", 0.9f, 180f, 'w', Kit2Dir, "FloatLuggage"),
+            ("Kit_MineCart", 1.4f, 180f, 'w', Kit2Dir, "MineCart"),
+            ("Kit_RailTrack", 2.6f, 180f, 'w', Kit2Dir, "RailTrack"),
+            ("Kit_Bench", 2.2f, 180f, 'w', Kit2Dir, "Bench"),
+            ("Kit_LuggagePile", 2.0f, 180f, 'w', Kit2Dir, "LuggagePile"),
+            ("Kit_Crates", 1.8f, 180f, 'w', Kit2Dir, "Crates"),
+            ("Kit_TicketBooth", 2.4f, 180f, 'w', Kit2Dir, "TicketBooth"),
+            ("Kit_SignalLamp", 2.4f, 180f, 'h', Kit2Dir, "SignalLamp"),
+            ("Kit_StationClock", 3.0f, 180f, 'h', Kit2Dir, "StationClock"),
+            // 큰 지형지물 · 보스 바닥 (blender_kit_ch2_landmarks.py)
+            ("Kit_LM_Coach", 10f, 180f, 'w', Kit2Dir, "LM_Coach"),
+            ("Kit_LM_Locomotive", 9f, 180f, 'w', Kit2Dir, "LM_Locomotive"),
+            ("Kit_LM_WaterCrane", 3f, 180f, 'w', Kit2Dir, "LM_WaterCrane"),
+            ("Kit_LM_CoalPile", 4.5f, 180f, 'w', Kit2Dir, "LM_CoalPile"),
+            ("Kit_LM_LuggageCart", 4f, 180f, 'w', Kit2Dir, "LM_LuggageCart"),
+            ("Kit_LM_SignalGantry", 5f, 180f, 'w', Kit2Dir, "LM_SignalGantry"),
+            ("Kit_Turntable", 24f, 0f, 'w', Kit2Dir, "Turntable"),
+            ("Kit_PlatformEdge", 8f, 180f, 'w', Kit2Dir, "PlatformEdge"),
+        };
+
+        [MenuItem("CatTang/2장 프리팹 만들기 (Tripo + 블렌더)")]
+        public static void BuildCh2() => BuildCh2Only(null);
+
+        [MenuItem("CatTang/2장 짐꾼만 다시 만들기")]
+        public static void BuildCh2Porters() => BuildCh2Only("Ch2_Porter", "Ch2_Porter_Plus");
+
+        /// <summary>2장 표 중 이름이 든 것만 (null이면 전부)</summary>
+        public static void BuildCh2Only(params string[] only)
+        {
+            Directory.CreateDirectory(OutDir);
+            Directory.CreateDirectory(Kit2Dir);
+            SrcDir = Ch2Src;
+            ModelPalette.Active = ModelPalette.Ch2;
+            bool Want(string n) => only == null || System.Array.IndexOf(only, n) >= 0;
+            try
+            {
+                int made = 0;
+                foreach (var m in Models2)
+                    if (Want(m.outName) && Build(m.name, m.size, m.yaw, m.fit, m.outDir, m.outName)) made++;
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                foreach (var m in Models2)
+                {
+                    if (!Want(m.outName)) continue;
+                    string pp = m.outDir + m.outName + ".prefab";
+                    var ctrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(SrcDir + m.outName + ".controller");
+                    if (!ctrl || !Anims.ContainsKey(m.outName) || !AssetDatabase.LoadAssetAtPath<GameObject>(pp)) continue;
+                    var contents = PrefabUtility.LoadPrefabContents(pp);
+                    var an = contents.GetComponentInChildren<Animator>();
+                    if (an) { an.runtimeAnimatorController = ctrl; PrefabUtility.SaveAsPrefabAsset(contents, pp); }
+                    PrefabUtility.UnloadPrefabContents(contents);
+                }
+                AssetDatabase.SaveAssets();
+                // 1장 빌더와 같이: 컨트롤러 · 프리팹을 강제로 다시 가져와야 실행 중 컨트롤러가 안 비어 보임
+                foreach (var m in Models2)
+                {
+                    if (!Want(m.outName) || !Anims.ContainsKey(m.outName)) continue;
+                    AssetDatabase.ImportAsset(SrcDir + m.outName + ".controller", ImportAssetOptions.ForceUpdate);
+                    AssetDatabase.ImportAsset(m.outDir + m.outName + ".prefab", ImportAssetOptions.ForceUpdate);
+                }
+                Debug.Log($"[EnemyModelBuilder] 2장 프리팹 {made}개");
+            }
+            finally
+            {
+                SrcDir = Ch1Src;
+                ModelPalette.Active = ModelPalette.Ch1;
+            }
+        }
 
         [MenuItem("CatTang/1장 적 프리팹 만들기 (Tripo)")]
         public static void BuildAll()
@@ -150,6 +258,17 @@ namespace CatTang.EditorTools
 
         public static bool Build(string name, float height, float yaw) => Build(name, height, yaw, 'h', OutDir, name);
 
+        /// <summary>1장 표 중 이름(원본 이름)이 든 것만 빌드 (전체 다시 만들기 없이 키트 하나 추가할 때)</summary>
+        public static int BuildCh1Only(params string[] names)
+        {
+            int made = 0;
+            foreach (var m in Models)
+                if (System.Array.IndexOf(names, m.name) >= 0 && Build(m.name, m.size, m.yaw, m.fit, m.outDir, m.outName)) made++;
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return made;
+        }
+
         static GameObject FindSource(string name)
         {
             foreach (var ext in new[] { ".fbx", ".glb", ".gltf", ".obj", ".prefab" })
@@ -186,6 +305,8 @@ namespace CatTang.EditorTools
                 anim.avatar = avatar;
                 anim.applyRootMotion = false;
                 anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                // 짐꾼: 트렁크 든 팔 자세로 전용 클립 + 트렁크를 가슴 뼈에 고정 (PorterRig)
+                if (PorterRig.IsPorter(outName)) { PorterRig.MakeClips(src, avatar, outName, SrcDir); PorterRig.SplitTrunk(inst, outName, SrcDir); }
                 anim.runtimeAnimatorController = MakeController(outName, spec);
             }
             else foreach (var a in inst.GetComponentsInChildren<Animator>()) Object.DestroyImmediate(a);
@@ -219,6 +340,11 @@ namespace CatTang.EditorTools
                 inst.transform.localPosition -= new Vector3(b.center.x, y, b.center.z);
             }
 
+            if (PorterRig.IsPorter(outName)) PorterRig.AddFootGround(inst);
+
+            // 폭발물: 주황 ↔ 노랑 맥동 바깥 테두리 (2026-11-17 사용자: 몬스터처럼 테두리로 터진다는 걸 알려 줌)
+            if (Explosives.Contains(name)) root.AddComponent<CatTang.DangerEdge>();
+
             string path = outDir + outName + ".prefab";
             PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
@@ -237,12 +363,12 @@ namespace CatTang.EditorTools
         static AnimationClip FindClip(string key)
         {
             if (string.IsNullOrEmpty(key)) return null;
-            var dirs = new[] { SrcDir.TrimEnd('/'), "Assets/Art/Characters/CatHero" };
+            var dirs = new[] { SrcDir.TrimEnd('/'), Ch1Src.TrimEnd('/'), "Assets/Art/Characters/CatHero" };
             foreach (var guid in AssetDatabase.FindAssets("t:Model", dirs))
                 foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)))
                     if (o is AnimationClip c && !c.name.StartsWith("__preview") && c.name.ToLower().Contains(key) && c.isHumanMotion) return c;
             // 에디터에서 만든 .anim (MakeJumpClip 등)
-            foreach (var guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { SrcDir.TrimEnd('/') }))
+            foreach (var guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { SrcDir.TrimEnd('/'), Ch1Src.TrimEnd('/') }))
             {
                 var p = AssetDatabase.GUIDToAssetPath(guid);
                 if (!p.EndsWith(".anim")) continue;
@@ -253,7 +379,7 @@ namespace CatTang.EditorTools
         }
 
         // ---------- 점프 클립 (휴머노이드 근육 커브로 직접 만듦) ----------
-        const string JumpPath = SrcDir + "Anim/Ch1_BomberJump.anim";
+        const string JumpPath = Ch1Src + "Anim/Ch1_BomberJump.anim";
 
         // 시각(초) 별 자세. 0~0.35 웅크림 · 0.38 이륙(다리 쭉, 팔 위로) · 0.5~0.75 공중 웅크림(무릎 당김) · 0.9 착지 웅크림 · 1.0 유지
         // 값: 윗다리 앞뒤(+ = 앞으로 굽힘) · 아랫다리 펴기(+ = 쭉) · 발(+ = 발끝 듦) · 척추 앞뒤(+ = 숙임) · 팔 위아래(+ = 위) · 팔 앞뒤(+ = 앞) · 팔꿈치 펴기 · 몸 높이 변화(RootT.y)
@@ -278,7 +404,7 @@ namespace CatTang.EditorTools
             foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
                 if (o is AnimationClip c && c.name == "idle") idle = c;
             if (!idle) { Debug.LogWarning("[EnemyModelBuilder] 고양이 idle 클립 없음 — 점프 클립 못 만듦"); return null; }
-            Directory.CreateDirectory(SrcDir + "Anim");
+            Directory.CreateDirectory(Ch1Src + "Anim");
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(JumpPath);
             if (!clip) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, JumpPath); }
             clip.ClearCurves();
@@ -301,7 +427,7 @@ namespace CatTang.EditorTools
 
         // ---------- 발 구르기 클립 (깡패 돌진 예고, 2026-11-17 사용자: 발탄처럼 발 구르는 모션) ----------
         // 0~0.12 몸을 낮게 숙임 → 오른발로 땅을 뒤로 긁고 쿵 내딛기 두 번(0.2 · 0.3 · 0.4 · 0.5) → 0.6 숙인 채 돌진 준비
-        const string StompPath = SrcDir + "Anim/Ch1_BruteStomp.anim";
+        const string StompPath = Ch1Src + "Anim/Ch1_BruteStomp.anim";
 
         [MenuItem("CatTang/깡패 발 구르기 클립 만들기")]
         public static AnimationClip MakeStompClip()
@@ -310,7 +436,7 @@ namespace CatTang.EditorTools
             foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
                 if (o is AnimationClip c && c.name == "idle") idle = c;
             if (!idle) return null;
-            Directory.CreateDirectory(SrcDir + "Anim");
+            Directory.CreateDirectory(Ch1Src + "Anim");
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(StompPath);
             if (!clip) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, StompPath); }
             clip.ClearCurves();
@@ -359,7 +485,7 @@ namespace CatTang.EditorTools
 
         // ---------- 던지기 클립 (폭탄병 모래 폭탄) ----------
         // 0~0.28 오른팔을 머리 뒤로 젖히고 몸을 뒤로 → 0.28~0.4 앞으로 휘둘러 놓음(0.34 = 손을 떠나는 순간, Enemy.ThrowRelease) → 0.6 따라 숙였다 복귀
-        const string ThrowPath = SrcDir + "Anim/Ch1_BomberThrow.anim";
+        const string ThrowPath = Ch1Src + "Anim/Ch1_BomberThrow.anim";
         public const float ThrowEnd = 0.6f;
 
         [MenuItem("CatTang/폭탄병 던지기 클립 만들기")]
@@ -369,7 +495,7 @@ namespace CatTang.EditorTools
             foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
                 if (o is AnimationClip c && c.name == "idle") idle = c;
             if (!idle) return null;
-            Directory.CreateDirectory(SrcDir + "Anim");
+            Directory.CreateDirectory(Ch1Src + "Anim");
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(ThrowPath);
             if (!clip) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, ThrowPath); }
             clip.ClearCurves();
@@ -455,8 +581,10 @@ namespace CatTang.EditorTools
             ctrl.AddParameter("Busy", AnimatorControllerParameterType.Bool);
             ctrl.AddParameter("Throw", AnimatorControllerParameterType.Trigger);
             var sm = ctrl.layers[0].stateMachine;
-            var idle = sm.AddState("Idle"); idle.motion = FindClip("idle");
-            var run = sm.AddState("Run"); run.motion = FindClip("run");
+            bool porter = PorterRig.IsPorter(outName);
+            string pk = outName.ToLower();
+            var idle = sm.AddState("Idle"); idle.motion = porter ? FindClip(pk + "idle") : FindClip("idle");
+            var run = sm.AddState("Run"); run.motion = porter ? FindClip(pk + "walk") : FindClip("run");
             sm.defaultState = idle;
             var t = idle.AddTransition(run); t.AddCondition(AnimatorConditionMode.Greater, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.12f;
             t = run.AddTransition(idle); t.AddCondition(AnimatorConditionMode.Less, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.18f;
@@ -464,6 +592,7 @@ namespace CatTang.EditorTools
             AddAction(sm, idle, "Special", FindClip(spec.sp), spec.spDur, false);
             // 폭탄병 모래 폭탄 투척 (2026-11-17: 떨기 클립으로 던져서 모션 없이 터지는 것처럼 보였음)
             if (outName.Contains("Bomber")) AddAction(sm, idle, "Throw", FindClip("bomberthrow"), ThrowEnd, false);
+            if (porter) AddAction(sm, idle, "Throw", FindClip(pk + "throw"), PorterRig.ThrowEnd, false);
             EditorUtility.SetDirty(ctrl);
             return ctrl;
         }
@@ -525,6 +654,13 @@ namespace CatTang.EditorTools
             Debug.Log($"[EnemyModelBuilder] 적 테두리 {n}개 재질");
         }
 
+        // 배경 톤을 낮추지 않는 것: 픽업 · 폭발물 (폭발물은 DangerEdge 주황 테두리가 붙음)
+        static readonly HashSet<string> Pickups = new() { "Kit_Heart", "Kit_XpGem", "Kit_SandBomb", "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart" };
+        // 바닥에 깔리는 납작한 조각 (전차대 · 선로 · 승강장 가장자리)
+        static readonly HashSet<string> FlatFloor = new() { "Kit_Turntable", "Kit_RailTrack", "Kit_PlatformEdge" };
+        // 쏘면 터지는 물체 (1장 화약통 · 2장 증기 밸브 · 공중에 멈춘 짐 · 광차) → 프리팹에 DangerEdge
+        static readonly HashSet<string> Explosives = new() { "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart" };
+
         static Material ToonFor(string name, Material src, int index)
         {
             string p = SrcDir + name + "_Toon" + (index > 0 ? "_" + index : "") + ".mat";
@@ -545,14 +681,15 @@ namespace CatTang.EditorTools
             // 1장 팔레트: 황혼 보라 그림자 + 금빛 테두리
             m.SetColor("_ShadeColor", new Color(0.72f, 0.58f, 0.66f));
             m.SetColor("_SecondShadeColor", new Color(0.45f, 0.34f, 0.46f));
-            if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", 4f);   // 2026-11-16 사용자: 외곽선 두껍게
+            if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", FlatFloor.Contains(name) ? 1f : 4f);   // 2026-11-16 사용자: 외곽선 두껍게 (납작한 바닥 조각은 판자 선이 지글거려 얇게)
             if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.5f);
             // 배경 키트는 채도 · 밝기를 낮춤 (EnvTone), 캐릭터 · 하트 · 폭탄 · 화약통은 원래 색
-            bool env = name.StartsWith("Kit_") && name != "Kit_Heart" && name != "Kit_SandBomb" && name != "Kit_Keg";
+            bool env = name.StartsWith("Kit_") && !Pickups.Contains(name);
             if (m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", env ? EnvTone.Saturation : 1f); m.SetFloat("_Brightness", env ? EnvTone.Brightness : 1f); }
             // 적: 배경과 갈리게 살짝 진홍 외곽선 + 붉은 가장자리 빛 (2026-11-17 사용자: 적에게 살짝 배경선)
-            if (name.StartsWith("Ch1_")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }   // 적 배색 2안 (차가운 한 계열)
-            if (name == "Kit_Heart" && m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", 1.15f); m.SetFloat("_Brightness", 1.12f); }   // 하트는 더 선명하게
+            if (name.StartsWith("Ch1_") || name.StartsWith("Ch2_")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }   // 적 배색 2안 (차가운 한 계열)
+            if ((name == "Kit_Heart" || name == "Kit_XpGem") && m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", 1.15f); m.SetFloat("_Brightness", 1.12f); }   // 하트 · 경험치 보석은 더 선명하게
+            if (name == "Kit_XpGem" && m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", 2.5f);   // 작은 물체라 외곽선을 얇게
             EditorUtility.SetDirty(m);
             return m;
         }

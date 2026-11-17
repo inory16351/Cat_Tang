@@ -22,6 +22,16 @@ namespace CatTang
 
         public static bool Has(ChapterDef ch, string name) => Prefab(ch, name);
 
+        /// <summary>장과 상관없이 같은 모델을 쓰는 픽업(하트 · 경험치 보석): 그 장 키트에 없으면 1장 것</summary>
+        public static GameObject Shared(ChapterDef ch, string name)
+        {
+            var go = Prefab(ch, name);
+            if (go) return go;
+            string key = "Kit/Ch1/" + name;
+            if (!cache.TryGetValue(key, out go)) cache[key] = go = Resources.Load<GameObject>(key);
+            return go;
+        }
+
         public static Bounds LocalBounds(GameObject go)
         {
             var rs = go.GetComponentsInChildren<Renderer>();
@@ -60,7 +70,7 @@ namespace CatTang
             // 스테이지 1(황무지 절벽길)은 절벽 바위 모듈, 그 뒤(마을)는 건물 정면 모듈. module을 주면 그것 (술집 실내 = PlankWall)
             var rm = RunManager.Instance;
             bool cliff = rm && rm.stageIndex == 0 && !rm.IsMidBossRoom && Has(ch, "Cliff");
-            if (module == null && !cliff && wallCube && Has(ch, Facades[0])) return BuildingRow(ch, wallCube, inward, hideCube);
+            if (module == null && !cliff && wallCube && (Has(ch, Facades[0]) || Ch2Kit.Is(ch))) return BuildingRow(ch, wallCube, inward, hideCube);
             var prefab = Prefab(ch, module ?? (cliff ? "Cliff" : "Wall"));
             if (!prefab || !wallCube) return false;
             var t = wallCube.transform;
@@ -106,6 +116,21 @@ namespace CatTang
         static bool BuildingRow(ChapterDef ch, GameObject wallCube, Vector3 inward, bool hideCube)
         {
             var t = wallCube.transform;
+            // 정면 세트: 1장 = 서부 건물 8종, 2장 = 장소별 역 건물 (Ch2Kit.Facades)
+            var names = Facades; var widths = FacadeW;
+            bool ch2 = Ch2Kit.Is(ch);
+            if (ch2)
+            {
+                (names, widths) = Ch2Kit.Facades();
+                // 승강장 캐노피(지붕이 뒤로 2.5m 뻗음)는 북쪽 벽(남쪽을 봄)에만: 옆 벽 · 복도에선 회색 지붕 판이 어지러움
+                if (inward.z > -0.5f && System.Array.IndexOf(names, "Facade_Canopy") >= 0 && names.Length > 1)
+                {
+                    var n2 = new List<string>(); var w2 = new List<float>();
+                    for (int i = 0; i < names.Length; i++) if (names[i] != "Facade_Canopy") { n2.Add(names[i]); w2.Add(widths[i]); }
+                    names = n2.ToArray(); widths = w2.ToArray();
+                }
+            }
+            bool alleys = Has(ch, "AlleyFence");
             bool alongX = t.localScale.x >= t.localScale.z;
             float len = alongX ? t.localScale.x : t.localScale.z;
             float face = (alongX ? t.localScale.z : t.localScale.x) / 2;     // 벽 상자 반 두께
@@ -117,7 +142,7 @@ namespace CatTang
             var rnd = new System.Random(Mathf.RoundToInt(t.position.x * 17.3f + t.position.z * 5.1f) ^ 0x5bd1);
             float R(float lo, float hi) => lo + (float)rnd.NextDouble() * (hi - lo);
             // 남쪽 벽(카메라 쪽, 정면이 북쪽을 봄)은 플레이어를 가리지 않게 낮춤
-            float hMul = inward.z > 0.5f ? 0.72f : 1f;
+            float hMul = inward.z > 0.5f ? (ch2 ? 0.55f : 0.72f) : 1f;      // 2장 역 건물은 키가 커서(6~7m) 더 낮춤
             float x = -len / 2;
             int last = -1;
             bool first = true;
@@ -125,7 +150,7 @@ namespace CatTang
             {
                 float left = len / 2 - x;
                 // 골목
-                if (!first && left > 4.5f && rnd.NextDouble() < 0.18)
+                if (alleys && !first && left > 4.5f && rnd.NextDouble() < 0.18)
                 {
                     float gw = R(1f, 1.6f);
                     Alley(ch, holder, axis * (x + gw / 2), inward, yaw, gw, face, rnd);
@@ -135,33 +160,42 @@ namespace CatTang
                 first = false;
                 // 남은 길이에 맞는 건물 (같은 건물 연속 금지)
                 var fits = new List<int>();
-                for (int i = 0; i < Facades.Length; i++)
-                    if (i != last && FacadeW[i] <= left + 0.3f && Has(ch, Facades[i])) fits.Add(i);
+                for (int i = 0; i < names.Length; i++)
+                    if (i != last && widths[i] <= left + 0.3f && Has(ch, names[i])) fits.Add(i);
                 int pick; float w;
                 // 고른 뒤 남는 자투리가 애매(0.4~2.6m)하면 너무 늘어나니, 딱 맞거나 넉넉히 남는 건물을 우선
-                var good = fits.FindAll(i => { float a = left - FacadeW[i]; return a >= 2.6f || a <= FacadeW[i] * 0.3f; });
+                var good = fits.FindAll(i => { float a = left - widths[i]; return a >= 2.6f || a <= widths[i] * 0.3f; });
                 if (good.Count > 0) fits = good;
                 if (fits.Count > 0)
                 {
                     pick = fits[rnd.Next(fits.Count)];
-                    w = FacadeW[pick];
+                    w = widths[pick];
                     float after = left - w;
                     if (after < 2.6f) w = left;                 // 남는 자투리는 이 건물을 늘여 메움
                 }
                 else
                 {
                     // 3m보다 짧게 남음: 가장 좁은 건물을 줄여 넣거나, 아주 짧으면 울타리
-                    if (left < 2.2f) { Alley(ch, holder, axis * (x + left / 2), inward, yaw, left, face, rnd); break; }
-                    pick = last == 2 ? 4 : 2; w = left;
+                    if (left < 2.2f) { if (alleys) Alley(ch, holder, axis * (x + left / 2), inward, yaw, left, face, rnd); break; }
+                    if (ch2)
+                    {
+                        // 가장 좁은 정면을 줄여 넣음
+                        pick = 0; for (int i = 1; i < widths.Length; i++) if (widths[i] < widths[pick] && Has(ch, names[i])) pick = i;
+                        if (pick == last) { int alt = -1; for (int i = 0; i < widths.Length; i++) if (i != last && Has(ch, names[i]) && (alt < 0 || widths[i] < widths[alt])) alt = i; if (alt >= 0) pick = alt; }
+                    }
+                    else pick = last == 2 ? 4 : 2;
+                    w = left;
                 }
-                var prefab = Prefab(ch, Facades[pick]);
+                var prefab = Prefab(ch, names[pick]);
                 var go = Object.Instantiate(prefab, holder, false);
-                go.name = Facades[pick];
+                go.name = names[pick];
                 float back = R(0f, 0.7f);
-                go.transform.localPosition = axis * (x + w / 2) + inward * (face - FacadeFront - back);
+                // 정면 본체 앞면 위치: 1장 조각은 +1.1, 2장 조각은 모델 경계에서 잼 (차양 · 캐노피 기둥 포함)
+                float front = ch2 ? Mathf.Min(LocalBounds(prefab).max.z, 1.4f) : FacadeFront;
+                go.transform.localPosition = axis * (x + w / 2) + inward * (face - front - back);
                 go.transform.localRotation = Quaternion.Euler(0, yaw, 0);
                 var s0 = go.transform.localScale;
-                go.transform.localScale = new Vector3(s0.x * w / FacadeW[pick], s0.y * R(0.88f, 1.15f) * hMul, s0.z);
+                go.transform.localScale = new Vector3(s0.x * w / widths[pick], s0.y * R(0.88f, 1.15f) * hMul, s0.z);
                 foreach (var c in go.GetComponentsInChildren<Collider>()) Object.Destroy(c);
                 x += w; last = pick;
             }
@@ -295,6 +329,7 @@ namespace CatTang
             h.maxHp = 1;
             h.ResetHp(1);
             go.AddComponent<PowderKeg>();
+            DangerEdge.Add(go);                    // 주황 ↔ 노랑 바깥 테두리 = 쏘면 터짐
         }
 
         void Awake() => GetComponent<Health>().OnDeath += Boom;

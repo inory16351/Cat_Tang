@@ -51,6 +51,9 @@ namespace CatTang
         public float SkillCooldownLeft => Mathf.Max(0, nextSkill - Time.time);
         public float DashCharges => dashCharges;
         public float DashRechargeProgress => dashCharges >= dashMax ? 1 : dashTimer / DashRechargeTime;
+        /// <summary>이 시각까지 대시 충전이 멈춤 (2장 차장+ 검표 펀치)</summary>
+        [HideInInspector] public float dashLockUntil;
+        public bool DashLocked => Time.time < dashLockUntil;
         public float ReloadProgress => rev.reloading ? Mathf.Clamp01((Time.time - reloadStart) / reloadDur) : 0;
         public Interactable Focus { get; private set; }
         public bool UltimateActive => ultimateActive;
@@ -165,7 +168,7 @@ namespace CatTang
 
         void Update()
         {
-            if (dashCharges < dashMax)
+            if (dashCharges < dashMax && Time.time >= dashLockUntil)   // 차장+ 검표 펀치에 맞으면 잠깐 충전 멈춤
             {
                 dashTimer += Time.deltaTime;
                 if (dashTimer >= DashRechargeTime) { dashTimer = 0; dashCharges = Mathf.Min(dashMax, dashCharges + 1); }
@@ -493,7 +496,16 @@ namespace CatTang
                 var hp = h.collider.GetComponentInParent<Health>();
                 if (hp == null) { end = h.distance > 0 ? h.point : castFrom + dir * 0.5f; break; }
                 if (!hp.Alive || hp.isPlayer || hitSet.Contains(hp)) continue;
+                if (hp.BlockFrom != null && hp.BlockFrom(dir))
+                {
+                    // 방패에 막힘 (짐꾼 트렁크): 벽처럼 탄이 멈추고 쇳빛 불꽃, 관통 · 튕김 없음
+                    end = h.point;
+                    GunkataFx.HitImpact(h.point, -dir, new Color(1f, 0.85f, 0.55f), false, 0.8f, true);
+                    FxBurst.Spawn(h.point, 0.9f, FxBurst.Kind.Spark, new Color(1f, 0.9f, 0.6f));
+                    break;
+                }
                 hitSet.Add(hp);
+                hp.HitFrom(dir);                                                   // 공중 짐 등이 맞은 방향으로 날아감
                 ApplyHit(s, hp, dmg, h.point, h.distance, dir, col, crit);
                 end = h.point;
                 if (pierced >= pierce) break;
@@ -523,6 +535,7 @@ namespace CatTang
                 Tracer.Spawn(from, to, col, BulletLook.Width(b, awake) * 0.8f, false);
                 GunkataFx.HitImpact(from, (to - from).normalized, col, false, 1f, true);
                 hitSet.Add(next.health);
+                next.health.HitFrom(to - from);
                 ApplyHit(s, next.health, dmg * (1 + stack), to, Vector3.Distance(transform.position, to), (to - from).normalized, col, crit);
                 from = to;
             }

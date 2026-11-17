@@ -1,6 +1,6 @@
 // 체력 회복 하트 (2026-11-17 사용자: 회복 수단이 너무 없음 → 적 처치 시 낮은 확률로 하트, 상인도 판매)
 // - 모델: 블렌더 + Codex(Art/tools/blender_kit_heart.py) → Resources/Kit/Ch1/Heart.prefab. 없으면 빨간 공.
-// - 적 처치: 일반 6% · 강화형 10% · 중간 보스 확정. 튀어나와 떨어진 뒤 떠서 돔.
+// - 적 처치: 일반 2% · 강화형 3% · 중간 보스 확정. 튀어나와 떨어진 뒤 떠서 돔.
 // - 고양이가 가까이 오면(1.6m) 빨려 들어와 최대 체력의 HealPct 회복. 체력이 가득이면 안 빨려 오고 남아 있음.
 // - 스테이지 루트에 붙어서 스테이지가 바뀌면 같이 사라짐.
 using UnityEngine;
@@ -10,7 +10,7 @@ namespace CatTang
     public class HeartPickup : MonoBehaviour
     {
         public const float HealPct = 0.2f;          // 하트 하나 = 최대 체력 20%
-        public const float DropChance = 0.06f, EliteDropChance = 0.1f;
+        public const float DropChance = 0.02f, EliteDropChance = 0.03f;   // 2026-11-17 사용자: 일반 2% · 강화형 3% (레벨 업 체력 회복이 생겨서)
         const float Magnet = 1.6f, Grab = 0.55f;
         const float Size = 1.4f;                     // 위에서 내려다보면 0.6m 하트가 작아 보여 키움
         static readonly Color Red = new(1f, 0.3f, 0.35f);
@@ -39,7 +39,7 @@ namespace CatTang
             var dir = Random.insideUnitCircle.normalized;
             h.vel = new Vector3(dir.x * 2.2f, 6f, dir.y * 2.2f);
             h.spinSpeed = Random.Range(110f, 150f);
-            var prefab = Kit.Prefab(RunManager.Instance ? RunManager.Instance.Chapter : null, "Heart");
+            var prefab = Kit.Shared(RunManager.Instance ? RunManager.Instance.Chapter : null, "Heart");   // 2장에도 1장 하트 모델 (예전엔 2장에서 빨간 공)
             GameObject m;
             if (prefab) m = Instantiate(prefab, go.transform, false);
             else

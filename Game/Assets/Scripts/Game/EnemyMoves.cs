@@ -60,6 +60,17 @@ namespace CatTang
         void OutlawThink(PlayerController p, Vector3 dir, float dist, float spd)
         {
             if (busy) return;
+            KeepRange(p, dir, dist, spd, 6f, 9f);
+            if (Time.time >= nextAttack && dist < 14f)
+            {
+                int a = Pick((0, dist > 9 ? 3f : 2f), (1, dist < 9 ? 2.5f : 1.5f));
+                StartCoroutine(a == 0 ? OutlawSingle(p, dir, dist) : OutlawBurst(p, dir, dist));
+            }
+        }
+
+        /// <summary>원거리 적 움직임: near~far 거리를 유지하며 옆걸음, 3~5초마다 다른 각도 자리로 재배치 (무법자 · 2장 차장 · 신호수)</summary>
+        void KeepRange(PlayerController p, Vector3 dir, float dist, float spd, float near, float far)
+        {
             // 움직임: 거리 유지 + 옆걸음, 가끔 다른 각도 자리로 재배치
             if (Time.time >= nextStrafeSwitch) { strafeSign = Random.value < 0.5f ? -1 : 1; nextStrafeSwitch = Time.time + Random.Range(1.2f, 2.8f); }
             Vector3 move;
@@ -70,14 +81,14 @@ namespace CatTang
             }
             else
             {
-                float want = dist > 9 ? 1 : dist < 6 ? -1 : 0;
+                float want = dist > far ? 1 : dist < near ? -1 : 0;
                 var side = Vector3.Cross(Vector3.up, dir) * strafeSign;
                 move = dir * want + side * 0.75f;
                 if (Time.time >= nextReposition)
                 {
                     nextReposition = Time.time + Random.Range(3f, 5f);
                     float ang = Random.Range(50f, 110f) * (Random.value < 0.5f ? -1 : 1);
-                    repoTarget = p.transform.position - (Quaternion.Euler(0, ang, 0) * dir) * Random.Range(6.5f, 8.5f);
+                    repoTarget = p.transform.position - (Quaternion.Euler(0, ang, 0) * dir) * Random.Range(near + 0.5f, far - 0.5f);
                     var rm = RunManager.Instance; if (rm) repoTarget = rm.ClampToRoom(repoTarget, 1.5f);
                     repoUntil = Time.time + 1.1f;
                 }
@@ -86,11 +97,6 @@ namespace CatTang
             transform.position += move * spd * Time.deltaTime;
             // 걷는 방향을 바라봄 (옆걸음을 앞걸음 모션으로 미끄러지지 않게, 2026-11-17 사용자). 공격 예고 때만 고양이를 봄
             Face(move.sqrMagnitude > 0.04f ? move.normalized : dir);
-            if (Time.time >= nextAttack && dist < 14f)
-            {
-                int a = Pick((0, dist > 9 ? 3f : 2f), (1, dist < 9 ? 2.5f : 1.5f));
-                StartCoroutine(a == 0 ? OutlawSingle(p, dir, dist) : OutlawBurst(p, dir, dist));
-            }
         }
 
         IEnumerator OutlawSingle(PlayerController p, Vector3 dir, float dist)
@@ -216,6 +222,7 @@ namespace CatTang
                 var d = Effects.Flat(p.transform.position - transform.position);
                 if (d.magnitude <= SlamRadius) { p.health.TakeDamage(contactDamage); p.health.Knockback((d.sqrMagnitude > 1e-4f ? d.normalized : transform.forward) * 7f); }
                 FxBurst.Spawn(transform.position + Vector3.up * 0.15f, SlamRadius * 1.6f, FxBurst.Kind.Dust, new Color(0.85f, 0.7f, 0.5f));
+                PropHit.Area(transform.position, SlamRadius, contactDamage);
                 GunkataFx.HitImpact(transform.position + Vector3.up * 0.3f, Vector3.down, new Color(1f, 0.6f, 0.3f), false, 1.4f);
                 CameraFollow.Shake(0.18f);
             }
@@ -284,6 +291,7 @@ namespace CatTang
             if (bomb) Destroy(bomb);
             if (p && p.health.Alive && Effects.Flat(p.transform.position - at).magnitude <= SandBombRadius) p.health.TakeDamage(contactDamage * 0.6f);
             GunkataFx.Explosion(at, SandBombRadius, true);
+            PropHit.Area(at, SandBombRadius, contactDamage * 0.6f);
             nextAttack = Time.time + Random.Range(2.2f, 3f) / AtkMul;
             strafeSign = -strafeSign;
             busy = false;
