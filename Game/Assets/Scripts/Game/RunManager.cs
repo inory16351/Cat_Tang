@@ -245,14 +245,19 @@ namespace CatTang
         {
             inCombat = false;
             current.cleared = true;
-            foreach (var g in current.gates) WoodGate.Break(g);          // 덜컹 → 조각 날림
+            foreach (var g in current.gates)
+            {
+                if (g == current.entryGate) continue;                    // 지나온 술집 · 복도는 이미 지웠으니 들어온 문은 닫힌 채로
+                if (current.midBoss && g == current.backGate) continue;  // 뒷문은 보상 문을 골라 스테이지 3을 지은 뒤에 열림 (그 전엔 복도 끝이 허공)
+                WoodGate.Break(g);                                       // 덜컹 → 조각 날림
+            }
             player.ResetCylinder();
             if (current.midBoss)
             {
                 // 술집에서 이김: 뒷문이 열리고 그 앞에 다음 보상 문 → 고르면 뒷문 너머에 스테이지 3이 이어 지어짐
                 midBossDone = true;
                 stageDone = true;
-                ui?.Toast("태엽 현상금 사냥꾼을 쓰러뜨렸다 (+30 골드) — 뒷문이 열렸다");
+                ui?.Toast("태엽 현상금 사냥꾼을 쓰러뜨렸다 (+30 골드) — 다음 스테이지를 고르면 뒷문이 열림");
                 player.inv.gold += 30;
                 SpawnDoors();
                 return;
@@ -451,7 +456,8 @@ namespace CatTang
                 // 술집 뒷문 너머에 다음 스테이지를 이어 지음 (순간이동 없음). 고르지 않은 문들은 치움
                 foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
                 BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward, hall.center + new Vector3(0, 0, RoomBuilder.CellDepth));
-                ui?.Toast("뒷문 너머로");
+                WoodGate.Break(hall.backGate);                           // 스테이지 3이 지어진 뒤에 뒷문 열림
+                ui?.Toast("뒷문이 열렸다 — 뒷문 너머로");
                 return;
             }
             BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward);

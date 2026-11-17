@@ -157,6 +157,23 @@ namespace CatTang
             return true;
         }
 
-        protected virtual void OnDisable() { if (running != null) StopCoroutine(running); }
+        // 패턴이 띄운 표시(고양이 머리 위 표식 · 바닥 숫자 등). 보스가 패턴 도중 죽으면 코루틴이 멈춰 지우는 줄까지 못 가므로 여기서 정리
+        readonly List<GameObject> owned = new();
+
+        /// <summary>BigLabel.Show와 같지만 보스가 사라질 때 같이 지움</summary>
+        protected BigLabel Label(Transform parent, Vector3 offset, string text, Color c, float size = 1f)
+        {
+            var b = BigLabel.Show(parent, offset, text, c, size);
+            owned.RemoveAll(g => !g);
+            if (b) owned.Add(b.gameObject);
+            return b;
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (running != null) StopCoroutine(running);
+            foreach (var g in owned) if (g) Destroy(g);
+            owned.Clear();
+        }
     }
 }

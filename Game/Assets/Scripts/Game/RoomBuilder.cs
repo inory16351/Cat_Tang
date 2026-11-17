@@ -115,6 +115,7 @@ namespace CatTang
                 return false;
             }
             public GameObject entranceGate, backGate;       // 술집 입구 · 뒷문 (평소 닫힘)
+            public GameObject entryGate;                     // 술집 뒷문에서 이어 지은 첫 방의 남쪽 문: 지나온 술집을 지우므로 클리어해도 안 열림
             public bool Contains(Vector3 p, float inset = 1.6f)
             {
                 var d = p - center;
@@ -204,6 +205,7 @@ namespace CatTang
                     var gate = WoodGate.Make(ch, info.root, "Gate", new Vector3(pos.x, 0, pos.z), inward, gateM);   // 나무 문 (클리어하면 부서짐)
                     gate.SetActive(false);
                     info.gates.Add(gate);
+                    if (i == 0 && entrySouth && prev.HasValue && prev.Value == side) info.entryGate = gate;
                     // 복도 (다음 방 쪽만)
                     if (next.HasValue && next.Value == side)
                     {

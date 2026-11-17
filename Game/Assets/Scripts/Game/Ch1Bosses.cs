@@ -116,7 +116,7 @@ namespace CatTang
             bountyOn = true;
             var p = P;
             int mark = Random.Range(2, 5);
-            var tm = BigLabel.Show(p.transform, new Vector3(0, 2.9f, 0), mark.ToString(), new Color(1f, 0.85f, 0.3f), 1f);   // 화면 UI 배지 (크게)
+            var tm = Label(p.transform, new Vector3(0, 2.9f, 0), mark.ToString(), new Color(1f, 0.85f, 0.3f), 1f);   // 화면 UI 배지 (크게)
             BossFx.Toast($"현상금 표식 {mark} — 5초 뒤 발사 시각이 {mark}의 배수면 피해");
             float end = Time.time + BountyCount;
             while (Time.time < end && p && p.health.Alive && hp.Alive)
@@ -271,7 +271,7 @@ namespace CatTang
 
         void Start()
         {
-            face = BigLabel.Show(transform, new Vector3(0, 5.6f, 0), "", new Color(1f, 0.9f, 0.55f), 1.45f);   // 보스 얼굴 숫자 (크게)
+            face = Label(transform, new Vector3(0, 5.6f, 0), "", new Color(1f, 0.9f, 0.55f), 1.45f);   // 보스 얼굴 숫자 (크게)
         }
 
         // 느리게 걸어서 따라옴 (이속 3)
@@ -321,7 +321,7 @@ namespace CatTang
             do zone = c + new Vector3(Random.Range(-half.x, half.x), 0, Random.Range(-half.y, half.y));
             while (Effects.Flat(zone - transform.position).magnitude < 4f && ++tries < 12);
             Telegraph.Ring(zone, 2f, 5f, BossFx.Safe);
-            var zoneMark = BigLabel.Show(null, zone + Vector3.up * 0.6f, hour.ToString(), BossFx.Safe, 0.9f);
+            var zoneMark = Label(null, zone + Vector3.up * 0.6f, hour.ToString(), BossFx.Safe, 0.9f);
             BossFx.Toast($"시각 패턴 — 안전 지대에서 발사 시각을 {hour}시로 맞춰라");
             float end = Time.time + 5f;
             while (Time.time < end)

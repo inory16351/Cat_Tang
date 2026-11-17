@@ -80,9 +80,9 @@ namespace CatTang
             var wg = g.GetComponent<WoodGate>();
             if (!wg || !animate) { g.SetActive(false); return; }
             if (!wg.box.enabled) return;       // 이미 부서지는 중
-            wg.box.enabled = false;            // 길은 바로 열림
             if (wg.anim != null) wg.StopCoroutine(wg.anim);
             wg.ResetPose();
+            wg.box.enabled = false;            // 길은 바로 열림 (ResetPose가 다시 켜므로 그 뒤에)
             wg.anim = wg.StartCoroutine(wg.BreakRoutine());
         }
 
