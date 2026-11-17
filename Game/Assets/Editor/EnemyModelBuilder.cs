@@ -170,7 +170,38 @@ namespace CatTang.EditorTools
             ("Kit_LM_SignalGantry", 5f, 180f, 'w', Kit2Dir, "LM_SignalGantry"),
             ("Kit_Turntable", 24f, 0f, 'w', Kit2Dir, "Turntable"),
             ("Kit_PlatformEdge", 8f, 180f, 'w', Kit2Dir, "PlatformEdge"),
+            // 굳은 승객 석상 10종 (blender_kit_ch2_passengers.py, FrozenPassenger) — 받침대 포함 키, 조각 · 금 선 · 돌 조각 틀
+            ("Kit_Passenger_Luggage", 2.5f, 0f, 'h', Kit2Dir, "Passenger_Luggage"),
+            ("Kit_Passenger_Hat", 2.5f, 0f, 'h', Kit2Dir, "Passenger_Hat"),
+            ("Kit_Passenger_Child", 1.7f, 0f, 'h', Kit2Dir, "Passenger_Child"),
+            ("Kit_Passenger_Watch", 2.6f, 0f, 'h', Kit2Dir, "Passenger_Watch"),
+            ("Kit_Passenger_Newspaper", 2.5f, 0f, 'h', Kit2Dir, "Passenger_Newspaper"),
+            ("Kit_Passenger_Wave", 2.45f, 0f, 'h', Kit2Dir, "Passenger_Wave"),
+            ("Kit_Passenger_OldLady", 2.1f, 0f, 'h', Kit2Dir, "Passenger_OldLady"),
+            ("Kit_Passenger_MotherChild", 2.45f, 0f, 'h', Kit2Dir, "Passenger_MotherChild"),
+            ("Kit_Passenger_Sitter", 1.83f, 0f, 'h', Kit2Dir, "Passenger_Sitter"),
+            ("Kit_Passenger_Runner", 2.6f, 0f, 'h', Kit2Dir, "Passenger_Runner"),
         };
+
+        [MenuItem("CatTang/2장 굳은 승객만 다시 만들기")]
+        public static void BuildCh2Passengers() => BuildCh2Only(CatTang.FrozenPassenger.Poses);
+
+        /// <summary>굳은 승객 석상: 몸은 툰 돌(배색표 statue · statue_dark · statue_base), 금 선만 빛나는 흰색(CatTang/Silhouette 불투명, 그림자 없음)</summary>
+        static void PassengerMats(GameObject inst)
+        {
+            string p = Ch2Src + "Passenger_Crack.mat";
+            var crack = AssetDatabase.LoadAssetAtPath<Material>(p);
+            if (!crack) { crack = new Material(Shader.Find("CatTang/Silhouette")); AssetDatabase.CreateAsset(crack, p); }
+            crack.SetColor("_Color", new Color(0.92f, 0.97f, 1f, 1f));
+            crack.SetFloat("_RimBoost", 0.3f);
+            EditorUtility.SetDirty(crack);
+            foreach (var r in inst.GetComponentsInChildren<Renderer>(true))
+                if (r.name.StartsWith("Crack"))
+                {
+                    r.sharedMaterial = crack;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                }
+        }
 
         [MenuItem("CatTang/2장 프리팹 만들기 (Tripo + 블렌더)")]
         public static void BuildCh2() => BuildCh2Only(null);
@@ -341,6 +372,9 @@ namespace CatTang.EditorTools
             }
 
             if (PorterRig.IsPorter(outName)) PorterRig.AddFootGround(inst);
+
+            // 굳은 승객 석상: 빛나는 금 선 재질 + 깨어남 컴포넌트
+            if (name.StartsWith("Kit_Passenger")) { PassengerMats(inst); root.AddComponent<CatTang.FrozenPassenger>(); }
 
             // 폭발물: 주황 ↔ 노랑 맥동 바깥 테두리 (2026-11-17 사용자: 몬스터처럼 테두리로 터진다는 걸 알려 줌)
             if (Explosives.Contains(name)) root.AddComponent<CatTang.DangerEdge>();

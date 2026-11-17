@@ -153,6 +153,21 @@ namespace CatTang
                 var go = Kit.Place(ch, kind, root, Next(), Yaw90() + rnd.Next(-10, 10));
                 if (go) Breakable.Make(go, kind == "LuggagePile" ? 60 : kind == "Crates" ? 45 : 30);
             }
+            // 굳은 승객 석상 6~8 (FrozenPassenger): 받침대 위 멈춘 자세, 웨이브 예고 때 깨지며 하수인이 나옴. 돌이라 고양이 · 탄을 막음
+            // 한 방 안에선 포즈가 겹치지 않게 섞어 차례로, 크기 ±8%
+            var poses = new List<string>();
+            foreach (var pz in FrozenPassenger.Poses) if (Kit.Has(ch, pz)) poses.Add(pz);
+            for (int i = poses.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); (poses[i], poses[j]) = (poses[j], poses[i]); }
+            if (poses.Count > 0)
+            {
+                int people = rnd.Next(6, 9);
+                for (int k = 0; k < people && si < spots.Count; k++)
+                {
+                    string pose = poses[k % poses.Count];
+                    var go = Kit.Place(ch, pose, root, Next(), rnd.Next(360), 0.92f + (float)rnd.NextDouble() * 0.16f, false);
+                    if (go && !go.GetComponent<FrozenPassenger>()) go.AddComponent<FrozenPassenger>();
+                }
+            }
             // 장식: 벽 가까이 역 시계 · 신호등 1~2
             int decor = rnd.Next(1, 3);
             for (int k = 0; k < decor; k++)

@@ -189,7 +189,15 @@ namespace CatTang
             int lo = 4 + Mathf.RoundToInt(stageIndex * 2f / 3f), hi = 6 + stageIndex;
             int n = Mathf.Min(Random.Range(lo, hi + 1) + (chapter - 1), 11);
             var spots = new List<Vector3>();
-            for (int k = 0; k < n; k++)
+            // 2장: 굳은 승객 몇 명이 금 가며 깨지고 그 자리에서 나옴 (웨이브의 60%까지, 모자라면 바닥 원)
+            var wake = FrozenPassenger.Pick(current, player.transform.position, 4.5f);
+            int fromPeople = Mathf.Min(wake.Count, Mathf.CeilToInt(n * 0.6f));
+            for (int k = 0; k < fromPeople; k++)
+            {
+                wake[k].Awaken(WavePreview);
+                spots.Add(wake[k].transform.position);
+            }
+            for (int k = fromPeople; k < n; k++)
             {
                 Vector3 pos;
                 int tries = 0;

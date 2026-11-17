@@ -87,6 +87,11 @@ namespace CatTang.EditorTools
             { "signal_red", new Color(0.96f, 0.2f, 0.14f) },
             { "signal_amber", new Color(1f, 0.7f, 0.15f) },
             { "signal_green", new Color(0.32f, 0.85f, 0.4f) },
+            // 굳은 승객 석상 (금 선 crack은 빌더가 빛나는 흰 재질로 바꿔 끼움)
+            { "statue", new Color(0.74f, 0.72f, 0.68f) },
+            { "statue_dark", new Color(0.55f, 0.53f, 0.5f) },
+            { "statue_base", new Color(0.47f, 0.45f, 0.42f) },
+            { "crack", Color.white },
         };
 
         /// <summary>지금 빌드하는 챕터의 배색표 (빌더가 챕터마다 바꿔 끼움)</summary>
