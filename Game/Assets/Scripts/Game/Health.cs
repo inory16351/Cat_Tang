@@ -71,8 +71,9 @@ namespace CatTang
 
         public void ResetHp(float max) { maxHp = max; hp = max; }
 
-        /// <summary>피해 받기. 플레이어는 대시 중이면 저스트 회피, 확률 회피 판정.</summary>
-        public void TakeDamage(float dmg, bool fromDelayed = false)
+        /// <summary>피해 받기. 플레이어는 대시 중이면 저스트 회피, 확률 회피 판정. crit = 치명타 전용 숫자로 띄움.
+        /// bonusFrac = 피해 중 정지된 적 추가 피해 몫 (0~1) → 그만큼은 초록 숫자로 따로 띄움</summary>
+        public void TakeDamage(float dmg, bool fromDelayed = false, bool crit = false, float bonusFrac = 0)
         {
             if (!Alive) return;
             if (isPlayer && dashing) { OnJustDodge?.Invoke(); return; }
@@ -91,7 +92,12 @@ namespace CatTang
             flashUntil = Time.time + 0.08f;
             if (isPlayer) hurtUntil = Time.unscaledTime + HurtBlinkTime;
             OnDamaged?.Invoke(dmg);
-            if (!isPlayer) DamageNumber.Spawn(transform.position + Vector3.up * 1.6f, dmg);
+            if (!isPlayer)
+            {
+                var at = transform.position + Vector3.up * 1.6f;
+                DamageNumber.Spawn(at, dmg * (1 - bonusFrac), crit);
+                if (bonusFrac > 0) DamageNumber.SpawnBonus(at + Vector3.up * 0.8f, dmg * bonusFrac);
+            }
             if (hp <= 0) { hp = 0; OnDeath?.Invoke(this); }
         }
 
@@ -99,6 +105,18 @@ namespace CatTang
         public void ApplySlow(float amount, float dur) { slowAmount = Time.time < slowUntil ? Mathf.Max(slowAmount, amount) : amount; slowUntil = Mathf.Max(slowUntil, Time.time + dur); }
         public void ApplyStun(float dur) => stunUntil = Mathf.Max(stunUntil, Time.time + dur);
         public void ApplyTimeLock(float dur) { lockUntil = Mathf.Max(lockUntil, Time.time + dur); wasLocked = true; }
+        // 특성 타격 몸 반응 (2026-11-17 사용자: 머리 위 문양만이 아니라 맞은 적 몸 자체에 피드백) — GunkataFx.TraitHit가 부름
+        Color hitTint; float hitTintFrom, hitTintUntil, hitTintStrength, hitTintPulse, flashAt = -1;
+
+        /// <summary>몸을 색 c로 물들였다가 dur 동안 빠짐 (strength 0~1). pulse = 초당 깜빡임(0 = 없음, 끝으로 갈수록 빨라짐). delay 뒤 시작</summary>
+        public void TraitTint(Color c, float dur, float strength, float pulse = 0, float delay = 0)
+        {
+            hitTint = c; hitTintFrom = Time.time + delay; hitTintUntil = hitTintFrom + dur; hitTintStrength = strength; hitTintPulse = pulse;
+        }
+
+        /// <summary>delay초 뒤에 몸이 하얗게 번쩍 (지연 폭발 순간)</summary>
+        public void FlashLater(float delay) => flashAt = Time.time + delay;
+
         public void ApplyBurn(float dps, float dur) { burnDps = Mathf.Max(burnDps, dps); burnUntil = Time.time + dur; }
         public void ApplyDefenseDown(float v, float dur) { defDown = Mathf.Max(defDown, v); defDownUntil = Time.time + dur; }
         public void ApplyAttackSpeedDown(float v, float dur) { atkDown = Mathf.Max(atkDown, v); atkDownUntil = Time.time + dur; }
@@ -132,7 +150,19 @@ namespace CatTang
                 if (isPlayer && cc && cc.enabled) cc.Move(step); else transform.position += step;
                 knock = Vector3.Lerp(knock, Vector3.zero, Time.deltaTime * 8f);
             }
+            if (flashAt > 0 && Time.time >= flashAt) { flashAt = -1; flashUntil = Time.time + 0.1f; }
             bool flash = !isPlayer && Time.time < flashUntil;
+            float tintK = 0;
+            if (Time.time >= hitTintFrom && Time.time < hitTintUntil)
+            {
+                float u = (Time.time - hitTintFrom) / Mathf.Max(0.01f, hitTintUntil - hitTintFrom);
+                tintK = hitTintStrength * (1 - u * u);
+                if (hitTintPulse > 0)
+                {
+                    float ph = hitTintPulse * (hitTintUntil - hitTintFrom) * (u + u * u);
+                    tintK *= Mathf.Lerp(0.35f, 1f, Mathf.Pow(Mathf.Abs(Mathf.Sin(ph * Mathf.PI)), 2f));
+                }
+            }
             // 플레이어: 남은 시간 동안 약 0.07초 간격으로 빨강 ↔ 원래 색 (갈수록 옅어짐)
             float hurtK = 0;
             if (isPlayer && HurtFlashing)
@@ -150,6 +180,7 @@ namespace CatTang
                 if (TimeLocked || GlobalStop) c = Color.Lerp(c, new Color(0.55f, 0.75f, 1f), 0.65f);
                 else if (Time.time < stunUntil) c = Color.Lerp(c, new Color(1f, 0.95f, 0.5f), 0.5f);
                 else if (MarkStacks > 0) c = Color.Lerp(c, new Color(1f, 0.5f, 0.85f), 0.15f + 0.04f * MarkStacks);
+                if (tintK > 0) c = Color.Lerp(c, hitTint, tintK);
                 if (hurtK > 0) c = Color.Lerp(c, HurtRed, hurtK);
                 mpb.SetColor(BaseColorId, flash ? Color.white : c);
                 rends[i].SetPropertyBlock(mpb);

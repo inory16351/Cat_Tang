@@ -2,7 +2,7 @@
 // - 그림: Codex(docs/images/ui_src/prompts/head_dash.txt → docs/tools/ui_dash_cut.py → Resources/UI/head_dash.png) '<' 한 칸을 겹쳐 '<<<'
 // - 화면 UI가 아니라 월드에 띄운 빌보드 스프라이트 → 후처리(극한 회피 회색 · 피격 붉은 비네트 · 색수차)를 화면과 똑같이 받음.
 //   벽에 가려지지 않게 ZTest Always, 카메라 거리와 상관없이 화면에서 늘 같은 크기(1080 기준 HeightPx)
-// - 찬 칸 = 밝은 청록빛 흰색, 차오르는 칸 = 어두운 회색에서 진행만큼 밝아짐(검표 펀치 잠김이면 붉게 깜빡), 빈 칸 = 흐린 어두운 색. 다 차는 순간 톡 튐
+// - 지금 쓸 수 있는 대시 수만큼만 '<'를 그림(차오르는 · 빈 칸은 안 그림, 충전 진행은 왼쪽 위 아이콘). 새로 찬 칸은 톡 튀며 나타나고, 검표 펀치 잠김이면 붉게 깜빡
 // - 고양이를 따라다니는 화면 배지(BigLabel 현상금 표식 등)는 TryAbove로 이 줄 바로 위에 올라감
 using UnityEngine;
 
@@ -15,8 +15,6 @@ namespace CatTang
         const float LiftM = 0.3f;                        // 머리 끝에서 띄우는 높이 (m)
         const int MaxPips = 5;
         static readonly Color Full = new(0.78f, 0.95f, 1f, 0.95f);
-        static readonly Color Charging = new(0.55f, 0.6f, 0.66f, 0.85f);
-        static readonly Color Empty = new(0.16f, 0.15f, 0.2f, 0.5f);
         static readonly Color Locked = new(1f, 0.25f, 0.4f, 0.95f);
 
         static HeadDash instance;
@@ -121,26 +119,24 @@ namespace CatTang
             transform.position = head + cam.transform.up * (HeightPx / 2 * m);
             float glyphScale = HeightPx * m / spriteH;
 
-            int n = Mathf.Clamp(p.dashMax, 1, MaxPips);
-            float dc = p.DashCharges, dp = p.DashRechargeProgress;
+            // 지금 쓸 수 있는 대시 수만큼만 '<' (2026-11-17 사용자: 활성화된 숫자만큼만). 0이면 아무것도 없음
+            //  차오르는 칸 · 빈 칸은 안 그림 — 충전 진행은 왼쪽 위 대시 아이콘이 보여 줌. 새로 찬 칸은 톡 튀며 나타남
+            int max = Mathf.Clamp(p.dashMax, 1, MaxPips);
+            int n = Mathf.Clamp(Mathf.FloorToInt(p.DashCharges + 0.001f), 0, max);
             float x0 = -StepPx * (n - 1) / 2f;
             for (int i = 0; i < MaxPips; i++)
             {
                 var sr = pips[i];
-                bool on = i < n;
-                sr.enabled = on;
-                if (!on) continue;
-                bool full = dc >= i + 1;
-                bool filling = !full && i == Mathf.FloorToInt(dc);
-                Color c = full ? Full : filling ? Color.Lerp(Empty, Charging, dp) : Empty;
-                if (filling && p.DashLocked) c = Color.Lerp(Charging, Locked, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 18f));
-                sr.color = c;
+                bool full = i < n;
                 if (full && !wasFull[i]) pop[i] = 1f;
                 wasFull[i] = full;
+                sr.enabled = full;
+                if (!full) { pop[i] = 0; continue; }
+                sr.color = p.DashLocked ? Color.Lerp(Full, Locked, 0.35f + 0.35f * Mathf.Sin(Time.unscaledTime * 18f)) : Full;   // 검표 펀치로 충전이 잠기면 붉게 깜빡
                 pop[i] = Mathf.MoveTowards(pop[i], 0, Time.unscaledDeltaTime * 4f);
                 var t = sr.transform;
                 t.localPosition = new Vector3((x0 + StepPx * i) * m, 0, -0.001f * i);   // 오른쪽 칸이 앞에 겹침
-                t.localScale = Vector3.one * glyphScale * ((full ? 1f : 0.86f) + 0.3f * pop[i] * pop[i]);
+                t.localScale = Vector3.one * glyphScale * (1f + 0.3f * pop[i] * pop[i]);
             }
         }
     }

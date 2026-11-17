@@ -25,7 +25,7 @@ ENUMS = {
     "Trigger": [
         ("Passive", "깨어나 있는 동안 항상"), ("RunStart", "런 시작 때 1번"), ("OnFire", "이 탄을 쏠 때"),
         ("OnHit", "이 탄이 맞았을 때"), ("OnKill", "이 탄으로 처치했을 때"), ("OnReload", "장전할 때"),
-        ("OnPerfectReload", "완벽 장전 때"), ("OnChanceDodge", "확률 회피에 성공했을 때"),
+        ("OnReloadEnd", "장전이 끝날 때"), ("OnChanceDodge", "확률 회피에 성공했을 때"),
         ("OnJustDodge", "저스트 회피 때"), ("OnSkill", "총 스킬을 쓸 때"), ("OnSilhouette", "회상 실루엣이 나타날 때"),
         ("OnTimeLockEnd", "시간에 갇힌 적이 풀릴 때"), ("OnExecute", "처형했을 때"),
         ("OnRicochet", "탄이 튕길 때"), ("OnPierce", "탄이 관통할 때"),
@@ -76,7 +76,7 @@ ENUMS = {
     ],
     "UnlockType": [
         ("Default", "처음부터"), ("ClearZone", "구역 CondValue 첫 클리어"), ("ExecuteCount", "누적 처형 수"),
-        ("PerfectReloadCount", "누적 완벽 장전 수"), ("KillBoss", "구역 Value 보스 처치"), ("TraitTier6", "특성 6단계 달성 횟수"),
+        ("JustDodgeCount", "누적 극한 회피 수"), ("KillBoss", "구역 Value 보스 처치"), ("TraitTier6", "특성 6단계 달성 횟수"),
     ],
 }
 
@@ -197,7 +197,7 @@ eff(9305, "Passive", "DamageAdd", 0.35, target="OwnBullets", cond="JudgeOver", c
 eff(9306, "OnHit", "DamageByDistance", 0.02, 0.4, target="OwnBullets", desc="이 총의 탄은 멀리 있는 적일수록 피해 증가 (1m당 +2%, 최대 +40%)")
 eff(9307, "OnFire", "SilhouetteShot", 0.5, chance=0.10, target="OwnBullets", desc="이 총의 탄을 쏠 때 10% 확률로 실루엣이 1발 더 (피해 50%)")
 eff(9308, "OnSkill", "HeatGain", 0.5, desc="[전역] 스킬을 쓰면 열기 +0.5칸")
-eff(9310, "OnPerfectReload", "Stun", 0, 6.0, 0.5, target="Area", desc="[전역] 완벽 장전 때 반경 6 적 0.5초 정지")
+eff(9310, "OnReloadEnd", "Stun", 0, 6.0, 0.5, target="Area", desc="[전역] 장전이 끝날 때 반경 6 적 0.5초 정지")
 eff(9311, "OnHit", "Knockback", 1.2, target="OwnBullets", desc="이 총의 탄에 맞은 적을 크게 밀쳐냄")
 eff(9312, "Passive", "DodgeCooldown", -0.20, desc="[전역] 대시 충전 시간 -20%")
 eff(9313, "Passive", "Ricochet", 1, target="OwnBullets", desc="이 총의 탄이 1번 튕김")
@@ -345,7 +345,7 @@ COSTUME = [
     (4002, "무법자 판초", "ClearZone", 1, 30, 9401, 9402, 0, "costume_poncho", "빠르게 쏘고 더 아프게 맞는다"),
     (4003, "장의사 정장", "ExecuteCount", 50, 40, 9403, 9404, 0, "costume_undertaker", "깨어나지 못한 탄을 위한 옷"),
     (4004, "시계공의 앞치마", "ClearZone", 3, 60, 9405, 9406, 0, "costume_apron", "연산을 들고 시작한다"),
-    (4005, "거울 망토", "PerfectReloadCount", 100, 50, 9407, 9408, 0, "costume_mirror", "모든 탄이 한 번 튕긴다"),
+    (4005, "거울 망토", "JustDodgeCount", 100, 50, 9407, 9408, 0, "costume_mirror", "모든 탄이 한 번 튕긴다"),
     (4006, "모래 순례자 로브", "KillBoss", 2, 50, 9409, 9410, 0, "costume_pilgrim", "0시 이하의 시간을 걷는 자"),
     (4007, "기억의 스카프", "TraitTier6", 1, 80, 9411, 9412, 0, "costume_scarf", "특성 6단계가 하나 빨리 켜진다"),
     (4008, "노인의 잠옷", "ClearZone", 5, 120, 9413, 9414, 0, "costume_pajama", "현실에서 온 옷. 시간의 조각을 더 모은다"),

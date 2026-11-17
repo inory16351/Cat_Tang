@@ -1,7 +1,7 @@
 // 장전 동작 (스피드로더). 장전 진행도(0~1)에 맞춰 팔 자세 · 총 회전 · 탄피 · 스피드로더를 연출.
 // 흐름: 총 세워 털기(빈 탄피 6개씩 쏟아짐) → 허리 벨트의 스피드로더에 총을 찍어 넣음 → 빈 로더를 양옆으로 털어 버림
-//      → 철컥 닫기(반짝, 완벽 장전 구간 0.45~0.65와 맞춤) → 총 두 바퀴 돌려 쥐고 조준으로.
-// 완벽 장전 · 즉시 장전으로 일찍 끝나면 철컥 + 한 바퀴 돌리기만 빠르게.
+//      → 철컥 닫기(반짝) → 총 두 바퀴 돌려 쥐고 조준으로.
+// 즉시 장전으로 일찍 끝나면 철컥 + 한 바퀴 돌리기만 빠르게.
 // 불릿 파티 중엔 손대지 않음 (궁이 끝나면 지금 단계 자세부터 다시).
 using UnityEngine;
 
@@ -56,12 +56,12 @@ namespace CatTang
             finaleStart = -1;
         }
 
-        void End(bool perfect)
+        void End()
         {
             if (!poser || pc.UltimateActive) { Clear(); return; }
             if (phase < 0 && !pc.rev.reloading) { return; }          // 장전 없이 실린더만 초기화된 경우
             if (loadersOut && !tossed) DropLoaders(true);
-            // 아직 철컥 전에 끝남(완벽 · 즉시 장전) → 철컥 + 빠른 한 바퀴
+            // 아직 철컥 전에 끝남(즉시 장전) → 철컥 + 빠른 한 바퀴
             if (!snapped) { snapped = true; Clack(); }
             if (phase < 4) { finaleStart = Time.time; finaleSpin = 360f; poser.Pose(Twirl, 0.06f); }
             else { poser.Release(0.1f); ResetGuns(); }

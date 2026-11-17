@@ -230,7 +230,7 @@ namespace CatTang
                 int want = Mathf.Clamp(Mathf.FloorToInt(t * 6.5f), 0, 6);
                 while (loadedR < want) { Load(order[loadedR], cylR); loadedR++; }
                 while (loadedL < want) { Load(orderL[loadedL], cylL); loadedL++; }
-                if (!player || !player.rev.reloading) break;            // 완벽 장전 등으로 일찍 끝남
+                if (!player || !player.rev.reloading) break;            // 즉시 장전 등으로 일찍 끝남
                 yield return null;
             }
             ShowLoaded();
@@ -245,10 +245,10 @@ namespace CatTang
             Fx(caps[slot].rectTransform.anchoredPosition, caps[slot].rectTransform.sizeDelta.x * 2.2f, 1, 0.3f, cyl);
         }
 
-        void ReloadEnd(bool perfect)
+        void ReloadEnd()
         {
             if (!spinning) { ShowLoaded(); SetHand(player ? player.rev.next : 1, false); }
-            Fx(new Vector2(L.clockX, L.clockY), L.clockR * (perfect ? 3.4f : 2.9f), 2, perfect ? 0.6f : 0.4f);
+            Fx(new Vector2(L.clockX, L.clockY), L.clockR * 2.9f, 2, 0.4f);
         }
 
         void Update()

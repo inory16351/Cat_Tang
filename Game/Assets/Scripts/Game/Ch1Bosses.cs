@@ -256,7 +256,8 @@ namespace CatTang
         float nextSample;
         readonly HashSet<int> trialsDone = new();
         Transform hand, hand2;
-        BigLabel face;
+        BigLabel face;                                    // 보스 얼굴 숫자 (12방향 숫자 탄이 씀)
+        const float TrialTime = 8f;                       // 시각 패턴 제한 시간 (2026-11-17 사용자: 5초 → 늘림)
 
         protected override void Setup()
         {
@@ -308,7 +309,7 @@ namespace CatTang
             return null;
         }
 
-        // 시각 패턴: 얼굴 시계에 시각, 안전 지대(반경 2m). 5초 뒤 안전 지대 안 + 발사 시각 일치면 파훼, 아니면 최대 체력 40%
+        // 시각 패턴: 바닥 시계판의 한 시각 자리에 안전 지대(반경 2m). 8초 뒤 안전 지대 안 + 발사 시각이 그 시각이면 파훼, 아니면 최대 체력 40%
         IEnumerator ClockTrial()
         {
             var p = P;
@@ -316,22 +317,21 @@ namespace CatTang
             if (hour == p.rev.next) hour = hour % 12 + 1;          // 처음부터 맞춰져 있지 않게
             var rm = RunManager.Instance;
             Vector3 c = rm ? rm.RoomCenter : transform.position;
-            Vector2 half = rm ? rm.RoomSize / 2 - new Vector2(3.5f, 3.5f) : new Vector2(8, 8);
-            Vector3 zone;
-            int tries = 0;
-            do zone = c + new Vector3(Random.Range(-half.x, half.x), 0, Random.Range(-half.y, half.y));
-            while (Effects.Flat(zone - transform.position).magnitude < 4f && ++tries < 12);
-            Telegraph.Ring(zone, 2f, 5f, BossFx.Safe);
-            var zoneMark = Label(null, zone + Vector3.up * 0.6f, hour.ToString(), BossFx.Safe, 0.9f);
-            BossFx.Toast($"시각 패턴 — 안전 지대에서 발사 시각을 {hour}시로 맞춰라");
-            float end = Time.time + 5f;
+            // 2026-11-17 사용자: 기믹이 잘 안 보임 → 바닥에 큰 시계판(FloorClock)이 깔리고 큰 바늘이 목표 시각으로 째깍째깍 돌아감,
+            //  그 숫자 자리가 안전 지대. 시각은 바닥에서 읽어 맞춰야 함 — 보스 얼굴 숫자 · 안내 글의 시각 · HUD 표시는 없앰(사용자)
+            Vector2 rs = rm ? rm.RoomSize : new Vector2(24, 24);
+            float dialR = Mathf.Clamp(Mathf.Min(rs.x, rs.y) / 2f - 1.5f, 6f, 10f);
+            Vector3 zone = FloorClock.HourPoint(c, dialR, hour);
+            var dial = FloorClock.Show(c, dialR, hour, TrialTime);
+            BigLabel zoneMark = dial ? null : Label(null, zone + Vector3.up * 0.6f, hour.ToString(), BossFx.Safe, 0.9f);   // 그림이 없을 때: 예전처럼 원 위에 숫자
+            Telegraph.Ring(zone, 2f, TrialTime, BossFx.Safe);
+            BossFx.Toast("시각 패턴 — 안전 지대의 시각에 발사 시각을 맞춰라");
+            float end = Time.time + TrialTime;
             while (Time.time < end)
             {
-                if (face) face.text = $"{hour}시\n<size=54>{Mathf.CeilToInt(end - Time.time)}</size>";
                 if (hand) hand.localRotation = Quaternion.Euler(0, hour * 30f, 0);
                 yield return null;
             }
-            if (face) face.text = "";
             if (zoneMark) Destroy(zoneMark.gameObject);
             if (!p || !p.health.Alive) yield break;
             bool inZone = Effects.Flat(p.transform.position - zone).magnitude <= 2f;

@@ -293,6 +293,22 @@ def m_wisp(bm):
     tube(bm, pts, lambda s: 0.16 * (1 - s) ** 1.4 + 0.004, sides=10)
 
 
+def m_hand(bm):
+    """되감기: 큰 시곗바늘 하나 (원점 = 축, +Y로 뻗음, 끝은 화살촉). 스핀으로 거꾸로 돌림"""
+    puffy(bm, [V(-0.035, -0.12), V(0.035, -0.12), V(0.045, 0.3), V(0.11, 0.3), V(0.0, 0.5), V(-0.11, 0.3), V(-0.045, 0.3)], 0.05, center=V(0, 0.2), rings=1)
+    puffy(bm, polar(lambda a: 0.07, n=16), 0.06)
+
+
+def m_charge(bm):
+    """지연: 달라붙는 충전 폭탄 (가운데 볼록한 마름모 + 네 갈래 집게)"""
+    puffy(bm, [V(0, 0.2), V(0.2, 0), V(0, -0.2), V(-0.2, 0)], 0.1, rings=3)
+    for k in range(4):
+        a = math.radians(45 + 90 * k)
+        d = V(math.cos(a), math.sin(a))
+        s = V(-d.y, d.x)
+        puffy(bm, [d * 0.16 + s * 0.06, d * 0.42 + s * 0.03, d * 0.5, d * 0.42 - s * 0.03, d * 0.16 - s * 0.06], 0.05, center=d * 0.3, rings=1)
+
+
 # ---------- 공통 조각 (기존 코드 메시 FxMeshes.Spike · Flame · Ball · Torus 대체, 규격 같음) ----------
 from mathutils import noise
 
@@ -459,7 +475,7 @@ SHAPES = [
     ("fx_shard_0", m_shard(3), 0), ("fx_shard_1", m_shard(17), 0), ("fx_shard_2", m_shard(29), 0),
     ("fx_catring", m_catring, 0), ("fx_flower", m_flower, 0), ("fx_spiral", m_spiral, 0),
     ("fx_crescent", m_crescent, 0.03), ("fx_clock", m_clock, 0), ("fx_eye", m_eye, 0),
-    ("fx_infinity", m_infinity, 0), ("fx_wisp", m_wisp, 0),
+    ("fx_infinity", m_infinity, 0), ("fx_wisp", m_wisp, 0), ("fx_hand", m_hand, 0), ("fx_charge", m_charge, 0),
     ("fx_spike_0", m_spike(53), 0), ("fx_spike_1", m_spike(64), 0), ("fx_spike_2", m_spike(75), 0),
     ("fx_flame_0", m_flame(101), 0), ("fx_flame_1", m_flame(118), 0), ("fx_flame_2", m_flame(135), 0),
     ("fx_ball_0", m_ball(7), 0), ("fx_ball_1", m_ball(20), 0), ("fx_ball_2", m_ball(33), 0),

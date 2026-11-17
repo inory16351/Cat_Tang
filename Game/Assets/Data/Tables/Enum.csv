@@ -19,7 +19,7 @@ Trigger,OnFire,이 탄을 쏠 때
 Trigger,OnHit,이 탄이 맞았을 때
 Trigger,OnKill,이 탄으로 처치했을 때
 Trigger,OnReload,장전할 때
-Trigger,OnPerfectReload,완벽 장전 때
+Trigger,OnReloadEnd,장전이 끝날 때
 Trigger,OnChanceDodge,확률 회피에 성공했을 때
 Trigger,OnJustDodge,저스트 회피 때
 Trigger,OnSkill,총 스킬을 쓸 때
@@ -127,6 +127,6 @@ SkillAction,TimeStop,범위 시간 정지
 UnlockType,Default,처음부터
 UnlockType,ClearZone,구역 CondValue 첫 클리어
 UnlockType,ExecuteCount,누적 처형 수
-UnlockType,PerfectReloadCount,누적 완벽 장전 수
+UnlockType,JustDodgeCount,누적 극한 회피 수
 UnlockType,KillBoss,구역 Value 보스 처치
 UnlockType,TraitTier6,특성 6단계 달성 횟수

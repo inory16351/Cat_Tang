@@ -22,7 +22,7 @@ namespace CatTang
             z.radius = radius;
             z.until = Time.time + life;
             Telegraph.Ring(at, radius, life, Tint).NoGlint();
-            GunkataFx.Flare(at + Vector3.up * 0.8f, radius * 0.9f, Tint);
+            GunkataFx.Flare(at + Vector3.up * 0.8f, radius * 0.9f, Tint, true);
             z.BuildHands();
             return z;
         }

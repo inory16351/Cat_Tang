@@ -13,6 +13,7 @@ namespace CatTang
         float born, life, width;
         Vector3 a, b;
         Color col;
+        float keep = TintKeep;
         static Material glowMat, softMat;
         const float HeadTime = 0.05f, HeadLen = 2.2f;
 
@@ -41,6 +42,16 @@ namespace CatTang
             if (softMat.HasProperty("_Intensity")) { softMat.SetFloat("_Intensity", 1.6f); glowMat.SetFloat("_Intensity", 2.6f); }
         }
 
+        /// <summary>trait = 특성 탄: 빨강으로 끌지 않고 특성 색 그대로 (2026-11-17 사용자: 얼음 탄이면 궤적도 파랗게)</summary>
+        /// <param name="halo2">보조 특성 색: 바깥 번짐만 이 색 (심지 = 주 특성 색). 없으면 같은 색</param>
+        public static void Spawn(Vector3 a, Vector3 b, Color c, float width, bool doubleLine, bool trait, Color? halo2 = null)
+        {
+            Spawn(a, b, c, width, doubleLine);
+            if (trait && last) { last.keep = 0.92f; last.haloCol = halo2; }
+        }
+        Color? haloCol;
+        static Tracer last;
+
         public static void Spawn(Vector3 a, Vector3 b, Color c, float width, bool doubleLine)
         {
             EnsureMats();
@@ -52,6 +63,7 @@ namespace CatTang
             t.core = Line(go, "Core", glowMat, a, b);
             t.head = Line(go, "Head", glowMat, a, a);
             t.born = Time.time;
+            last = t;
             t.life = doubleLine ? 0.24f : 0.17f;
             if (doubleLine) t.width *= 1.3f;
             t.Update();
@@ -83,14 +95,14 @@ namespace CatTang
             float age = Time.time - born;
             float k = age / life;
             if (k >= 1) { Destroy(gameObject); return; }
-            var tint = Color.Lerp(Red, col, TintKeep);
+            var tint = Color.Lerp(Red, col, keep);
             var hot = Color.Lerp(tint, Color.white, 0.55f);       // 심지 · 탄두: 하얗게 달군 빨강
 
             // 번짐: 가늘게 → 더 가늘어지며 옅어짐. 총구 쪽이 조금 더 굵음
             float hk = 1 - k;
             halo.startWidth = width * 3.0f * (0.6f + 0.4f * hk);
             halo.endWidth = width * 2.0f * (0.6f + 0.4f * hk);
-            var hc = tint; hc.a = 0.9f * hk * hk;
+            var hc = haloCol.HasValue ? Color.Lerp(Red, haloCol.Value, keep) : tint; hc.a = 0.9f * hk * hk;
             halo.startColor = hc; halo.endColor = new Color(hc.r, hc.g, hc.b, hc.a * 0.7f);
 
             // 심지: 앞 40% 동안만

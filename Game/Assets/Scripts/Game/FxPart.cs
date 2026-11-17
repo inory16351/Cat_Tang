@@ -19,6 +19,9 @@ namespace CatTang
         [Tooltip("블렌더로 구운 플립북 (Resources/FX/anim/이름_0~N, 예: bk_fire). 지정하면 카메라를 보는 판에 수명 동안 프레임을 차례로 재생")]
         public string flipSet = "";
         [Tooltip("플립북: 수명 동안 커지는 비율 (1 = 그대로)")] public float flipGrow = 1.15f;
+        [Tooltip("붙어 버팀: 톡 나타난 뒤 수명 끝(마지막 15%)까지 크기 · 열을 그대로 유지하다 확 오그라듦 (지연 충전 폭탄 · 미련 불씨)")] public bool hold;
+        [Tooltip("붙어 버틸 때 열 (0 = 짙은 탄 색 · 1 = 하얀 심지)")] [Range(0, 1)] public float holdHeat = 0.5f;
+        [Tooltip("깜빡임(초당 횟수, 0 = 없음): 크기가 툭툭 튀고 하얗게 달아오름. 끝으로 갈수록 빨라짐")] public float blink;
 
         MeshRenderer mr;
         MaterialPropertyBlock mpb;
@@ -93,6 +96,21 @@ namespace CatTang
                 return;
             }
             FxMesh.Evaluate(kind, baseScale, t, out var sc, out float heat, out float dis);
+            if (hold)
+            {
+                float pop = t < 0.12f ? Mathf.Lerp(0.3f, 1.15f, Mathf.Sin(t / 0.12f * Mathf.PI * 0.5f)) : Mathf.Lerp(1.15f, 1f, Mathf.Clamp01((t - 0.12f) / 0.1f));
+                float end = t > 0.85f ? 1 - (t - 0.85f) / 0.15f : 1;
+                sc = baseScale * pop * end;
+                heat = holdHeat; dis = 0;
+            }
+            if (blink > 0)
+            {
+                // 끝으로 갈수록 빨라지는 깜빡임 (위상 = 적분한 주파수)
+                float ph = blink * life * lifeK * (t + t * t);
+                float b = Mathf.Pow(Mathf.Abs(Mathf.Sin(ph * Mathf.PI)), 6f);
+                sc *= 1 + 0.35f * b;
+                heat = Mathf.Max(heat, b);
+            }
             transform.localScale = sc;
             var cam = Camera.main;
             if (billboard && cam) transform.rotation = Quaternion.LookRotation(-cam.transform.forward, cam.transform.up) * Quaternion.Euler(0, 0, roll) * baseRot;

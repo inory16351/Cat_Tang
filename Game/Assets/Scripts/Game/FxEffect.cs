@@ -31,6 +31,21 @@ namespace CatTang
             return fx;
         }
 
+        Transform follow;
+        Vector3 followOffset;
+
+        /// <summary>대상에 붙어 따라다님 (지연 충전 폭탄 · 미련 불씨). 대상이 사라지면 그 자리에 남음</summary>
+        public void Follow(Transform target)
+        {
+            follow = target;
+            if (target) followOffset = transform.position - target.position;
+        }
+
+        void LateUpdate()
+        {
+            if (follow) transform.position = follow.position + followOffset;
+        }
+
         public static bool Has(string name)
         {
             if (!cache.TryGetValue(name, out var pf) || !pf) { pf = Resources.Load<GameObject>("FX/Prefabs/" + name); cache[name] = pf; }

@@ -95,7 +95,7 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9306,OnHit,None,0,1.0,OwnBullets,DamageByDistance,0.02,0.4,0.0,"이 총의 탄은 멀리 있는 적일수록 피해 증가 (1m당 +2%, 최대 +40%)"
 9307,OnFire,None,0,0.1,OwnBullets,SilhouetteShot,0.5,0.0,0.0,이 총의 탄을 쏠 때 10% 확률로 실루엣이 1발 더 (피해 50%)
 9308,OnSkill,None,0,1.0,Self,HeatGain,0.5,0.0,0.0,[전역] 스킬을 쓰면 열기 +0.5칸
-9310,OnPerfectReload,None,0,1.0,Area,Stun,0,6.0,0.5,[전역] 완벽 장전 때 반경 6 적 0.5초 정지
+9310,OnReloadEnd,None,0,1.0,Area,Stun,0,6.0,0.5,[전역] 장전이 끝날 때 반경 6 적 0.5초 정지
 9311,OnHit,None,0,1.0,OwnBullets,Knockback,1.2,0.0,0.0,이 총의 탄에 맞은 적을 크게 밀쳐냄
 9312,Passive,None,0,1.0,Self,DodgeCooldown,-0.2,0.0,0.0,[전역] 대시 충전 시간 -20%
 9313,Passive,None,0,1.0,OwnBullets,Ricochet,1,0.0,0.0,이 총의 탄이 1번 튕김

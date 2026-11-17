@@ -139,13 +139,20 @@ namespace CatTang
 
         public static void AreaStun(Vector3 at, float radius, float dur)
         {
-            GunkataFx.Flare(at + Vector3.up, radius * 1.4f, new Color(1f, 0.9f, 0.5f));
-            foreach (var en in Enemy.All) if (en && Flat(en.transform.position - at).magnitude < radius) en.health.ApplyStun(dur);
+            // 2026-11-17 사용자: 바닥을 쓸고 가는 금빛 흙먼지 띠 + 닿은 적마다 짧은 번쩍
+            var gold = new Color(1f, 0.82f, 0.4f);
+            ExtraFx.GroundWave(at, radius, gold);
+            foreach (var en in Enemy.All)
+                if (en && Flat(en.transform.position - at).magnitude < radius)
+                {
+                    en.health.ApplyStun(dur);
+                    FxBurst.Spawn(en.transform.position + Vector3.up * 1.2f, 1.6f, FxBurst.Kind.Spark, gold);
+                }
         }
 
         public static void AreaSlow(Vector3 at, float radius, float amount, float dur)
         {
-            GunkataFx.Flare(at + Vector3.up, radius * 1.8f, new Color(0.55f, 0.75f, 1f));
+            ExtraFx.SandSwirl(at, radius, new Color(0.45f, 0.65f, 1f));   // 2026-11-17 사용자: 바닥 푸른 모래 소용돌이
             foreach (var en in Enemy.All) if (en && Flat(en.transform.position - at).magnitude < radius) en.health.ApplySlow(amount, dur);
         }
 

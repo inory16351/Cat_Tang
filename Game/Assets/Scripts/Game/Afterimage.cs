@@ -16,6 +16,7 @@ namespace CatTang
         Vector3 from, to;
         float moveTime, trailT, popIn;
         bool moving, ownsMeshes = true;
+        float baseScale = 1f;                            // 실루엣 크기 배율 (회상 실루엣은 크게)
         Color trailColor;
 
         /// <param name="vivid">고양이 쪽 잔상(Vivid 레이어: 회색 화면에서도 제 색). 몬스터 대시 잔상은 false</param>
@@ -31,6 +32,16 @@ namespace CatTang
         public static void SpawnAt(Transform model, Vector3 pos, Color c, float life)
         {
             if (model) SpawnAt(model, pos, model.rotation, c, life);
+        }
+
+        /// <summary>크기 배율을 준 실루엣 (발밑 기준으로 커짐). 회상 실루엣 등 눈에 띄어야 하는 분신</summary>
+        public static Afterimage SpawnAt(Transform model, Vector3 pos, Color c, float life, float scale)
+        {
+            if (!model) return null;
+            SpawnAt(model, pos, model.rotation, c, life);
+            var a = last;
+            if (a) { a.baseScale = scale; a.transform.localScale = Vector3.one * scale; }
+            return a;
         }
 
         /// <summary>지금 자세 그대로, 바라보는 방향만 rot으로 바꾼 실루엣 (불릿 파티 분신: 사방을 향해 동시에 쏨)</summary>
@@ -71,6 +82,9 @@ namespace CatTang
                 g.transform.SetParent(root.transform, false);
                 g.transform.localPosition = model.InverseTransformPoint(smr.transform.position);
                 g.transform.localRotation = Quaternion.Inverse(model.rotation) * smr.transform.rotation;
+                // 구운 메시는 스킨 메시 자기 단위(부모 배율 뺀 크기)로 나옴 → 부모 배율(고양이 Body 1.8배)을 다시 곱함.
+                // (2026-11-17 전엔 이게 빠져 몸이 0.55배로 발 쪽으로 쪼그라들고, 제 위치에 놓인 총만 팔에서 떨어져 보였음)
+                g.transform.localScale = smr.transform.lossyScale;
                 g.AddComponent<MeshFilter>().sharedMesh = baked;
                 var r = g.AddComponent<MeshRenderer>();
                 r.sharedMaterial = baseMat;
@@ -106,7 +120,7 @@ namespace CatTang
             root.transform.SetPositionAndRotation(transform.position, transform.rotation);
             root.transform.localScale = transform.localScale;
             var a = root.AddComponent<Afterimage>();
-            a.mpb = new MaterialPropertyBlock(); a.born = Time.time; a.life = life; a.color = c; a.ownsMeshes = false;
+            a.mpb = new MaterialPropertyBlock(); a.born = Time.time; a.life = life; a.color = c; a.ownsMeshes = false; a.baseScale = baseScale;
             foreach (var r in rends)
             {
                 if (!r) continue;
@@ -145,14 +159,14 @@ namespace CatTang
                 // 나타날 때 톡: 0.75 → 1.1 → 1
                 float pop = Mathf.Clamp01(age / 0.12f);
                 float sc = pop < 1 ? Mathf.Lerp(0.95f, 1.06f, Mathf.Sin(pop * Mathf.PI * 0.5f)) : Mathf.Lerp(1.06f, 1f, Mathf.Clamp01((age - 0.12f) / 0.1f));
-                transform.localScale = Vector3.one * sc;
+                transform.localScale = Vector3.one * sc * baseScale;
                 // 도착 전엔 진하게, 도착 뒤 사라짐
                 float fade = age < moveTime ? 1 : 1 - (age - moveTime) / Mathf.Max(0.01f, life - moveTime);
                 Apply(fade);
                 return;
             }
             Apply(1 - t);
-            transform.localScale = Vector3.one * (1 + 0.08f * t);
+            transform.localScale = Vector3.one * (1 + 0.08f * t) * baseScale;
         }
 
         void OnDestroy() { if (ownsMeshes) foreach (var m in baked) if (m) Destroy(m); }

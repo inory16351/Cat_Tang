@@ -41,18 +41,20 @@ namespace CatTang
                 pendingLevels++;
                 if (player)
                 {
-                    GunkataFx.Flare(player.transform.position + Vector3.up * 1.2f, 2.2f, new Color(0.45f, 0.95f, 1f));
-                    FxBurst.Spawn(player.transform.position + Vector3.up, 2.4f, FxBurst.Kind.Gold, new Color(0.5f, 0.95f, 1f));
+                    // 2026-11-17 사용자: 솟는 청록 빛기둥 + 보석 조각 + 'LEVEL UP' 글자(Codex). 3택 창은 이펙트가 보이게 조금 뒤에
+                    ExtraFx.LevelUp(player.transform, new Color(0.35f, 0.92f, 1f));
+                    levelFxUntil = Time.unscaledTime + 0.7f;
                 }
             }
         }
 
         bool levelUpOpen;
+        float levelFxUntil;                               // 레벨 업 이펙트가 보이는 동안은 3택 창을 미룸
 
         /// <summary>쌓인 레벨 업이 있고 다른 창이 없으면 3택 창을 띄움 (Update에서 매 프레임)</summary>
         void TryLevelUp()
         {
-            if (pendingLevels <= 0 || levelUpOpen || runOver || !ui || !player || !player.health.Alive || ui.ScreenOpen) return;
+            if (pendingLevels <= 0 || levelUpOpen || runOver || !ui || !player || !player.health.Alive || ui.ScreenOpen || Time.unscaledTime < levelFxUntil) return;
             levelUpOpen = true;
             int shownLevel = level - pendingLevels + 1;
             ui.ShowRewardPick($"레벨 업!  Lv {shownLevel} — 하나 고르기", LevelUpOptions(), () =>

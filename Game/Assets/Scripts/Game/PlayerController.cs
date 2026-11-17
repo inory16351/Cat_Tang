@@ -1,4 +1,4 @@
-// 플레이어: WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시(최대 3칸, 1칸당 2초, 실루엣 잔상) · R 완벽 장전 · 우클릭 총 스킬
+// 플레이어: WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시(최대 3칸, 1칸당 2초, 실루엣 잔상) · 우클릭 총 스킬
 // Q 불릿 파티(열기 3칸) · E 상호작용. 탄 · 총 · 특성 · 코스튬 효과는 Effects로 모아 발동.
 using System;
 using System.Collections;
@@ -33,7 +33,7 @@ namespace CatTang
         public Health health;
         public event Action<int, bool> OnFired;
         public event Action<float> OnReloadStart;
-        public event Action<bool> OnReloadEnd;
+        public event Action OnReloadEnd;
         public event Action OnUltimate;
         /// <summary>닷지 액션 발동 (치명타 보정 시간)</summary>
         public event Action<float> OnDodgeAction;
@@ -43,7 +43,8 @@ namespace CatTang
         public Vector3 AimDir => aimDir;            // 강화형 무법자가 조준당했는지 볼 때 씀
         float aimDist = 8f;
         float nextFireTime, nextSkill, reloadStart, reloadDur, dashCharges = 3, dashTimer;
-        bool dashing, perfectBuff, ultimateActive;
+        bool dashing, ultimateActive;
+        Vector3 dashFrom;
         // 효과 상태
         float nextShotDamageAdd, nextShotSpeedAdd, tempDodge, tempDodgeUntil, silhouetteFollowUntil, globalStopReady, lastJustDodge;
         int critShots;
@@ -58,9 +59,13 @@ namespace CatTang
         public Interactable Focus { get; private set; }
         public bool UltimateActive => ultimateActive;
         // 실루엣 색 (주인공 붉은 스카프에 맞춘 붉은 계열): 대시 잔상 · 분신 사격 = 진홍, 대시 끝 · 백스텝 = 밝은 붉은빛, 닷지 = 분홍빛 붉은색
-        static readonly Color SilCrimson = new Color(0.92f, 0.16f, 0.2f, 0.75f);
         static readonly Color SilHot = new Color(1f, 0.42f, 0.28f, 1f);
         static readonly Color SilDodge = new Color(0.45f, 0.75f, 1f, 0.85f);     // 극한 회피 잔상: 젠레스 존 제로식 파란빛
+        // 2026-11-17 사용자: 대시 · 회상 실루엣을 하늘색 계열로 (가시성). 대시 = 옅은 하늘색 꼬리, 회상 실루엣 = 더 진하고 고양이보다 조금 크게(1.15배)
+        static readonly Color SilDash = new Color(0.52f, 0.86f, 1f, 0.72f);
+        static readonly Color SilDashEnd = new Color(0.78f, 0.95f, 1f, 0.55f);
+        static readonly Color SilRecall = new Color(0.5f, 0.88f, 1f, 0.92f);
+        const float RecallScale = 1.15f;                // (몸이 원래 크기로 고쳐져서 예전 실루엣보다 이미 약 2배)
         // 닷지 액션: 적의 공격을 대시로 직접 피하면 → 주변 시간이 느려지고(0.2배, 실시간 0.3초 + 0.3초 동안 회복) 짧은 시간 치명타 보정
         public const float DodgeCritMul = 1.5f, DodgeCritTime = 2.5f, DodgeSlowScale = 0.2f, DodgeSlowHold = 0.45f, DodgeSlowRecover = 0.35f;
         float dodgeCritUntil;
@@ -225,8 +230,7 @@ namespace CatTang
 
             if (rev.reloading)
             {
-                if (kb.rKey.wasPressedThisFrame) TryPerfectReload();
-                if (Time.time >= reloadStart + reloadDur) FinishReload(false);
+                if (Time.time >= reloadStart + reloadDur) FinishReload();   // 완벽 장전(R)은 2026-11-17 사용자 지시로 없앰
             }
             else if (mouse.leftButton.isPressed && Time.time >= nextFireTime) FireNext();
 
@@ -253,21 +257,22 @@ namespace CatTang
         IEnumerator Dash(Vector3 dir)
         {
             dashing = true;
+            dashFrom = transform.position;                // 극한 회피 리본이 여기서부터 휘감음
             dashCharges -= 1;
             health.invulnerable = true;
             health.dashing = true;
             float t = 0, ghostT = 0;
-            Afterimage.Spawn(model, SilCrimson);
+            Afterimage.Spawn(model, SilDash);
             while (t < dashTime)
             {
                 cc.Move(dir * (dashDistance / dashTime) * Time.deltaTime);
                 t += Time.deltaTime;
                 ghostT += Time.deltaTime;
-                if (ghostT >= 0.035f) { ghostT = 0; Afterimage.Spawn(model, SilCrimson * new Color(1, 1, 1, 0.8f)); }
+                if (ghostT >= 0.035f) { ghostT = 0; Afterimage.Spawn(model, SilDash * new Color(1, 1, 1, 0.8f)); }
                 yield return null;
             }
             dashing = false;
-            Afterimage.Spawn(model, SilHot * new Color(1, 1, 1, 0.6f));
+            Afterimage.Spawn(model, SilDashEnd);
             yield return new WaitForSeconds(JustDodgeWindow);
             health.dashing = false;
             health.invulnerable = ultimateActive;         // 불릿 파티 중 대시는 무적을 풀지 않음
@@ -279,6 +284,7 @@ namespace CatTang
             lastJustDodge = Time.time;
             // 닷지 액션 (젠레스 존 제로 극한 회피 참고): 순간 파란 섬광 → 화면이 회색으로 빠지며 슬로우, 몸 주위로 파란 반짝임이 차례로 터짐
             GunkataFx.DodgeBurst(transform.position, new Color(0.45f, 0.75f, 1f), true);
+            DodgeRibbon.Spawn(dashFrom, transform.position, new Color(0.45f, 0.85f, 1f));   // 2026-11-17 사용자: 고리 대신 리본 궤적
             ScreenFx.PerfectDodge(ultimateActive ? 0.25f : DodgeSlowHold, DodgeSlowRecover);
             // 닷지 액션: 치명타 보정 + 주변 시간 느려짐
             dodgeCritUntil = Time.time + DodgeCritTime;
@@ -288,7 +294,7 @@ namespace CatTang
             OnDodgeAction?.Invoke(DodgeCritTime);
             foreach (var e in Effects.Global(this, "OnJustDodge"))
             {
-                if (e.Type == "InstantReload" && rev.reloading) FinishReload(false);
+                if (e.Type == "InstantReload" && rev.reloading) FinishReload();
                 if (e.Type == "CritNextShots") critShots += Mathf.RoundToInt(e.Value);
             }
         }
@@ -342,7 +348,7 @@ namespace CatTang
 
         void ChanceDodge()
         {
-            GunkataFx.DodgeBurst(transform.position, new Color(0.35f, 0.95f, 0.85f), false);
+            ExtraFx.ChanceDodge(model, transform.position, new Color(0.35f, 0.95f, 0.85f));   // 2026-11-17 사용자: 옆으로 빗겨나는 잔상
             foreach (var e in Effects.Global(this, "OnChanceDodge"))
                 if (e.Type == "BulletRefund" && Effects.Roll(e)) Refund();
         }
@@ -353,7 +359,7 @@ namespace CatTang
             if (rev.reloading || rev.shotsThisCycle <= 0) return;
             rev.shotsThisCycle--;
             rev.next = rev.reversed ? Mathf.Min(12, rev.next + 1) : Mathf.Max(1, rev.next - 1);
-            OnReloadEnd?.Invoke(false);
+            OnReloadEnd?.Invoke();
         }
 
         // ---------- 사격 ----------
@@ -405,7 +411,7 @@ namespace CatTang
                         {
                             Health.GlobalStopUntil = Time.time + Mathf.Max(0.5f, e.Duration) * ControlDurationMul;
                             globalStopReady = Time.time + (e.Value2 > 0 ? e.Value2 : 20f);
-                            GunkataFx.Flare(transform.position + Vector3.up, 9f, new Color(0.6f, 0.75f, 1f));
+                            GunkataFx.Flare(transform.position + Vector3.up, 9f, new Color(0.6f, 0.75f, 1f), true);
                         }
                         break;
                 }
@@ -429,6 +435,32 @@ namespace CatTang
             return dmg;
         }
 
+        // 이번 발사의 특성 목록 (프레임마다 한 번 계산): [0] = 대표 = 모은 개수 가장 많은 특성(동률이면 랜덤),
+        // 이어서 세트가 켜진(2단계 이상) 다른 특성들, 마지막으로 이 탄 자신의 특성(아직 없으면)
+        int shotTraitsFrame = -1; BulletDef shotTraitsBullet;
+        readonly List<int> shotTraits = new();
+        List<int> ShotTraits(BulletDef b)
+        {
+            if (shotTraitsFrame == Time.frameCount && shotTraitsBullet == b) return shotTraits;
+            shotTraitsFrame = Time.frameCount; shotTraitsBullet = b;
+            shotTraits.Clear();
+            var counts = rev.TraitCounts();
+            int best = 0, ties = 0, top = 0;
+            foreach (var kv in counts)
+            {
+                if (kv.Key == 0 || rev.TierOf(kv.Value) <= 0) continue;
+                if (kv.Value > best) { best = kv.Value; top = kv.Key; ties = 1; }
+                else if (kv.Value == best && UnityEngine.Random.Range(0, ++ties) == 0) top = kv.Key;   // 동률: 고르게 랜덤
+            }
+            if (top != 0) shotTraits.Add(top);
+            foreach (var kv in counts)
+                if (kv.Key != 0 && kv.Key != top && rev.TierOf(kv.Value) > 0) shotTraits.Add(kv.Key);
+            if (b != null)
+                foreach (var t in new[] { b.Trait1, b.Trait2 })
+                    if (t != 0 && !shotTraits.Contains(t)) shotTraits.Add(t);
+            return shotTraits;
+        }
+
         /// <summary>한 발: 거의 즉발 히트스캔 + 레이저 궤적. ghost = 실루엣 · 추가 사격 (발사 효과 없음). 반환: 탄 회수 여부</summary>
         public bool Shoot(int s, Vector3 dir, Transform muzzle, float mul, float targetDist = -1f, bool ghost = false, Vector3? fromPos = null)
         {
@@ -441,7 +473,6 @@ namespace CatTang
             {
                 dmg *= 1 + nextShotDamageAdd;
                 nextShotDamageAdd = 0;
-                if (perfectBuff) { dmg *= 1.5f; perfectBuff = false; }
             }
             bool crit = CritChanceFor(s) > UnityEngine.Random.value || (!ghost && critShots > 0);
             if (!ghost && critShots > 0) critShots--;
@@ -510,11 +541,19 @@ namespace CatTang
                 end = h.point;
                 if (pierced >= pierce) break;
                 pierced++;
-                GunkataFx.HitImpact(h.point, dir, col, false, 1f, true);          // 관통 불꽃 (3D)
+                ExtraFx.Pierce(h.point, dir, col);                                 // 관통: 탄도 방향으로 뚫고 나가는 불꽃 꼬리 (2026-11-17)
                 foreach (var e in Effects.For(this, s, "OnPierce")) if (e.Type == "PierceDamageGrowth") dmg *= 1 + e.Value;
             }
             bool resonance = !ghost && awake && b != null && b.Id != 1000;
-            Tracer.Spawn(origin, end, col, BulletLook.Width(b, awake) * (ghost ? 0.7f : resonance ? 1.6f : 1f), resonance || (awake && b != null && b.Grade == "Legendary"));
+            // 특성 탄도 (2026-11-17 사용자): 날아가는 탄(궤적 색 · 덩어리)은 플레이어가 가장 많이 모은 특성(동률이면 랜덤),
+            // 모은 특성이 없으면 이 탄의 특성. 궤적 번짐은 이 탄 자신의 특성 색 (대표와 다를 때)
+            var shown = ShotTraits(b);
+            int trait = shown.Count > 0 ? shown[0] : 0;
+            int own = b != null ? b.Trait1 : 0;
+            var trailCol = trait != 0 ? GunkataFx.TraitColor(trait, col) : col;
+            Color? halo2 = own != 0 && own != trait ? GunkataFx.TraitColor(own, col) : (Color?)null;
+            Tracer.Spawn(origin, end, trailCol, BulletLook.Width(b, awake) * (ghost ? 0.7f : resonance ? 1.6f : 1f), resonance || (awake && b != null && b.Grade == "Legendary"), trait != 0, halo2);
+            if (trait != 0) GunkataFx.TraitBolt(trait, origin, end, trailCol, (awake ? 1.15f : 0.9f) * (ghost ? 0.75f : 1f));
             if (resonance)
             {
                 // 공명 사격: 금빛 섬광 + 맞은 자리 탄 색 폭발(피해 30%) + 화면 흔들림
@@ -533,7 +572,7 @@ namespace CatTang
                 foreach (var e in Effects.For(this, s, "OnRicochet")) if (e.Type == "DamageAddStack") stack += e.Value;
                 var to = next.transform.position + Vector3.up * 0.9f;
                 Tracer.Spawn(from, to, col, BulletLook.Width(b, awake) * 0.8f, false);
-                GunkataFx.HitImpact(from, (to - from).normalized, col, false, 1f, true);
+                ExtraFx.Ricochet(from, (to - from).normalized, col);              // 튕김: 지그재그 불똥 + 흰 번쩍 (2026-11-17)
                 hitSet.Add(next.health);
                 next.health.HitFrom(to - from);
                 ApplyHit(s, next.health, dmg * (1 + stack), to, Vector3.Distance(transform.position, to), (to - from).normalized, col, crit);
@@ -559,17 +598,27 @@ namespace CatTang
                 if (e.Type == "DamageAdd") dmg *= 1 + e.Value;
                 if (e.Type == "DamageByDistance") dmg *= 1 + Mathf.Min(e.Value * dist, e.Value2 > 0 ? e.Value2 : 1f);
             }
-            if (target.Stunned) dmg *= 1 + Effects.Passive(this, s, "DamageVsStoppedAdd");
+            // 정지된 적 추가 피해 (영원 6개 등): 늘어난 몫은 초록 숫자로 따로 띄움 (2026-11-17 사용자)
+            float stoppedFrac = 0;
+            if (target.Stunned)
+            {
+                float vs = Effects.Passive(this, s, "DamageVsStoppedAdd");
+                dmg *= 1 + vs;
+                if (vs > 0) stoppedFrac = vs / (1 + vs);
+            }
             // 피해 유형별 증폭 (탄 고유 효과)
             if (target.IsBoss) dmg *= 1 + Effects.GlobalPassive(this, "BossDamageAdd");
             if (target.HasStatus) dmg *= 1 + Effects.GlobalPassive(this, "StatusDamageAdd");
             bool wasLocked = target.TimeLocked;
-            target.TakeDamage(dmg);
+            target.TakeDamage(dmg, false, crit, stoppedFrac);
             rev.AddHeat(HeatPerHit);
-            // 타격 이펙트 (3D 툰 불꽃, 탄 색): 섬광 덩어리 + 튀는 가시 + 충격 고리, 치명타는 금빛 네 갈래 별 + 큰 고리
-            // 특성 있는 탄은 특성별 타격(FX_Trait_*), 없으면 일반 타격. 치명타는 금빛 치명타를 겹침
-            bool traited = slotBullet != null && slotBullet.Trait1 != 0 && GunkataFx.TraitHit(slotBullet.Trait1, point, dir, col, rev.Awakened(s));
-            if (!traited || crit) GunkataFx.HitImpact(point, dir, col, crit, traited ? 0.85f : 1f);
+            // 타격 이펙트 (3D 툰 불꽃, 탄 색): 섬광 덩어리 + 튀는 가시 + 충격 고리
+            // 특성 있는 탄은 특성별 타격(FX_Trait_*), 없으면 일반 타격(1.3배, 2026-11-17 사용자: 조금 크게).
+            // 치명타는 일반 타격 모양을 빨간 계열로 크고 화려하게 겹침(GunkataFx.CritImpact) + 치명타 전용 숫자
+            // 맞은 자리엔 켜진 특성 전부 + 이 탄의 특성 (대표 = 가장 많이 모은 특성이 크게, 나머지는 조금 작게 둘레에)
+            bool traited = GunkataFx.TraitHitAll(ShotTraits(slotBullet), point, dir, col, rev.Awakened(s), target.transform);
+            if (crit) GunkataFx.CritImpact(point, dir, traited ? 0.85f : 1f);
+            else if (!traited) GunkataFx.HitImpact(point, dir, col, false, GunkataFx.HitScale);
             if (crit) CameraFollow.Shake(0.07f);
             bool killed = !target.Alive;
             var en = target.GetComponent<Enemy>();
@@ -655,9 +704,9 @@ namespace CatTang
         IEnumerator SilhouetteShot(int s, Vector3 dir, float mul)
         {
             yield return new WaitForSeconds(0.07f);
-            var side = Vector3.Cross(Vector3.up, dir).normalized * (UnityEngine.Random.value < 0.5f ? 1.1f : -1.1f);
+            var side = Vector3.Cross(Vector3.up, dir).normalized * (UnityEngine.Random.value < 0.5f ? 1.4f : -1.4f);   // 커진 만큼 고양이와 덜 겹치게
             var pos = transform.position + side - dir * 0.4f;
-            Afterimage.SpawnAt(model, pos, SilCrimson, 0.5f);
+            Afterimage.SpawnAt(model, pos, SilRecall, 0.6f, RecallScale);
             Shoot(s, dir, null, mul, -1, true, pos);
             foreach (var e in Effects.Global(this, "OnSilhouette"))
                 if (e.Type == "SilhouetteFollow") silhouetteFollowUntil = Time.time + Mathf.Max(1f, e.Duration);
@@ -666,7 +715,7 @@ namespace CatTang
         IEnumerator TrailSilhouette(int s, Vector3 at, float mul, float after)
         {
             var pos = Effects.Flat(at) + Vector3.up * 0.05f;
-            Afterimage.SpawnAt(model, pos, SilCrimson * new Color(1, 1, 1, 0.8f), after + 0.3f);
+            Afterimage.SpawnAt(model, pos, SilRecall * new Color(1, 1, 1, 0.85f), after + 0.3f, RecallScale);
             yield return new WaitForSeconds(after);
             var tgt = Effects.Nearest(pos, 12f);
             if (!tgt) yield break;
@@ -705,32 +754,21 @@ namespace CatTang
             }
         }
 
-        void TryPerfectReload()
-        {
-            float p = ReloadProgress;
-            if (p > 0.45f && p < 0.65f) FinishReload(true);
-            else reloadStart += 0.25f;
-        }
-
-        void FinishReload(bool perfect)
+        void FinishReload()
         {
             rev.reloading = false;
             rev.shotsThisCycle = 0;
             rev.next = rev.FirstSlot;
-            if (perfect)
-            {
-                perfectBuff = true;
-                GunkataFx.Flare(transform.position + Vector3.up, 2.2f, new Color(1f, 0.85f, 0.4f));
-                foreach (var e in Effects.Global(this, "OnPerfectReload"))
-                    if (e.Type == "Stun") Effects.AreaStun(transform.position, e.Value2 > 0 ? e.Value2 : 5f, Mathf.Max(0.3f, e.Duration) * ControlDurationMul);
-            }
-            OnReloadEnd?.Invoke(perfect);
+            // 장전이 끝날 때 효과 (예: 총 2008 '마지막 종소리' 9310 — 예전 완벽 장전 효과를 2026-11-17 이 트리거로 옮김)
+            foreach (var e in Effects.Global(this, "OnReloadEnd"))
+                if (e.Type == "Stun") Effects.AreaStun(transform.position, e.Value2 > 0 ? e.Value2 : 5f, Mathf.Max(0.3f, e.Duration) * ControlDurationMul);
+            OnReloadEnd?.Invoke();
         }
 
         public void ResetCylinder()
         {
-            if (rev.reloading) FinishReload(false);
-            else if (rev.shotsThisCycle != 0) { rev.shotsThisCycle = 0; rev.next = rev.FirstSlot; OnReloadEnd?.Invoke(false); }
+            if (rev.reloading) FinishReload();
+            else if (rev.shotsThisCycle != 0) { rev.shotsThisCycle = 0; rev.next = rev.FirstSlot; OnReloadEnd?.Invoke(); }
         }
 
         // ---------- 총 스킬 (프로토타입: 백스텝 샷) ----------
@@ -892,17 +930,10 @@ namespace CatTang
             GunkataFx.Smoke(mid + UnityEngine.Random.insideUnitSphere * 0.7f, UnityEngine.Random.Range(1.6f, 2.4f));
             for (int k = 0; k < 2; k++)
                 GunkataFx.Swirl(mid + Vector3.up * UnityEngine.Random.Range(-0.4f, 0.4f), UnityEngine.Random.Range(1.0f, 1.9f), -UltSpinSpeed * 0.9f);
-            // 총알 비: 원 안 아무 데나 탄착 (3D로 구운 플립북: 섬광 · 튀는 불똥 · 고리 · 먼지). 범위가 보임
+            // 총알 비: 원 안 아무 데나, 하늘에서 비스듬히 내리꽂히는 금빛 줄 → 흙먼지 + 작은 탄자국 (2026-11-17 사용자: 고리 대신 비처럼). 범위가 보임
             if (zone)
                 for (int k = 0; k < UltRainPerTick; k++)
-                {
-                    var g = zone.RandomPoint();
-                    if (GunkataFx.Impact(g, UnityEngine.Random.Range(0.7f, 1.05f))) continue;
-                    // 구운 그림이 없을 때 (Cat_Tang/Bake Impact FX 전): 셰이더 탄착
-                    var p = g + Vector3.up * 0.25f;
-                    FxBurst.Spawn(p, UnityEngine.Random.Range(0.7f, 1.1f), FxBurst.Kind.Spark, UltGold);
-                    if (k % 3 == 0) FxBurst.Spawn(p, 1.0f, FxBurst.Kind.Dust, Color.white);
-                }
+                    ExtraFx.RainDrop(zone.RandomPoint(), UltGold);
             // 원 안의 적 전부 적중
             foreach (var h in foes)
             {

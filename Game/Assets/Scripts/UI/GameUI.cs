@@ -78,6 +78,7 @@ namespace CatTang
                 hud.lift = HudLift;                                   // 장전 HUD 밑에 경험치 바 자리
                 hud.Build(hudRoot, 1080);
                 HeadDash.Create(this);                                // 고양이 머리 위 남은 대시 '<<<'
+                AimCursor.Create(this);                               // 조준 커서 '표적지'
             }
             BuildTop();
             if (!village) TraitHud.Build(hudRoot, new Vector2(30, -262));     // 활성 특성 목록 (마우스 올리면 효과)
@@ -275,7 +276,7 @@ namespace CatTang
             heatText = UIKit.Label("Heat", hudRoot, new Vector2(0.5f, 0), new Vector2(390, 40 + up), new Vector2(260, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Gold);
             skillText = UIKit.Label("Skill", hudRoot, new Vector2(1, 0), new Vector2(-30, 30), new Vector2(420, 130), 20, TextAnchor.LowerRight);
             var help = UIKit.Label("Help", hudRoot, new Vector2(0, 0), new Vector2(26, 26), new Vector2(560, 150), 18, TextAnchor.LowerLeft, false, new Color(1, 1, 1, 0.55f));
-            help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\nR 완벽 장전 · 우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리";
+            help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\n우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리";
             // 상호작용 안내
             prompt = UIKit.Img("Prompt", hudRoot, "button", new Vector2(0.5f, 0), new Vector2(0, 340 + up), new Vector2(460, 84), true, 2.2f).gameObject;
             promptText = UIKit.Label("Text", prompt.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 2), new Vector2(420, 60), 28, TextAnchor.MiddleCenter, true);
@@ -358,7 +359,7 @@ namespace CatTang
             var rev = player.rev;
             if (!village)
             {
-                if (rev.reloading) nextText.text = player.ReloadProgress > 0.45f && player.ReloadProgress < 0.65f ? "<color=#FFD54A>지금 R!</color>" : "장전 중…";
+                if (rev.reloading) nextText.text = "장전 중…";
                 else
                 {
                     int s = Mathf.Clamp(rev.next, 1, 12);

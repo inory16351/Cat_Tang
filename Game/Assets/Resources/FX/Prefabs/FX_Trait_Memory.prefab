@@ -35,8 +35,11 @@ Transform:
   - {fileID: 5800215237492127192}
   - {fileID: 2197918124856317909}
   - {fileID: 2662481818737812720}
-  - {fileID: 8129208795364922603}
   - {fileID: 1144331221080495048}
+  - {fileID: 951824373520904409}
+  - {fileID: 9130653939813103549}
+  - {fileID: 4113250495024789335}
+  - {fileID: 6676613232656477999}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &3099359929370651543
@@ -52,6 +55,240 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxEffect
   tintable: 1
+--- !u!1 &749994136968285813
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9130653939813103549}
+  - component: {fileID: 517861409641552835}
+  - component: {fileID: 2172632373506857095}
+  - component: {fileID: 843317199365279088}
+  m_Layer: 0
+  m_Name: Petal6
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9130653939813103549
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749994136968285813}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.02014119, y: 0.88616663, z: 0.03869087, w: 0.46130913}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.4534558, y: 0.4534558, z: 0.5938112}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4749470612107925784}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &517861409641552835
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749994136968285813}
+  m_Mesh: {fileID: 4300000, guid: 189ff31339d6cfc439c48d29294b8158, type: 2}
+--- !u!23 &2172632373506857095
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749994136968285813}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 2bae7ae3553bdb8458a54863015181fe, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &843317199365279088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749994136968285813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5de31cb172a48bd489b55409a2eee3e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
+  kind: 1
+  life: 0.9404747
+  delay: 0.00149256
+  drift: {x: -1.3300402, y: -1.7569466, z: -1.4}
+  spin: -217.63676
+  spinAxis: {x: 0, y: 0, z: 1}
+  billboard: 0
+  jitter: 0.15
+  randomRoll: 1
+  useTint: 1
+  flipSet: 
+  flipGrow: 1.15
+  hold: 0
+  blink: 0
+--- !u!1 &1539221227568053658
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 951824373520904409}
+  - component: {fileID: 9089302389201715694}
+  - component: {fileID: 402894181610153228}
+  - component: {fileID: 4878251717150393534}
+  m_Layer: 0
+  m_Name: Petal5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &951824373520904409
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1539221227568053658}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.000000016727626, y: 0.9238795, z: 0.38268346, w: -0.000000040384055}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.41852808, y: 0.41852808, z: 0.5480725}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4749470612107925784}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &9089302389201715694
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1539221227568053658}
+  m_Mesh: {fileID: 4300000, guid: 7999f460022e0d241940d59f4b92ee04, type: 2}
+--- !u!23 &402894181610153228
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1539221227568053658}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 2bae7ae3553bdb8458a54863015181fe, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4878251717150393534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1539221227568053658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5de31cb172a48bd489b55409a2eee3e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
+  kind: 1
+  life: 0.86308175
+  delay: 0.0104962345
+  drift: {x: -1.8357728, y: -1.2093695, z: -1.4}
+  spin: 217.36557
+  spinAxis: {x: 0, y: 0, z: 1}
+  billboard: 0
+  jitter: 0.15
+  randomRoll: 1
+  useTint: 1
+  flipSet: 
+  flipGrow: 1.15
+  hold: 0
+  blink: 0
 --- !u!1 &1543724388269373080
 GameObject:
   m_ObjectHideFlags: 0
@@ -81,7 +318,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.02014119, y: 0.88616663, z: 0.03869087, w: 0.46130913}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.4, y: 0.4, z: 0.5}
+  m_LocalScale: {x: 0.46777102, y: 0.46777102, z: 0.61255735}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4749470612107925784}
@@ -156,10 +393,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
   kind: 1
-  life: 0.4
-  delay: 0.02
-  drift: {x: 3.2, y: 0.3, z: -2.3}
-  spin: -360
+  life: 0.7584848
+  delay: 0.05723812
+  drift: {x: 0.9920859, y: 0.123424165, z: -1.4}
+  spin: -261.228
   spinAxis: {x: 0, y: 0, z: 1}
   billboard: 0
   jitter: 0.15
@@ -167,7 +404,9 @@ MonoBehaviour:
   useTint: 1
   flipSet: 
   flipGrow: 1.15
---- !u!1 &1699630681867500699
+  hold: 0
+  blink: 0
+--- !u!1 &2290410286784963471
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -175,47 +414,47 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8129208795364922603}
-  - component: {fileID: 2120747241276734131}
-  - component: {fileID: 4653571163611891940}
-  - component: {fileID: 4491724796757102460}
+  - component: {fileID: 6676613232656477999}
+  - component: {fileID: 3879514953892231397}
+  - component: {fileID: 6627454430977535735}
+  - component: {fileID: 8117177967313327227}
   m_Layer: 0
-  m_Name: Mark
+  m_Name: Petal8
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8129208795364922603
+--- !u!4 &6676613232656477999
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1699630681867500699}
+  m_GameObject: {fileID: 2290410286784963471}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.15}
-  m_LocalScale: {x: 0.9, y: 0.9, z: 1.6}
+  m_LocalRotation: {x: 0.026208255, y: 0.9500878, z: -0.29956153, w: 0.08312196}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.47586805, y: 0.47586805, z: 0.6231606}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4749470612107925784}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &2120747241276734131
+--- !u!33 &3879514953892231397
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1699630681867500699}
-  m_Mesh: {fileID: 4300000, guid: 2f4a4c9568086ed4e9706748f6974e54, type: 2}
---- !u!23 &4653571163611891940
+  m_GameObject: {fileID: 2290410286784963471}
+  m_Mesh: {fileID: 4300000, guid: 7999f460022e0d241940d59f4b92ee04, type: 2}
+--- !u!23 &6627454430977535735
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1699630681867500699}
+  m_GameObject: {fileID: 2290410286784963471}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -258,23 +497,23 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &4491724796757102460
+--- !u!114 &8117177967313327227
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1699630681867500699}
+  m_GameObject: {fileID: 2290410286784963471}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5de31cb172a48bd489b55409a2eee3e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
-  kind: 5
-  life: 0.6
-  delay: 0.05
-  drift: {x: 0, y: 0, z: 0}
-  spin: 0
+  kind: 1
+  life: 0.9157679
+  delay: 0.0090897735
+  drift: {x: 1.3742464, y: -1.7286564, z: -1.4}
+  spin: -225.02863
   spinAxis: {x: 0, y: 0, z: 1}
   billboard: 0
   jitter: 0.15
@@ -282,6 +521,8 @@ MonoBehaviour:
   useTint: 1
   flipSet: 
   flipGrow: 1.15
+  hold: 0
+  blink: 0
 --- !u!1 &3601285441987821271
 GameObject:
   m_ObjectHideFlags: 0
@@ -397,6 +638,8 @@ MonoBehaviour:
   useTint: 1
   flipSet: bk_spark
   flipGrow: 1.1
+  hold: 0
+  blink: 0
 --- !u!1 &3619033164562821346
 GameObject:
   m_ObjectHideFlags: 0
@@ -426,7 +669,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.026208255, y: 0.9500878, z: -0.29956153, w: 0.08312196}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.38, y: 0.38, z: 0.5}
+  m_LocalScale: {x: 0.38062772, y: 0.38062772, z: 0.49844107}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4749470612107925784}
@@ -501,10 +744,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
   kind: 1
-  life: 0.42
-  delay: 0.01
-  drift: {x: 0.5, y: -2.3, z: -3}
-  spin: -300
+  life: 0.9109767
+  delay: 0.020120542
+  drift: {x: -1.5182106, y: -0.17849559, z: -1.4}
+  spin: -264.00085
   spinAxis: {x: 0, y: 0, z: 1}
   billboard: 0
   jitter: 0.15
@@ -512,6 +755,8 @@ MonoBehaviour:
   useTint: 1
   flipSet: 
   flipGrow: 1.15
+  hold: 0
+  blink: 0
 --- !u!1 &6260815926353750667
 GameObject:
   m_ObjectHideFlags: 0
@@ -541,7 +786,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.020141194, y: 0.8861666, z: 0.03869087, w: -0.4613092}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.4, y: 0.4, z: 0.5}
+  m_LocalScale: {x: 0.47060516, y: 0.47060516, z: 0.6162687}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4749470612107925784}
@@ -616,10 +861,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
   kind: 1
-  life: 0.4
-  delay: 0.03
-  drift: {x: -3.2, y: 0.3, z: -2.3}
-  spin: 380
+  life: 0.9364632
+  delay: 0.026688987
+  drift: {x: -0.2965834, y: 0.28529027, z: -1.4}
+  spin: 173.35585
   spinAxis: {x: 0, y: 0, z: 1}
   billboard: 0
   jitter: 0.15
@@ -627,6 +872,8 @@ MonoBehaviour:
   useTint: 1
   flipSet: 
   flipGrow: 1.15
+  hold: 0
+  blink: 0
 --- !u!1 &6468548553284061444
 GameObject:
   m_ObjectHideFlags: 0
@@ -656,7 +903,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.000000016727626, y: 0.9238795, z: 0.38268346, w: -0.000000040384055}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.42, y: 0.42, z: 0.55}
+  m_LocalScale: {x: 0.41647547, y: 0.41647547, z: 0.5453846}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4749470612107925784}
@@ -731,10 +978,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
   kind: 1
-  life: 0.42
-  delay: 0
-  drift: {x: 0, y: 2.8, z: -2.8}
-  spin: 400
+  life: 0.92425114
+  delay: 0.039656315
+  drift: {x: 1.8830258, y: -0.73995525, z: -1.4}
+  spin: 166.27141
   spinAxis: {x: 0, y: 0, z: 1}
   billboard: 0
   jitter: 0.15
@@ -742,6 +989,8 @@ MonoBehaviour:
   useTint: 1
   flipSet: 
   flipGrow: 1.15
+  hold: 0
+  blink: 0
 --- !u!1 &6564674778019119195
 GameObject:
   m_ObjectHideFlags: 0
@@ -857,3 +1106,122 @@ MonoBehaviour:
   useTint: 1
   flipSet: 
   flipGrow: 1.15
+  hold: 0
+  blink: 0
+--- !u!1 &9098812488015552879
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4113250495024789335}
+  - component: {fileID: 1258770848829817715}
+  - component: {fileID: 7063799031174559891}
+  - component: {fileID: 4659594597288108580}
+  m_Layer: 0
+  m_Name: Petal7
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4113250495024789335
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9098812488015552879}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.020141194, y: 0.8861666, z: 0.03869087, w: -0.4613092}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.38712952, y: 0.38712952, z: 0.5069553}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4749470612107925784}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &1258770848829817715
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9098812488015552879}
+  m_Mesh: {fileID: 4300000, guid: 9b5d924e3cfcd2e4aa565bd7a0dbc340, type: 2}
+--- !u!23 &7063799031174559891
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9098812488015552879}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 2bae7ae3553bdb8458a54863015181fe, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4659594597288108580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9098812488015552879}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5de31cb172a48bd489b55409a2eee3e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CatTang.FxPart
+  kind: 1
+  life: 0.809435
+  delay: 0.0067223776
+  drift: {x: 0.50543183, y: -2.056762, z: -1.4}
+  spin: 179.68457
+  spinAxis: {x: 0, y: 0, z: 1}
+  billboard: 0
+  jitter: 0.15
+  randomRoll: 1
+  useTint: 1
+  flipSet: 
+  flipGrow: 1.15
+  hold: 0
+  blink: 0

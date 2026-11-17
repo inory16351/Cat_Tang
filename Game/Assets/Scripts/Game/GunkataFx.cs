@@ -138,11 +138,6 @@ namespace CatTang
             var td = Jitter(d, 4f, -0.03f, 0.03f);
             FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, p + d * 0.3f * scale, Quaternion.LookRotation(td, Vector3.up),
                 new Vector3(0.11f, 0.11f, Random.Range(1.4f, 2.1f)) * scale, Random.Range(0.17f, 0.23f), 0, td * Random.Range(17f, 24f) * scale, FxMesh.Kind.Tracer);
-            // 충격 고리: 가끔 빠지고, 기울기 · 크기 제각각
-            if (Random.value < 0.7f)
-                FxMesh.Spawn(FxMeshes.Torus(), spikeMat, p + d * Random.Range(0.35f, 0.7f) * scale,
-                    Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(Random.Range(-25f, 25f), Random.Range(-25f, 25f), 0),
-                    Vector3.one * (full ? 1.25f : 0.85f) * Random.Range(0.7f, 1.25f) * scale, Random.Range(0.2f, 0.3f), Random.Range(0f, 0.02f), d * 2f * scale, FxMesh.Kind.Ring);
             if (!full) return;
             // 불똥 탄도: 2~5개, 한쪽으로 쏠리기도 하는 작은 3D 가시
             int nSpark = Random.Range(2, 6);
@@ -212,6 +207,42 @@ namespace CatTang
 
         static Vector3 Perp(Vector3 d) { var p = Vector3.Cross(d, Vector3.up); return p.sqrMagnitude > 1e-4f ? p.normalized : Vector3.right; }
 
+        /// <summary>메시 · 재질 준비됨 (밖에서 FxMesh를 쓸 때)</summary>
+        public static bool Ready => Init();
+
+        /// <summary>한 방향으로 쏜살같이 날아가는 가는 빛 가시 하나 (바람 · 빛살)</summary>
+        public static void Streak(Vector3 at, Vector3 d, float len, float w, Color col, float speed)
+        {
+            if (!Init()) return;
+            FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, at, Quaternion.LookRotation(d, Vector3.up),
+                new Vector3(w, w, len), Random.Range(0.16f, 0.24f), 0, d * speed, FxMesh.Kind.Tracer)?.Tint(col);
+        }
+
+        public const float HitScale = 1.3f;                                  // 고양이 탄 일반 타격 크기 (2026-11-17 사용자: 조금 크게)
+        static readonly Color CritRed = new(1f, 0.16f, 0.14f), CritHot = new(1f, 0.82f, 0.62f);
+
+        /// <summary>치명타 (2026-11-17 사용자: 일반 타격 모양을 빨간 계열로, 더 크고 화려하게):
+        /// 진홍 일반 타격 1.8배 + 45° 비튼 뜨거운 흰빛 일반 타격 1.1배를 겹치고, 탄도에 수직인 면으로 진홍 빛살 8개가 사방으로 날아감</summary>
+        public static void CritImpact(Vector3 p, Vector3 dir, float scale = 1f)
+        {
+            if (!Init()) return;
+            dir = dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward;
+            var look = Quaternion.LookRotation(dir, Vector3.up);
+            bool prefab = FxEffect.Spawn("FX_Hit", p, look, 1.8f * scale, CritRed);
+            if (prefab) FxEffect.Spawn("FX_Hit", p, look * Quaternion.Euler(0, 0, 45f), 1.1f * scale, CritHot);
+            else HitImpact(p, dir, CritRed, false, 1.8f * scale);
+            FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), spikeMat, p, Random.rotation, Vector3.one * 0.9f * scale, 0.12f, 0, Vector3.zero, FxMesh.Kind.Core)?.Tint(CritHot);
+            var up = Perp(dir);
+            float roll = Random.Range(0f, 45f);
+            for (int k = 0; k < 8; k++)
+            {
+                var d = (Quaternion.AngleAxis(roll + k * 45f + Random.Range(-8f, 8f), dir) * up - dir * 0.15f).normalized;
+                float w = (k % 2 == 0 ? 0.2f : 0.13f) * scale;
+                FxMesh.Spawn(FxMeshes.Spike(k % 3), spikeMat, p + d * 0.15f, Quaternion.LookRotation(d, dir),
+                    new Vector3(w, w, (k % 2 == 0 ? 1.5f : 0.9f) * scale), Random.Range(0.2f, 0.28f), Random.Range(0f, 0.03f), d * Random.Range(5f, 8f) * scale, FxMesh.Kind.Tracer)?.Tint(k % 2 == 0 ? CritRed : CritHot);
+            }
+        }
+
         /// <summary>총알 타격: 탄 색 섬광 덩어리 + 맞은 면에서 튀어나오는 가시(주로 쏜 쪽 · 옆, 몇 개는 관통 방향) + 탄도에 수직인 충격 고리.
         /// crit = 금빛 네 갈래 별 가시 + 큰 고리 겹침. small = 관통 · 튕김용 작은 불꽃(고리 없음)</summary>
         public static void HitImpact(Vector3 p, Vector3 dir, Color col, bool crit, float scale = 1f, bool small = false)
@@ -235,9 +266,6 @@ namespace CatTang
                 FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, p + d * 0.08f, Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
                     new Vector3(w, w, Random.Range(0.45f, 1.05f) * s), Random.Range(0.14f, 0.22f), Random.Range(0f, 0.03f), d * Random.Range(1f, 3f) * s, FxMesh.Kind.Spike)?.Tint(col);
             }
-            if (!small)
-                FxMesh.Spawn(FxMeshes.Torus(), spikeMat, p, Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(Random.Range(-20f, 20f), Random.Range(-20f, 20f), 0),
-                    Vector3.one * 1.0f * s, 0.2f, 0, back * 0.6f, FxMesh.Kind.Ring)?.Tint(col);
             if (!crit) return;
             // 치명타: 금빛 네 갈래 별 (쏜 방향을 축으로 십자, 살짝 비틀어) + 큰 흰 고리
             var side = Perp(dir);
@@ -248,7 +276,6 @@ namespace CatTang
                 float len = (k % 2 == 0 ? 1.9f : 1.3f) * s;
                 FxMesh.Spawn(FxMeshes.Spike(k % 3), spikeMat, p, Quaternion.LookRotation(d, side), new Vector3(0.22f * s, 0.22f * s, len), 0.26f, 0.02f, Vector3.zero, FxMesh.Kind.Spike);
             }
-            FxMesh.Spawn(FxMeshes.Torus(), spikeMat, p, Quaternion.LookRotation(dir, Vector3.up), Vector3.one * 2.1f * s, 0.26f, 0.03f, Vector3.zero, FxMesh.Kind.Ring);
         }
 
         /// <summary>닷지 원: 바닥에 탄 색 충격 고리 두 겹이 퍼지고, 몸을 감싸는 자이로 고리 두 개가 엇갈려 돌며,
@@ -261,15 +288,7 @@ namespace CatTang
             var up = Vector3.up;
             var body = feet + up * 0.9f;
             var flat = Quaternion.LookRotation(up, Vector3.forward);
-            FxMesh.Spawn(FxMeshes.Torus(), spikeMat, feet + up * 0.06f, flat, new Vector3(5.2f * s, 5.2f * s, 3f), 0.38f, 0, Vector3.zero, FxMesh.Kind.Ring)?.Tint(col);
-            FxMesh.Spawn(FxMeshes.Torus(), spikeMat, feet + up * 0.04f, flat * Quaternion.Euler(0, 0, 30f), new Vector3(3.4f * s, 3.4f * s, 4f), 0.32f, 0.07f, Vector3.zero, FxMesh.Kind.Ring)?.Tint(col);
             // 몸을 감싸는 고리 두 개: 서로 다른 기울기로
-            for (int k = 0; k < 2; k++)
-            {
-                var rot = Quaternion.Euler(Random.Range(55f, 80f) * (k == 0 ? 1 : -1), Random.Range(0f, 360f), 0);
-                FxMesh.Spawn(FxMeshes.Torus(), spikeMat, body, rot, new Vector3(2.4f * s, 2.4f * s, 2f), 0.3f, k * 0.04f, Vector3.zero, FxMesh.Kind.Ring)?.Tint(Color.Lerp(col, Color.white, 0.35f));
-            }
-            // 가운데 섬광
             FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), spikeMat, body, Random.rotation, Vector3.one * 0.9f * s, 0.16f, 0, Vector3.zero, FxMesh.Kind.Core)?.Tint(col);
             // 바깥으로 튀는 빛살: 고르지 않은 간격 · 길이
             int n = big ? 12 : 7;
@@ -284,13 +303,13 @@ namespace CatTang
             }
         }
 
-        /// <summary>둥근 빛 폭발 (공명 사격 섬광 · 범위 기절 · 보상 등 FxBurst.Gold 자리): 탄 색 섬광 덩어리 + 고리 + 방사 가시</summary>
-        public static void Flare(Vector3 at, float size, Color col)
+        /// <summary>둥근 빛 폭발 (공명 사격 섬광 · 범위 기절 · 보상 등 FxBurst.Gold 자리): 탄 색 섬광 덩어리 + 방사 가시 (ring = 범위 효과만 고리, 2026-11-17 사용자: 다 고리 같다)</summary>
+        public static void Flare(Vector3 at, float size, Color col, bool ring = false)
         {
             if (!Init()) return;
             float s = Mathf.Max(0.4f, size * 0.5f);
             FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), spikeMat, at, Random.rotation, Vector3.one * 0.9f * s, 0.2f, 0, Vector3.zero, FxMesh.Kind.Core)?.Tint(col);
-            FxMesh.Spawn(FxMeshes.Torus(), spikeMat, at, Random.rotation, Vector3.one * 2.2f * s, 0.28f, 0.02f, Vector3.zero, FxMesh.Kind.Ring)?.Tint(col);
+            if (ring) FxMesh.Spawn(FxMeshes.Torus(), spikeMat, at, Random.rotation, Vector3.one * 2.2f * s, 0.28f, 0.02f, Vector3.zero, FxMesh.Kind.Ring)?.Tint(col);
             int n = 6 + Random.Range(0, 4);
             for (int k = 0; k < n; k++)
             {
@@ -301,21 +320,184 @@ namespace CatTang
             }
         }
 
-        /// <summary>탄 특성별 타격 (FX_Trait_*, 아이콘 없이 터지는 모양 · 움직임으로 개성): 회상 = 잔상 타격이 두 번 더 메아리 ·
-        /// 추억 = 꽃잎처럼 퍼지는 파편 + 오래 남는 자국 · 망각 = 얼음 가시가 박혀 멈춤 · 되감기 = 파편이 안으로 빨려 든 뒤 터짐 ·
-        /// 종말 = X자 베기 + 위에서 떨어지는 칼날 + 굵은 관통 · 지연 = 작게 맞고 0.35초 뒤 위에서 떨어져 크게 · 예지 = 가늘고 긴 관통 + 십자 반짝임 ·
-        /// 영원 = 파편이 공중에 멈춘 듯 떠 있음 · 미련 = 타격 뒤 불씨가 피어오름. 깨어난 탄은 크게. 프리팹이 있으면 true</summary>
-        public static bool TraitHit(int trait, Vector3 p, Vector3 dir, Color col, bool awake)
+        /// <summary>탄 특성별 타격 (FX_Trait_*, 2026-11-17 사용자 확정 — 충격 고리 없이 모양 · 움직임으로 개성):
+        /// 회상 = 첫 타 + 메아리 두 번 · 추억 = 꽃잎 8장 · 망각 = 얼음 가시 박혔다 깨짐 ·
+        /// 되감기 = 맞은 적의 보라 잔상이 뒤에서 미끄러져 되돌아오고 시곗바늘이 거꾸로 휙 (타임 락 느낌) + 박혔다 깨지는 보라 결정 ·
+        /// 종말 = 진홍 불꽃에서 해골이 솟아 타 사라짐 · 지연 = 충전 폭탄이 적에 붙어 깜빡이다 0.45초 뒤 날카로운 호박색 폭발 ·
+        /// 예지 = 금빛 눈 문양이 번쩍 뜨고 탄도 쪽으로 금빛 선 · 영원 = 별도 이펙트 없음(청록 일반 타격, 정지 추가 피해는 초록 숫자) ·
+        /// 미련 = 잿빛 주황 불씨가 적에 붙어 0.8초 타다 재로 흩날림. 맞은 적 몸도 특성 색으로 물들고(Health.TraitTint), 종말은 몸에 불길(FX_Trait_DoomBurn). 깨어난 탄은 크게. target = 맞은 적(따라붙는 조각 · 잔상). 그렸으면 true</summary>
+        /// <summary>여러 특성 동시 (2026-11-17 사용자: 맞은 자리엔 켜진 특성 전부): traits[0] = 대표(가장 많이 모은 특성) 타격 그대로 + 몸 반응,
+        /// 나머지는 0.75배로 조금씩 비껴 같이 터짐 (몸 반응 · 따라붙기는 대표만). 하나라도 그렸으면 true</summary>
+        public static bool TraitHitAll(System.Collections.Generic.IList<int> traits, Vector3 p, Vector3 dir, Color col, bool awake, Transform target)
+        {
+            if (traits == null || traits.Count == 0) return false;
+            bool any = TraitHit(traits[0], p, dir, col, awake, target);
+            var fwd = dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward;
+            var cam = Camera.main;
+            var q = cam ? p + (cam.transform.position - p).normalized * 0.75f : p;
+            var side = cam ? cam.transform.right : Vector3.right;
+            for (int i = 1; i < traits.Count; i++)
+            {
+                string n = TraitPrefab(traits[i]);
+                if (n == null) continue;                                       // 영원은 따로 그림 없음 (정지 추가 피해 초록 숫자)
+                float a = (i - 0.5f) * 2.4f;                                    // 대표 둘레로 고르게 비껴 놓음
+                var off = (side * Mathf.Cos(a) + Vector3.up * Mathf.Sin(a)) * 0.35f;
+                FxEffect.Spawn("FX_Trait_" + n, q + off, Quaternion.LookRotation(fwd, Vector3.up), (awake ? 1.1f : 0.8f) * 0.75f, TraitColor(traits[i], col));
+                any = true;
+            }
+            return any;
+        }
+
+        static string TraitPrefab(int trait) => trait switch
+        {
+            3001 => "Recall", 3002 => "Memory", 3003 => "Oblivion", 3004 => "Rewind", 3005 => "Doom",
+            3006 => "Delay", 3007 => "Foresight", 3009 => "Lingering", _ => null
+        };
+
+        public static bool TraitHit(int trait, Vector3 p, Vector3 dir, Color col, bool awake, Transform target = null)
         {
             string n = trait switch
             {
                 3001 => "Recall", 3002 => "Memory", 3003 => "Oblivion", 3004 => "Rewind", 3005 => "Doom",
-                3006 => "Delay", 3007 => "Foresight", 3008 => "Eternity", 3009 => "Lingering", _ => null
+                3006 => "Delay", 3007 => "Foresight", 3008 => "Hit", 3009 => "Lingering", _ => null
             };
             if (n == null) return false;
-            var look = Quaternion.LookRotation(dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward, Vector3.up);
-            return FxEffect.Spawn("FX_Trait_" + n, p, look, awake ? 1.1f : 0.8f, col);
+            var fwd = dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward;
+            var look = Quaternion.LookRotation(fwd, Vector3.up);
+            var tc = TraitColor(trait, col);
+            float sc = awake ? 1.1f : 0.8f;
+            // 2026-11-17 사용자: 특성마다 고유 색 (예전엔 탄 색이라 9종이 다 주황으로 비슷해 보임). 탄 색은 궤적 선에만 남음
+            // 맞은 자리에서 카메라 쪽으로 당겨 그림: 큰 몬스터 몸 안에 묻혀 가려지지 않게 (붙는 폭탄 · 불씨 · 눈 문양이 몸 앞에 보이게)
+            var cam = Camera.main;
+            if (cam) p += (cam.transform.position - p).normalized * 0.7f;
+            if (trait == 3008) return FxEffect.Spawn("FX_Hit", p, look, HitScale, tc);
+            var fx = FxEffect.Spawn("FX_Trait_" + n, p, look, sc, tc);
+            if (!fx) return false;
+            // 맞은 적 몸 자체의 반응 (2026-11-17 사용자): 특성 색으로 물들고, 종말은 몸에 진홍 불길이 붙어 타오름
+            var hp = target ? target.GetComponent<Health>() : null;
+            if (hp)
+            {
+                switch (trait)
+                {
+                    case 3001: hp.TraitTint(tc, 0.3f, 0.55f); break;                              // 회상: 하늘빛으로 잠깐
+                    case 3002: hp.TraitTint(tc, 0.5f, 0.5f); break;                               // 추억: 분홍빛
+                    case 3003: hp.TraitTint(tc, 0.6f, 0.7f); break;                               // 망각: 얼어붙은 청백
+                    case 3004: hp.TraitTint(tc, 0.4f, 0.75f, 9f); break;                          // 되감기: 보라로 지직거림
+                    case 3005:                                                                     // 종말: 진홍으로 타오름 + 몸에 불길
+                        hp.TraitTint(tc, 0.8f, 0.8f, 4f);
+                        var burn = FxEffect.Spawn("FX_Trait_DoomBurn", target.position + (cam ? (cam.transform.position - target.position).normalized * 0.5f : Vector3.zero), Quaternion.identity, sc / 0.8f, tc);
+                        if (burn) burn.Follow(target);
+                        break;
+                    case 3006: hp.TraitTint(tc, 0.45f, 0.6f, 5f); hp.FlashLater(0.45f); break;   // 지연: 호박빛 깜빡이다 폭발 순간 하얗게
+                    case 3007: hp.TraitTint(tc, 0.45f, 0.65f); break;                             // 예지: 금빛
+                    case 3009: hp.TraitTint(tc, 1.0f, 0.5f, 3f); break;                           // 미련: 잿빛 주황으로 그을림 (깜빡이는 불씨)
+                }
+            }
+            // 지연 · 미련: 적에 붙어 따라다님
+            if (target && (trait == 3006 || trait == 3009)) fx.Follow(target);
+            // 되감기: 맞은 적의 보라 잔상이 탄도 뒤쪽(0.2초 전 자리)에서 미끄러져 제자리로 되돌아옴
+            if (trait == 3004 && target)
+            {
+                var body = target.Find("Model");
+                if (body)
+                {
+                    var flat = new Vector3(fwd.x, 0, fwd.z).normalized;
+                    var c = new Color(tc.r, tc.g, tc.b, 0.75f);
+                    Afterimage.DashIn(body, body.position - flat * 1.1f * sc, body.position, body.rotation, c, 0.16f, 0.22f);
+                }
+            }
+            return true;
         }
+
+        /// <summary>특성 탄 탄도 (2026-11-17 사용자: 얼음이면 궤적도 파랗고 얼음 덩어리가 날아가듯): 특성 모양 덩어리가 a → b로 날아가며 부스러기를 흘림.
+        /// 회상 별 · 추억 꽃 · 망각 얼음 덩어리(+작은 조각 둘, 서리 부스러기가 떨어짐) · 되감기 시곗바늘(돌며) · 종말 진홍 불덩이(불꽃 흘림) ·
+        /// 지연 충전 폭탄(돌며 → 맞은 자리에 붙음) · 예지 금빛 바늘 · 영원 없음(궤적 색만) · 미련 불씨(연기 흘림)</summary>
+        /// trait2 = 보조 특성: 덩어리 모양은 주 특성, 흘리는 부스러기는 보조 특성 (예: 망각 + 종말 = 진홍 불꽃을 흘리는 얼음 덩어리)
+        public static void TraitBolt(int trait, Vector3 a, Vector3 b, Color tc, float scale = 1f, int trait2 = 0)
+        {
+            if (!Init()) return;
+            if (trait == 3008) { if (trait2 == 0 || trait2 == 3008) return; trait = trait2; tc = TraitColor(trait2, tc); trait2 = 0; }   // 영원은 덩어리 없음 → 보조 특성 모양으로
+            var d = b - a; float len = d.magnitude;
+            if (len < 0.3f) return;
+            var dir = d / len;
+            float T = Mathf.Clamp(len / 90f, 0.04f, 0.1f);
+            var look = Quaternion.LookRotation(dir, Vector3.up);
+            string mesh = trait switch
+            {
+                3001 => "fx_star", 3002 => "fx_flower", 3003 => "fx_shard_0", 3004 => "fx_hand", 3005 => "fx_ball_0",
+                3006 => "fx_charge", 3007 => "fx_spike_1", _ => "fx_ball_1"
+            };
+            Vector3 size = trait switch
+            {
+                3003 => new Vector3(0.38f, 0.38f, 0.75f), 3007 => new Vector3(0.1f, 0.1f, 1.4f), 3005 => Vector3.one * 0.5f,
+                3004 => Vector3.one * 0.9f, 3006 => Vector3.one * 0.6f, _ => Vector3.one * 0.55f
+            } * scale;
+            var rot = trait == 3003 || trait == 3007 ? look : trait == 3004 || trait == 3006 || trait == 3001 || trait == 3002 ? look * Quaternion.Euler(90, 0, 0) : Random.rotation;
+            int crumb = trait2 != 0 && trait2 != 3008 ? trait2 : trait;
+            Bolt(FxMeshes.Lib(mesh), a, b, T, rot, size, tc, crumb, true, crumb == trait ? tc : TraitColor(crumb, tc));
+            if (trait == 3003)
+            {
+                // 얼음: 작은 조각 둘이 살짝 비껴 같이 날아감
+                for (int k = 0; k < 2; k++)
+                {
+                    var off = Quaternion.AngleAxis(Random.Range(0f, 360f), dir) * Perp(dir) * 0.22f * scale;
+                    Bolt(FxMeshes.Lib(k == 0 ? "fx_shard_1" : "fx_shard_2"), a + off - dir * 0.3f, b + off * 0.4f, T * 1.08f, look, new Vector3(0.2f, 0.2f, 0.4f) * scale, tc, trait, false, tc);
+                }
+            }
+        }
+
+        static void Bolt(Mesh m, Vector3 a, Vector3 b, float T, Quaternion rot, Vector3 size, Color tc, int crumbTrait, bool crumbs, Color crumbCol)
+        {
+            if (!m) return;
+            var kind = rot == Quaternion.LookRotation((b - a).normalized, Vector3.up) ? FxMesh.Kind.Spike : FxMesh.Kind.Ball;
+            var f = FxMesh.Spawn(m, spikeMat, a, rot, size, T * 2.6f, 0, Vector3.zero, kind)?.Tint(tc);
+            if (!f) return;
+            var bolt = f.gameObject.AddComponent<TraitBoltMove>();
+            bolt.a = a; bolt.b = b; bolt.T = T; bolt.trait = crumbTrait; bolt.col = crumbCol; bolt.crumbs = crumbs; bolt.size = size.x;
+            string mn = m.name;
+            bolt.spin = mn == "fx_hand" ? -1500f : mn == "fx_charge" ? 900f : mn == "fx_star" || mn == "fx_flower" ? 700f : 0f;
+        }
+
+        /// <summary>탄도 덩어리가 지나가며 흘리는 부스러기: 얼음은 서리 조각이 떨어지고, 종말은 불꽃이 솟고, 미련은 연기, 나머지는 작은 불똥</summary>
+        public static void BoltCrumb(int trait, Vector3 p, Vector3 dir, Color tc, float s)
+        {
+            if (!Init()) return;
+            var up = Vector3.up;
+            switch (trait)
+            {
+                case 3003:
+                    FxMesh.Spawn(FxMeshes.Lib("fx_shard_" + Random.Range(0, 3)), spikeMat, p + Random.insideUnitSphere * 0.12f, Random.rotation, Vector3.one * Random.Range(0.08f, 0.15f) * s,
+                        Random.Range(0.25f, 0.4f), 0, (-up * Random.Range(1.5f, 3f) + Random.insideUnitSphere) , FxMesh.Kind.Ball)?.Tint(Color.Lerp(tc, Color.white, 0.3f));
+                    break;
+                case 3005:
+                    FxMesh.Spawn(FxMeshes.Flame(Random.Range(0, 3)), fireMat, p, Quaternion.LookRotation(up + Random.insideUnitSphere * 0.4f, dir), new Vector3(0.18f, 0.18f, 0.45f) * s,
+                        Random.Range(0.2f, 0.3f), 0, up * 1.5f, FxMesh.Kind.Flame)?.Tint(tc);
+                    break;
+                case 3009:
+                    FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), sootMat, p, Random.rotation, Vector3.one * Random.Range(0.15f, 0.25f) * s,
+                        Random.Range(0.35f, 0.5f), 0, up * 1.2f, FxMesh.Kind.Ball);
+                    break;
+                default:
+                    FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, p, Quaternion.LookRotation(-dir + Random.insideUnitSphere * 0.5f, up), new Vector3(0.05f, 0.05f, 0.3f) * s,
+                        Random.Range(0.12f, 0.2f), 0, -dir * 1.5f, FxMesh.Kind.Spike)?.Tint(tc);
+                    break;
+            }
+        }
+
+        /// <summary>특성 고유 색: 회상 하늘 · 추억 분홍 · 망각 청백 · 되감기 보라 · 종말 진홍 · 지연 호박 · 예지 금 · 영원 청록 · 미련 잿빛 주황</summary>
+        public static Color TraitColor(int trait, Color fallback) => trait switch
+        {
+            3001 => new Color(0.5f, 0.85f, 1f),
+            3002 => new Color(1f, 0.55f, 0.75f),
+            3003 => new Color(0.42f, 0.75f, 1f),   // 망각: 얼음 파랑 (2026-11-17 사용자: 궤적도 파랗게 — 예전 청백은 거의 흰색)
+            3004 => new Color(0.72f, 0.48f, 1f),
+            3005 => new Color(0.92f, 0.12f, 0.16f),
+            3006 => new Color(1f, 0.68f, 0.22f),
+            3007 => new Color(1f, 0.88f, 0.38f),
+            3008 => new Color(0.3f, 0.95f, 0.85f),
+            3009 => new Color(0.95f, 0.5f, 0.32f),
+            _ => fallback,
+        };
 
         /// <summary>적 공격 예고 섬광 (젠레스 존 제로식 주황 십자 반짝임): 맞기 직전 이 순간에 회피하라는 신호</summary>
         public static void WarnGlint(Vector3 p, float scale = 1f) => FxEffect.Spawn("FX_WarnGlint", p, Quaternion.identity, scale);
@@ -330,7 +512,7 @@ namespace CatTang
 
         /// <summary>일반 사격 총구 섬광 (리볼버, 2026-11-16 개편): 전부 가는 빨간 3D (muzzleMat).
         /// - 총구: 작은 섬광 덩어리 + 총열 방향 길고 가는 바늘 + 앞쪽으로 비스듬한 가는 곁가시 2개(좌우 각도 다름) + 얇은 고리 + 아주 가는 탄도
-        /// - 리볼버 강조 (gun을 주면): 실린더와 총열 틈에서 양옆으로 칙 새는 가스 가시(리볼버만의 특징) · 실린더 둘레 작은 고리 · 공이 자리 불티
+        /// - 리볼버 강조 (gun을 주면): 실린더와 총열 틈에서 양옆으로 칙 새는 가스 가시(리볼버만의 특징) · 공이 자리 불티 (고리는 2026-11-17 뺌)
         /// - 총구에 남는 가는 연기 한 줄기</summary>
         public static void MuzzleFlash(Vector3 p, Vector3 d, float scale, Transform gun = null)
         {
@@ -351,9 +533,6 @@ namespace CatTang
                 FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), mat, p + d * 0.05f * scale, Quaternion.LookRotation(sd, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
                     new Vector3(0.04f, 0.04f, Random.Range(0.3f, 0.5f)) * scale, Random.Range(0.08f, 0.11f), Random.Range(0f, 0.015f), sd * 0.6f * scale, FxMesh.Kind.Spike);
             }
-            // 얇은 고리
-            FxMesh.Spawn(FxMeshes.Torus(), mat, p + d * 0.22f * scale, Quaternion.LookRotation(d, Vector3.up) * Quaternion.Euler(Random.Range(-12f, 12f), Random.Range(-12f, 12f), 0),
-                new Vector3(0.38f, 0.38f, 0.35f) * scale, 0.13f, 0, d * 1.2f * scale, FxMesh.Kind.Ring);
             // 탄도: 아주 가는 바늘이 쏜살같이
             FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), mat, p + d * 0.2f * scale, Quaternion.LookRotation(d, Vector3.up),
                 new Vector3(0.035f, 0.035f, Random.Range(0.9f, 1.3f)) * scale, 0.12f, 0.01f, d * 26f * scale, FxMesh.Kind.Tracer);
@@ -373,10 +552,6 @@ namespace CatTang
                         FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), mat, gap, Quaternion.LookRotation(gd, Vector3.up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
                             new Vector3(0.065f, 0.065f, Random.Range(0.3f, 0.5f)) * scale, Random.Range(0.09f, 0.13f), Random.Range(0f, 0.015f), gd * 0.7f * scale, FxMesh.Kind.Spike);
                     }
-                // 실린더 둘레 작은 고리 (철컥 돌아간 느낌)
-                var cyl = gun.TransformPoint(new Vector3(0, mz.y * 0.7f, mz.z * 0.3f));
-                FxMesh.Spawn(FxMeshes.Torus(), mat, cyl, Quaternion.LookRotation(fwd, up) * Quaternion.Euler(0, 0, Random.Range(0f, 360f)),
-                    new Vector3(0.2f, 0.2f, 0.45f) * scale, 0.12f, 0.02f, Vector3.zero, FxMesh.Kind.Ring);
                 // 공이 자리 불티 (실린더 뒤 위)
                 var hammer = gun.TransformPoint(new Vector3(0, mz.y * 0.95f, mz.z * 0.08f));
                 FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), mat, hammer, Random.rotation, Vector3.one * 0.07f * scale, 0.07f, 0, up * 0.4f * scale, FxMesh.Kind.Core);
@@ -1016,6 +1191,25 @@ namespace CatTang
             lr.endWidth = 0;
             lr.startColor = c;
             var tail = c; tail.a = 0; lr.endColor = tail;
+        }
+    }
+    /// <summary>특성 탄도 덩어리 이동 (GunkataFx.TraitBolt): T초 동안 a → b, 지나가며 부스러기, 도착하면 사라짐</summary>
+    public class TraitBoltMove : MonoBehaviour
+    {
+        public Vector3 a, b; public float T, spin, size; public int trait; public Color col; public bool crumbs;
+        float born = -1, nextCrumb;
+        void LateUpdate()
+        {
+            if (born < 0) born = Time.time;
+            float u = (Time.time - born) / T;
+            if (u >= 1) { Destroy(gameObject); return; }
+            transform.position = Vector3.Lerp(a, b, u);
+            if (spin != 0) transform.rotation = Quaternion.AngleAxis(spin * Time.deltaTime, (b - a).normalized) * transform.rotation;
+            if (crumbs && Time.time >= nextCrumb)
+            {
+                nextCrumb = Time.time + 0.008f;
+                GunkataFx.BoltCrumb(trait, transform.position, (b - a).normalized, col, Mathf.Max(0.6f, size * 1.6f));
+            }
         }
     }
 }
