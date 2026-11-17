@@ -113,16 +113,16 @@ namespace CatTang.EditorTools
             { "Ch1_Bomber_Plus", ("shakes", 0.7f, "bomberjump", 1.0f, true) },
             { "Ch1_MidBoss", ("shotgun", 1.0f, "revolver", 1.2f, false) },
             { "Ch1_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
-            // 2장: 전용 모션이 없으면 1장 클립을 키워드로 돌려 씀 (Tripo 모션을 받으면 키워드만 바꾸면 됨)
-            { "Ch2_Conductor", ("revolver", 0.9f, null, 0, false) },
-            { "Ch2_Conductor_Plus", ("revolver", 0.8f, null, 0, false) },
+            // 2장: 전용 클립 (Ch2Motion — 근육 커브로 만든 코드 클립, 짐꾼은 PorterRig)
+            { "Ch2_Conductor", ("ch2m_conductorflick", 0.9f, null, 0, false) },
+            { "Ch2_Conductor_Plus", ("ch2m_conductorflick", 0.8f, null, 0, false) },
             // 짐꾼: 전용 클립 (PorterRig — 팔은 트렁크 든 자세 고정). Attack = 방패 돌진 · Special = 내리찍기 · Throw = 트렁크 던지기
             { "Ch2_Porter", ("ch2_porterbash", PorterRig.BashEnd, "ch2_porterslam", PorterRig.SlamEnd, false) },
             { "Ch2_Porter_Plus", ("ch2_porter_plusbash", PorterRig.BashEnd, "ch2_porter_plusslam", PorterRig.SlamEnd, false) },
-            { "Ch2_Signal", ("bomberthrow", 0.6f, null, 0, false) },
-            { "Ch2_Signal_Plus", ("bomberthrow", 0.6f, null, 0, false) },
-            { "Ch2_MidBoss", ("swings", 1.0f, "revolver", 1.0f, false) },
-            { "Ch2_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
+            { "Ch2_Signal", ("ch2m_signaltoss", 0.6f, null, 0, false) },
+            { "Ch2_Signal_Plus", ("ch2m_signaltoss", 0.6f, null, 0, false) },
+            { "Ch2_MidBoss", ("ch2m_masterpunch", 1.0f, "ch2m_masterbaton", 1.0f, false) },
+            { "Ch2_Boss", ("ch2m_giantbrace", 1.1f, "ch2m_giantrods", 0.9f, false) },
         };
 
         // ---------- 2장 (멈춘 기차역, 2026-11-17) ----------
@@ -169,6 +169,11 @@ namespace CatTang.EditorTools
             ("Kit_LM_LuggageCart", 4f, 180f, 'w', Kit2Dir, "LM_LuggageCart"),
             ("Kit_LM_SignalGantry", 5f, 180f, 'w', Kit2Dir, "LM_SignalGantry"),
             ("Kit_Turntable", 24f, 0f, 'w', Kit2Dir, "Turntable"),
+            // 보스 객차 (크롬 ChatGPT 원화 → Tripo H3.1, 2026-11-17): 앞(+Z) = 빨간 그릴 끝, 런타임 Ch2Boss가 길이 4.2m로 다시 맞춤
+            ("Ch2_BossCoach", 3.6f, 0f, 'h', Kit2Dir, "BossCoach"),
+            // 지나가는 열차 (blender_kit_ch2_train.py): 앞 = +Z, 기관차 9m · 객차 8m (ToyTrain이 이어 붙임)
+            ("Kit_TrainEngine", 3.64f, 0f, 'h', Kit2Dir, "TrainEngine"),
+            ("Kit_TrainCar", 3.2f, 0f, 'h', Kit2Dir, "TrainCar"),
             ("Kit_PlatformEdge", 8f, 180f, 'w', Kit2Dir, "PlatformEdge"),
             // 굳은 승객 석상 10종 (blender_kit_ch2_passengers.py, FrozenPassenger) — 받침대 포함 키, 조각 · 금 선 · 돌 조각 틀
             ("Kit_Passenger_Luggage", 2.5f, 0f, 'h', Kit2Dir, "Passenger_Luggage"),
@@ -214,6 +219,7 @@ namespace CatTang.EditorTools
         {
             Directory.CreateDirectory(OutDir);
             Directory.CreateDirectory(Kit2Dir);
+            Ch2Motion.MakeAll();                                         // 전용 클립을 먼저 (컨트롤러가 찾음)
             SrcDir = Ch2Src;
             ModelPalette.Active = ModelPalette.Ch2;
             bool Want(string n) => only == null || System.Array.IndexOf(only, n) >= 0;
@@ -618,7 +624,7 @@ namespace CatTang.EditorTools
             bool porter = PorterRig.IsPorter(outName);
             string pk = outName.ToLower();
             var idle = sm.AddState("Idle"); idle.motion = porter ? FindClip(pk + "idle") : FindClip("idle");
-            var run = sm.AddState("Run"); run.motion = porter ? FindClip(pk + "walk") : FindClip("run");
+            var run = sm.AddState("Run"); run.motion = porter ? FindClip(pk + "walk") : FindClip(Ch2Motion.WalkFor(outName) ?? "run");
             sm.defaultState = idle;
             var t = idle.AddTransition(run); t.AddCondition(AnimatorConditionMode.Greater, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.12f;
             t = run.AddTransition(idle); t.AddCondition(AnimatorConditionMode.Less, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.18f;

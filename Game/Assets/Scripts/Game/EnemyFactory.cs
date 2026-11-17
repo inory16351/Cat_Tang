@@ -214,6 +214,7 @@ namespace CatTang
         // 1장 중간 보스: 태엽 현상금 사냥꾼 · 체력 1080 · 이속 4
         public static Enemy MidBoss(Vector3 pos, ChapterDef ch)
         {
+            if (ch.Id == 2) return MidBoss2(pos, ch);
             var e = Root("MidBoss_BountyHunter", pos, 1080 * ch.HpMul, Enemy.Kind.Boss, 1.3f, 3.8f);
             if (!AttachModel(e, "Ch1_MidBoss"))
             {
@@ -234,8 +235,37 @@ namespace CatTang
             return e;
         }
 
+        // 2장 중간 보스: 태엽 역장 · 체력 2520 · 이속 3.5 (2장 값은 이미 높여 잡아 챕터 배율 안 곱함)
+        static Enemy MidBoss2(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("MidBoss_StationMaster", pos, 2520, Enemy.Kind.Boss, 1.3f, 4f);
+            if (!AttachModel(e, "Ch2_MidBoss")) Proto2(e, ch, new Color(0.3f, 0.3f, 0.45f), 3.6f, 1.1f);
+            e.speed = 3.5f;
+            e.chapter = ch;
+            e.chapterDmg = 1f;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch2MidBoss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // 2장 보스: 멈춘 기관차 거인 · 체력 4860(표) · 이속 2.5
+        static Enemy Boss2(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("Boss_LocoGiant", pos, ch.BossHp, Enemy.Kind.Boss, 2.4f, 6.5f);
+            if (!AttachModel(e, "Ch2_Boss")) Proto2(e, ch, new Color(0.34f, 0.26f, 0.48f), 6f, 2.4f);
+            e.speed = 2.5f;
+            e.chapter = ch;
+            e.chapterDmg = 1f;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch2Boss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
         public static Enemy Boss(Vector3 pos, ChapterDef ch)
         {
+            if (ch.Id == 2) return Boss2(pos, ch);
             var body = M(Color.Lerp(new Color(0.88f, 0.78f, 0.58f), ch.Wall, 0.35f), 6f);
             var gold = M(new Color(0.95f, 0.7f, 0.25f), 5f);
             var e = Root("Boss_" + ch.BossPattern, pos, ch.BossHp, Enemy.Kind.Boss, 2.4f, 6.2f);

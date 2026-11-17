@@ -28,6 +28,18 @@ namespace CatTang
             return c.Count == 0 ? null : c[Random.Range(0, c.Count)];
         }
 
+        /// <summary>2장 규칙 '거리별 후보 70/30': 거리에 맞는 패턴 묶음 70% · 거리 무관 묶음 30% (한쪽이 비면 다른 쪽), 직전 패턴 제외</summary>
+        public static BossPattern PickWeighted(List<BossPattern> all, bool near, string last, float distShare = 0.7f)
+        {
+            var c = Candidates(all, near, last);
+            if (c.Count == 0) c = Candidates(all, near, null);
+            if (c.Count == 0) return null;
+            var byDist = c.FindAll(p => p.reach != Reach.Any);
+            var any = c.FindAll(p => p.reach == Reach.Any);
+            var group = byDist.Count == 0 ? any : any.Count == 0 ? byDist : Random.value < distShare ? byDist : any;
+            return group[Random.Range(0, group.Count)];
+        }
+
         static List<BossPattern> Candidates(List<BossPattern> all, bool near, string exclude)
         {
             var list = new List<BossPattern>();
@@ -82,6 +94,8 @@ namespace CatTang
         protected virtual System.Func<IEnumerator> Forced() => null;
         /// <summary>패턴과 별개로 매 프레임 (상시 탄막 · 기믹 타이머)</summary>
         protected virtual void Always(PlayerController p, Vector3 dir, float dist) { }
+        /// <summary>다음 패턴 추첨 (기본: 1장 규칙 동일 확률)</summary>
+        protected virtual BossPattern PickNext(bool near) => PatternPicker.Pick(patterns, near, lastPattern);
         protected virtual void Move(PlayerController p, Vector3 dir, float dist, float spd)
         {
             if (dist > NearDist * 0.6f) transform.position += dir * spd * Time.deltaTime;
@@ -96,7 +110,7 @@ namespace CatTang
 
             var forced = Forced();
             if (forced != null) { Begin(forced(), null); return; }
-            var pick = PatternPicker.Pick(patterns, dist <= NearDist, lastPattern);
+            var pick = PickNext(dist <= NearDist);
             if (pick != null) { if (self) self.Anim(pick.anim); Begin(pick.run(), pick.id); }
         }
 

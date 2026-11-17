@@ -75,6 +75,7 @@ namespace CatTang.EditorTools
             { "coal", new Color(0.11f, 0.1f, 0.1f) },
             { "window", new Color(0.18f, 0.14f, 0.12f) },
             { "window_lit", new Color(1f, 0.74f, 0.36f) },
+            { "train_glow", new Color(1f, 0.55f, 0.12f) },          // 지나가는 열차 헤드라이트 · 배장기 (위협 신호 주황)
             { "glass_lamp", new Color(1f, 0.83f, 0.46f) },
             { "canvas", new Color(0.84f, 0.74f, 0.56f) },
             { "leather", new Color(0.6f, 0.33f, 0.18f) },

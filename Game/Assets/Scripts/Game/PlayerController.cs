@@ -544,6 +544,7 @@ namespace CatTang
                 ExtraFx.Pierce(h.point, dir, col);                                 // 관통: 탄도 방향으로 뚫고 나가는 불꽃 꼬리 (2026-11-17)
                 foreach (var e in Effects.For(this, s, "OnPierce")) if (e.Type == "PierceDamageGrowth") dmg *= 1 + e.Value;
             }
+            EnemyProjectile.ShootDown(castFrom, end);                              // 부서지는 적 탄 (2장 중간 보스 빨간불 표 탄)
             bool resonance = !ghost && awake && b != null && b.Id != 1000;
             // 특성 탄도 (2026-11-17 사용자): 날아가는 탄(궤적 색 · 덩어리)은 플레이어가 가장 많이 모은 특성(동률이면 랜덤),
             // 모은 특성이 없으면 이 탄의 특성. 궤적 번짐은 이 탄 자신의 특성 색 (대표와 다를 때)

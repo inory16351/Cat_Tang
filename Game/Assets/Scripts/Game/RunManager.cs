@@ -80,7 +80,8 @@ namespace CatTang
         }
 
         // ---------- 스테이지 ----------
-        bool HasMidBoss => chapter == 1;                 // 지금은 1장만 중간 보스가 있음
+        bool HasMidBoss => chapter <= 2;                 // 1장 술집 · 2장 대합실 (3장부터는 아직 없음)
+        string MidBossName => chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
 
         void BuildMidBoss()
         {
@@ -96,7 +97,7 @@ namespace CatTang
             var r0 = layout.rooms[0];
             player.Teleport(r0.center - r0.farSide * (r0.size.y / 2 - 2.5f) + Vector3.up * 0.3f);
             Music.Play("bgm_boss");
-            ui?.Toast("중간 보스 — 태엽 현상금 사냥꾼");
+            ui?.Toast("중간 보스 — " + MidBossName);
         }
 
         void BuildStage(int index, RewardKind reward) => BuildStage(index, reward, null);
@@ -155,7 +156,7 @@ namespace CatTang
             {
                 IsMidBossRoom = true;                     // 술집 홀: 들어서면 문이 닫히고 중간 보스
                 Music.Play("bgm_boss");
-                ui?.Toast("중간 보스 — 태엽 현상금 사냥꾼");
+                ui?.Toast("중간 보스 — " + MidBossName);
             }
             wavesLeft = IsBossRoom || IsMidBossRoom ? 1 : (stageIndex >= 2 ? 3 : Random.value < 0.5f ? 2 : 3);   // 방마다 웨이브 2~3번 (1장 기획서)
             StartCoroutine(SpawnSoon());
@@ -267,7 +268,7 @@ namespace CatTang
                 // 술집에서 이김: 뒷문이 열리고 그 앞에 다음 보상 문 → 고르면 뒷문 너머에 스테이지 3이 이어 지어짐
                 midBossDone = true;
                 stageDone = true;
-                ui?.Toast("태엽 현상금 사냥꾼을 쓰러뜨렸다 (+30 골드) — 다음 스테이지를 고르면 뒷문이 열림");
+                ui?.Toast(MidBossName + "을(를) 쓰러뜨렸다 (+30 골드) — 다음 스테이지를 고르면 뒷문이 열림");
                 player.inv.gold += 30;
                 SpawnDoors();
                 return;
@@ -277,7 +278,7 @@ namespace CatTang
             if (IsMidBossRoom)
             {
                 midBossDone = true;
-                ui?.Toast("태엽 현상금 사냥꾼을 쓰러뜨렸다 (+30 골드)");
+                ui?.Toast(MidBossName + "을(를) 쓰러뜨렸다 (+30 골드)");
                 player.inv.gold += 30;
                 BuildStage(2, afterMidBoss);
                 return;

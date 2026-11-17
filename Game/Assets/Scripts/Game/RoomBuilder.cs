@@ -325,7 +325,8 @@ namespace CatTang
             var rnd = new System.Random(seed + 77);
             var size = SaloonSize;
             var info = new RoomInfo { center = center, size = size, midBoss = true, farSide = Vector3.forward };
-            info.root = new GameObject("Saloon").transform;
+            bool hall2 = Ch2Kit.Is(ch);                                      // 2장: 대합실 (태엽 역장)
+            info.root = new GameObject(hall2 ? "WaitingHall" : "Saloon").transform;
             info.root.SetParent(layout.root, false);
             info.root.position = center;
             float hw = size.x / 2, hd = size.y / 2;
@@ -333,7 +334,8 @@ namespace CatTang
             var gateM = Mat(new Color(0.55f, 0.33f, 0.19f), 4);
             var floorM = Mat(new Color(0.5f, 0.32f, 0.2f), 0);
             var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(size.x, 0.2f, size.y), floorM);
-            Kit.TileFloor(ch, info.root, size, floorGo, seed, "SaloonFloor", false);
+            Kit.TileFloor(ch, info.root, size, floorGo, seed, hall2 ? "Ground" : "SaloonFloor", false);
+            string innerWall = hall2 ? "Wall" : "PlankWall";
             var ent = new Vector2Int(Mathf.RoundToInt(entrance.x), Mathf.RoundToInt(entrance.z));
             var back = new Vector2Int(0, 1);
             foreach (var side in new[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
@@ -345,7 +347,7 @@ namespace CatTang
                 var inward = new Vector3(-side.x, 0, -side.y);
                 if (!open)
                 {
-                    Kit.TileWall(ch, Prim(PrimitiveType.Cube, "Wall", info.root, pos, horizontal ? new Vector3(len, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, len), wall), inward, "PlankWall");
+                    Kit.TileWall(ch, Prim(PrimitiveType.Cube, "Wall", info.root, pos, horizontal ? new Vector3(len, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, len), wall), inward, innerWall);
                     continue;
                 }
                 float seg = len / 2 - 2.3f;
@@ -353,12 +355,12 @@ namespace CatTang
                 {
                     var off = horizontal ? new Vector3(k * (2.3f + seg / 2), 0, 0) : new Vector3(0, 0, k * (2.3f + seg / 2));
                     var cube = Prim(PrimitiveType.Cube, "Wall", info.root, pos + off, horizontal ? new Vector3(seg, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, seg), wall);
-                    Kit.TileWall(ch, cube, inward, "PlankWall");
-                    if (side == ent) Kit.TileWall(ch, cube, -inward, "Wall", false);     // 바깥에서 보면 술집 건물 정면
+                    Kit.TileWall(ch, cube, inward, innerWall);
+                    if (side == ent) Kit.TileWall(ch, cube, -inward, "Wall", false);     // 바깥에서 보면 술집 건물 정면 (2장 대합실도 낮은 벽 — 높은 역 건물은 카메라를 가림)
                 }
                 // 문: 여닫이 술집 문(장식) + 막는 문짝(평소 닫힘 → RunManager가 열어 줌)
                 float doorYaw = Quaternion.LookRotation(inward).eulerAngles.y;
-                if (side == ent) Kit.Place(ch, "SaloonDoor", info.root, pos - new Vector3(0, 1.25f, 0) - inward * 0.1f, doorYaw, 1f, false);
+                if (side == ent && !hall2) Kit.Place(ch, "SaloonDoor", info.root, pos - new Vector3(0, 1.25f, 0) - inward * 0.1f, doorYaw, 1f, false);
                 var gate = WoodGate.Make(ch, info.root, side == ent ? "SaloonGate" : "BackGate", new Vector3(pos.x, 0, pos.z), inward, gateM);
                 info.gates.Add(gate);
                 if (side == ent) info.entranceGate = gate; else info.backGate = gate;
@@ -377,6 +379,7 @@ namespace CatTang
                         Prim(PrimitiveType.Cube, "Wall", cor, mid + new Vector3(k * 2.6f, 1.25f, 0), new Vector3(0.6f, 2.5f, gapLen + 0.4f), wall);
                 }
             }
+            if (hall2) { Ch2Kit.WaitingHall(ch, info, hw, hd, rnd); layout.rooms.Add(info); return; }
             // 실내 소품: 뒷벽 양쪽 카운터(보스가 그 사이에서 나옴), 모서리 술통 더미, 화약통 · 상자
             Kit.Place(ch, "BarCounter", info.root, new Vector3(-7f, 0, hd - 2.2f), 180f);
             Kit.Place(ch, "BarCounter", info.root, new Vector3(7f, 0, hd - 2.2f), 180f);

@@ -92,6 +92,8 @@ namespace CatTang
                 for (float x = -hw + 2f; x <= hw - 2f; x += 4f)
                     Kit.Place(ch, "RailTrack", rail, new Vector3(x, 0.01f, railZ), 90f, 1f, false);
             }
+            // 지나가는 열차 (선로가 있는 방): 12초마다 기적 · 선로 빛 1.5초 → 열차가 선로를 훑음
+            if (!float.IsNaN(railZ)) PassingTrain.Attach(info, railZ, hw);
 
             // 후보 자리 (가운데 · 문 앞 통로 · 막힌 곳 · 선로 띠 비움)
             var spots = new List<Vector3>();
@@ -179,6 +181,38 @@ namespace CatTang
                 if (Mathf.Abs(p.z) < 3f && Mathf.Abs(p.x) > hw - 2f) p.z = 4f * sgn;
                 var inward = ns ? new Vector3(0, 0, -sgn) : new Vector3(-sgn, 0, 0);
                 Kit.Place(ch, rnd.NextDouble() < 0.5 ? "StationClock" : "SignalLamp", root, p, Quaternion.LookRotation(inward).eulerAngles.y);
+            }
+        }
+
+        /// <summary>
+        /// 중간 보스 대합실 (28×24m): 긴 벤치 줄이 엄폐물(보스 탄에 부서짐). 가운데 세로 통로는 비움(보스가 뒷벽 쪽에서 나옴).
+        /// 뒷벽에 역 시계, 모서리 짐 더미 · 매표 부스 장식, 증기 밸브 2개
+        /// </summary>
+        public static void WaitingHall(ChapterDef ch, RoomBuilder.RoomInfo info, float hw, float hd, System.Random rnd)
+        {
+            var root = info.root;
+            // 벤치 줄: 좌우 두 블록 × 3줄, 줄마다 벤치 2~3개 이어 붙임 (하나씩 부서짐)
+            float benchW = Kit.Has(ch, "Bench") ? Mathf.Max(1.2f, Kit.LocalBounds(Kit.Prefab(ch, "Bench")).size.x) : 2f;
+            foreach (int sx in new[] { -1, 1 })
+                foreach (float z in new[] { -5.5f, -0.5f, 4.5f })
+                {
+                    int n = rnd.Next(2, 4);
+                    float x0 = sx * 4.2f;                                       // 가운데 통로(폭 8m) 바깥부터
+                    for (int k = 0; k < n; k++)
+                    {
+                        var go = Kit.Place(ch, "Bench", root, new Vector3(x0 + sx * (benchW * (k + 0.5f)), 0, z + (float)(rnd.NextDouble() - 0.5) * 0.4f), z > 0 ? 180f : 0f);
+                        if (go) Breakable.Make(go, 30);
+                    }
+                }
+            Kit.Place(ch, "StationClock", root, new Vector3(0, 0, hd - 1.2f), 180f);
+            Kit.Place(ch, "LuggagePile", root, new Vector3(-hw + 1.8f, 0, hd - 1.8f), 30f);
+            Kit.Place(ch, "LuggagePile", root, new Vector3(hw - 1.8f, 0, -hd + 1.8f), 210f);
+            Kit.Place(ch, "SignalLamp", root, new Vector3(hw - 1.4f, 0, hd - 1.4f), 225f);
+            Kit.Place(ch, "SignalLamp", root, new Vector3(-hw + 1.4f, 0, -hd + 1.4f), 45f);
+            foreach (int sx in new[] { -1, 1 })
+            {
+                var go = Kit.Place(ch, "SteamValve", root, new Vector3(sx * (hw - 1.6f), 0, 1.5f), sx > 0 ? 270f : 90f);
+                if (go) SteamVent.Make(go);
             }
         }
 
@@ -368,6 +402,50 @@ namespace CatTang
             FxBurst.Spawn(transform.position + Vector3.up * 0.6f, 2.2f, FxBurst.Kind.Explosion, new Color(1f, 0.6f, 0.25f));
             CameraFollow.Shake(0.12f);
             Destroy(gameObject);
+        }
+    }
+
+    /// <summary>
+    /// 지나가는 열차 (레벨 디자인 md 2장): 선로 폭 3m, 12초마다, 예고 1.5초(기적 + 선로 빛), 피해 적 60 · 고양이 20.
+    /// 그 방이 전투 중일 때만 돎. 열차 몸은 블렌더 모델 Kit/Ch2/TrainEngine · TrainCar (ToyTrain)
+    /// </summary>
+    public class PassingTrain : MonoBehaviour
+    {
+        public const float Every = 12f, Warn = 1.5f, Width = 3f, Speed = 28f, PlayerDmg = 20f, EnemyDmg = 60f;
+        RoomBuilder.RoomInfo room;
+        float railZ, hw, nextAt = -1;
+
+        public static void Attach(RoomBuilder.RoomInfo info, float railZ, float hw)
+        {
+            var t = info.root.gameObject.AddComponent<PassingTrain>();
+            t.room = info; t.railZ = railZ; t.hw = hw;
+        }
+
+        void Update()
+        {
+            var rm = RunManager.Instance;
+            bool live = rm && rm.CurrentRoom == room && rm.inCombat && !rm.runOver;
+            if (!live) { nextAt = -1; return; }
+            if (nextAt < 0) nextAt = Time.time + 6f;                 // 방에 들어서고 6초 뒤 첫 열차
+            if (Time.time < nextAt) return;
+            nextAt = Time.time + Every;
+            StartCoroutine(Pass());
+        }
+
+        IEnumerator Pass()
+        {
+            var dir = Random.value < 0.5f ? Vector3.right : Vector3.left;
+            var from = room.center + new Vector3(-dir.x * (hw + 1f), 0, railZ);
+            float len = hw * 2 + 2f;
+            var ui = Object.FindFirstObjectByType<GameUI>();
+            if (ui) ui.Toast("뿌우 — 열차가 지나간다!");
+            Telegraph.Lane(from, dir, len, Width, Warn, Telegraph.Danger);
+            // 선로 빛: 노랑 줄이 빠르게 깜빡임
+            var glow = Telegraph.Lane(from, dir, len, 0.5f, Warn, Ch2Fx.Yellow);
+            CameraFollow.Shake(0.05f);
+            yield return new WaitForSeconds(Warn);
+            if (glow) glow.Kill();
+            ToyTrain.Run(from, dir, len, Speed, Width, PlayerDmg, 1f, EnemyDmg, 3);
         }
     }
 }

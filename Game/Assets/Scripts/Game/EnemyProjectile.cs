@@ -21,6 +21,29 @@ namespace CatTang
         public bool pierceCover;
         /// <summary>이 시각까지 제자리에 멈춤 (정지 구역). 풀리면 원래 방향으로 다시 날아감</summary>
         public float frozenUntil;
+        /// <summary>고양이 탄에 맞으면 부서짐 (2장 중간 보스 빨간불의 느린 표 탄)</summary>
+        public bool shootable;
+
+        /// <summary>고양이 탄 한 줄(from → to, 반지름 radius)에 걸린 부서지는 적 탄을 깨뜨림. 깬 수를 돌려줌</summary>
+        public static int ShootDown(Vector3 from, Vector3 to, float radius = 0.7f)
+        {
+            int n = 0;
+            var seg = Effects.Flat(to - from);
+            float len = seg.magnitude;
+            if (len < 0.01f) return 0;
+            var d = seg / len;
+            foreach (var p in All.ToArray())
+            {
+                if (!p || !p.shootable || !p.enabled) continue;
+                var rel = Effects.Flat(p.transform.position - from);
+                float along = Vector3.Dot(rel, d);
+                if (along < -0.3f || along > len + 0.3f || (rel - d * along).magnitude > radius) continue;
+                FxBurst.Spawn(p.transform.position, 1.3f, FxBurst.Kind.Spark, new Color(1f, 0.85f, 0.5f));
+                p.Pop(p.transform.position, true);
+                n++;
+            }
+            return n;
+        }
         public Vector3 Dir => dir;
 
         void OnEnable() => All.Add(this);
