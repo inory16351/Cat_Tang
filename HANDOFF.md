@@ -23,9 +23,19 @@
   - 굽기: `Art/tools/blender_bake_fx.py -- c4orb c4needle c4spark c4slash c4strip`. GPT 시트 원본 `docs/images/fx_src/c4_laserslash.png` → `python docs/tools/fx_sheet_cut.py ... cx_c4slash 8 --strict`.
 - 확인: 플레이 모드에서 4장 스테이지 1~4 방 짓기(벽 · 톱니 바닥 3개 · 소품) 화면, 레이저 탄 · 섬광 · 베기 · 돌진 자국 · 눈빛 꼬리(점멸 → 멈춤 → 꼬리 들어감) 느린 시간 화면 확인, 콘솔 에러 없음.
 
+### 4장 적 모델 (같은 날 이어서)
+- **원칙 (사용자)**: 무기는 몸과 따로 모델링해 손 뼈에 붙임 (같이 모델링하면 리깅 · 모션이 부자연스러움). 원화는 빈손 주먹 · 정면 A자 · 두 다리 따로(무희도 발끝 서기 X).
+- 원화: 크롬 ChatGPT 한 채팅에서 3장 유리 기사 원화(화풍) + 4장 적 라인업(디자인) 첨부 → 한 마리씩 → `Art/tripo_input/ch4/<이름>.png` → `keep_main.py` · `denoise.py` → `_main_dn.png`. (`soldier_withgun.png` · `dancer_pointe.png` = 버린 첫 시안)
+- Tripo 웹(크롬): H3.1 생성 55 → 리토포 삼각형 1만 35 → Auto Rig Humanoid · Mixamo 20 → Export FBX · Mixamo · 2K · 뼈대 포함 → `~/Downloads/tripo_convert_*.zip` → `python Art/tools/tripo_import.py <zip> Ch4_<이름> Game/Assets/Art/Characters/Ch4`. 크레딧 1375 → 약 695.
+  - 작업 ID (studio.tripo3d.ai/workspace/rigging/<id>): 병정 db62245b · 종지기 860f1d6f · 무희 eecfb08b · 자객 b155c04f · 기사 7c0500d9 · 수리공 5860d84c.
+- 무기 8종 (블렌더 + Codex, 명세 `Art/tools/specs/kit_ch4_weapons_spec.md`, 원점 = 손잡이 · 긴 축 +Z): 소총 · 종 · 망치 · 바늘 단검 · 진자 낫 · 렌치 + 보스용 대검(시침) · 세검(분침) → `Kit_W_*.fbx` → `Resources/Kit/Ch4/W_*`.
+- 메뉴 **`CatTang/4장 적 프리팹 만들기 (Tripo)`**(`BuildCh4`, 무기도 같이): Humanoid · 툰(회색 그림자, 적 배색 치환 없이 빨간 테두리만) → `Resources/Enemies/Ch4_*`, `AttachWeapons`가 손 뼈(손바닥 = 손 → 가운뎃손가락 뿌리 60%)에 무기를 위로 세워 앞으로 25° 기울여 붙임. 병정 소총 · 종지기 망치(오른손) + 종(왼손) · 자객 단검 · 기사 낫 · 수리공 렌치, 무희 맨손. 크기 = 키 / 2.2.
+- 게임: 4장 전용 행동이 아직 없어 `EnemyFactory.Make3`가 4장이면 3장 행동에 4장 모델을 끼움(사수 → 병정 · 법사 → 종지기/무희 · 검객 → 자객 · 기사 → 기사 · 분신술사 → 수리공, 체력 ×1.44) + 눈빛 꼬리.
+- 공격 클립은 1장 · 고양이 것 임시(병정 revolver · 무희 shakes · 나머지 swings). 무기 각도는 쉬는 자세 기준 — 공격 모션에서 어색하면 `AttachWeapons` 각도 손질.
+
 ### 남은 것 (4장)
 1. **바닥 텍스처**: 지금 4장 바닥은 맨 회색 → 리벳 철판 / 톱니 무늬 바닥 그림(크롬 GPT) → `GroundMat` 연결.
-2. **적 6종 · 진자 집행관 · 쌍둥이 · 오르골 인형 모델**: 원화(크롬 GPT, 정면 A자 · 플랫 컬러) → 디노이즈 → 크롬 Tripo(H3.1 + 리깅, 크레딧 1375) → 빌더. 지금 4장 적은 3장 적 + 눈빛 꼬리.
+2. **진자 집행관 · 쌍둥이(시침 · 분침) · 오르골 인형 모델**: 일반 적 6종과 같은 흐름(빈손 원화 → Tripo → 무기 따로, 쌍둥이 무기 W_Greatsword · W_Rapier 있음). 집행관은 팔이 칼날이라 몸과 같이.
 3. `EnemyCh4.cs` · `Ch4Bosses.cs` (3장 구조 그대로), `RunManager.HasMidBoss`(지금 `chapter <= 3`) · `MidBossName`에 4장 추가, `EnemyFactory` 4장 분기.
 4. 상인 오르골 상자(`MusicBox` 프리팹 있음) 연결, 4장 지형지물(LM_*) 모델.
 5. 한 판 이어서 직접 해 보기(톱니 바닥 이동감 · 맞물림 피해 · 굴러가는 톱니바퀴 튕김).

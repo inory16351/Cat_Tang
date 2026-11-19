@@ -249,8 +249,26 @@ namespace CatTang
 
         static readonly Color Ch3Body = new Color(0.62f, 0.6f, 0.82f), Ch3Glass = new Color(0.78f, 0.93f, 1f);
 
+        // 4장 임시 (2026-11-19): 4장 전용 행동(EnemyCh4)이 생기기 전까지 3장 행동에 4장 모델(Resources/Enemies/Ch4_*)을 끼움.
+        // 사수 → 태엽 병정 · 법사 → 종지기 / 오르골 무희 · 검객 → 초침 자객 · 기사 → 진자 기사 · 분신술사 → 시계 수리공. 체력은 4장 기준(약 1.44배)
+        static string Ch4Model(string model) => model switch
+        {
+            "Ch3_Shooter" => "Ch4_Soldier",
+            "Ch3_Mage" => Random.value < 0.5f ? "Ch4_Ringer" : "Ch4_Dancer",
+            "Ch3_Blade" => "Ch4_Assassin",
+            "Ch3_Knight" => "Ch4_Knight",
+            "Ch3_Trickster" => "Ch4_Repairman",
+            _ => model,
+        };
+
         static Enemy Make3(string name, string model, Vector3 pos, ChapterDef ch, bool elite, float hp, Enemy.Kind kind, float r, float h, float speed, Color tint, System.Action<Transform> extra = null)
         {
+            if (ch != null && ch.Id == 4)
+            {
+                var m4 = Ch4Model(model);
+                if (Resources.Load<GameObject>("Enemies/" + m4)) model = m4;
+                hp *= 1.44f;
+            }
             var e = Root(name, pos, hp, kind, r, h);
             if (!AttachModelFor(e, model, elite, out bool plus))
             {

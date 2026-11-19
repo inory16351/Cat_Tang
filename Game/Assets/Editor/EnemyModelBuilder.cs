@@ -133,6 +133,13 @@ namespace CatTang.EditorTools
             { "Ch3_Blade", ("swings", 0.8f, null, 0, false) },
             { "Ch3_Knight", ("swings", 0.9f, null, 0, false) },
             { "Ch3_Trickster", ("revolver", 0.9f, null, 0, false) },
+            // 4장 (2026-11-19): 우선 1장 · 고양이 클립을 돌려 씀 — 전용 모션은 뒤에
+            { "Ch4_Soldier", ("revolver", 0.9f, null, 0, false) },
+            { "Ch4_Ringer", ("swings", 0.8f, null, 0, false) },
+            { "Ch4_Dancer", ("shakes", 0.9f, null, 0, true) },
+            { "Ch4_Assassin", ("swings", 0.6f, null, 0, false) },
+            { "Ch4_Knight", ("swings", 0.9f, null, 0, false) },
+            { "Ch4_Repairman", ("swings", 0.8f, null, 0, false) },
             // 2장: 전용 클립 (Ch2Motion — 근육 커브로 만든 코드 클립, 짐꾼은 PorterRig)
             { "Ch2_Conductor", ("ch2m_conductorflick", 0.9f, null, 0, false) },
             { "Ch2_Conductor_Plus", ("ch2m_conductorflick", 0.8f, null, 0, false) },
@@ -512,6 +519,128 @@ namespace CatTang.EditorTools
                 ModelPalette.Active = ModelPalette.Ch1;
             }
             BuildGates();
+        }
+
+        // ---------- 4장 적 (2026-11-19, 느와르): 크롬 ChatGPT 원화(빈손 · 정면 A자) → 크롬 Tripo H3.1 + 리토포 1만 + 자동 리깅(Mixamo) → Art/Characters/Ch4/Ch4_*.fbx ----------
+        // 무기는 따로 (사용자: 무기를 같이 모델링하면 모션이 부자연스러움): 블렌더 + Codex Kit_W_*.fbx (원점 = 손잡이, 긴 축 = +Y) → Resources/Kit/Ch4/W_*
+        // → 적 프리팹의 손 뼈(손바닥 자리) 아래에 붙임. 4장 적은 느와르라 적 배색 치환(EnemyPalette)은 안 하고 빨간 바깥 테두리만
+        static readonly (string name, float size)[] Models4 =
+        {
+            ("Ch4_Soldier", 2.5f), ("Ch4_Ringer", 2.4f), ("Ch4_Dancer", 2.6f), ("Ch4_Assassin", 2.6f), ("Ch4_Knight", 3.0f), ("Ch4_Repairman", 2.3f),
+        };
+        // 무기: 적 이름 → (무기, 손) 목록. 손 = true 오른손
+        static readonly Dictionary<string, (string weapon, bool right)[]> Weapons4 = new()
+        {
+            { "Ch4_Soldier", new[] { ("Rifle", true) } },
+            { "Ch4_Ringer", new[] { ("Hammer", true), ("Bell", false) } },
+            { "Ch4_Assassin", new[] { ("NeedleDagger", true) } },
+            { "Ch4_Knight", new[] { ("PendulumScythe", true) } },
+            { "Ch4_Repairman", new[] { ("Wrench", true) } },
+        };
+        static readonly string[] WeaponNames4 = { "Rifle", "Bell", "Hammer", "NeedleDagger", "PendulumScythe", "Wrench", "Greatsword", "Rapier" };
+        const float WeaponDesignHeight = 2.2f;   // 무기 크기를 정한 기준 키 (명세: 2등신 인형 약 2.2m)
+
+        [MenuItem("CatTang/4장 무기 만들기 (블렌더)")]
+        public static void BuildCh4Weapons()
+        {
+            Directory.CreateDirectory(Kit4Dir);
+            SrcDir = Ch4Src;
+            ModelPalette.Active = ModelPalette.Ch4;
+            try
+            {
+                int made = 0;
+                foreach (var w in WeaponNames4)
+                {
+                    var src = AssetDatabase.LoadAssetAtPath<GameObject>(Ch4Src + "Kit_W_" + w + ".fbx");
+                    if (!src) continue;
+                    var root = new GameObject("W_" + w);
+                    var inst = (GameObject)Object.Instantiate(src);
+                    inst.name = "Mesh";
+                    inst.transform.SetParent(root.transform, false);           // 원점 = 손잡이 그대로 (옮기지 않음)
+                    var cache = new Dictionary<Material, Material>();
+                    foreach (var r in inst.GetComponentsInChildren<Renderer>())
+                    {
+                        var mats = r.sharedMaterials;
+                        for (int i = 0; i < mats.Length; i++)
+                            if (mats[i]) { if (!cache.TryGetValue(mats[i], out var t)) cache[mats[i]] = t = ToonFor("Kit_W_" + w, mats[i], cache.Count); mats[i] = t; }
+                        r.sharedMaterials = mats;
+                    }
+                    foreach (var c in inst.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
+                    PrefabUtility.SaveAsPrefabAsset(root, Kit4Dir + "W_" + w + ".prefab");
+                    Object.DestroyImmediate(root);
+                    made++;
+                }
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[EnemyModelBuilder] 4장 무기 {made}개");
+            }
+            finally { SrcDir = Ch1Src; ModelPalette.Active = ModelPalette.Ch1; }
+        }
+
+        [MenuItem("CatTang/4장 적 프리팹 만들기 (Tripo)")]
+        public static void BuildCh4()
+        {
+            Directory.CreateDirectory(OutDir);
+            BuildCh4Weapons();
+            SrcDir = Ch4Src;
+            try
+            {
+                foreach (var (n, h) in Models4)
+                {
+                    var imp = AssetImporter.GetAtPath(Ch4Src + n + ".fbx") as ModelImporter;
+                    if (!imp) { Debug.Log($"[EnemyModelBuilder] {n} 원본 없음 — 건너뜀"); continue; }
+                    if (imp.animationType != ModelImporterAnimationType.Human || imp.materialImportMode != ModelImporterMaterialImportMode.None)
+                    {
+                        imp.animationType = ModelImporterAnimationType.Human;
+                        imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                        imp.materialImportMode = ModelImporterMaterialImportMode.None;
+                        imp.SaveAndReimport();
+                    }
+                    var srcGo = FindSource(n);
+                    if (srcGo && !HumanAvatar(srcGo) && AssetImporter.GetAtPath(MerchantSrc + "Ch1_Merchant.fbx") is ModelImporter refImp)
+                    {
+                        var names = new HashSet<string>();
+                        foreach (var t in srcGo.GetComponentsInChildren<Transform>(true)) names.Add(t.name);
+                        var hd = imp.humanDescription;
+                        hd.human = System.Array.FindAll(refImp.humanDescription.human, hb => names.Contains(hb.boneName));
+                        imp.humanDescription = hd;
+                        imp.SaveAndReimport();
+                    }
+                    if (!Build(n, h, 0f, 'h', OutDir, n)) continue;
+                    if (Weapons4.TryGetValue(n, out var ws)) AttachWeapons(OutDir + n + ".prefab", ws, h);
+                }
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log("[EnemyModelBuilder] 4장 적 프리팹");
+            }
+            finally { SrcDir = Ch1Src; }
+        }
+
+        /// <summary>적 프리팹의 손 뼈에 무기를 붙임: 손바닥 가운데(손 뼈 → 가운뎃손가락 뿌리 사이)에 손잡이, 무기 긴 축 = 몸 위쪽에서 앞으로 25° 기운 방향(쉬는 자세 기준), 크기 = 키 비례</summary>
+        static void AttachWeapons(string prefabPath, (string weapon, bool right)[] ws, float height)
+        {
+            var root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                var anim = root.GetComponentInChildren<Animator>();
+                if (!anim || !anim.avatar || !anim.avatar.isHuman) { Debug.LogWarning($"[EnemyModelBuilder] {prefabPath} 휴머노이드 아님 — 무기 안 붙임"); return; }
+                foreach (var (w, right) in ws)
+                {
+                    var wp = AssetDatabase.LoadAssetAtPath<GameObject>(Kit4Dir + "W_" + w + ".prefab");
+                    var hand = anim.GetBoneTransform(right ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
+                    if (!wp || !hand) continue;
+                    var mid = anim.GetBoneTransform(right ? HumanBodyBones.RightMiddleProximal : HumanBodyBones.LeftMiddleProximal);
+                    var grip = mid ? Vector3.Lerp(hand.position, mid.position, 0.6f) : hand.position;
+                    var go = (GameObject)PrefabUtility.InstantiatePrefab(wp);
+                    go.name = "Weapon_" + w;
+                    var fwd = root.transform.forward;
+                    var up = Quaternion.AngleAxis(25f, root.transform.right) * root.transform.up;     // 위로 세우되 앞으로 살짝
+                    go.transform.SetPositionAndRotation(grip, Quaternion.LookRotation((fwd - Vector3.Dot(fwd, up) * up).normalized, up));
+                    go.transform.localScale = Vector3.one * (height / WeaponDesignHeight);
+                    go.transform.SetParent(hand, true);
+                }
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
         }
 
         // ---------- 메인 마을 키트 (2026-11-18 사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌 — 새벽에 사라져 가는 서부 마을, 허공의 큰 섬) ----------
@@ -1291,16 +1420,18 @@ namespace CatTang.EditorTools
             // 회색으로 뽑은 블렌더 모델: 재질 이름으로 배색표(ModelPalette) 색을 입힘 (Art/README.md)
             if (!tex && ModelPalette.TryResolve(src, flat, out var pal)) flat = pal;
             m.SetColor("_BaseColor", tex ? Color.white : flat);
-            // 1장 팔레트: 황혼 보라 그림자 + 금빛 테두리
-            m.SetColor("_ShadeColor", new Color(0.72f, 0.58f, 0.66f));
-            m.SetColor("_SecondShadeColor", new Color(0.45f, 0.34f, 0.46f));
+            // 1장 팔레트: 황혼 보라 그림자 + 금빛 테두리. 4장(느와르)은 색 없는 회색 그림자 (2026-11-19 사용자: 흑백 대비)
+            bool noir = name.StartsWith("Ch4_") || name.StartsWith("Kit_W_") || ModelPalette.Active == ModelPalette.Ch4;
+            m.SetColor("_ShadeColor", noir ? new Color(0.6f, 0.6f, 0.63f) : new Color(0.72f, 0.58f, 0.66f));
+            m.SetColor("_SecondShadeColor", noir ? new Color(0.3f, 0.3f, 0.33f) : new Color(0.45f, 0.34f, 0.46f));
             if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", FlatFloor.Contains(name) ? 1f : 4f);   // 2026-11-16 사용자: 외곽선 두껍게 (납작한 바닥 조각은 판자 선이 지글거려 얇게)
             if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.5f);
             // 배경 키트는 채도 · 밝기를 낮춤 (EnvTone), 캐릭터 · 하트 · 폭탄 · 화약통은 원래 색
             bool env = name.StartsWith("Kit_") && !Pickups.Contains(name);
             if (m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", env ? EnvTone.Saturation : 1f); m.SetFloat("_Brightness", env ? EnvTone.Brightness : 1f); }
             // 적: 배경과 갈리게 살짝 진홍 외곽선 + 붉은 가장자리 빛 (2026-11-17 사용자: 적에게 살짝 배경선)
-            if ((name.StartsWith("Ch1_") || name.StartsWith("Ch2_") || name.StartsWith("Ch3_")) && !name.EndsWith("_Merchant")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }   // 적 배색 2안 (차가운 한 계열). 상인은 적이 아님
+            if ((name.StartsWith("Ch1_") || name.StartsWith("Ch2_") || name.StartsWith("Ch3_")) && !name.EndsWith("_Merchant")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }
+            if (name.StartsWith("Ch4_") && !name.EndsWith("_Merchant")) EnemyEdge(m);   // 4장 적: 느와르 원래 색 그대로 + 빨간 바깥 테두리만   // 적 배색 2안 (차가운 한 계열). 상인은 적이 아님
             // 3장 블렌더 보스(마술사 · 고래): 적이라 빨간 바깥 테두리 (색은 이미 차가운 몬스터 색으로 뽑아 배색 치환은 안 함)
             if (name == "Kit_Ch3_Magician" || name == "Kit_Ch3_Whale") EnemyEdge(m);
             if ((name == "Kit_Heart" || name == "Kit_XpGem") && m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", 1.15f); m.SetFloat("_Brightness", 1.12f); }   // 하트 · 경험치 보석은 더 선명하게

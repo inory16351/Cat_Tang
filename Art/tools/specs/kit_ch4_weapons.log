@@ -1,0 +1,3678 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1f26c-625a-7522-9a1d-59f168a312d5
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch4_weapons.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece. Then look at the preview PNG and fix anything that reads badly.
+Read `Art/tools/specs/_ch4_common.md` first (material names, richness, export settings). Use `Art/tools/blender_kit_ch4_props.py` as the style reference.
+
+## Goal
+HAND-HELD WEAPONS for chapter-4 enemies (wind-up clockwork dolls, noir black/white with red accents). The characters are rigged separately WITHOUT weapons; the game parents each weapon to the enemy's hand bone, so:
+- Each weapon is ONE joined mesh, exported to `Game/Assets/Art/Characters/Ch4/Kit_W_<Name>.fbx`.
+- ORIGIN = the exact centre of the GRIP (where a closed fist holds it). The weapon's LONG AXIS points along +Z from the grip (blade / muzzle / head direction = +Z), the "edge" or "front" faces +Y. Anything behind the hand (stock, pommel) goes to -Z.
+- Grip is a clear cylinder ~0.045 m radius, ~0.18 m long, centred on the origin along Z, in `wood_dark` or `iron` with a `red_lacquer` or `brass` band so the hand area reads.
+- Chunky toy-like proportions (characters are 2-head-tall chibi dolls about 2.2 m tall), cel-shade friendly, no detail thinner than ~0.03 m, bevels on hard edges, at least 3 materials each. Clock / gear motifs.
+
+## Pieces (overall length along Z, including the part behind the grip)
+1. `Rifle` (1.35 m; muzzle at +Z 0.95, stock to -Z 0.4): toy-soldier musket: long `steel` barrel with `brass` bands, `wood_dark` stock and fore-end, a small gear-shaped hammer, `red_lacquer` sling ring, bayonet lug at the muzzle (no bayonet).
+2. `Bell` (0.4 m; bell mouth at +Z): small hand bell: `wood_dark` handle (the grip), `copper` bell body opening toward +Z (mouth diameter 0.3), `brass` lip ring, tick-mark band in `dial_mark`, visible clapper.
+3. `Hammer` (0.5 m; head at +Z 0.38): small mallet: `wood` handle, `iron` head (box 0.18 x 0.1 x 0.1) across X with `brass` caps, `red_lacquer` wrap below the head.
+4. `NeedleDagger` (0.9 m; tip at +Z 0.75): a thin long clock-hand blade (second hand): `silver` blade with a hollow diamond near the tip and a sharp point, `red_lacquer` counterweight disc at the pommel end (-Z 0.12), `brass` small crossguard.
+5. `PendulumScythe` (2.2 m; head at +Z 1.75, butt at -Z 0.45): long `iron` pole with `brass` rings; at the top a big pendulum disc (`silver`, diameter 0.7, with `dial_mark` clock ticks and an ornate cutout) from which a curved scythe blade (`steel`, edge `silver`, 0.9 long) sweeps to +X; small `red_lacquer` gem in the disc centre.
+6. `Wrench` (1.2 m; jaws at +Z 0.95): oversized adjustable wrench: `steel` body, `iron_dark` adjuster screw, open jaw at the top, `red_lacquer` rubber grip sleeve around the origin, gear-tooth notch on the back.
+7. `Greatsword` (2.8 m; tip at +Z 2.35, pommel -Z 0.3): the HOUR HAND boss's greatsword shaped like a giant ornate clock hour hand: broad `silver` blade with a hollow spade-shaped tip, `steel` fuller, `brass` crossguard shaped like a small clock dial (`dial_face` + `dial_mark`), `wood_dark` grip, `red_lacquer` pommel gem.
+8. `Rapier` (1.7 m; tip at +Z 1.45): the MINUTE HAND boss's thin rapier shaped like a long minute hand: very thin `silver` blade with a small arrow tip, swept `iron_dark` cup hilt with a gear rim, `red_lacquer` ribbon ring at the pommel.
+
+Keep each under ~3000 triangles. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE`.
+Preview: all weapons standing side by side (grip at the same height), 1800x1000, Workbench flat material colours, camera from the front slightly above, to `Art/tools/specs/blender_kit_ch4_weapons_preview.png`; mark each origin with a small red cross ONLY in the preview (do not export it).
+
+codex
+I’ll read the shared spec and props script, build the weapons, then run Blender and inspect the preview before finishing.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/specs/_ch4_common.md' in C:\Project\Cat_Tang
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '*weapons*' -g 'blender_kit_ch4*' -g '"'!Game/Library/**'"' -g '"'!Game/Temp/**'"'; git status --short" in C:\Project\Cat_Tang
+ succeeded in 0ms:
+## Common rules (chapter 4 "Inside the Clockwork" = the clockmaker's giant clock tower)
+Setting: a dreamlike CLOCK TOWER INTERIOR (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+Huge interlocking brass gears, rotating gear discs set flush in the floor, swinging pendulums, coiled mainsprings, old bronze bells, iron girders and riveted plates, clock faces, and through gaps in the machinery a starry NIGHT SKY. The player climbs from the bottom (spring storehouse) to the top (dial face). Motif: "interlocking / meshing". Mood: nocturnal, mechanical, quiet and grand.
+Colours (the game recolors by material name): NOIR - hard black-and-white contrast (inky black, steel grey, bright silver / white highlights), almost monochrome; the only colour is a small RED accent (red lacquer, red gem eyes, red ribbon). Warm only for the merchant. Shape contrast matters: give every piece clearly separated dark and light parts.
+Signature accent: GEAR TEETH, rivets, clock dials with Roman-numeral ticks (as raised bars, no text), spiral springs, pendulum discs. Chunky silhouettes, slightly hand-made irregularity (seeded random per piece, `random.seed(<fixed>)`). BEVEL modifier (0.02-0.05, 2 segments, angle limit, clamp overlap) on hard parts.
+
+### Richness (the user wants high-end, not flat single-color objects)
+- Every piece uses AT LEAST 4 role materials (walls / landmarks 6-8); no single material covers more than ~55% of the visible surface. Break big surfaces into bands, panels, insets and trims.
+- Carve: stacked moldings, recessed riveted panels, gear-tooth rims, spoked wheels, relief clock dials, spiral grooves, chamfered edges everywhere. Cracks / seams as inset grooves in a darker material.
+- No detail thinner than ~0.04 m, no micro noise. Budgets: props up to ~5000 tris, walls / landmarks / merchant up to ~8000.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`steel`, `steel_dark`, `iron`, `iron_dark`, `silver`, `brass`, `brass_dark`, `gold`, `copper`, `navy_paint`, `navy_dark`, `red_lacquer`, `red_dark`, `gem_red`, `wood`, `wood_dark`, `stone`, `stone_dark`, `dial_face` (pale ivory clock face), `dial_mark` (dark hour ticks / hands), `glass`, `starlight` (small glowing star bits), `night_sky` (deep starry backdrop panels), `porcelain`, `ribbon_red`, `velvet`, `lamp_warm`.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece (unless the piece says otherwise).
+Each piece = ONE joined mesh object named exactly as listed (unless the piece says it has several objects), exported to its own FBX `Game/Assets/Art/Characters/Ch4/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Recalc normals outward. Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end. Create the folder `Game/Assets/Art/Characters/Ch4/` if missing.
+Use `Art/tools/blender_kit_ch3_props.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+Finally render ONE preview PNG of all pieces laid out in a grid (Workbench engine, flat MATERIAL color with a distinct viewport color per material name so pieces are readable, camera ~55 deg from above-front, 1800x1000) to `Art/tools/specs/<script name without .py>_preview.png`. The preview is only for review; it must not change the exported FBX files.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/blender_kit_ch4_props.py' in C:\Project\Cat_Tang
+ succeeded in 235ms:
+# ?쒓퀎???꾪닾 ?뚰뭹 11醫낆쓣 留뚮뱾怨?FBX? 寃?좎슜 誘몃━蹂닿린瑜?異쒕젰?⑸땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_props.py
+"""Deterministic Blender 5.x clockwork props; metres, +Y front, grey role shaders."""
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
+PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_props_preview.png'
+TAU = math.tau
+MATS, PARTS = {}, []
+PALETTE = {
+    'steel': (.48, .59, .70), 'steel_dark': (.20, .28, .37),
+    'iron': (.23, .29, .37), 'iron_dark': (.075, .105, .16),
+    'silver': (.77, .84, .89), 'brass': (.68, .43, .15),
+    'brass_dark': (.34, .21, .09), 'gold': (.98, .70, .24),
+    'copper': (.53, .29, .17), 'navy_paint': (.075, .16, .30),
+    'navy_dark': (.035, .065, .13), 'red_lacquer': (.75, .055, .08),
+    'red_dark': (.27, .025, .045), 'gem_red': (.95, .10, .13),
+    'wood': (.37, .22, .13), 'wood_dark': (.14, .075, .055),
+    'stone': (.48, .49, .56), 'stone_dark': (.25, .28, .35),
+    'dial_face': (.91, .86, .70), 'dial_mark': (.065, .085, .12),
+    'glass': (.42, .72, .83), 'starlight': (.84, .94, 1.0),
+    'night_sky': (.018, .035, .10), 'porcelain': (.94, .91, .84),
+    'ribbon_red': (.80, .045, .10), 'velvet': (.34, .025, .065),
+    'lamp_warm': (1.0, .79, .36),
+}
+
+
+def materials():
+    for role in PALETTE:
+        mat = bpy.data.materials.new(role)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        bsdf = mat.node_tree.nodes.get('Principled BSDF')
+        bsdf.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        bsdf.inputs['Metallic'].default_value = 0
+        bsdf.inputs['Roughness'].default_value = .8
+        MATS[role] = mat
+
+
+def mesh(label, verts, faces, role, bevel=False):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[role])
+    if bevel:
+        mod = obj.modifiers.new('Worn chamfer', 'BEVEL')
+        mod.width, mod.segments = .02, 2
+        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(70)
+        mod.use_clamp_overlap = True
+    PARTS.append(obj)
+    return obj
+
+
+def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
+    x, y, z = (v / 2 for v in size)
+    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
+         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
+    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
+    return place(mesh(label, v, f, role, bevel), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, role, n=20, rot=(0,0,0), bevel=False):
+    v = [(radius*math.cos(TAU*j/n), radius*math.sin(TAU*j/n), z)
+         for z in (-depth/2, depth/2) for j in range(n)]
+    f = [tuple(reversed(range(n))), tuple(range(n,2*n))]
+    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
+    return place(mesh(label, v, f, role, bevel), loc, rot)
+
+
+def lathe(label, profile, role, n=32, loc=(0,0,0), rot=(0,0,0), bevel=False):
+    v = [(r*math.cos(TAU*j/n), r*math.sin(TAU*j/n), z)
+         for r,z in profile for j in range(n)]
+    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
+          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
+    return place(mesh(label,v,f,role,bevel),loc,rot)
+
+
+def ring(label, radius, width, z, height, role, n=32, loc=(0,0,0), rot=(0,0,0)):
+    return lathe(label,[(radius-width,z),(radius,z),(radius,z+height),
+                        (radius-width,z+height)],role,n,loc,rot)
+
+
+def gear(label, root, tip, hole, depth, teeth, role, loc=(0,0,0), rot=(0,0,0), bevel=False):
+    """One annular mesh, with square radial teeth and a genuinely open centre."""
+    contour = []
+    half = tip * math.sin(math.pi / teeth) * .46
+    for j in range(teeth):
+        a = TAU*j/teeth
+        for r,t in ((root,-half),(tip,-half),(tip,half),(root,half)):
+            contour.append((r*math.cos(a)-t*math.sin(a),r*math.sin(a)+t*math.cos(a)))
+    n = len(contour)
+    inner = [(hole*math.cos(math.atan2(y,x)),hole*math.sin(math.atan2(y,x))) for x,y in contour]
+    v = [(x,y,z) for z,curve in ((-depth/2,contour),(depth/2,contour),
+                                (depth/2,inner),(-depth/2,inner)) for x,y in curve]
+    f = [(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
+         for k in range(4) for j in range(n)]
+    return place(mesh(label,v,f,role,bevel),loc,rot)
+
+
+def tube(label, points, radius, role, n=6):
+    v=[]
+    for i,p in enumerate(points):
+        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(i-1,0)])).normalized()
+        ref=Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
+        u=ref.cross(t).normalized(); w=t.cross(u)
+        v += [tuple(Vector(p)+radius*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w)) for j in range(n)]
+    f=[tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
+    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
+          for i in range(len(points)-1) for j in range(n)]
+    return mesh(label,v,f,role)
+
+
+def ribbon(label, points, width, thickness, role):
+    """Rectangular vertical steel strip, not a round wire spring."""
+    v=[]
+    for i,p in enumerate(points):
+        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
+        side=Vector((-t.y,t.x,0)).normalized()
+        for s,z in ((-1,-1),(1,-1),(1,1),(-1,1)):
+            v.append(tuple(Vector(p)+side*s*thickness/2+Vector((0,0,z*width/2))))
+    f=[(3,2,1,0),tuple(range(len(v)-4,len(v)))]
+    f += [(4*i+j,4*i+(j+1)%4,4*(i+1)+(j+1)%4,4*(i+1)+j)
+          for i in range(len(points)-1) for j in range(4)]
+    return mesh(label,v,f,role)
+
+
+def rivet(loc, role='brass_dark', radius=.04, rot=(0,0,0)):
+    cylinder('Broad rivet',loc,radius,.04,role,n=8,rot=rot)
+
+
+def cut_at_floor(obj):
+    """Cap a half-buried component so it cannot lift the rest of its prop."""
+    bm=bmesh.new(); bm.from_mesh(obj.data)
+    bmesh.ops.bisect_plane(bm,geom=list(bm.verts)+list(bm.edges)+list(bm.faces),
+        dist=1e-6,plane_co=(0,0,0),plane_no=(0,0,1),clear_inner=True)
+    edges=[e for e in bm.edges if e.is_boundary]
+    if edges: bmesh.ops.holes_fill(bm,edges=edges,sides=0)
+    bm.to_mesh(obj.data); bm.free(); obj.data.update()
+
+
+def key(loc, scale=1, rot=(0,0,0), role='brass'):
+    start=len(PARTS)
+    box('Winding key stem',(0,0,-.16*scale),(.10*scale,.12*scale,.38*scale),role)
+    for side in (-1,1):
+        ring('Open round key bow',.19*scale,.065*scale,0,.08*scale,role,n=16,
+             loc=(side*.145*scale,0,.09*scale),rot=(math.pi/2,0,0))
+    cylinder('Key centre boss',(0,.035*scale,.05*scale),.085*scale,.11*scale,
+             'gold',n=10,rot=(math.pi/2,0,0))
+    for obj in PARTS[start:]:
+        place(obj,loc,rot)
+
+
+def clock(loc, radius, cracked=False):
+    x,y,z=loc
+    ring('Clock bezel',radius,.07,-.06,.13,'brass',n=32,loc=loc,rot=(math.pi/2,0,0))
+    cylinder('Ivory dial',(x,y+.015,z),radius-.065,.06,'dial_face',n=32,rot=(math.pi/2,0,0))
+    for j in range(12):
+        a=TAU*j/12
+        box('Raised hour tick',(x+.77*radius*math.sin(a),y+.065,z+.77*radius*math.cos(a)),
+            (.045,.04,.11 if j%3 else .15),'dial_mark',rot=(0,a,0),bevel=False)
+    for a,length in ((-.65,.49*radius),(1.0,.66*radius)):
+        box('Clock hand',(x+math.sin(a)*length/2,y+.093,z+math.cos(a)*length/2),
+            (.055,.045,length),'dial_mark',rot=(0,a,0),bevel=False)
+    cylinder('Dial pivot',(x,y+.12,z),.07,.05,'gold',n=12,rot=(math.pi/2,0,0))
+    if cracked:
+        tube('Broken dial fracture',[(x-.1,y+.052,z+radius*.85),(x+.04,y+.052,z+.22),
+                                    (x-.13,y+.052,z+.05),(x+.16,y+.052,z-.35)],.022,'stone_dark',n=4)
+
+
+def gear_floor():
+    # Body lives below zero. Only the shootable axle exceeds the 3 cm relief.
+    gear('24 integrated walkable square teeth',3.55,4.0,3.18,.115,24,'brass_dark',loc=(0,0,-.0625))
+    ring('Flush brass rim',3.56,.37,-.12,.12,'brass',n=96)
+    cylinder('Recess foundation',(0,0,-.075),3.20,.09,'steel',n=72)
+    for j in range(6):
+        a=TAU*j/6
+        # Steel lands at floor level surround the genuinely lower navy wells.
+        steel_angles=[a-.12+k*.08 for k in range(4)]
+        outline=[(r*math.cos(t),r*math.sin(t)) for r,ts in
+                 ((.82,steel_angles),(3.18,list(reversed(steel_angles)))) for t in ts]
+        m=len(outline)
+        verts=[(x,y,z) for z in (-.03,0) for x,y in outline]
+        faces=[tuple(reversed(range(m))),tuple(range(m,2*m))]
+        faces += [(k,(k+1)%m,(k+1)%m+m,k+m) for k in range(m)]
+        mesh('Flush steel lands between recessed windows',verts,faces,'steel')
+        # Recessed wedge windows alternate with the broad steel plate sectors.
+        angles=[a+.12+k*(math.pi/3-.24)/10 for k in range(11)]
+        curve=[(r*math.cos(t),r*math.sin(t)) for r,ts in ((1.05,angles),(3.12,list(reversed(angles)))) for t in ts]
+        n=len(curve)
+        v=[(x,y,z) for z in (-.04,-.012) for x,y in curve]
+        f=[tuple(reversed(range(n))),tuple(range(n,2*n))]
+        f += [(k,(k+1)%n,(k+1)%n+n,k+n) for k in range(n)]
+        mesh('Six inset navy windows',v,f,'navy_paint')
+        box('Six radial iron spokes',(1.95*math.cos(a),1.95*math.sin(a),.006),
+            (2.45,.21,.048),'iron',rot=(0,0,a),bevel=False)
+    ring('Seventy percent radius gold line',2.82,.045,0,.025,'gold',n=72)
+    for j in range(12):
+        a=TAU*j/12
+        box('Twelve raised dial ticks',(2.98*math.cos(a),2.98*math.sin(a),.015),
+            (.21,.07,.03),'dial_mark',rot=(0,0,a),bevel=False)
+        rivet((3.38*math.cos(a),3.38*math.sin(a),.0),'gold',.055)
+    cylinder('Shootable brass axle',(0,0,.175),.8,.35,'brass',n=40,bevel=True)
+    ring('Reverse direction red band',.813,.045,.12,.13,'red_lacquer',n=40)
+    cylinder('Axle gold cap',(0,0,.365),.77,.03,'gold',n=40)
+    ring('Axle cap engraving',.58,.055,.38,.025,'brass_dark',n=32)
+    cylinder('Axle centre bolt',(0,0,.41),.16,.06,'iron',n=6)
+
+
+def wind_spring():
+    box('Square dark base',(0,0,.07),(1,1,.14),'iron_dark')
+    box('Red warning base band',(0,0,.15),(.93,.93,.08),'red_lacquer')
+    box('Brass base top',(0,0,.205),(.87,.87,.04),'brass_dark')
+    for x in (-.35,.35):
+        for y in (-.35,.35): rivet((x,y,.25),'brass',.055)
+    cylinder('Vertical winding arbor',(0,0,.73),.075,1.02,'brass',n=12)
+    pts=[]
+    for j in range(241):
+        t=j/240; a=TAU*5*t; r=.105+.33*t
+        pts.append((r*math.cos(a),r*math.sin(a),.36+.62*t))
+    ribbon('Five loaded turns of flat steel mainspring',pts,.12,.04,'steel')
+    # Red retaining strap makes the stored-energy silhouette legible.
+    box('Retaining latch',(.38,0,.77),(.10,.12,.43),'iron')
+    box('Retaining red catch',(.42,.015,.96),(.12,.17,.12),'red_lacquer')
+    key((0,0,1.23),.70,(0,.30,-.25))
+
+
+def gear_wheel():
+    start=len(PARTS)
+    gear('Sixteen teeth',.66,.79,.49,.30,16,'brass_dark')
+    ring('Brass spoked wheel rim',.685,.19,-.16,.32,'brass',n=48)
+    for j in range(5):
+        a=TAU*j/5
+        box('Five iron spokes',(.32*math.cos(a),.32*math.sin(a),0),(.55,.11,.22),
+            'iron',rot=(0,0,a))
+    for side in (-1,1):
+        cylinder('Gold hub on both faces',(0,0,side*.19),.18,.08,'gold',n=16,bevel=True)
+        cylinder('Hex axle cap',(0,0,side*.235),.085,.04,'steel',n=6)
+        cylinder('Rolling red rim dot',(.58,0,side*.17),.085,.04,'red_lacquer',n=12)
+    for obj in PARTS[start:]: place(obj,(0,0,.8),(0,math.pi/2,0))
+    # Small separate chocks become disconnected components of the joined mesh.
+    for y in (-.61,.61):
+        v=[(-.24,y-.13,0),(.24,y-.13,0),(.24,y+.13,0),(-.24,y+.13,0),
+           (-.24,y,.22),(.24,y,.22)]
+        mesh('Wood wedge chock',v,[(0,3,2,1),(0,1,5,4),(3,4,5,2),(0,4,3),(1,2,5)],'wood_dark',True)
+
+
+def old_bell():
+    box('Stone frame slab',(0,0,.07),(1.6,1.6,.14),'stone')
+    box('Inset slab course',(0,0,.16),(1.47,1.42,.07),'stone_dark')
+    for x in (-.65,.65):
+        box('Dark timber bell post',(x,0,1.23),(.22,.28,2.08),'wood_dark')
+        for z in (.32,1.63,2.10):
+            box('Iron post band',(x,0,z),(.26,.32,.11),'iron')
+            rivet((x,.18,z),'brass_dark',.045,rot=(math.pi/2,0,0))
+    box('Timber top crossbeam',(0,0,2.28),(1.59,.40,.24),'wood')
+    box('Iron hanging yoke',(0,0,2.025),(.75,.30,.18),'iron_dark')
+    cylinder('Bell suspension stem',(0,0,1.89),.11,.31,'iron_dark',n=12)
+    lathe('Hollow old bronze bell',[(.55,.4),(.55,.51),(.46,.68),(.35,1.18),
+          (.29,1.51),(.20,1.65),(.09,1.69),(.07,1.59),(.20,1.51),(.26,1.20),
+          (.37,.68),(.47,.49),(.47,.4)],'copper',n=32,bevel=True)
+    ring('Heavy brass bell lip',.57,.10,.40,.12,'brass',n=32)
+    ring('Bell shoulder gold molding',.31,.045,1.43,.08,'gold',n=24)
+    ring('Bell tick band lower rail',.445,.04,.73,.045,'brass_dark',n=32)
+    for j in range(16):
+        a=TAU*j/16
+        box('Raised gold bell ticks',(.433*math.cos(a),.433*math.sin(a),.79),
+            (.055,.05,.14),'gold',rot=(0,0,a),bevel=False)
+    tube('Visible clapper rod',[(0,0,1.5),(0,.24,.54),(0,.46,.31)],.045,'iron_dark')
+    cylinder('Visible brass clapper',(0,.46,.28),.115,.16,'brass',n=12,bevel=True)
+
+
+def gear_crate():
+    box('Crate dark inner seams',(0,0,.58),(1.42,1.04,1.16),'wood_dark')
+    for y in (-.53,.53):
+        for j in range(5):
+            box('Separate timber plank',(-.55+j*.275,y,.60),(.255,.09,1.08),'wood')
+        for z in (.15,1.04):
+            box('Crate iron strap',(0,y*1.07,z),(1.43,.08,.10),'iron')
+            for x in (-.59,-.30,0,.30,.59): rivet((x,y*1.16,z),'brass_dark',.04,(math.pi/2,0,0))
+    for x in (-.70,.70):
+        box('Side wood panel',(x,0,.60),(.08,1.03,1.08),'wood')
+        for y in (-.5,.5): box('Iron corner bracket',(x,y,.60),(.12,.14,1.20),'iron')
+    for j in range(4): box('Top planks',(0,-.38+j*.25,1.14),(1.34,.23,.12),'wood')
+    box('Navy front stencil plate',(-.1,.607,.67),(.65,.045,.42),'navy_paint')
+    gear('Raised gear stencil',.125,.18,.075,.045,8,'dial_mark',loc=(-.1,.65,.67),rot=(math.pi/2,0,0))
+    # Half-sunk gear at the right-hand side, tilted into the crate.
+    spare=gear('Spare brass gear',.28,.36,.15,.10,12,'brass',loc=(.64,-.03,.27),rot=(0,1.2,.15))
+    cut_at_floor(spare)
+    cylinder('Spare gear hub',(.67,-.03,.27),.09,.16,'gold',n=12,rot=(0,math.pi/2,0))
+
+
+def broken_pillar():
+    box('Wide stone foot',(0,0,.11),(1.30,1.23,.22),'stone_dark')
+    for j in range(3):
+        box('Lower masonry block',(0,0,.34+j*.29),(1.05,1.02,.26),
+            'stone_dark' if j%2==0 else 'stone')
+    # Unequal crown heights create a true broken silhouette, not a flat top.
+    v=[(-.52,-.5,1.0),(.52,-.5,1.0),(.52,.5,1.0),(-.52,.5,1.0),
+       (-.52,-.5,2.17),(.52,-.5,1.91),(.52,.5,2.24),(-.52,.5,2.02),
+       (0,-.5,2.04),(0,.5,1.89)]
+    f=[(0,3,2,1),(0,1,5,8,4),(1,2,6,5),(2,3,7,9,6),(3,0,4,7),
+       (4,8,9,7),(8,5,6,9)]
+    mesh('Jagged broken stone column',v,f,'stone',True)
+    box('Clock housing dark inset',(0,.51,1.47),(.95,.07,1.01),'stone_dark')
+    clock((0,.57,1.47),.47,True)
+    tube('Stone fracture',[(.44,.515,2.18),(.31,.515,1.97),(.38,.515,1.84)],.025,'stone_dark',n=4)
+    gear('Exposed brass crown gear',.26,.34,.105,.12,12,'brass',loc=(-.12,-.04,2.23),rot=(-.96,.14,.3))
+    cylinder('Exposed gear axle',(-.12,-.04,2.23),.08,.28,'iron',n=8,rot=(math.pi/2,0,0))
+    ribbon('Bent exposed flat spring',[(.22,-.12,2.01),(.28,-.13,2.32),(.38,-.06,2.48),
+            (.32,.06,2.56),(.14,.12,2.51),(.06,.04,2.41)],.09,.045,'steel')
+    for x,y,s in ((-.55,.48,.21),(.51,.43,.23),(-.47,-.46,.20),(.51,-.48,.17)):
+        box('Foot rubble',(x,y,.08),(s,s*.9,.16),'stone_dark' if x>0 else 'stone',rot=(.10,.12,random.uniform(-.4,.4)))
+
+
+def spring_barrel():
+    box('Dark cradle lower',(0,0,.07),(1.05,.85,.14),'iron_dark')
+    for x in (-.40,.40): box('Cradle riser',(x,0,.19),(.16,.85,.24),'iron_dark')
+    cylinder('Steel spring drum',(0,0,.76),.53,.91,'steel',n=32,bevel=True)
+    for z in (.33,1.18):
+        gear('Fine toothed brass rim',.54,.58,.43,.11,24,'brass',loc=(0,0,z))
+    cylinder('Barrel top',(0,0,1.225),.51,.07,'brass_dark',n=32)
+    ring('Top brass crown',.48,.09,1.26,.04,'brass',n=32)
+    ring('Navy drum belt',.542,.025,.56,.35,'navy_paint',n=32)
+    for j in range(12):
+        a=TAU*j/12
+        cylinder('Gold belt rivets',(.55*math.cos(a),.55*math.sin(a),.73),.045,.035,
+                 'gold',n=8,rot=(math.pi/2,0,a-math.pi/2))
+    cylinder('Top hex arbor',(0,0,1.25),.12,.10,'iron',n=6)
+    box('Dark spring outlet slot',(0,.548,.45),(.30,.04,.13),'iron_dark',bevel=False)
+    ribbon('Loose spring end',[(0,.55,.46),(.06,.64,.46),(.21,.64,.47),(.27,.53,.49),
+                             (.21,.44,.53),(.10,.44,.55)],.09,.04,'steel')
+    ring('Top silver winding groove',.32,.045,1.264,.025,'steel',n=24)
+
+
+def scroll(x,y,z,side=1):
+    tube('Gold corner scroll',[(x,y,z),(x+side*.13,y,z+.05),(x+side*.17,y,z+.16),
+         (x+side*.10,y,z+.23),(x+side*.03,y,z+.20),(x+side*.04,y,z+.13)],.025,'gold',n=5)
+
+
+def music_box():
+    for x in (-.98,.98):
+        for y in (-.66,.66):
+            cylinder('Gold ornate foot',(x,y,.105),.14,.21,'gold',n=8,bevel=True)
+    box('Music box timber body',(0,0,.55),(2.24,1.68,.72),'wood')
+    for z,s in ((.23,(2.38,1.80,.12)),(.88,(2.38,1.80,.10))):
+        box('Stepped dark molding',(0,0,z),s,'wood_dark')
+    box('Top gold fillet',(0,0,.95),(2.38,1.80,.045),'gold')
+    box('Velvet turntable bed',(0,.15,.981),(1.96,1.25,.04),'velvet')
+    for y in (-.855,.855):
+        for x in (-.67,0,.67):
+            box('Dark carved panel frame',(x,y,.56),(.61,.06,.43),'wood_dark')
+            box('Deep red inset panel',(x,y*1.045,.56),(.47,.045,.30),'velvet')
+        for x in (-1.06,1.06):
+            scroll(x,y*1.07,.33,-1 if x>0 else 1)
+    for x in (-1.13,1.13):
+        box('End panel',(x,0,.56),(.05,1.3,.42),'wood_dark')
+        box('End velvet inlay',(x*1.025,0,.56),(.045,1.08,.27),'velvet')
+    # A shallow rear display lid leaves the central rotating doll dais clear.
+    # Lid angle is measured from its closed, forward horizontal position.
+    start=len(PARTS)
+    box('Open lid carved shell',(0,.27,0),(2.13,.54,.10),'wood_dark')
+    box('Lid gold mirror border',(0,.27,-.064),(1.98,.44,.045),'gold')
+    box('Recessed glass mirror',(0,.27,-.093),(1.79,.31,.035),'glass')
+    for x in (-.99,.99):
+        box('Lid corner gold binding',(x,.27,-.10),(.07,.51,.05),'gold')
+    for obj in PARTS[start:]: place(obj,(0,-.79,.87),(math.radians(110),0,0))
+    for x in (-.76,.76): cylinder('Lid hinge',(x,-.78,.90),.07,.30,'brass',n=12,rot=(0,math.pi/2,0))
+    start=len(PARTS)
+    cylinder('Round brass doll turntable',(0,.15,1.045),.55,.09,'brass',n=40,bevel=True)
+    ring('Turntable gold perimeter',.54,.055,1.085,.015,'gold',n=40,loc=(0,.15,0))
+    cylinder('Turntable velvet centre',(0,.15,1.094),.44,.012,'velvet',n=32)
+    for j in range(8):
+        a=TAU*j/8
+        rivet((.49*math.cos(a),.15+.49*math.sin(a),1.10),'gold',.025)
+    for obj in PARTS[start:]:
+        group=obj.vertex_groups.new(name='Merchant turntable')
+        group.add(list(range(len(obj.data.vertices))),1.0,'REPLACE')
+    key((1.21,0,.62),.70,(0,math.pi/2,0),'gold')
+    for x in (-.99,.99):
+        cylinder('Lantern foot',(x,.71,1.01),.12,.08,'gold',n=8)
+        cylinder('Warm lantern light',(x,.71,1.14),.09,.20,'lamp_warm',n=8)
+        cylinder('Lantern roof',(x,.71,1.27),.13,.06,'gold',n=8)
+        for dx in (-.07,.07): box('Lantern upright',(x+dx,.71,1.14),(.04,.12,.22),'brass_dark',bevel=False)
+    # Broad folded bow loops and two tails, all visible on +Y front.
+    for s in (-1,1):
+        ring('Red bow loop',.15,.065,0,.07,'ribbon_red',n=12,
+             loc=(s*.14,.948,.58),rot=(math.pi/2,0,s*.2))
+        box('Red ribbon tail',(s*.11,.94,.36),(.12,.065,.29),'ribbon_red',rot=(0,s*.22,0))
+    cylinder('Bow knot',(0,1.0,.58),.09,.09,'red_lacquer',n=10,rot=(math.pi/2,0,0))
+
+
+def cog_bits():
+    for i,(x,y,r,z) in enumerate(((-.36,-.35,.20,.025),(.31,-.30,.22,.025),
+            (-.15,.10,.24,.025),(.31,.31,.19,.025),(-.36,.37,.17,.025),(.02,.09,.15,.085))):
+        role=('brass','steel','iron_dark','brass_dark','steel','brass')[i]
+        if i in (1,4): ring('Scattered open washer',r,.065,z-.025,.05,role,n=16,loc=(x,y,0))
+        else: gear('Scattered cog',r*.77,r,r*.36,.05,8,role,loc=(x,y,z))
+    ring('Stacked silver washer',.12,.045,.105,.015,'silver',n=16,loc=(.02,.09,0))
+
+
+def screw_bits():
+    for i,(x,y,a) in enumerate(((-.33,-.30,.3),(.05,-.29,-.6),(.31,-.20,1.1),
+            (-.28,.08,-.3),(.13,.08,.8),(-.2,.35,1.7),(.31,.34,-.7))):
+        start=len(PARTS)
+        cylinder('Lying bolt shaft',(0,0,.045),.025,.26,'steel',n=8,rot=(0,math.pi/2,0))
+        cylinder('Bolt head',(-.14,0,.045),.05,.055,'brass_dark' if i%2 else 'steel_dark',n=6,rot=(0,math.pi/2,0))
+        for t in (-.07,.01,.09):
+            ring('Broad bolt thread',.038,.015,t,.04,'steel' if i%2 else 'silver',n=8,
+                 loc=(0,0,.045),rot=(0,math.pi/2,0))
+        for obj in PARTS[start:]: place(obj,(x,y,0),(0,0,a))
+    tube('Bent nail',[(.24,.01,.035),(.37,.0,.035),(.43,.09,.04)],.022,'brass_dark',n=6)
+    cylinder('Nail head',(.24,.01,.035),.045,.04,'steel',n=8,rot=(0,math.pi/2,0))
+
+
+def floor_grate():
+    panel=box('Night sky glimpsed below grate',(0,0,.003),(1.9,1.9,.006),'night_sky',bevel=False)
+    panel.data.materials.append(MATS['steel_dark'])
+    for polygon in panel.data.polygons:
+        if polygon.normal.z < .5: polygon.material_index=1
+    for s in (-1,1):
+        box('Grate iron frame X',(0,s*.94,.015),(2,.12,.03),'iron_dark',bevel=False)
+        box('Grate iron frame Y',(s*.94,0,.015),(.12,1.76,.03),'iron_dark',bevel=False)
+    for j in range(7):
+        t=-.75+j*.25
+        box('Steel grate bar',(t,0,.019),(.055,1.78,.022),'steel',bevel=False)
+    for y in (-.66,0,.66): box('Iron transverse bar',(0,y,.017),(1.8,.055,.026),'iron',bevel=False)
+    for x,y in ((-.625,-.38),(.375,.34),(-.125,.73),(.625,-.72)):
+        cylinder('Tiny star seen through opening',(x,y,.009),.025,.006,'starlight',n=6)
+    for x in (-.94,.94):
+        for y in (-.94,.94): cylinder('Flush corner bolt',(x,y,.028),.04,.004,'brass_dark',n=8)
+
+
+SPECS=[
+    ('GearFloor',(8,8,.56),gear_floor,5000),
+    ('WindSpring',(1,1,1.5),wind_spring,5000),
+    # Axis X => axial thickness is X; radial rolling extent is Y/Z.
+    ('GearWheel',(.5,1.6,1.6),gear_wheel,5000),
+    ('OldBell',(1.6,1.6,2.4),old_bell,5000),
+    ('GearCrate',(1.6,1.2,1.2),gear_crate,5000),
+    ('BrokenClockPillar',(1.4,1.4,2.6),broken_pillar,5000),
+    ('SpringBarrel',(1.2,1.2,1.3),spring_barrel,5000),
+    ('MusicBox',(2.6,2.0,1.4),music_box,8000),
+    ('CogBits',(1.2,1.2,.12),cog_bits,5000),
+    ('ScrewBits',(1,1,.1),screw_bits,5000),
+    ('FloorGrate',(2,2,.03),floor_grate,5000),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3))) for fn in (min,max)]
+
+
+def finish(name,dims,budget):
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active=obj
+        for mod in list(obj.modifiers): bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS: obj.select_set(True)
+    bpy.context.view_layer.objects.active=PARTS[0]
+    bpy.ops.object.join()
+    obj=bpy.context.object
+    obj.name=name; obj.data.name=name+'_Mesh'
+    if triangles(obj)>budget:
+        mod=obj.modifiers.new('Keep material silhouettes within budget','DECIMATE')
+        mod.ratio=(budget-60)/triangles(obj)
+        mod.delimit={'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj)<=budget,(name,triangles(obj))
+    low,high=bounds(obj); span=high-low; centre=(low+high)/2
+    if name!='GearFloor':
+        for v in obj.data.vertices:
+            v.co.x=(v.co.x-centre.x)*dims[0]/span.x
+            v.co.y=(v.co.y-centre.y)*dims[1]/span.y
+            v.co.z=(v.co.z-low.z)*dims[2]/span.z
+        # Keep the merchant standing surface exactly 1.1 m; no Z scaling here.
+        if name=='MusicBox':
+            # Body and lantern bounds already give 1.4 m within rounding; rebuild
+            # the vertical mapping piecewise to protect the gameplay anchor.
+            old_anchor=(1.1-low.z)*dims[2]/span.z
+            for v in obj.data.vertices:
+                z=v.co.z
+                v.co.z=z*1.1/old_anchor if z<=old_anchor else 1.1+(z-old_anchor)*.3/(1.4-old_anchor)
+            # Footprint fitting must not turn the 1.1 m round dais into an oval.
+            group_index=obj.vertex_groups['Merchant turntable'].index
+            anchor_x=-centre.x*dims[0]/span.x
+            anchor_y=(.15-centre.y)*dims[1]/span.y
+            for v in obj.data.vertices:
+                if any(g.group==group_index for g in v.groups):
+                    v.co.x=anchor_x+(v.co.x-anchor_x)*span.x/dims[0]
+                    v.co.y=anchor_y+(v.co.y-anchor_y)*span.y/dims[1]
+    bm=bmesh.new(); bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name
+    bm.to_mesh(obj.data); bm.free()
+    for p in obj.data.polygons: p.use_smooth=False
+    obj.data.update(); bpy.context.view_layer.update()
+    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
+    assert len(used)>=4,(name,used)
+    areas={}
+    for p in obj.data.polygons:
+        role=obj.data.materials[p.material_index].name
+        areas[role]=areas.get(role,0)+p.area
+    assert max(areas.values())/sum(areas.values())<=.56,(name,areas)
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+    for mat in obj.data.materials:
+        assert mat.name in PALETTE
+        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
+    low,high=bounds(obj)
+    if name=='GearFloor':
+        assert abs(low.z+.12)<1e-5
+        for v in obj.data.vertices:
+            if math.hypot(v.co.x,v.co.y)>.82: assert v.co.z<=.03001
+    else:
+        assert abs(low.z)<1e-5 and abs(high.z-dims[2])<1e-5
+        assert all(abs(obj.dimensions[i]-dims[i])<1e-4 for i in (0,1))
+    obj['chapter']='Inside the Clockwork'; obj['front']='+Y'
+    obj['triangle_count']=triangles(obj)
+    obj['collision']=name not in {'CogBits','ScrewBits','FloorGrate'}
+    if name=='GearFloor': obj['interactive']='Shoot red axle to reverse Z rotation'; obj['floor_top_m']=0.0
+    if name=='WindSpring': obj['interactive']='Shootable explosive mainspring'
+    if name=='GearWheel': obj['roll_axis']='X'; obj['roll_direction']='Y'
+    if name=='MusicBox': obj['merchant_standing_surface_m']=1.1; obj['lid_open_degrees']=110
+    dest=OUTPUT/f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(filepath=str(dest),use_selection=True,
+        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
+        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
+    assert dest.is_file() and dest.stat().st_size>1024
+    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
+    return obj
+
+
+def preview(objects):
+    scene=bpy.context.scene
+    scene.render.engine='BLENDER_WORKBENCH'
+    scene.render.resolution_x,scene.render.resolution_y=1800,1000
+    scene.render.resolution_percentage=100
+    scene.render.image_settings.file_format='PNG'; scene.render.filepath=str(PREVIEW)
+    scene.view_settings.view_transform='Standard'
+    shade=scene.display.shading
+    shade.light='FLAT'; shade.color_type='MATERIAL'
+    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
+    shade.curvature_ridge_factor=1.5; shade.curvature_valley_factor=1.2
+    shade.show_specular_highlight=False
+    shade.background_type='WORLD'
+    if scene.world is None: scene.world=bpy.data.worlds.new('Review background')
+    scene.world.color=(.035,.045,.07)
+    helpers=[]
+    # Review-only scale doubles the small pieces; GearFloor stays at true scale.
+    layout=[(-6,0,1),(-.4,4.7,1.5),(3.2,4.7,1.5),(6.8,4.7,1.5),
+            (-.4,0,1.5),(3.2,0,1.5),(6.8,0,1.5),(-.4,-4.7,1.5),
+            (3.2,-4.7,1.5),(6.8,-4.7,1.5),(-6,-6.4,1.25)]
+    try:
+        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
+        azimuth=math.radians(35)
+        near=Vector((math.sin(azimuth),math.cos(azimuth),0))
+        right=Vector((-math.cos(azimuth),math.sin(azimuth),0))
+        for obj,(x,y,s) in zip(objects,layout):
+            obj.location=right*x-near*y
+            obj.scale=(s,s,s)
+        camera=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
+        scene.collection.objects.link(camera); helpers.append(camera); scene.camera=camera
+        target=Vector((0,0,.3)); el=math.radians(55)
+        camera.location=target+near*(32*math.cos(el))+Vector((0,0,32*math.sin(el)))
+        camera.rotation_euler=(target-camera.location).to_track_quat('-Z','Y').to_euler()
+        camera.data.type='ORTHO'
+        bpy.context.view_layer.update()
+        inverse=camera.rotation_euler.to_matrix().transposed()
+
+        def projected_vertices(obj):
+            return [inverse @ (obj.matrix_world @ v.co) for v in obj.data.vertices]
+
+        # Space rows by their real projected silhouettes, including tall crowns.
+        row_top=5.0
+        for indices in ((1,2,3),(4,5,6),(7,8,9)):
+            highest=max(p.y for i in indices for p in projected_vertices(objects[i]))
+            shift=(row_top-highest)/math.sin(el)
+            for i in indices: objects[i].location-=near*shift
+            bpy.context.view_layer.update()
+            row_top=min(p.y for i in indices for p in projected_vertices(objects[i]))-.95
+        grate_top=min(p.y for p in projected_vertices(objects[0]))-.95
+        shift=(grate_top-max(p.y for p in projected_vertices(objects[10])))/math.sin(el)
+        objects[10].location-=near*shift
+        bpy.context.view_layer.update()
+        review_points=[]
+        for obj in objects:
+            review_points.extend(obj.matrix_world @ v.co for v in obj.data.vertices)
+        for obj,(x,y,s),(_,dims,_,_) in zip(objects,layout,SPECS):
+            data=bpy.data.curves.new('Preview caption','FONT')
+            suffix='1:1' if obj.name=='GearFloor' else f'{s:g}x review'
+            data.body=obj.name+'\n'+suffix; data.size=.20; data.align_x='CENTER'
+            data.materials.append(MATS['silver'])
+            label=bpy.data.objects.new('Preview label',data); scene.collection.objects.link(label)
+            corners=projected_vertices(obj)
+            label_x=(min(v.x for v in corners)+max(v.x for v in corners))/2
+            label_y=min(v.y for v in corners)-.24
+            label.location=camera.rotation_euler.to_matrix() @ Vector((label_x,label_y,0))
+            label.rotation_euler=camera.rotation_euler; helpers.append(label)
+            review_points.extend([label.location-right*1.5-Vector((0,0,.5)),
+                                  label.location+right*1.5+Vector((0,0,.3))])
+        # Fit every object and caption in camera space; no cropped review tiles.
+        inverse=camera.rotation_euler.to_matrix().transposed()
+        projected=[inverse @ p for p in review_points]
+        lo=Vector(tuple(min(p[i] for p in projected) for i in range(3)))
+        hi=Vector(tuple(max(p[i] for p in projected) for i in range(3)))
+        middle=(lo+hi)/2
+        shift=camera.rotation_euler.to_matrix() @ Vector((middle.x,middle.y,0))
+        camera.location+=shift
+        camera.data.ortho_scale=max(hi.x-lo.x,(hi.y-lo.y)*1.8)*1.07
+        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
+        print(f'PREVIEW {PREVIEW}',flush=True)
+    finally:
+        scene.camera=None
+        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
+        for obj in objects: obj.location=(0,0,0); obj.scale=(1,1,1)
+        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
+    scene=bpy.context.scene
+    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
+    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
+    objects=[]
+    for i,(name,dims,build,budget) in enumerate(SPECS):
+        PARTS=[]; random.seed(44017+i*7919)
+        build(); objects.append(finish(name,dims,budget))
+    assert len(scene.objects)==11 and all(o.type=='MESH' for o in scene.objects)
+    preview(objects)
+    assert len(scene.objects)==11 and all(o.type=='MESH' for o in scene.objects)
+    print('DONE',flush=True)
+
+
+if __name__=='__main__':
+    main()
+
+ succeeded in 704ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '*weapons*' -g 'blender_kit_ch4*' -g '!Gam ...
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+?? .tripo/
+?? Art/tools/specs/kit_ch4_weapons.log
+?? Art/tools/specs/kit_ch4_weapons_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Art/tripo_input/ch4/
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$paths = @('"'C:/AGENTS.md','C:/Project/AGENTS.md','C:/Project/Cat_Tang/AGENTS.md','C:/Project/Cat_Tang/Art/AGENTS.md','C:/Project/Cat_Tang/Art/tools/AGENTS.md'); foreach ("'$p in $paths) { if (Test-Path -LiteralPath $p) { Write-Output $p; Get-Content -LiteralPath $p -Encoding UTF8 } }; Get-ChildItem Art/tools -Filter '"'*weapons*'; Get-Item 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' | Select-Object FullName,Length" in C:\Project\Cat_Tang
+ succeeded in 237ms:
+
+FullName                                                       Length
+--------                                                       ------
+C:\Program Files\Blender Foundation\Blender 5.3\blender.exe 127347152
+
+
+
+codex
+The shared spec requires neutral-grey export shaders, at least four material roles, and a black/white/red preview palette. I’ll keep the grip centre at the origin and build real openings in the bell, wrench jaws, and clock-hand blades so they read clearly in silhouette.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Path .agents,.codex -Force -ErrorAction SilentlyContinue | Select-Object FullName; Get-Content Art/tools/specs/kit_ch4_weapons_spec.md -Encoding UTF8' in C:\Project\Cat_Tang
+ succeeded in 242ms:
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch4_weapons.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece. Then look at the preview PNG and fix anything that reads badly.
+Read `Art/tools/specs/_ch4_common.md` first (material names, richness, export settings). Use `Art/tools/blender_kit_ch4_props.py` as the style reference.
+
+## Goal
+HAND-HELD WEAPONS for chapter-4 enemies (wind-up clockwork dolls, noir black/white with red accents). The characters are rigged separately WITHOUT weapons; the game parents each weapon to the enemy's hand bone, so:
+- Each weapon is ONE joined mesh, exported to `Game/Assets/Art/Characters/Ch4/Kit_W_<Name>.fbx`.
+- ORIGIN = the exact centre of the GRIP (where a closed fist holds it). The weapon's LONG AXIS points along +Z from the grip (blade / muzzle / head direction = +Z), the "edge" or "front" faces +Y. Anything behind the hand (stock, pommel) goes to -Z.
+- Grip is a clear cylinder ~0.045 m radius, ~0.18 m long, centred on the origin along Z, in `wood_dark` or `iron` with a `red_lacquer` or `brass` band so the hand area reads.
+- Chunky toy-like proportions (characters are 2-head-tall chibi dolls about 2.2 m tall), cel-shade friendly, no detail thinner than ~0.03 m, bevels on hard edges, at least 3 materials each. Clock / gear motifs.
+
+## Pieces (overall length along Z, including the part behind the grip)
+1. `Rifle` (1.35 m; muzzle at +Z 0.95, stock to -Z 0.4): toy-soldier musket: long `steel` barrel with `brass` bands, `wood_dark` stock and fore-end, a small gear-shaped hammer, `red_lacquer` sling ring, bayonet lug at the muzzle (no bayonet).
+2. `Bell` (0.4 m; bell mouth at +Z): small hand bell: `wood_dark` handle (the grip), `copper` bell body opening toward +Z (mouth diameter 0.3), `brass` lip ring, tick-mark band in `dial_mark`, visible clapper.
+3. `Hammer` (0.5 m; head at +Z 0.38): small mallet: `wood` handle, `iron` head (box 0.18 x 0.1 x 0.1) across X with `brass` caps, `red_lacquer` wrap below the head.
+4. `NeedleDagger` (0.9 m; tip at +Z 0.75): a thin long clock-hand blade (second hand): `silver` blade with a hollow diamond near the tip and a sharp point, `red_lacquer` counterweight disc at the pommel end (-Z 0.12), `brass` small crossguard.
+5. `PendulumScythe` (2.2 m; head at +Z 1.75, butt at -Z 0.45): long `iron` pole with `brass` rings; at the top a big pendulum disc (`silver`, diameter 0.7, with `dial_mark` clock ticks and an ornate cutout) from which a curved scythe blade (`steel`, edge `silver`, 0.9 long) sweeps to +X; small `red_lacquer` gem in the disc centre.
+6. `Wrench` (1.2 m; jaws at +Z 0.95): oversized adjustable wrench: `steel` body, `iron_dark` adjuster screw, open jaw at the top, `red_lacquer` rubber grip sleeve around the origin, gear-tooth notch on the back.
+7. `Greatsword` (2.8 m; tip at +Z 2.35, pommel -Z 0.3): the HOUR HAND boss's greatsword shaped like a giant ornate clock hour hand: broad `silver` blade with a hollow spade-shaped tip, `steel` fuller, `brass` crossguard shaped like a small clock dial (`dial_face` + `dial_mark`), `wood_dark` grip, `red_lacquer` pommel gem.
+8. `Rapier` (1.7 m; tip at +Z 1.45): the MINUTE HAND boss's thin rapier shaped like a long minute hand: very thin `silver` blade with a small arrow tip, swept `iron_dark` cup hilt with a gear rim, `red_lacquer` ribbon ring at the pommel.
+
+Keep each under ~3000 triangles. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE`.
+Preview: all weapons standing side by side (grip at the same height), 1800x1000, Workbench flat material colours, camera from the front slightly above, to `Art/tools/specs/blender_kit_ch4_weapons_preview.png`; mark each origin with a small red cross ONLY in the preview (do not export it).
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py
+diff --git a/Art/tools/blender_kit_ch4_weapons.py b/Art/tools/blender_kit_ch4_weapons.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..41b3d5c70fb90a3e535347334c1631c20176572b
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_weapons.py
+@@ -0,0 +1,500 @@
++# 4장 태엽 인형용 손 무기 8종: 손잡이 중심 원점, FBX와 검수 이미지 생성.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py
++"""Blender 5.x. Metres; grip centre = zero; working end +Z; front +Y.
++
++Only this source file is required. Export shaders are neutral grey; review
++colours, captions and origin crosses are applied AFTER all FBX exports.
++The mallet's head reaches .38; the greatsword pommel is centred at -.30,
++with its lower finial reaching -.45 to preserve the requested 2.80 length.
++"""
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_weapons_preview.png'
++TAU = math.tau
++FRONT = (math.pi / 2, 0, 0)
++MATS, PARTS = {}, []
++# Deliberately achromatic brass/copper/wood in the review, with lacquer red.
++PALETTE = {
++    'steel': (.37, .39, .41), 'steel_dark': (.18, .19, .21),
++    'iron': (.12, .13, .15), 'iron_dark': (.025, .028, .035),
++    'silver': (.86, .88, .90), 'brass': (.61, .62, .63),
++    'copper': (.33, .34, .36), 'wood': (.29, .30, .32),
++    'wood_dark': (.055, .06, .07), 'dial_face': (.94, .94, .92),
++    'dial_mark': (.018, .021, .027), 'red_lacquer': (.72, .018, .035),
++}
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes['Principled BSDF']
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Toy edge chamfer', 'BEVEL')
++        mod.width, mod.segments = .02, 2
++        mod.limit_method = 'ANGLE'
++        mod.angle_limit = math.radians(35)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
++         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
++    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, rot=(0, 0, 0), bevel=False):
++    v = [(radius*math.cos(TAU*j/n), radius*math.sin(TAU*j/n), z)
++         for z in (-depth/2, depth/2) for j in range(n)]
++    f = [tuple(reversed(range(n))), tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def lathe(label, profile, role, n=20, loc=(0,0,0), rot=(0,0,0), bands=None):
++    """Closed section: outer wall, lip, inner wall; no filled fake openings."""
++    v = [(r*math.cos(TAU*j/n), r*math.sin(TAU*j/n), z)
++         for r,z in profile for j in range(n)]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
++          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
++    obj = place(mesh(label, v, f, role), loc, rot)
++    if bands:
++        for k, name in bands.items():
++            if MATS[name] not in list(obj.data.materials): obj.data.materials.append(MATS[name])
++            idx = list(obj.data.materials).index(MATS[name])
++            for p in obj.data.polygons[k*n:(k+1)*n]: p.material_index = idx
++    return obj
++
++
++def ring(label, loc, radius, width, depth, role, rot=(0,0,0), n=16):
++    return lathe(label, [(radius-width,-depth/2),(radius,-depth/2),
++                         (radius,depth/2),(radius-width,depth/2)],role,n,loc,rot)
++
++
++def solid(label, outline, depth, role, y=0, bevel=True, back='steel'):
++    """Extruded X/Z silhouette, including concave jaws and curved blades."""
++    n = len(outline)
++    v = [(x, yy, z) for yy in (y-depth/2,y+depth/2) for x,z in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    obj = mesh(label,v,f,role,bevel)
++    if back and back != role:
++        obj.data.materials.append(MATS[back])
++        obj.data.polygons[0].material_index = 1
++    return obj
++
++
++def frame(label, outer, inner, depth, role, y=0):
++    """Matched contours make an actual through-cutout, with bevelled edges."""
++    n = len(outer)
++    assert n == len(inner)
++    v = [(x,yy,z) for yy,curve in ((y-depth/2,outer),(y+depth/2,outer),
++                                  (y+depth/2,inner),(y-depth/2,inner)) for x,z in curve]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++         for k in range(4) for j in range(n)]
++    obj = mesh(label,v,f,role,True)
++    obj.data.materials.append(MATS['steel'])
++    for p in obj.data.polygons[3*n:]: p.material_index = 1
++    return obj
++
++
++def gear(label, loc, radius, hole, depth, role, teeth=10):
++    outer,inner = [],[]
++    for j in range(teeth*4):
++        a = TAU*j/(teeth*4)
++        r = radius if j%4 in (1,2) else radius*.81
++        outer.append((loc[0]+r*math.sin(a),loc[2]+r*math.cos(a)))
++        inner.append((loc[0]+hole*math.sin(a),loc[2]+hole*math.cos(a)))
++    # Small gear teeth stay crisp; beveling every tooth wastes the triangle budget.
++    n=len(outer)
++    v=[(x,y,z) for y,curve in ((loc[1]-depth/2,outer),(loc[1]+depth/2,outer),
++                              (loc[1]+depth/2,inner),(loc[1]-depth/2,inner)) for x,z in curve]
++    f=[(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++       for k in range(4) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def tube(label, points, radius, role, n=6):
++    v=[]
++    for i,p in enumerate(points):
++        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
++        ref=Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
++        u=ref.cross(t).normalized(); w=t.cross(u)
++        v += [tuple(Vector(p)+radius*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w)) for j in range(n)]
++    f=[tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
++    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
++          for i in range(len(points)-1) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def grip(role='wood_dark', band='brass'):
++    cylinder('Fist grip: radius .045 length .18', (0,0,0), .045,.18,role,n=12)
++    for z in (-.067,.067):
++        cylinder('Grip end band',(0,0,z),.052,.04,band,n=12)
++
++
++def ticks(loc, radius, count=12, length=.055, width=.032):
++    x,y,z=loc
++    for j in range(count):
++        a=TAU*j/count
++        box('Raised hour index',(x+radius*math.sin(a),y,z+radius*math.cos(a)),
++            (width,.032,length if j%3 else length*1.3),'dial_mark',rot=(0,a,0),bevel=False)
++
++
++def pin(loc, radius=.025, role='brass'):
++    cylinder('Broad clock rivet',loc,radius,.035,role,n=8,rot=FRONT)
++
++
++def rifle():
++    grip()
++    # Offset barrel leaves the cylindrical hand grip clear at the origin.
++    stock=[(-.047,-.09),(.047,-.09),(.105,-.27),(.09,-.40),
++           (-.12,-.40),(-.13,-.30),(-.075,-.15)]
++    solid('Carved musket butt',stock,.13,'wood_dark',back='wood_dark')
++    box('Butt plate',(-.015,0,-.376),(.23,.16,.048),'brass')
++    solid('Stock cheek inlay',[(-.067,-.17),(.023,-.17),(.060,-.30),(-.08,-.30)],
++          .032,'steel',y=.077)
++    box('Walnut fore-end',(-.025,0,.33),(.15,.13,.49),'wood_dark')
++    box('Fore-end front inset',(-.026,.073,.34),(.072,.035,.30),'steel')
++    # Annular barrel gives a real muzzle bore looking along +Z.
++    lathe('Long bored steel barrel',[(.055,.18),(.055,.95),(.024,.95),(.024,.18)],
++          'steel',16,loc=(.025,-.046,0),bands={1:'silver',2:'iron_dark'})
++    for z in (.24,.50,.87): cylinder('Brass barrel band',(.025,-.046,z),.067,.05,'brass')
++    box('Barrel breech block',(.025,-.035,.16),(.15,.13,.14),'iron')
++    gear('Gear shaped cocking hammer',(-.09,.082,.16),.083,.027,.045,'brass',8)
++    tube('Hammer spur',[(-.105,.08,.17),(-.15,.08,.235),(-.13,.08,.27)],.024,'iron')
++    ring('Red sling swivel',(-.10,.055,.43),.07,.031,.04,'red_lacquer',FRONT)
++    box('Bayonet mounting lug',(.095,-.046,.895),(.09,.08,.065),'iron')
++    box('Front sight',(.025,.032,.89),(.04,.05,.07),'silver')
++    pin((-.025,.093,-.335))
++
++
++def bell():
++    grip()
++    cylinder('Handle bottom button',(0,0,-.085),.052,.03,'brass')
++    # Bell flares in +Z. Lip opening is .30 across, exterior .36.
++    lathe('Hollow bell, open toward +Z',[(.047,.085),(.070,.11),(.085,.17),
++          (.12,.225),(.17,.27),(.17,.30),(.135,.30),(.135,.275),
++          (.09,.225),(.055,.17),(.035,.12),(.025,.10)],'copper',24,
++          bands={4:'brass',5:'brass',6:'brass',7:'iron',8:'iron',9:'iron',10:'brass'})
++    # Inner lip radius .15; revise the inner mouth vertices, without filling it.
++    shell=PARTS[-1]
++    for v in shell.data.vertices:
++        if v.co.z >= .274 and math.hypot(v.co.x,v.co.y) < .14:
++            r=math.hypot(v.co.x,v.co.y); v.co.x*=.15/r; v.co.y*=.15/r
++    ring('Shoulder molding',(0,0,.132),.079,.03,.035,'brass',n=20)
++    for j in range(8):
++        a=TAU*j/8
++        box('Bell tick band',(.108*math.cos(a),.108*math.sin(a),.216),
++            (.035,.035,.045),'dial_mark',rot=(0,0,a),bevel=False)
++    tube('Forward visible clapper',[(0,0,.12),(0,.025,.20),(0,.065,.265)],.017,'iron')
++    cylinder('Clapper ball',(0,.065,.266),.035,.055,'silver',n=10)
++    # A small red collar connects it visually to the dolls.
++    cylinder('Red neck collar',(0,0,.09),.053,.035,'red_lacquer')
++
++
++def hammer():
++    grip('wood_dark','brass')
++    cylinder('Wood mallet shaft',(0,0,.17),.043,.24,'wood')
++    cylinder('Grip butt',(0,0,-.105),.052,.03,'iron')
++    cylinder('Lacquer wrap below head',(0,0,.253),.054,.065,'red_lacquer')
++    box('Iron mallet head',(0,0,.33),(.18,.10,.10),'iron')
++    for x in (-.10,.10):
++        box('Brass striking cap',(x,0,.33),(.04,.13,.10),'brass')
++        box('Inset striking face',(x*1.24,0,.33),(.035,.085,.075),'silver')
++    gear('Clockwork mallet socket',(0,.063,.33),.045,.014,.03,'steel',6)
++    pin((0,.085,.33),.018,'brass')
++
++
++def needle_dagger():
++    grip()
++    box('Small straight crossguard',(0,0,.13),(.25,.10,.06),'brass')
++    solid('Second hand needle',[(-.033,.15),(.033,.15),(.036,.43),
++          (0,.53),(-.036,.43)],.045,'silver')
++    frame('Hollow diamond second hand',[(0,.75),(.095,.58),(0,.43),(-.095,.58)],
++          [(0,.668),(.048,.58),(0,.505),(-.048,.58)],.05,'silver')
++    box('Dark second hand spine',(0,.027,.315),(.03,.03,.29),'steel',bevel=False)
++    # Flattened counterweight disc has its exact centre at -.12.
++    disc=cylinder('Red counterweight disc',(0,0,0),.070,.065,'red_lacquer',16,FRONT)
++    for v in disc.data.vertices: v.co.z *= .03/.07
++    place(disc,(0,0,-.12))
++    pin((0,.046,-.12),.027,'iron_dark')
++    pin((0,.064,.13),.03,'dial_mark')
++
++
++def pendulum_scythe():
++    cylinder('Long iron staff',(0,0,.60),.045,2.10,'iron',n=12)
++    grip('iron','red_lacquer')
++    cylinder('Butt ferrule',(0,0,-.4075),.065,.085,'brass')
++    for z in (-.30,.30,.72,1.05):
++        cylinder('Broad pole ring',(0,0,z),.058,.055,'brass')
++    ring('Silver pendulum outer disc',(0,0,1.40),.35,.105,.095,'silver',FRONT,32)
++    ring('Inset charcoal dial border',(0,.058,1.40),.302,.035,.035,'steel_dark',FRONT,24)
++    ticks((0,.087,1.40),.288,12,.055)
++    # Four curved spokes leave four ornate, genuinely open windows.
++    for j in range(4):
++        a=TAU*j/4
++        pts=[]
++        for r,twist in ((.045,0),(.13,.30),(.20,.24),(.25,.04)):
++            pts.append((r*math.sin(a+twist),0,1.40+r*math.cos(a+twist)))
++        tube('Curved pendulum tracery',pts,.023,'brass')
++    cylinder('Pendulum central hub',(0,.025,1.40),.084,.13,'iron_dark',12,FRONT)
++    cylinder('Red pendulum gem',(0,.105,1.40),.057,.045,'red_lacquer',8,FRONT,True)
++    # Broad forged sickle: follows a .9 m sweep toward +X, edge on +Y.
++    outer=[(.20,1.63),(.43,1.70),(.67,1.66),(.88,1.54),(1.04,1.34),
++           (1.13,1.09),(1.10,.83),(.98,1.11),(.82,1.29),(.62,1.40),(.40,1.44),(.22,1.44)]
++    solid('Pendulum scythe curved forge',outer,.09,'steel')
++    edge=[(.22,1.44),(.40,1.44),(.62,1.40),(.82,1.29),(.98,1.11),(1.10,.83),
++          (1.035,1.13),(.86,1.35),(.64,1.48),(.40,1.52),(.22,1.51)]
++    solid('Bright continuous cutting bevel',edge,.035,'silver',y=.063,bevel=False)
++    for x,z in ((.38,1.58),(.60,1.56),(.79,1.47)): pin((x,.065,z))
++
++
++def wrench():
++    cylinder('Iron tool core',(0,0,.02),.044,.48,'iron',12)
++    grip('iron','brass')
++    cylinder('Red rubber grip sleeve',(0,0,0),.052,.16,'red_lacquer',12)
++    for z in (-.065,.065): cylinder('Grip sleeve end cuff',(0,0,z),.056,.035,'iron_dark',12)
++    cylinder('Wrench butt',(0,0,-.225),.070,.05,'steel')
++    ring('Butt hanging eye',(0,.035,-.187),.049,.03,.04,'brass',FRONT,12)
++    outline=[(-.07,.09),(.07,.09),(.082,.52),(.18,.61),(.18,.78),
++             (.12,.86),(.12,.95),(.025,.95),(.025,.76),(-.10,.76),
++             (-.10,.95),(-.205,.95),(-.24,.83),(-.24,.69),(-.15,.56),(-.09,.50)]
++    solid('Forged open jaw wrench',outline,.12,'steel')
++    box('Long recessed handle panel',(0,.069,.33),(.075,.032,.35),'iron_dark')
++    box('Handle panel silver spine',(0,.089,.33),(.032,.03,.25),'silver',bevel=False)
++    box('Sliding jaw carriage',(-.053,.015,.69),(.20,.155,.095),'brass')
++    box('Movable silver jaw',(-.106,0,.835),(.072,.14,.23),'silver')
++    cylinder('Adjuster screw',(-.048,.108,.611),.048,.15,'iron_dark',12,(0,math.pi/2,0))
++    for x in (-.107,-.067,-.027,.013):
++        cylinder('Coarse adjustment threads',(x,.108,.611),.055,.023,'silver',10,(0,math.pi/2,0))
++    # Integrated rear rack with three visible negative notches between teeth.
++    for z in (.38,.46,.54): box('Back gear rack tooth',(-.105,0,z),(.07,.11,.042),'iron')
++    pin((.105,.083,.72),.028,'dial_mark')
++
++
++def greatsword():
++    grip()
++    cylinder('Long grip extension',(0,0,-.17),.044,.18,'wood_dark')
++    for z in (-.18,-.10): cylinder('Grip winding band',(0,0,z),.051,.035,'brass')
++    # Centre -.30, lower finial -.45, tip +2.35: exact 2.80 m envelope.
++    frame('Pommel gem mounting',[(0,-.15),(.12,-.30),(0,-.45),(-.12,-.30)],
++          [(0,-.215),(.064,-.30),(0,-.385),(-.064,-.30)],.09,'brass')
++    solid('Red pommel gem',[(0,-.20),(.08,-.30),(0,-.40),(-.08,-.30)],.115,'red_lacquer',back='red_lacquer')
++    solid('Hour hand broad blade',[(-.10,.19),(.10,.19),(.18,.44),(.12,1.35),
++          (.20,1.57),(0,1.80),(-.20,1.57),(-.12,1.35),(-.18,.44)],.09,'silver')
++    solid('Recessed dark steel fuller',[(-.055,.31),(.055,.31),(.072,.50),
++          (.045,1.37),(0,1.60),(-.045,1.37),(-.072,.50)],.032,'steel',y=.055,bevel=False)
++    # Spade lobes taper into a sharp clock-hand point; inset follows the same
++    # contour, leaving a large through-cutout rather than a painted black inset.
++    outer=[(0,2.35),(.12,2.13),(.265,1.98),(.31,1.84),(.27,1.70),
++           (.17,1.65),(.07,1.72),(0,1.58),(-.07,1.72),(-.17,1.65),
++           (-.27,1.70),(-.31,1.84),(-.265,1.98),(-.12,2.13)]
++    inner=[(x*.69,1.89+(z-1.89)*.66) for x,z in outer]
++    frame('Open ornate spade tip',outer,inner,.085,'silver')
++    solid('Swept brass crossguard',[(-.43,.19),(-.35,.12),(-.15,.18),(0,.16),
++          (.15,.18),(.35,.12),(.43,.19),(.32,.27),(.13,.25),(-.13,.25),(-.32,.27)],.12,'brass')
++    gear('Crossguard small clock rim',(0,.015,.22),.19,.12,.14,'brass',10)
++    cylinder('Crossguard ivory dial',(0,.092,.22),.133,.045,'dial_face',24,FRONT)
++    ticks((0,.132,.22),.097,8,.037,.03)
++    tube('Hour dial hands',[(0,.155,.29),(0,.155,.22),(.055,.155,.19)],.016,'dial_mark',4)
++    pin((0,.166,.22),.022,'red_lacquer')
++    for s in (-1,1): pin((s*.32,.075,.20),.028,'dial_mark')
++
++
++def rapier():
++    grip('wood_dark','brass')
++    cylinder('Pommel stem',(0,0,-.12),.038,.10,'brass')
++    ring('Red ribbon pommel ring',(0,0,-.19),.06,.03,.045,'red_lacquer',FRONT,16)
++    # Shallow hollow cup, opening toward the fist (-Z).
++    lathe('Swept hollow iron cup',[(.15,.09),(.15,.13),(.125,.19),(.07,.23),
++          (.027,.24),(.027,.20),(.045,.19),(.09,.16),(.115,.12),(.115,.09)],
++          'iron_dark',20,bands={1:'steel',2:'steel',3:'brass',4:'brass'})
++    gear('Front cup gear rim',(0,.117,.135),.133,.087,.045,'brass',10)
++    # A graceful knuckle bow along one side, clear of the grip cylinder.
++    tube('Swept knuckle guard',[(.09,0,.15),(.18,0,.10),(.19,0,-.025),
++          (.14,0,-.12),(.035,0,-.15)],.023,'iron_dark')
++    solid('Minute hand slender blade',[(-.024,.22),(.024,.22),(.020,1.27),
++          (0,1.34),(-.020,1.27)],.04,'silver',bevel=False)
++    solid('Minute hand arrow point',[(0,1.45),(.072,1.25),(0,1.29),(-.072,1.25)],
++          .045,'silver',bevel=False)
++    box('Minute hand inset',(0,.027,.73),(.03,.03,.64),'steel',bevel=False)
++    pin((0,.155,.135),.025,'red_lacquer')
++
++
++SPECS = [
++    ('Rifle',rifle,-.40,.95), ('Bell',bell,-.10,.30),
++    ('Hammer',hammer,-.12,.38), ('NeedleDagger',needle_dagger,-.15,.75),
++    ('PendulumScythe',pendulum_scythe,-.45,1.75), ('Wrench',wrench,-.25,.95),
++    ('Greatsword',greatsword,-.45,2.35), ('Rapier',rapier,-.25,1.45),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3))) for fn in (min,max)]
++
++
++def finish(name, low_z, high_z):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active=obj
++        for mod in list(obj.modifiers): bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS: obj.select_set(True)
++    bpy.context.view_layer.objects.active=PARTS[0]
++    bpy.ops.object.join()
++    obj=bpy.context.object
++    obj.name=name; obj.data.name=name+'_Mesh'
++    # Do not centre bounds or fit dimensions: either would move the hand anchor.
++    assert obj.location.length < 1e-7
++    if triangles(obj)>2980:
++        mod=obj.modifiers.new('Silhouette and material preserving budget','DECIMATE')
++        mod.ratio=2880/triangles(obj); mod.delimit={'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm=bmesh.new(); bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name+' open mesh'
++    bm.to_mesh(obj.data); bm.free()
++    for p in obj.data.polygons: p.use_smooth=False
++    obj.data.update(); bpy.context.view_layer.update()
++    lo,hi=bounds(obj)
++    assert abs(lo.z-low_z)<.0001 and abs(hi.z-high_z)<.0001,(name,lo.z,hi.z)
++    assert triangles(obj)<=3000,(name,triangles(obj))
++    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used)>=4,(name,used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    for mat in obj.data.materials:
++        assert mat.name in PALETTE
++        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
++    obj['grip_centre_m']=[0.0,0.0,0.0]
++    obj['grip_radius_m']=.045; obj['grip_length_m']=.18
++    obj['long_axis']='+Z'; obj['front']='+Y'; obj['triangle_count']=triangles(obj)
++    dest=OUTPUT/f'Kit_W_{name}.fbx'
++    bpy.ops.export_scene.fbx(filepath=str(dest),use_selection=True,
++        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
++        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
++    assert dest.is_file() and dest.stat().st_size>1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    scene=bpy.context.scene
++    scene.render.engine='BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y=1800,1000
++    scene.render.resolution_percentage=100
++    scene.render.image_settings.file_format='PNG'
++    scene.render.filepath=str(PREVIEW)
++    scene.render.film_transparent=False
++    scene.view_settings.view_transform='Standard'
++    shade=scene.display.shading
++    shade.light='FLAT'; shade.color_type='MATERIAL'
++    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
++    shade.curvature_ridge_factor=1.4; shade.curvature_valley_factor=1.2
++    shade.show_specular_highlight=False
++    shade.background_type='WORLD'
++    scene.world=bpy.data.worlds.new('Neutral review background')
++    scene.world.color=(.085,.09,.105)
++    helpers=[]
++    try:
++        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
++        # Front camera +Y: screen-right is -X. All grip centres share Z=0.
++        screen_positions=[-2.78,-2.05,-1.40,-.76,.48,1.39,2.24,3.05]
++        for obj,x in zip(objects,screen_positions): obj.location=(-x,0,0)
++        # The scythe blade points local +X (screen-left); reserve that gap.
++        cam=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(cam); helpers.append(cam); scene.camera=cam
++        target=Vector((-.08,0,.90))
++        cam.location=target+Vector((0,14,3.0))
++        cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler()
++        cam.data.type='ORTHO'; cam.data.ortho_scale=7.3
++        rotation=cam.rotation_euler.to_matrix()
++
++        def caption(body, x, z, size=.085, role='silver', align='CENTER'):
++            data=bpy.data.curves.new('Preview text','FONT')
++            data.body=body; data.size=size; data.align_x=align
++            data.materials.append(MATS[role])
++            label=bpy.data.objects.new('Preview caption',data)
++            scene.collection.objects.link(label); helpers.append(label)
++            label.location=(-x,.32,z); label.rotation_euler=cam.rotation_euler
++
++        for obj,x,(_,_,low,high) in zip(objects,screen_positions,SPECS):
++            # Cross sits just in front of each grip, at its projected true origin.
++            for size in ((.105,.018,.016),(.016,.018,.105)):
++                cross=box('PREVIEW ONLY grip origin',(-x,.20,0),size,'red_lacquer',bevel=False)
++                helpers.append(cross)
++            title={'NeedleDagger':'NEEDLE\nDAGGER','PendulumScythe':'PENDULUM\nSCYTHE'}.get(obj.name,obj.name.upper())
++            caption(title,x,-.61,.083)
++            caption(f'{high-low:.2f} m  /  {triangles(obj):,} tri',x,-.83,.053,'brass')
++        caption('C H A P T E R   I V   /   C L O C K W O R K   A R M O U R Y',0,2.73,.125)
++        caption('HAND-HELD WEAPONS   |   TRUE SCALE   |   +Z WORKING END',0,2.53,.063,'brass')
++        caption('+   GRIP ORIGINS   /   COMMON HAND HEIGHT',0,-1.02,.065,'red_lacquer')
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
++        print(f'PREVIEW {PREVIEW}',flush=True)
++    finally:
++        scene.camera=None
++        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
++        for obj in objects: obj.location=(0,0,0)
++        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
++    scene=bpy.context.scene
++    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
++    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
++    objects=[]
++    for i,(name,build,lo,hi) in enumerate(SPECS):
++        PARTS=[]; random.seed(44081+i*7919)
++        build(); objects.append(finish(name,lo,hi))
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__=='__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py" in C:\Project\Cat_Tang
+ succeeded in 1871ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rifle.fbx'
+export finished in 0.0054 sec.
+EXPORTED Rifle 1736 (0.3133, 0.2235, 1.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Bell.fbx'
+export finished in 0.0047 sec.
+EXPORTED Bell 1120 (0.34, 0.34, 0.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Hammer.fbx'
+export finished in 0.0048 sec.
+EXPORTED Hammer 1024 (0.283, 0.1675, 0.5)
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py", line 500, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py", line 492, in main
+    build(); objects.append(finish(name,lo,hi))
+                            ~~~~~~^^^^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py", line 398, in finish
+    assert abs(lo.z-low_z)<.0001 and abs(hi.z-high_z)<.0001,(name,lo.z,hi.z)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('NeedleDagger', -0.14999999105930328, 0.7398673892021179)
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py
+diff --git a/Art/tools/blender_kit_ch4_weapons.py b/Art/tools/blender_kit_ch4_weapons.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..42c8606d87d7b826cb5137711035e6f86b5912a2
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_weapons.py
+@@ -0,0 +1,502 @@
++# 4장 태엽 인형용 손 무기 8종: 손잡이 중심 원점, FBX와 검수 이미지 생성.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py
++"""Blender 5.x. Metres; grip centre = zero; working end +Z; front +Y.
++
++Only this source file is required. Export shaders are neutral grey; review
++colours, captions and origin crosses are applied AFTER all FBX exports.
++The mallet's head reaches .38; the greatsword pommel is centred at -.30,
++with its lower finial reaching -.45 to preserve the requested 2.80 length.
++"""
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_weapons_preview.png'
++TAU = math.tau
++FRONT = (math.pi / 2, 0, 0)
++MATS, PARTS = {}, []
++# Deliberately achromatic brass/copper/wood in the review, with lacquer red.
++PALETTE = {
++    'steel': (.37, .39, .41), 'steel_dark': (.18, .19, .21),
++    'iron': (.12, .13, .15), 'iron_dark': (.025, .028, .035),
++    'silver': (.86, .88, .90), 'brass': (.61, .62, .63),
++    'copper': (.33, .34, .36), 'wood': (.29, .30, .32),
++    'wood_dark': (.055, .06, .07), 'dial_face': (.94, .94, .92),
++    'dial_mark': (.018, .021, .027), 'red_lacquer': (.72, .018, .035),
++}
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes['Principled BSDF']
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Toy edge chamfer', 'BEVEL')
++        mod.width, mod.segments = .02, 2
++        mod.limit_method = 'ANGLE'
++        mod.angle_limit = math.radians(35)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
++         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
++    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, rot=(0, 0, 0), bevel=False):
++    v = [(radius*math.cos(TAU*j/n), radius*math.sin(TAU*j/n), z)
++         for z in (-depth/2, depth/2) for j in range(n)]
++    f = [tuple(reversed(range(n))), tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def lathe(label, profile, role, n=20, loc=(0,0,0), rot=(0,0,0), bands=None):
++    """Closed section: outer wall, lip, inner wall; no filled fake openings."""
++    v = [(r*math.cos(TAU*j/n), r*math.sin(TAU*j/n), z)
++         for r,z in profile for j in range(n)]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
++          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
++    obj = place(mesh(label, v, f, role), loc, rot)
++    if bands:
++        for k, name in bands.items():
++            if MATS[name] not in list(obj.data.materials): obj.data.materials.append(MATS[name])
++            idx = list(obj.data.materials).index(MATS[name])
++            for p in obj.data.polygons[k*n:(k+1)*n]: p.material_index = idx
++    return obj
++
++
++def ring(label, loc, radius, width, depth, role, rot=(0,0,0), n=16):
++    return lathe(label, [(radius-width,-depth/2),(radius,-depth/2),
++                         (radius,depth/2),(radius-width,depth/2)],role,n,loc,rot)
++
++
++def solid(label, outline, depth, role, y=0, bevel=True, back='steel'):
++    """Extruded X/Z silhouette, including concave jaws and curved blades."""
++    n = len(outline)
++    v = [(x, yy, z) for yy in (y-depth/2,y+depth/2) for x,z in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    obj = mesh(label,v,f,role,bevel)
++    if back and back != role:
++        obj.data.materials.append(MATS[back])
++        obj.data.polygons[0].material_index = 1
++    return obj
++
++
++def frame(label, outer, inner, depth, role, y=0):
++    """Matched contours make an actual through-cutout, with bevelled edges."""
++    n = len(outer)
++    assert n == len(inner)
++    v = [(x,yy,z) for yy,curve in ((y-depth/2,outer),(y+depth/2,outer),
++                                  (y+depth/2,inner),(y-depth/2,inner)) for x,z in curve]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++         for k in range(4) for j in range(n)]
++    obj = mesh(label,v,f,role,True)
++    obj.data.materials.append(MATS['steel'])
++    for p in obj.data.polygons[3*n:]: p.material_index = 1
++    return obj
++
++
++def gear(label, loc, radius, hole, depth, role, teeth=10):
++    outer,inner = [],[]
++    for j in range(teeth*4):
++        a = TAU*j/(teeth*4)
++        r = radius if j%4 in (1,2) else radius*.81
++        outer.append((loc[0]+r*math.sin(a),loc[2]+r*math.cos(a)))
++        inner.append((loc[0]+hole*math.sin(a),loc[2]+hole*math.cos(a)))
++    # Small gear teeth stay crisp; beveling every tooth wastes the triangle budget.
++    n=len(outer)
++    v=[(x,y,z) for y,curve in ((loc[1]-depth/2,outer),(loc[1]+depth/2,outer),
++                              (loc[1]+depth/2,inner),(loc[1]-depth/2,inner)) for x,z in curve]
++    f=[(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++       for k in range(4) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def tube(label, points, radius, role, n=6):
++    v=[]
++    for i,p in enumerate(points):
++        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
++        ref=Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
++        u=ref.cross(t).normalized(); w=t.cross(u)
++        v += [tuple(Vector(p)+radius*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w)) for j in range(n)]
++    f=[tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
++    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
++          for i in range(len(points)-1) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def grip(role='wood_dark', band='brass'):
++    cylinder('Fist grip: radius .045 length .18', (0,0,0), .045,.18,role,n=12)
++    for z in (-.067,.067):
++        cylinder('Grip end band',(0,0,z),.052,.04,band,n=12)
++
++
++def ticks(loc, radius, count=12, length=.055, width=.032):
++    x,y,z=loc
++    for j in range(count):
++        a=TAU*j/count
++        box('Raised hour index',(x+radius*math.sin(a),y,z+radius*math.cos(a)),
++            (width,.032,length if j%3 else length*1.3),'dial_mark',rot=(0,a,0),bevel=False)
++
++
++def pin(loc, radius=.025, role='brass'):
++    cylinder('Broad clock rivet',loc,radius,.035,role,n=8,rot=FRONT)
++
++
++def rifle():
++    grip()
++    # Offset barrel leaves the cylindrical hand grip clear at the origin.
++    stock=[(-.047,-.09),(.047,-.09),(.105,-.27),(.09,-.40),
++           (-.12,-.40),(-.13,-.30),(-.075,-.15)]
++    solid('Carved musket butt',stock,.13,'wood_dark',back='wood_dark')
++    box('Butt plate',(-.015,0,-.376),(.23,.16,.048),'brass')
++    solid('Stock cheek inlay',[(-.067,-.17),(.023,-.17),(.060,-.30),(-.08,-.30)],
++          .032,'steel',y=.077)
++    box('Walnut fore-end',(-.025,0,.33),(.15,.13,.49),'wood_dark')
++    box('Fore-end front inset',(-.026,.073,.34),(.072,.035,.30),'steel')
++    # Annular barrel gives a real muzzle bore looking along +Z.
++    lathe('Long bored steel barrel',[(.055,.18),(.055,.95),(.024,.95),(.024,.18)],
++          'steel',16,loc=(.025,-.046,0),bands={1:'silver',2:'iron_dark'})
++    for z in (.24,.50,.87): cylinder('Brass barrel band',(.025,-.046,z),.067,.05,'brass')
++    box('Barrel breech block',(.025,-.035,.16),(.15,.13,.14),'iron')
++    gear('Gear shaped cocking hammer',(-.09,.082,.16),.083,.027,.045,'brass',8)
++    tube('Hammer spur',[(-.105,.08,.17),(-.15,.08,.235),(-.13,.08,.27)],.024,'iron')
++    ring('Red sling swivel',(-.10,.055,.43),.07,.031,.04,'red_lacquer',FRONT)
++    box('Bayonet mounting lug',(.095,-.046,.895),(.09,.08,.065),'iron')
++    box('Front sight',(.025,.032,.89),(.04,.05,.07),'silver')
++    pin((-.025,.093,-.335))
++
++
++def bell():
++    grip()
++    cylinder('Handle bottom button',(0,0,-.085),.052,.03,'brass')
++    # Bell flares in +Z. Lip opening is .30 across, exterior .36.
++    lathe('Hollow bell, open toward +Z',[(.047,.085),(.070,.11),(.085,.17),
++          (.12,.225),(.17,.27),(.17,.30),(.135,.30),(.135,.275),
++          (.09,.225),(.055,.17),(.035,.12),(.025,.10)],'copper',24,
++          bands={4:'brass',5:'brass',6:'brass',7:'iron',8:'iron',9:'iron',10:'brass'})
++    # Inner lip radius .15; revise the inner mouth vertices, without filling it.
++    shell=PARTS[-1]
++    for v in shell.data.vertices:
++        if v.co.z >= .274 and math.hypot(v.co.x,v.co.y) < .14:
++            r=math.hypot(v.co.x,v.co.y); v.co.x*=.15/r; v.co.y*=.15/r
++    ring('Shoulder molding',(0,0,.132),.079,.03,.035,'brass',n=20)
++    for j in range(8):
++        a=TAU*j/8
++        box('Bell tick band',(.108*math.cos(a),.108*math.sin(a),.216),
++            (.035,.035,.045),'dial_mark',rot=(0,0,a),bevel=False)
++    tube('Forward visible clapper',[(0,0,.12),(0,.025,.20),(0,.065,.265)],.017,'iron')
++    cylinder('Clapper ball',(0,.065,.266),.035,.055,'silver',n=10)
++    # A small red collar connects it visually to the dolls.
++    cylinder('Red neck collar',(0,0,.09),.053,.035,'red_lacquer')
++
++
++def hammer():
++    grip('wood_dark','brass')
++    cylinder('Wood mallet shaft',(0,0,.17),.043,.24,'wood')
++    cylinder('Grip butt',(0,0,-.105),.052,.03,'iron')
++    cylinder('Lacquer wrap below head',(0,0,.253),.054,.065,'red_lacquer')
++    box('Iron mallet head',(0,0,.33),(.18,.10,.10),'iron')
++    for x in (-.10,.10):
++        box('Brass striking cap',(x,0,.33),(.04,.13,.10),'brass')
++        box('Inset striking face',(x*1.24,0,.33),(.035,.085,.075),'silver')
++    gear('Clockwork mallet socket',(0,.063,.33),.045,.014,.03,'steel',6)
++    pin((0,.085,.33),.018,'brass')
++
++
++def needle_dagger():
++    grip()
++    box('Small straight crossguard',(0,0,.13),(.25,.10,.06),'brass')
++    solid('Second hand needle',[(-.033,.15),(.033,.15),(.036,.43),
++          (0,.53),(-.036,.43)],.045,'silver')
++    frame('Hollow diamond second hand',[(0,.75),(.095,.58),(0,.43),(-.095,.58)],
++          [(0,.668),(.048,.58),(0,.505),(-.048,.58)],.05,'silver')
++    solid('Sharp needle apex',[(0,.75),(.028,.697),(-.028,.697)],.045,'silver',bevel=False)
++    box('Dark second hand spine',(0,.027,.315),(.03,.03,.29),'steel',bevel=False)
++    # Flattened counterweight disc has its exact centre at -.12.
++    disc=cylinder('Red counterweight disc',(0,0,0),.070,.065,'red_lacquer',16,FRONT)
++    for v in disc.data.vertices: v.co.z *= .03/.07
++    place(disc,(0,0,-.12))
++    pin((0,.046,-.12),.027,'iron_dark')
++    pin((0,.064,.13),.03,'dial_mark')
++
++
++def pendulum_scythe():
++    cylinder('Long iron staff',(0,0,.60),.045,2.10,'iron',n=12)
++    grip('iron','red_lacquer')
++    cylinder('Butt ferrule',(0,0,-.4075),.065,.085,'brass')
++    for z in (-.30,.30,.72,1.05):
++        cylinder('Broad pole ring',(0,0,z),.058,.055,'brass')
++    ring('Silver pendulum outer disc',(0,0,1.40),.35,.105,.095,'silver',FRONT,32)
++    ring('Inset charcoal dial border',(0,.058,1.40),.302,.035,.035,'steel_dark',FRONT,24)
++    ticks((0,.087,1.40),.288,12,.055)
++    # Four curved spokes leave four ornate, genuinely open windows.
++    for j in range(4):
++        a=TAU*j/4
++        pts=[]
++        for r,twist in ((.045,0),(.13,.30),(.20,.24),(.25,.04)):
++            pts.append((r*math.sin(a+twist),0,1.40+r*math.cos(a+twist)))
++        tube('Curved pendulum tracery',pts,.023,'brass')
++    cylinder('Pendulum central hub',(0,.025,1.40),.084,.13,'iron_dark',12,FRONT)
++    cylinder('Red pendulum gem',(0,.105,1.40),.057,.045,'red_lacquer',8,FRONT,True)
++    # Broad forged sickle: follows a .9 m sweep toward +X, edge on +Y.
++    outer=[(.20,1.63),(.43,1.70),(.67,1.66),(.88,1.54),(1.04,1.34),
++           (1.13,1.09),(1.10,.83),(.98,1.11),(.82,1.29),(.62,1.40),(.40,1.44),(.22,1.44)]
++    solid('Pendulum scythe curved forge',outer,.09,'steel')
++    edge=[(.22,1.44),(.40,1.44),(.62,1.40),(.82,1.29),(.98,1.11),(1.10,.83),
++          (1.035,1.13),(.86,1.35),(.64,1.48),(.40,1.52),(.22,1.51)]
++    solid('Bright continuous cutting bevel',edge,.035,'silver',y=.063,bevel=False)
++    for x,z in ((.38,1.58),(.60,1.56),(.79,1.47)): pin((x,.065,z))
++
++
++def wrench():
++    cylinder('Iron tool core',(0,0,.02),.044,.48,'iron',12)
++    grip('iron','brass')
++    cylinder('Red rubber grip sleeve',(0,0,0),.052,.16,'red_lacquer',12)
++    for z in (-.065,.065): cylinder('Grip sleeve end cuff',(0,0,z),.056,.035,'iron_dark',12)
++    cylinder('Wrench butt',(0,0,-.225),.070,.05,'steel')
++    ring('Butt hanging eye',(0,.035,-.187),.049,.03,.04,'brass',FRONT,12)
++    outline=[(-.07,.09),(.07,.09),(.082,.52),(.18,.61),(.18,.78),
++             (.12,.86),(.12,.95),(.025,.95),(.025,.76),(-.10,.76),
++             (-.10,.95),(-.205,.95),(-.24,.83),(-.24,.69),(-.15,.56),(-.09,.50)]
++    solid('Forged open jaw wrench',outline,.12,'steel')
++    box('Long recessed handle panel',(0,.069,.33),(.075,.032,.35),'iron_dark')
++    box('Handle panel silver spine',(0,.089,.33),(.032,.03,.25),'silver',bevel=False)
++    box('Sliding jaw carriage',(-.053,.015,.69),(.20,.155,.095),'brass')
++    box('Movable silver jaw',(-.106,0,.835),(.072,.14,.23),'silver')
++    cylinder('Adjuster screw',(-.048,.108,.611),.048,.15,'iron_dark',12,(0,math.pi/2,0))
++    for x in (-.107,-.067,-.027,.013):
++        cylinder('Coarse adjustment threads',(x,.108,.611),.055,.023,'silver',10,(0,math.pi/2,0))
++    # Integrated rear rack with three visible negative notches between teeth.
++    for z in (.38,.46,.54): box('Back gear rack tooth',(-.105,0,z),(.07,.11,.042),'iron')
++    pin((.105,.083,.72),.028,'dial_mark')
++
++
++def greatsword():
++    grip()
++    cylinder('Long grip extension',(0,0,-.17),.044,.18,'wood_dark')
++    for z in (-.18,-.10): cylinder('Grip winding band',(0,0,z),.051,.035,'brass')
++    # Centre -.30, lower finial -.45, tip +2.35: exact 2.80 m envelope.
++    frame('Pommel gem mounting',[(0,-.15),(.12,-.30),(0,-.45),(-.12,-.30)],
++          [(0,-.215),(.064,-.30),(0,-.385),(-.064,-.30)],.09,'brass')
++    solid('Red pommel gem',[(0,-.20),(.08,-.30),(0,-.40),(-.08,-.30)],.115,'red_lacquer',back='red_lacquer')
++    solid('Hour hand broad blade',[(-.10,.19),(.10,.19),(.18,.44),(.12,1.35),
++          (.20,1.57),(0,1.80),(-.20,1.57),(-.12,1.35),(-.18,.44)],.09,'silver')
++    solid('Recessed dark steel fuller',[(-.055,.31),(.055,.31),(.072,.50),
++          (.045,1.37),(0,1.60),(-.045,1.37),(-.072,.50)],.032,'steel',y=.055,bevel=False)
++    # Spade lobes taper into a sharp clock-hand point; inset follows the same
++    # contour, leaving a large through-cutout rather than a painted black inset.
++    outer=[(0,2.35),(.12,2.13),(.265,1.98),(.31,1.84),(.27,1.70),
++           (.17,1.65),(.07,1.72),(0,1.58),(-.07,1.72),(-.17,1.65),
++           (-.27,1.70),(-.31,1.84),(-.265,1.98),(-.12,2.13)]
++    inner=[(x*.69,1.89+(z-1.89)*.66) for x,z in outer]
++    frame('Open ornate spade tip',outer,inner,.085,'silver')
++    solid('Sharp hour hand apex',[(0,2.35),(.045,2.265),(-.045,2.265)],.075,'silver',bevel=False)
++    solid('Swept brass crossguard',[(-.43,.19),(-.35,.12),(-.15,.18),(0,.16),
++          (.15,.18),(.35,.12),(.43,.19),(.32,.27),(.13,.25),(-.13,.25),(-.32,.27)],.12,'brass')
++    gear('Crossguard small clock rim',(0,.015,.22),.19,.12,.14,'brass',10)
++    cylinder('Crossguard ivory dial',(0,.092,.22),.133,.045,'dial_face',24,FRONT)
++    ticks((0,.132,.22),.097,8,.037,.03)
++    tube('Hour dial hands',[(0,.155,.29),(0,.155,.22),(.055,.155,.19)],.016,'dial_mark',4)
++    pin((0,.166,.22),.022,'red_lacquer')
++    for s in (-1,1): pin((s*.32,.075,.20),.028,'dial_mark')
++
++
++def rapier():
++    grip('wood_dark','brass')
++    cylinder('Pommel stem',(0,0,-.12),.038,.10,'brass')
++    ring('Red ribbon pommel ring',(0,0,-.19),.06,.03,.045,'red_lacquer',FRONT,16)
++    # Shallow hollow cup, opening toward the fist (-Z).
++    lathe('Swept hollow iron cup',[(.15,.09),(.15,.13),(.125,.19),(.07,.23),
++          (.027,.24),(.027,.20),(.045,.19),(.09,.16),(.115,.12),(.115,.09)],
++          'iron_dark',20,bands={1:'steel',2:'steel',3:'brass',4:'brass'})
++    gear('Front cup gear rim',(0,.117,.135),.133,.087,.045,'brass',10)
++    # A graceful knuckle bow along one side, clear of the grip cylinder.
++    tube('Swept knuckle guard',[(.09,0,.15),(.18,0,.10),(.19,0,-.025),
++          (.14,0,-.12),(.035,0,-.15)],.023,'iron_dark')
++    solid('Minute hand slender blade',[(-.024,.22),(.024,.22),(.020,1.27),
++          (0,1.34),(-.020,1.27)],.04,'silver',bevel=False)
++    solid('Minute hand arrow point',[(0,1.45),(.072,1.25),(0,1.29),(-.072,1.25)],
++          .045,'silver',bevel=False)
++    box('Minute hand inset',(0,.027,.73),(.03,.03,.64),'steel',bevel=False)
++    pin((0,.155,.135),.025,'red_lacquer')
++
++
++SPECS = [
++    ('Rifle',rifle,-.40,.95), ('Bell',bell,-.10,.30),
++    ('Hammer',hammer,-.12,.38), ('NeedleDagger',needle_dagger,-.15,.75),
++    ('PendulumScythe',pendulum_scythe,-.45,1.75), ('Wrench',wrench,-.25,.95),
++    ('Greatsword',greatsword,-.45,2.35), ('Rapier',rapier,-.25,1.45),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3))) for fn in (min,max)]
++
++
++def finish(name, low_z, high_z):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active=obj
++        for mod in list(obj.modifiers): bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS: obj.select_set(True)
++    bpy.context.view_layer.objects.active=PARTS[0]
++    bpy.ops.object.join()
++    obj=bpy.context.object
++    obj.name=name; obj.data.name=name+'_Mesh'
++    # Do not centre bounds or fit dimensions: either would move the hand anchor.
++    assert obj.location.length < 1e-7
++    if triangles(obj)>2980:
++        mod=obj.modifiers.new('Silhouette and material preserving budget','DECIMATE')
++        mod.ratio=2880/triangles(obj); mod.delimit={'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm=bmesh.new(); bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name+' open mesh'
++    bm.to_mesh(obj.data); bm.free()
++    for p in obj.data.polygons: p.use_smooth=False
++    obj.data.update(); bpy.context.view_layer.update()
++    lo,hi=bounds(obj)
++    assert abs(lo.z-low_z)<.0001 and abs(hi.z-high_z)<.0001,(name,lo.z,hi.z)
++    assert triangles(obj)<=3000,(name,triangles(obj))
++    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used)>=4,(name,used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    for mat in obj.data.materials:
++        assert mat.name in PALETTE
++        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
++    obj['grip_centre_m']=[0.0,0.0,0.0]
++    obj['grip_radius_m']=.045; obj['grip_length_m']=.18
++    obj['long_axis']='+Z'; obj['front']='+Y'; obj['triangle_count']=triangles(obj)
++    dest=OUTPUT/f'Kit_W_{name}.fbx'
++    bpy.ops.export_scene.fbx(filepath=str(dest),use_selection=True,
++        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
++        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
++    assert dest.is_file() and dest.stat().st_size>1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    scene=bpy.context.scene
++    scene.render.engine='BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y=1800,1000
++    scene.render.resolution_percentage=100
++    scene.render.image_settings.file_format='PNG'
++    scene.render.filepath=str(PREVIEW)
++    scene.render.film_transparent=False
++    scene.view_settings.view_transform='Standard'
++    shade=scene.display.shading
++    shade.light='FLAT'; shade.color_type='MATERIAL'
++    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
++    shade.curvature_ridge_factor=1.4; shade.curvature_valley_factor=1.2
++    shade.show_specular_highlight=False
++    shade.background_type='WORLD'
++    scene.world=bpy.data.worlds.new('Neutral review background')
++    scene.world.color=(.085,.09,.105)
++    helpers=[]
++    try:
++        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
++        # Front camera +Y: screen-right is -X. All grip centres share Z=0.
++        screen_positions=[-2.78,-2.05,-1.40,-.76,.48,1.39,2.24,3.05]
++        for obj,x in zip(objects,screen_positions): obj.location=(-x,0,0)
++        # The scythe blade points local +X (screen-left); reserve that gap.
++        cam=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(cam); helpers.append(cam); scene.camera=cam
++        target=Vector((-.08,0,.90))
++        cam.location=target+Vector((0,14,3.0))
++        cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler()
++        cam.data.type='ORTHO'; cam.data.ortho_scale=7.3
++        rotation=cam.rotation_euler.to_matrix()
++
++        def caption(body, x, z, size=.085, role='silver', align='CENTER'):
++            data=bpy.data.curves.new('Preview text','FONT')
++            data.body=body; data.size=size; data.align_x=align
++            data.materials.append(MATS[role])
++            label=bpy.data.objects.new('Preview caption',data)
++            scene.collection.objects.link(label); helpers.append(label)
++            label.location=(-x,.32,z); label.rotation_euler=cam.rotation_euler
++
++        for obj,x,(_,_,low,high) in zip(objects,screen_positions,SPECS):
++            # Cross sits just in front of each grip, at its projected true origin.
++            for size in ((.105,.018,.016),(.016,.018,.105)):
++                cross=box('PREVIEW ONLY grip origin',(-x,.20,0),size,'red_lacquer',bevel=False)
++                helpers.append(cross)
++            title={'NeedleDagger':'NEEDLE\nDAGGER','PendulumScythe':'PENDULUM\nSCYTHE'}.get(obj.name,obj.name.upper())
++            caption(title,x,-.61,.083)
++            caption(f'{high-low:.2f} m  /  {triangles(obj):,} tri',x,-.83,.053,'brass')
++        caption('C H A P T E R   I V   /   C L O C K W O R K   A R M O U R Y',0,2.73,.125)
++        caption('HAND-HELD WEAPONS   |   TRUE SCALE   |   +Z WORKING END',0,2.53,.063,'brass')
++        caption('+   GRIP ORIGINS   /   COMMON HAND HEIGHT',0,-1.02,.065,'red_lacquer')
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
++        print(f'PREVIEW {PREVIEW}',flush=True)
++    finally:
++        scene.camera=None
++        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
++        for obj in objects: obj.location=(0,0,0)
++        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
++    scene=bpy.context.scene
++    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
++    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
++    objects=[]
++    for i,(name,build,lo,hi) in enumerate(SPECS):
++        PARTS=[]; random.seed(44081+i*7919)
++        build(); objects.append(finish(name,lo,hi))
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__=='__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py" in C:\Project\Cat_Tang
+ succeeded in 1789ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rifle.fbx'
+export finished in 0.0052 sec.
+EXPORTED Rifle 1736 (0.3133, 0.2235, 1.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Bell.fbx'
+export finished in 0.0046 sec.
+EXPORTED Bell 1120 (0.34, 0.34, 0.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Hammer.fbx'
+export finished in 0.0047 sec.
+EXPORTED Hammer 1024 (0.283, 0.1675, 0.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_NeedleDagger.fbx'
+export finished in 0.0047 sec.
+EXPORTED NeedleDagger 704 (0.25, 0.1335, 0.9)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_PendulumScythe.fbx'
+export finished in 0.0053 sec.
+EXPORTED PendulumScythe 1740 (1.48, 0.1925, 2.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Wrench.fbx'
+export finished in 0.0056 sec.
+EXPORTED Wrench 1720 (0.42, 0.2303, 1.2)
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py", line 502, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py", line 494, in main
+    build(); objects.append(finish(name,lo,hi))
+                            ~~~~~~^^^^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py", line 400, in finish
+    assert abs(lo.z-low_z)<.0001 and abs(hi.z-high_z)<.0001,(name,lo.z,hi.z)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('Greatsword', -0.44104987382888794, 2.3499999046325684)
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+The first six weapons export within budget. The bounds checks caught bevels shortening the dagger’s point and the greatsword’s pommel; I’m correcting those ends before rendering the full lineup.
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py
+diff --git a/Art/tools/blender_kit_ch4_weapons.py b/Art/tools/blender_kit_ch4_weapons.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..927e3fbd6f42321ac2496c10fbaeaa5290d81426
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_weapons.py
+@@ -0,0 +1,503 @@
++# 4장 태엽 인형용 손 무기 8종: 손잡이 중심 원점, FBX와 검수 이미지 생성.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py
++"""Blender 5.x. Metres; grip centre = zero; working end +Z; front +Y.
++
++Only this source file is required. Export shaders are neutral grey; review
++colours, captions and origin crosses are applied AFTER all FBX exports.
++The mallet's head reaches .38; the greatsword pommel is centred at -.30,
++with its lower finial reaching -.45 to preserve the requested 2.80 length.
++"""
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_weapons_preview.png'
++TAU = math.tau
++FRONT = (math.pi / 2, 0, 0)
++MATS, PARTS = {}, []
++# Deliberately achromatic brass/copper/wood in the review, with lacquer red.
++PALETTE = {
++    'steel': (.37, .39, .41), 'steel_dark': (.18, .19, .21),
++    'iron': (.12, .13, .15), 'iron_dark': (.025, .028, .035),
++    'silver': (.86, .88, .90), 'brass': (.61, .62, .63),
++    'copper': (.33, .34, .36), 'wood': (.29, .30, .32),
++    'wood_dark': (.055, .06, .07), 'dial_face': (.94, .94, .92),
++    'dial_mark': (.018, .021, .027), 'red_lacquer': (.72, .018, .035),
++}
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes['Principled BSDF']
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Toy edge chamfer', 'BEVEL')
++        mod.width, mod.segments = .02, 2
++        mod.limit_method = 'ANGLE'
++        mod.angle_limit = math.radians(35)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
++         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
++    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, rot=(0, 0, 0), bevel=False):
++    v = [(radius*math.cos(TAU*j/n), radius*math.sin(TAU*j/n), z)
++         for z in (-depth/2, depth/2) for j in range(n)]
++    f = [tuple(reversed(range(n))), tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def lathe(label, profile, role, n=20, loc=(0,0,0), rot=(0,0,0), bands=None):
++    """Closed section: outer wall, lip, inner wall; no filled fake openings."""
++    v = [(r*math.cos(TAU*j/n), r*math.sin(TAU*j/n), z)
++         for r,z in profile for j in range(n)]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
++          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
++    obj = place(mesh(label, v, f, role), loc, rot)
++    if bands:
++        for k, name in bands.items():
++            if MATS[name] not in list(obj.data.materials): obj.data.materials.append(MATS[name])
++            idx = list(obj.data.materials).index(MATS[name])
++            for p in obj.data.polygons[k*n:(k+1)*n]: p.material_index = idx
++    return obj
++
++
++def ring(label, loc, radius, width, depth, role, rot=(0,0,0), n=16):
++    return lathe(label, [(radius-width,-depth/2),(radius,-depth/2),
++                         (radius,depth/2),(radius-width,depth/2)],role,n,loc,rot)
++
++
++def solid(label, outline, depth, role, y=0, bevel=True, back='steel'):
++    """Extruded X/Z silhouette, including concave jaws and curved blades."""
++    n = len(outline)
++    v = [(x, yy, z) for yy in (y-depth/2,y+depth/2) for x,z in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    obj = mesh(label,v,f,role,bevel)
++    if back and back != role:
++        obj.data.materials.append(MATS[back])
++        obj.data.polygons[0].material_index = 1
++    return obj
++
++
++def frame(label, outer, inner, depth, role, y=0):
++    """Matched contours make an actual through-cutout, with bevelled edges."""
++    n = len(outer)
++    assert n == len(inner)
++    v = [(x,yy,z) for yy,curve in ((y-depth/2,outer),(y+depth/2,outer),
++                                  (y+depth/2,inner),(y-depth/2,inner)) for x,z in curve]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++         for k in range(4) for j in range(n)]
++    obj = mesh(label,v,f,role,True)
++    obj.data.materials.append(MATS['steel'])
++    for p in obj.data.polygons[3*n:]: p.material_index = 1
++    return obj
++
++
++def gear(label, loc, radius, hole, depth, role, teeth=10):
++    outer,inner = [],[]
++    for j in range(teeth*4):
++        a = TAU*j/(teeth*4)
++        r = radius if j%4 in (1,2) else radius*.81
++        outer.append((loc[0]+r*math.sin(a),loc[2]+r*math.cos(a)))
++        inner.append((loc[0]+hole*math.sin(a),loc[2]+hole*math.cos(a)))
++    # Small gear teeth stay crisp; beveling every tooth wastes the triangle budget.
++    n=len(outer)
++    v=[(x,y,z) for y,curve in ((loc[1]-depth/2,outer),(loc[1]+depth/2,outer),
++                              (loc[1]+depth/2,inner),(loc[1]-depth/2,inner)) for x,z in curve]
++    f=[(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++       for k in range(4) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def tube(label, points, radius, role, n=6):
++    v=[]
++    for i,p in enumerate(points):
++        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
++        ref=Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
++        u=ref.cross(t).normalized(); w=t.cross(u)
++        v += [tuple(Vector(p)+radius*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w)) for j in range(n)]
++    f=[tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
++    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
++          for i in range(len(points)-1) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def grip(role='wood_dark', band='brass'):
++    cylinder('Fist grip: radius .045 length .18', (0,0,0), .045,.18,role,n=12)
++    for z in (-.067,.067):
++        cylinder('Grip end band',(0,0,z),.052,.04,band,n=12)
++
++
++def ticks(loc, radius, count=12, length=.055, width=.032):
++    x,y,z=loc
++    for j in range(count):
++        a=TAU*j/count
++        box('Raised hour index',(x+radius*math.sin(a),y,z+radius*math.cos(a)),
++            (width,.032,length if j%3 else length*1.3),'dial_mark',rot=(0,a,0),bevel=False)
++
++
++def pin(loc, radius=.025, role='brass'):
++    cylinder('Broad clock rivet',loc,radius,.035,role,n=8,rot=FRONT)
++
++
++def rifle():
++    grip()
++    # Offset barrel leaves the cylindrical hand grip clear at the origin.
++    stock=[(-.047,-.09),(.047,-.09),(.105,-.27),(.09,-.40),
++           (-.12,-.40),(-.13,-.30),(-.075,-.15)]
++    solid('Carved musket butt',stock,.13,'wood_dark',back='wood_dark')
++    box('Butt plate',(-.015,0,-.376),(.23,.16,.048),'brass')
++    solid('Stock cheek inlay',[(-.067,-.17),(.023,-.17),(.060,-.30),(-.08,-.30)],
++          .032,'steel',y=.077)
++    box('Walnut fore-end',(-.025,0,.33),(.15,.13,.49),'wood_dark')
++    box('Fore-end front inset',(-.026,.073,.34),(.072,.035,.30),'steel')
++    # Annular barrel gives a real muzzle bore looking along +Z.
++    lathe('Long bored steel barrel',[(.055,.18),(.055,.95),(.024,.95),(.024,.18)],
++          'steel',16,loc=(.025,-.046,0),bands={1:'silver',2:'iron_dark'})
++    for z in (.24,.50,.87): cylinder('Brass barrel band',(.025,-.046,z),.067,.05,'brass')
++    box('Barrel breech block',(.025,-.035,.16),(.15,.13,.14),'iron')
++    gear('Gear shaped cocking hammer',(-.09,.082,.16),.083,.027,.045,'brass',8)
++    tube('Hammer spur',[(-.105,.08,.17),(-.15,.08,.235),(-.13,.08,.27)],.024,'iron')
++    ring('Red sling swivel',(-.10,.055,.43),.07,.031,.04,'red_lacquer',FRONT)
++    box('Bayonet mounting lug',(.095,-.046,.895),(.09,.08,.065),'iron')
++    box('Front sight',(.025,.032,.89),(.04,.05,.07),'silver')
++    pin((-.025,.093,-.335))
++
++
++def bell():
++    grip()
++    cylinder('Handle bottom button',(0,0,-.085),.052,.03,'brass')
++    # Bell flares in +Z. Lip opening is .30 across, exterior .36.
++    lathe('Hollow bell, open toward +Z',[(.047,.085),(.070,.11),(.085,.17),
++          (.12,.225),(.17,.27),(.17,.30),(.135,.30),(.135,.275),
++          (.09,.225),(.055,.17),(.035,.12),(.025,.10)],'copper',24,
++          bands={4:'brass',5:'brass',6:'brass',7:'iron',8:'iron',9:'iron',10:'brass'})
++    # Inner lip radius .15; revise the inner mouth vertices, without filling it.
++    shell=PARTS[-1]
++    for v in shell.data.vertices:
++        if v.co.z >= .274 and math.hypot(v.co.x,v.co.y) < .14:
++            r=math.hypot(v.co.x,v.co.y); v.co.x*=.15/r; v.co.y*=.15/r
++    ring('Shoulder molding',(0,0,.132),.079,.03,.035,'brass',n=20)
++    for j in range(8):
++        a=TAU*j/8
++        box('Bell tick band',(.108*math.cos(a),.108*math.sin(a),.216),
++            (.035,.035,.045),'dial_mark',rot=(0,0,a),bevel=False)
++    tube('Forward visible clapper',[(0,0,.12),(0,.025,.20),(0,.065,.265)],.017,'iron')
++    cylinder('Clapper ball',(0,.065,.266),.035,.055,'silver',n=10)
++    # A small red collar connects it visually to the dolls.
++    cylinder('Red neck collar',(0,0,.09),.053,.035,'red_lacquer')
++
++
++def hammer():
++    grip('wood_dark','brass')
++    cylinder('Wood mallet shaft',(0,0,.17),.043,.24,'wood')
++    cylinder('Grip butt',(0,0,-.105),.052,.03,'iron')
++    cylinder('Lacquer wrap below head',(0,0,.253),.054,.065,'red_lacquer')
++    box('Iron mallet head',(0,0,.33),(.18,.10,.10),'iron')
++    for x in (-.10,.10):
++        box('Brass striking cap',(x,0,.33),(.04,.13,.10),'brass')
++        box('Inset striking face',(x*1.24,0,.33),(.035,.085,.075),'silver')
++    gear('Clockwork mallet socket',(0,.063,.33),.045,.014,.03,'steel',6)
++    pin((0,.085,.33),.018,'brass')
++
++
++def needle_dagger():
++    grip()
++    box('Small straight crossguard',(0,0,.13),(.25,.10,.06),'brass')
++    solid('Second hand needle',[(-.033,.15),(.033,.15),(.036,.43),
++          (0,.53),(-.036,.43)],.045,'silver')
++    frame('Hollow diamond second hand',[(0,.75),(.095,.58),(0,.43),(-.095,.58)],
++          [(0,.668),(.048,.58),(0,.505),(-.048,.58)],.05,'silver')
++    solid('Sharp needle apex',[(0,.75),(.028,.697),(-.028,.697)],.045,'silver',bevel=False)
++    box('Dark second hand spine',(0,.027,.315),(.03,.03,.29),'steel',bevel=False)
++    # Flattened counterweight disc has its exact centre at -.12.
++    disc=cylinder('Red counterweight disc',(0,0,0),.070,.065,'red_lacquer',16,FRONT)
++    for v in disc.data.vertices: v.co.z *= .03/.07
++    place(disc,(0,0,-.12))
++    pin((0,.046,-.12),.027,'iron_dark')
++    pin((0,.064,.13),.03,'dial_mark')
++
++
++def pendulum_scythe():
++    cylinder('Long iron staff',(0,0,.60),.045,2.10,'iron',n=12)
++    grip('iron','red_lacquer')
++    cylinder('Butt ferrule',(0,0,-.4075),.065,.085,'brass')
++    for z in (-.30,.30,.72,1.05):
++        cylinder('Broad pole ring',(0,0,z),.058,.055,'brass')
++    ring('Silver pendulum outer disc',(0,0,1.40),.35,.105,.095,'silver',FRONT,32)
++    ring('Inset charcoal dial border',(0,.058,1.40),.302,.035,.035,'steel_dark',FRONT,24)
++    ticks((0,.087,1.40),.288,12,.055)
++    # Four curved spokes leave four ornate, genuinely open windows.
++    for j in range(4):
++        a=TAU*j/4
++        pts=[]
++        for r,twist in ((.045,0),(.13,.30),(.20,.24),(.25,.04)):
++            pts.append((r*math.sin(a+twist),0,1.40+r*math.cos(a+twist)))
++        tube('Curved pendulum tracery',pts,.023,'brass')
++    cylinder('Pendulum central hub',(0,.025,1.40),.084,.13,'iron_dark',12,FRONT)
++    cylinder('Red pendulum gem',(0,.105,1.40),.057,.045,'red_lacquer',8,FRONT,True)
++    # Broad forged sickle: follows a .9 m sweep toward +X, edge on +Y.
++    outer=[(.20,1.63),(.43,1.70),(.67,1.66),(.88,1.54),(1.04,1.34),
++           (1.13,1.09),(1.10,.83),(.98,1.11),(.82,1.29),(.62,1.40),(.40,1.44),(.22,1.44)]
++    solid('Pendulum scythe curved forge',outer,.09,'steel')
++    edge=[(.22,1.44),(.40,1.44),(.62,1.40),(.82,1.29),(.98,1.11),(1.10,.83),
++          (1.035,1.13),(.86,1.35),(.64,1.48),(.40,1.52),(.22,1.51)]
++    solid('Bright continuous cutting bevel',edge,.035,'silver',y=.063,bevel=False)
++    for x,z in ((.38,1.58),(.60,1.56),(.79,1.47)): pin((x,.065,z))
++
++
++def wrench():
++    cylinder('Iron tool core',(0,0,.02),.044,.48,'iron',12)
++    grip('iron','brass')
++    cylinder('Red rubber grip sleeve',(0,0,0),.052,.16,'red_lacquer',12)
++    for z in (-.065,.065): cylinder('Grip sleeve end cuff',(0,0,z),.056,.035,'iron_dark',12)
++    cylinder('Wrench butt',(0,0,-.225),.070,.05,'steel')
++    ring('Butt hanging eye',(0,.035,-.187),.049,.03,.04,'brass',FRONT,12)
++    outline=[(-.07,.09),(.07,.09),(.082,.52),(.18,.61),(.18,.78),
++             (.12,.86),(.12,.95),(.025,.95),(.025,.76),(-.10,.76),
++             (-.10,.95),(-.205,.95),(-.24,.83),(-.24,.69),(-.15,.56),(-.09,.50)]
++    solid('Forged open jaw wrench',outline,.12,'steel')
++    box('Long recessed handle panel',(0,.069,.33),(.075,.032,.35),'iron_dark')
++    box('Handle panel silver spine',(0,.089,.33),(.032,.03,.25),'silver',bevel=False)
++    box('Sliding jaw carriage',(-.053,.015,.69),(.20,.155,.095),'brass')
++    box('Movable silver jaw',(-.106,0,.835),(.072,.14,.23),'silver')
++    cylinder('Adjuster screw',(-.048,.108,.611),.048,.15,'iron_dark',12,(0,math.pi/2,0))
++    for x in (-.107,-.067,-.027,.013):
++        cylinder('Coarse adjustment threads',(x,.108,.611),.055,.023,'silver',10,(0,math.pi/2,0))
++    # Integrated rear rack with three visible negative notches between teeth.
++    for z in (.38,.46,.54): box('Back gear rack tooth',(-.105,0,z),(.07,.11,.042),'iron')
++    pin((.105,.083,.72),.028,'dial_mark')
++
++
++def greatsword():
++    grip()
++    cylinder('Long grip extension',(0,0,-.17),.044,.18,'wood_dark')
++    for z in (-.18,-.10): cylinder('Grip winding band',(0,0,z),.051,.035,'brass')
++    # Centre -.30, lower finial -.45, tip +2.35: exact 2.80 m envelope.
++    frame('Pommel gem mounting',[(0,-.15),(.12,-.30),(0,-.45),(-.12,-.30)],
++          [(0,-.215),(.064,-.30),(0,-.385),(-.064,-.30)],.09,'brass')
++    solid('Pommel lower finial',[(0,-.45),(.034,-.393),(-.034,-.393)],.08,'brass',bevel=False)
++    solid('Red pommel gem',[(0,-.20),(.08,-.30),(0,-.40),(-.08,-.30)],.115,'red_lacquer',back='red_lacquer')
++    solid('Hour hand broad blade',[(-.10,.19),(.10,.19),(.18,.44),(.12,1.35),
++          (.20,1.57),(0,1.80),(-.20,1.57),(-.12,1.35),(-.18,.44)],.09,'silver')
++    solid('Recessed dark steel fuller',[(-.055,.31),(.055,.31),(.072,.50),
++          (.045,1.37),(0,1.60),(-.045,1.37),(-.072,.50)],.032,'steel',y=.055,bevel=False)
++    # Spade lobes taper into a sharp clock-hand point; inset follows the same
++    # contour, leaving a large through-cutout rather than a painted black inset.
++    outer=[(0,2.35),(.12,2.13),(.265,1.98),(.31,1.84),(.27,1.70),
++           (.17,1.65),(.07,1.72),(0,1.58),(-.07,1.72),(-.17,1.65),
++           (-.27,1.70),(-.31,1.84),(-.265,1.98),(-.12,2.13)]
++    inner=[(x*.69,1.89+(z-1.89)*.66) for x,z in outer]
++    frame('Open ornate spade tip',outer,inner,.085,'silver')
++    solid('Sharp hour hand apex',[(0,2.35),(.045,2.265),(-.045,2.265)],.075,'silver',bevel=False)
++    solid('Swept brass crossguard',[(-.43,.19),(-.35,.12),(-.15,.18),(0,.16),
++          (.15,.18),(.35,.12),(.43,.19),(.32,.27),(.13,.25),(-.13,.25),(-.32,.27)],.12,'brass')
++    gear('Crossguard small clock rim',(0,.015,.22),.19,.12,.14,'brass',10)
++    cylinder('Crossguard ivory dial',(0,.092,.22),.133,.045,'dial_face',24,FRONT)
++    ticks((0,.132,.22),.097,8,.037,.03)
++    tube('Hour dial hands',[(0,.155,.29),(0,.155,.22),(.055,.155,.19)],.016,'dial_mark',4)
++    pin((0,.166,.22),.022,'red_lacquer')
++    for s in (-1,1): pin((s*.32,.075,.20),.028,'dial_mark')
++
++
++def rapier():
++    grip('wood_dark','brass')
++    cylinder('Pommel stem',(0,0,-.12),.038,.10,'brass')
++    ring('Red ribbon pommel ring',(0,0,-.19),.06,.03,.045,'red_lacquer',FRONT,16)
++    # Shallow hollow cup, opening toward the fist (-Z).
++    lathe('Swept hollow iron cup',[(.15,.09),(.15,.13),(.125,.19),(.07,.23),
++          (.027,.24),(.027,.20),(.045,.19),(.09,.16),(.115,.12),(.115,.09)],
++          'iron_dark',20,bands={1:'steel',2:'steel',3:'brass',4:'brass'})
++    gear('Front cup gear rim',(0,.117,.135),.133,.087,.045,'brass',10)
++    # A graceful knuckle bow along one side, clear of the grip cylinder.
++    tube('Swept knuckle guard',[(.09,0,.15),(.18,0,.10),(.19,0,-.025),
++          (.14,0,-.12),(.035,0,-.15)],.023,'iron_dark')
++    solid('Minute hand slender blade',[(-.024,.22),(.024,.22),(.020,1.27),
++          (0,1.34),(-.020,1.27)],.04,'silver',bevel=False)
++    solid('Minute hand arrow point',[(0,1.45),(.072,1.25),(0,1.29),(-.072,1.25)],
++          .045,'silver',bevel=False)
++    box('Minute hand inset',(0,.027,.73),(.03,.03,.64),'steel',bevel=False)
++    pin((0,.155,.135),.025,'red_lacquer')
++
++
++SPECS = [
++    ('Rifle',rifle,-.40,.95), ('Bell',bell,-.10,.30),
++    ('Hammer',hammer,-.12,.38), ('NeedleDagger',needle_dagger,-.15,.75),
++    ('PendulumScythe',pendulum_scythe,-.45,1.75), ('Wrench',wrench,-.25,.95),
++    ('Greatsword',greatsword,-.45,2.35), ('Rapier',rapier,-.25,1.45),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3))) for fn in (min,max)]
++
++
++def finish(name, low_z, high_z):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active=obj
++        for mod in list(obj.modifiers): bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS: obj.select_set(True)
++    bpy.context.view_layer.objects.active=PARTS[0]
++    bpy.ops.object.join()
++    obj=bpy.context.object
++    obj.name=name; obj.data.name=name+'_Mesh'
++    # Do not centre bounds or fit dimensions: either would move the hand anchor.
++    assert obj.location.length < 1e-7
++    if triangles(obj)>2980:
++        mod=obj.modifiers.new('Silhouette and material preserving budget','DECIMATE')
++        mod.ratio=2880/triangles(obj); mod.delimit={'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm=bmesh.new(); bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name+' open mesh'
++    bm.to_mesh(obj.data); bm.free()
++    for p in obj.data.polygons: p.use_smooth=False
++    obj.data.update(); bpy.context.view_layer.update()
++    lo,hi=bounds(obj)
++    assert abs(lo.z-low_z)<.0001 and abs(hi.z-high_z)<.0001,(name,lo.z,hi.z)
++    assert triangles(obj)<=3000,(name,triangles(obj))
++    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used)>=4,(name,used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    for mat in obj.data.materials:
++        assert mat.name in PALETTE
++        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
++    obj['grip_centre_m']=[0.0,0.0,0.0]
++    obj['grip_radius_m']=.045; obj['grip_length_m']=.18
++    obj['long_axis']='+Z'; obj['front']='+Y'; obj['triangle_count']=triangles(obj)
++    dest=OUTPUT/f'Kit_W_{name}.fbx'
++    bpy.ops.export_scene.fbx(filepath=str(dest),use_selection=True,
++        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
++        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
++    assert dest.is_file() and dest.stat().st_size>1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    scene=bpy.context.scene
++    scene.render.engine='BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y=1800,1000
++    scene.render.resolution_percentage=100
++    scene.render.image_settings.file_format='PNG'
++    scene.render.filepath=str(PREVIEW)
++    scene.render.film_transparent=False
++    scene.view_settings.view_transform='Standard'
++    shade=scene.display.shading
++    shade.light='FLAT'; shade.color_type='MATERIAL'
++    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
++    shade.curvature_ridge_factor=1.4; shade.curvature_valley_factor=1.2
++    shade.show_specular_highlight=False
++    shade.background_type='WORLD'
++    scene.world=bpy.data.worlds.new('Neutral review background')
++    scene.world.color=(.085,.09,.105)
++    helpers=[]
++    try:
++        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
++        # Front camera +Y: screen-right is -X. All grip centres share Z=0.
++        screen_positions=[-2.78,-2.05,-1.40,-.76,.48,1.39,2.24,3.05]
++        for obj,x in zip(objects,screen_positions): obj.location=(-x,0,0)
++        # The scythe blade points local +X (screen-left); reserve that gap.
++        cam=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(cam); helpers.append(cam); scene.camera=cam
++        target=Vector((-.08,0,.90))
++        cam.location=target+Vector((0,14,3.0))
++        cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler()
++        cam.data.type='ORTHO'; cam.data.ortho_scale=7.3
++        rotation=cam.rotation_euler.to_matrix()
++
++        def caption(body, x, z, size=.085, role='silver', align='CENTER'):
++            data=bpy.data.curves.new('Preview text','FONT')
++            data.body=body; data.size=size; data.align_x=align
++            data.materials.append(MATS[role])
++            label=bpy.data.objects.new('Preview caption',data)
++            scene.collection.objects.link(label); helpers.append(label)
++            label.location=(-x,.32,z); label.rotation_euler=cam.rotation_euler
++
++        for obj,x,(_,_,low,high) in zip(objects,screen_positions,SPECS):
++            # Cross sits just in front of each grip, at its projected true origin.
++            for size in ((.105,.018,.016),(.016,.018,.105)):
++                cross=box('PREVIEW ONLY grip origin',(-x,.20,0),size,'red_lacquer',bevel=False)
++                helpers.append(cross)
++            title={'NeedleDagger':'NEEDLE\nDAGGER','PendulumScythe':'PENDULUM\nSCYTHE'}.get(obj.name,obj.name.upper())
++            caption(title,x,-.61,.083)
++            caption(f'{high-low:.2f} m  /  {triangles(obj):,} tri',x,-.83,.053,'brass')
++        caption('C H A P T E R   I V   /   C L O C K W O R K   A R M O U R Y',0,2.73,.125)
++        caption('HAND-HELD WEAPONS   |   TRUE SCALE   |   +Z WORKING END',0,2.53,.063,'brass')
++        caption('+   GRIP ORIGINS   /   COMMON HAND HEIGHT',0,-1.02,.065,'red_lacquer')
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
++        print(f'PREVIEW {PREVIEW}',flush=True)
++    finally:
++        scene.camera=None
++        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
++        for obj in objects: obj.location=(0,0,0)
++        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
++    scene=bpy.context.scene
++    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
++    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
++    objects=[]
++    for i,(name,build,lo,hi) in enumerate(SPECS):
++        PARTS=[]; random.seed(44081+i*7919)
++        build(); objects.append(finish(name,lo,hi))
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__=='__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py" in C:\Project\Cat_Tang
+ succeeded in 2716ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rifle.fbx'
+export finished in 0.0056 sec.
+EXPORTED Rifle 1736 (0.3133, 0.2235, 1.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Bell.fbx'
+export finished in 0.0048 sec.
+EXPORTED Bell 1120 (0.34, 0.34, 0.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Hammer.fbx'
+export finished in 0.0047 sec.
+EXPORTED Hammer 1024 (0.283, 0.1675, 0.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_NeedleDagger.fbx'
+export finished in 0.0047 sec.
+EXPORTED NeedleDagger 704 (0.25, 0.1335, 0.9)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_PendulumScythe.fbx'
+export finished in 0.0050 sec.
+EXPORTED PendulumScythe 1740 (1.48, 0.1925, 2.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Wrench.fbx'
+export finished in 0.0055 sec.
+EXPORTED Wrench 1720 (0.42, 0.2303, 1.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Greatsword.fbx'
+export finished in 0.0052 sec.
+EXPORTED Greatsword 2280 (0.842, 0.2435, 2.8)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rapier.fbx'
+export finished in 0.0046 sec.
+EXPORTED Rapier 1148 (0.3626, 0.3225, 1.7)
+00:02.406  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_weapons_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_weapons_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr \"import bpy; from pathlib import Path; out=Path('Game/Assets/Art/Characters/Ch4'); names=['Rifle','Bell','Hammer','NeedleDagger','PendulumScythe','Wrench','Greatsword','Rapier']; [bpy.data.objects.remove(o,do_unlink=True) for o in list(bpy.data.objects)]; exec('for name in names:\\n bpy.ops.import_scene.fbx(filepath=str(out / (\\'Kit_W_\\'+name+\\'.fbx\\')))\\n obj=bpy.context.selected_objects[0]\\n assert len(bpy.context.selected_objects)==1 and obj.type==\\'MESH\\',name\\n assert obj.location.length<1e-6,name\\n obj.data.calc_loop_triangles()\\n areas={}\\n front={}\\n for p in obj.data.polygons:\\n  role=obj.data.materials[p.material_index].name.split(\\'.\\')[0]\\n  areas[role]=areas.get(role,0)+p.area\\n  if p.normal.y>.5: front[role]=front.get(role,0)+p.area\\n dominant=max(areas,key=areas.get)\\n print(\\'VALIDATED\\',name,len(obj.data.loop_triangles),tuple(round(d,3) for d in obj.dimensions),dominant,round(max(areas.values())/sum(areas.values()),3),\\'FRONT\\',front)\\n bpy.data.objects.remove(obj,do_unlink=True)')\" " in C:\Project\Cat_Tang
+ succeeded in 1771ms:
+FBX version: 7400
+VALIDATED Rifle 1736 (0.313, 1.35, 0.224) wood_dark 0.347 FRONT {'wood_dark': 0.0372739798767725, 'brass': 0.10145799050224014, 'steel': 0.00375059212046637, 'silver': 0.008539199493945812, 'iron': 0.02720593633421231, 'red_lacquer': 0.010207126033492386}
+FBX version: 7400
+VALIDATED Bell 1120 (0.34, 0.4, 0.34) brass 0.323 FRONT {'wood_dark': 0.006075000390410423, 'brass': 0.0560795571655035, 'iron': 0.09004418971017003, 'dial_mark': 0.009799998835660517, 'silver': 0.003600184340029955, 'red_lacquer': 0.008426999673247337}
+FBX version: 7400
+VALIDATED Hammer 1024 (0.283, 0.5, 0.167) brass 0.282 FRONT {'wood_dark': 0.006075000390410423, 'brass': 0.0241700528024896, 'wood': 0.005546999629586935, 'iron': 0.023370457493001595, 'red_lacquer': 0.008748001419007778, 'silver': 0.0038050500139782117, 'steel': 0.00378455946338363}
+FBX version: 7400
+VALIDATED NeedleDagger 704 (0.25, 0.9, 0.134) brass 0.303 FRONT {'wood_dark': 0.006075000390410423, 'brass': 0.03782547923037782, 'silver': 0.002900476385548245, 'steel': 0.0008999999263323843, 'red_lacquer': 0.008909496827982366, 'iron_dark': 0.0014465437270700932, 'dial_mark': 0.001607270329259336}
+FBX version: 7400
+VALIDATED PendulumScythe 1740 (1.48, 2.2, 0.192) silver 0.276 FRONT {'iron': 0.012150000780820847, 'red_lacquer': 0.01944375768653117, 'brass': 0.08459663746180013, 'silver': 0.1444168002344668, 'steel_dark': 0.04159086663275957, 'dial_mark': 0.023039991850964725, 'iron_dark': 0.022610433399677277, 'steel': 0.07863250361697283}
+FBX version: 7400
+VALIDATED Wrench 1720 (0.42, 1.2, 0.23) steel 0.424 FRONT {'iron': 0.029573978405096568, 'brass': 0.04941045604937244, 'red_lacquer': 0.008112000301480293, 'iron_dark': 0.03524786006164504, 'steel': 0.05636595435498748, 'silver': 0.0214456825342495, 'dial_mark': 0.0015001186402514577}
+FBX version: 7400
+VALIDATED Greatsword 2280 (0.842, 2.8, 0.243) silver 0.329 FRONT {'wood_dark': 0.011883000377565622, 'brass': 0.28459420817671344, 'red_lacquer': 0.02259509045688901, 'silver': 0.10789239968289621, 'steel': 0.0014677304643555544, 'dial_face': 0.012499187607318163, 'dial_mark': 0.019618154561612755}
+FBX version: 7400
+VALIDATED Rapier 1148 (0.363, 1.7, 0.322) steel 0.245 FRONT {'wood_dark': 0.006075000390410423, 'brass': 0.05835516285151243, 'red_lacquer': 0.010820782044902444, 'steel': 0.042057520302478224, 'iron_dark': 0.009730033343657851}
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+All eight FBXs now export below 3,000 triangles, and re-import checks confirm one mesh and a zero grip origin in each file. I’ve inspected the preview; I’m strengthening the blade insets and aligning the red crosses with the projected grip centres.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr \"import runpy,bpy; n=runpy.run_path('Art/tools/blender_kit_ch4_weapons.py'); n['materials'](); n['greatsword'](); exec('for obj in bpy.context.scene.objects:\\n if obj.name in [\\'Recessed dark steel fuller\\',\\'Hour hand broad blade\\']:\\n  print(obj.name, [(p.index,round(p.normal.y,2),tuple(round(c,3) for c in p.center),obj.data.materials[p.material_index].name,round(p.area,4)) for p in obj.data.polygons])')\" " in C:\Project\Cat_Tang
+ succeeded in 1315ms:
+Hour hand broad blade [(0, 1.0, (-0.0, -0.045, 0.989), 'steel', 0.4594), (1, -1.0, (0.0, 0.045, 0.989), 'silver', 0.4594), (2, 0.0, (0.0, 0.0, 0.19), 'silver', 0.018), (3, 0.0, (0.14, 0.0, 0.315), 'silver', 0.0236), (4, 0.0, (0.15, 0.0, 0.895), 'silver', 0.0821), (5, 0.0, (0.16, 0.0, 1.46), 'silver', 0.0211), (6, 0.0, (0.1, 0.0, 1.685), 'silver', 0.0274), (7, 0.0, (-0.1, 0.0, 1.685), 'silver', 0.0274), (8, 0.0, (-0.16, 0.0, 1.46), 'silver', 0.0211), (9, 0.0, (-0.15, 0.0, 0.895), 'silver', 0.0821), (10, 0.0, (-0.14, 0.0, 0.315), 'silver', 0.0236)]
+Recessed dark steel fuller [(0, 1.0, (0.0, 0.039, 0.851), 'steel', 0.1363), (1, -1.0, (0.0, 0.071, 0.851), 'steel', 0.1363), (2, 0.0, (0.0, 0.055, 0.31), 'steel', 0.0035), (3, 0.0, (0.064, 0.055, 0.405), 'steel', 0.0061), (4, 0.0, (0.058, 0.055, 0.935), 'steel', 0.0279), (5, 0.0, (0.023, 0.055, 1.485), 'steel', 0.0075), (6, 0.0, (-0.023, 0.055, 1.485), 'steel', 0.0075), (7, 0.0, (-0.058, 0.055, 0.935), 'steel', 0.0279), (8, 0.0, (-0.064, 0.055, 0.405), 'steel', 0.0061)]
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py
+diff --git a/Art/tools/blender_kit_ch4_weapons.py b/Art/tools/blender_kit_ch4_weapons.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..9023279272d5657c4b416138a145db06cb06749d
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_weapons.py
+@@ -0,0 +1,514 @@
++# 4장 태엽 인형용 손 무기 8종: 손잡이 중심 원점, FBX와 검수 이미지 생성.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py
++"""Blender 5.x. Metres; grip centre = zero; working end +Z; front +Y.
++
++Only this source file is required. Export shaders are neutral grey; review
++colours, captions and origin crosses are applied AFTER all FBX exports.
++The mallet's head reaches .38; the greatsword pommel is centred at -.30,
++with its lower finial reaching -.45 to preserve the requested 2.80 length.
++"""
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_weapons_preview.png'
++TAU = math.tau
++FRONT = (math.pi / 2, 0, 0)
++MATS, PARTS = {}, []
++# Deliberately achromatic brass/copper/wood in the review, with lacquer red.
++PALETTE = {
++    'steel': (.27, .29, .32), 'steel_dark': (.18, .19, .21),
++    'iron': (.12, .13, .15), 'iron_dark': (.025, .028, .035),
++    'silver': (.86, .88, .90), 'brass': (.61, .62, .63),
++    'copper': (.33, .34, .36), 'wood': (.29, .30, .32),
++    'wood_dark': (.055, .06, .07), 'dial_face': (.94, .94, .92),
++    'dial_mark': (.018, .021, .027), 'red_lacquer': (.72, .018, .035),
++}
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes['Principled BSDF']
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Toy edge chamfer', 'BEVEL')
++        mod.width, mod.segments = .02, 2
++        mod.limit_method = 'ANGLE'
++        mod.angle_limit = math.radians(35)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
++         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
++    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, rot=(0, 0, 0), bevel=False):
++    v = [(radius*math.cos(TAU*j/n), radius*math.sin(TAU*j/n), z)
++         for z in (-depth/2, depth/2) for j in range(n)]
++    f = [tuple(reversed(range(n))), tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def lathe(label, profile, role, n=20, loc=(0,0,0), rot=(0,0,0), bands=None):
++    """Closed section: outer wall, lip, inner wall; no filled fake openings."""
++    v = [(r*math.cos(TAU*j/n), r*math.sin(TAU*j/n), z)
++         for r,z in profile for j in range(n)]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
++          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
++    obj = place(mesh(label, v, f, role), loc, rot)
++    if bands:
++        for k, name in bands.items():
++            if MATS[name] not in list(obj.data.materials): obj.data.materials.append(MATS[name])
++            idx = list(obj.data.materials).index(MATS[name])
++            for p in obj.data.polygons[k*n:(k+1)*n]: p.material_index = idx
++    return obj
++
++
++def ring(label, loc, radius, width, depth, role, rot=(0,0,0), n=16):
++    return lathe(label, [(radius-width,-depth/2),(radius,-depth/2),
++                         (radius,depth/2),(radius-width,depth/2)],role,n,loc,rot)
++
++
++def solid(label, outline, depth, role, y=0, bevel=True, back='steel'):
++    """Extruded X/Z silhouette, including concave jaws and curved blades."""
++    n = len(outline)
++    v = [(x, yy, z) for yy in (y-depth/2,y+depth/2) for x,z in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    obj = mesh(label,v,f,role,bevel)
++    if back and back != role:
++        obj.data.materials.append(MATS[back])
++        obj.data.polygons[0].material_index = 1
++    return obj
++
++
++def frame(label, outer, inner, depth, role, y=0):
++    """Matched contours make an actual through-cutout, with bevelled edges."""
++    n = len(outer)
++    assert n == len(inner)
++    v = [(x,yy,z) for yy,curve in ((y-depth/2,outer),(y+depth/2,outer),
++                                  (y+depth/2,inner),(y-depth/2,inner)) for x,z in curve]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++         for k in range(4) for j in range(n)]
++    obj = mesh(label,v,f,role,True)
++    obj.data.materials.append(MATS['steel'])
++    for p in obj.data.polygons[3*n:]: p.material_index = 1
++    return obj
++
++
++def gear(label, loc, radius, hole, depth, role, teeth=10):
++    outer,inner = [],[]
++    for j in range(teeth*4):
++        a = TAU*j/(teeth*4)
++        r = radius if j%4 in (1,2) else radius*.81
++        outer.append((loc[0]+r*math.sin(a),loc[2]+r*math.cos(a)))
++        inner.append((loc[0]+hole*math.sin(a),loc[2]+hole*math.cos(a)))
++    # Small gear teeth stay crisp; beveling every tooth wastes the triangle budget.
++    n=len(outer)
++    v=[(x,y,z) for y,curve in ((loc[1]-depth/2,outer),(loc[1]+depth/2,outer),
++                              (loc[1]+depth/2,inner),(loc[1]-depth/2,inner)) for x,z in curve]
++    f=[(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++       for k in range(4) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def tube(label, points, radius, role, n=6):
++    v=[]
++    for i,p in enumerate(points):
++        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
++        ref=Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
++        u=ref.cross(t).normalized(); w=t.cross(u)
++        v += [tuple(Vector(p)+radius*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w)) for j in range(n)]
++    f=[tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
++    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
++          for i in range(len(points)-1) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def grip(role='wood_dark', band='brass'):
++    cylinder('Fist grip: radius .045 length .18', (0,0,0), .045,.18,role,n=12)
++    for z in (-.067,.067):
++        cylinder('Grip end band',(0,0,z),.052,.04,band,n=12)
++
++
++def ticks(loc, radius, count=12, length=.055, width=.032):
++    x,y,z=loc
++    for j in range(count):
++        a=TAU*j/count
++        box('Raised hour index',(x+radius*math.sin(a),y,z+radius*math.cos(a)),
++            (width,.032,length if j%3 else length*1.3),'dial_mark',rot=(0,a,0),bevel=False)
++
++
++def pin(loc, radius=.025, role='brass'):
++    cylinder('Broad clock rivet',loc,radius,.035,role,n=8,rot=FRONT)
++
++
++def rifle():
++    grip()
++    # Offset barrel leaves the cylindrical hand grip clear at the origin.
++    stock=[(-.047,-.09),(.047,-.09),(.105,-.27),(.09,-.40),
++           (-.12,-.40),(-.13,-.30),(-.075,-.15)]
++    solid('Carved musket butt',stock,.13,'wood_dark',back='wood_dark')
++    box('Butt plate',(-.015,0,-.376),(.23,.16,.048),'brass')
++    solid('Stock cheek inlay',[(-.067,-.17),(.023,-.17),(.060,-.30),(-.08,-.30)],
++          .032,'steel',y=.077)
++    box('Walnut fore-end',(-.025,0,.33),(.15,.13,.49),'wood_dark')
++    box('Fore-end front inset',(-.026,.073,.34),(.072,.035,.30),'steel')
++    # Annular barrel gives a real muzzle bore looking along +Z.
++    lathe('Long bored steel barrel',[(.055,.18),(.055,.95),(.024,.95),(.024,.18)],
++          'steel',16,loc=(.025,-.046,0),bands={1:'silver',2:'iron_dark'})
++    for z in (.24,.50,.87): cylinder('Brass barrel band',(.025,-.046,z),.067,.05,'brass')
++    box('Barrel breech block',(.025,-.035,.16),(.15,.13,.14),'iron')
++    gear('Gear shaped cocking hammer',(-.09,.082,.16),.083,.027,.045,'brass',8)
++    tube('Hammer spur',[(-.105,.08,.17),(-.15,.08,.235),(-.13,.08,.27)],.024,'iron')
++    ring('Red sling swivel',(-.10,.055,.43),.07,.031,.04,'red_lacquer',FRONT)
++    box('Bayonet mounting lug',(.095,-.046,.895),(.09,.08,.065),'iron')
++    box('Front sight',(.025,.032,.89),(.04,.05,.07),'silver')
++    pin((-.025,.093,-.335))
++
++
++def bell():
++    grip()
++    cylinder('Handle bottom button',(0,0,-.085),.052,.03,'brass')
++    # Bell flares in +Z. Lip opening is .30 across, exterior .36.
++    lathe('Hollow bell, open toward +Z',[(.047,.085),(.070,.11),(.085,.17),
++          (.12,.225),(.17,.27),(.17,.30),(.135,.30),(.135,.275),
++          (.09,.225),(.055,.17),(.035,.12),(.025,.10)],'copper',24,
++          bands={4:'brass',5:'brass',6:'brass',7:'iron',8:'iron',9:'iron',10:'brass'})
++    # Inner lip radius .15; revise the inner mouth vertices, without filling it.
++    shell=PARTS[-1]
++    for v in shell.data.vertices:
++        if v.co.z >= .274 and math.hypot(v.co.x,v.co.y) < .14:
++            r=math.hypot(v.co.x,v.co.y); v.co.x*=.15/r; v.co.y*=.15/r
++    ring('Shoulder molding',(0,0,.132),.079,.03,.035,'brass',n=20)
++    for j in range(8):
++        a=TAU*j/8
++        box('Bell tick band',(.108*math.cos(a),.108*math.sin(a),.216),
++            (.035,.035,.045),'dial_mark',rot=(0,0,a),bevel=False)
++    tube('Forward visible clapper',[(0,0,.12),(0,.025,.20),(0,.065,.265)],.017,'iron')
++    cylinder('Clapper ball',(0,.065,.266),.035,.055,'silver',n=10)
++    # A small red collar connects it visually to the dolls.
++    cylinder('Red neck collar',(0,0,.09),.053,.035,'red_lacquer')
++
++
++def hammer():
++    grip('wood_dark','brass')
++    cylinder('Wood mallet shaft',(0,0,.17),.043,.24,'wood')
++    cylinder('Grip butt',(0,0,-.105),.052,.03,'iron')
++    cylinder('Lacquer wrap below head',(0,0,.253),.054,.065,'red_lacquer')
++    box('Iron mallet head',(0,0,.33),(.18,.10,.10),'iron')
++    for x in (-.10,.10):
++        box('Brass striking cap',(x,0,.33),(.04,.13,.10),'brass')
++        box('Inset striking face',(x*1.24,0,.33),(.035,.085,.075),'silver')
++    gear('Clockwork mallet socket',(0,.063,.33),.045,.014,.03,'steel',6)
++    pin((0,.085,.33),.018,'brass')
++
++
++def needle_dagger():
++    grip()
++    box('Small straight crossguard',(0,0,.13),(.25,.10,.06),'brass')
++    solid('Second hand needle',[(-.033,.15),(.033,.15),(.036,.43),
++          (0,.53),(-.036,.43)],.045,'silver')
++    frame('Hollow diamond second hand',[(0,.75),(.095,.58),(0,.43),(-.095,.58)],
++          [(0,.668),(.048,.58),(0,.505),(-.048,.58)],.05,'silver')
++    solid('Sharp needle apex',[(0,.75),(.028,.697),(-.028,.697)],.045,'silver',bevel=False)
++    box('Dark second hand spine',(0,.027,.315),(.03,.03,.29),'steel',bevel=False)
++    # Flattened counterweight disc has its exact centre at -.12.
++    disc=cylinder('Red counterweight disc',(0,0,0),.070,.065,'red_lacquer',16,FRONT)
++    for v in disc.data.vertices: v.co.z *= .03/.07
++    place(disc,(0,0,-.12))
++    pin((0,.046,-.12),.027,'iron_dark')
++    pin((0,.064,.13),.03,'dial_mark')
++
++
++def pendulum_scythe():
++    cylinder('Long iron staff',(0,0,.60),.045,2.10,'iron',n=12)
++    grip('iron','red_lacquer')
++    cylinder('Butt ferrule',(0,0,-.4075),.065,.085,'brass')
++    for z in (-.30,.30,.72,1.05):
++        cylinder('Broad pole ring',(0,0,z),.058,.055,'brass')
++    ring('Silver pendulum outer disc',(0,0,1.40),.35,.105,.095,'silver',FRONT,32)
++    ring('Inset charcoal dial border',(0,.058,1.40),.302,.035,.035,'steel_dark',FRONT,24)
++    ticks((0,.087,1.40),.288,12,.055)
++    # Four curved spokes leave four ornate, genuinely open windows.
++    for j in range(4):
++        a=TAU*j/4
++        pts=[]
++        for r,twist in ((.045,0),(.13,.30),(.20,.24),(.25,.04)):
++            pts.append((r*math.sin(a+twist),0,1.40+r*math.cos(a+twist)))
++        tube('Curved pendulum tracery',pts,.023,'brass')
++    cylinder('Pendulum central hub',(0,.025,1.40),.084,.13,'iron_dark',12,FRONT)
++    cylinder('Red pendulum gem',(0,.105,1.40),.057,.045,'red_lacquer',8,FRONT,True)
++    # Broad forged sickle: follows a .9 m sweep toward +X, edge on +Y.
++    outer=[(.20,1.63),(.43,1.70),(.67,1.66),(.88,1.54),(1.04,1.34),
++           (1.13,1.09),(1.10,.83),(.98,1.11),(.82,1.29),(.62,1.40),(.40,1.44),(.22,1.44)]
++    solid('Pendulum scythe curved forge',outer,.09,'steel')
++    edge=[(.22,1.44),(.40,1.44),(.62,1.40),(.82,1.29),(.98,1.11),(1.10,.83),
++          (1.035,1.13),(.86,1.35),(.64,1.48),(.40,1.52),(.22,1.51)]
++    solid('Bright continuous cutting bevel',edge,.035,'silver',y=.063,bevel=False)
++    for x,z in ((.38,1.58),(.60,1.56),(.79,1.47)): pin((x,.065,z))
++
++
++def wrench():
++    cylinder('Iron tool core',(0,0,.02),.044,.48,'iron',12)
++    grip('iron','brass')
++    cylinder('Red rubber grip sleeve',(0,0,0),.052,.16,'red_lacquer',12)
++    for z in (-.065,.065): cylinder('Grip sleeve end cuff',(0,0,z),.056,.035,'iron_dark',12)
++    cylinder('Wrench butt',(0,0,-.225),.070,.05,'steel')
++    ring('Butt hanging eye',(0,.035,-.187),.049,.03,.04,'brass',FRONT,12)
++    outline=[(-.07,.09),(.07,.09),(.082,.52),(.18,.61),(.18,.78),
++             (.12,.86),(.12,.95),(.025,.95),(.025,.76),(-.10,.76),
++             (-.10,.95),(-.205,.95),(-.24,.83),(-.24,.69),(-.15,.56),(-.09,.50)]
++    solid('Forged open jaw wrench',outline,.12,'steel')
++    box('Long recessed handle panel',(0,.069,.33),(.075,.032,.35),'iron_dark')
++    box('Handle panel silver spine',(0,.089,.33),(.032,.03,.25),'silver',bevel=False)
++    box('Sliding jaw carriage',(-.053,.015,.69),(.20,.155,.095),'brass')
++    box('Movable silver jaw',(-.106,0,.835),(.072,.14,.23),'silver')
++    cylinder('Adjuster screw',(-.048,.108,.611),.048,.15,'iron_dark',12,(0,math.pi/2,0))
++    for x in (-.107,-.067,-.027,.013):
++        cylinder('Coarse adjustment threads',(x,.108,.611),.055,.023,'silver',10,(0,math.pi/2,0))
++    # Integrated rear rack with three visible negative notches between teeth.
++    for z in (.38,.46,.54): box('Back gear rack tooth',(-.105,0,z),(.07,.11,.042),'iron')
++    pin((.105,.083,.72),.028,'dial_mark')
++
++
++def greatsword():
++    grip()
++    cylinder('Long grip extension',(0,0,-.17),.044,.18,'wood_dark')
++    for z in (-.18,-.10): cylinder('Grip winding band',(0,0,z),.051,.035,'brass')
++    # Centre -.30, lower finial -.45, tip +2.35: exact 2.80 m envelope.
++    frame('Pommel gem mounting',[(0,-.15),(.12,-.30),(0,-.45),(-.12,-.30)],
++          [(0,-.215),(.064,-.30),(0,-.385),(-.064,-.30)],.09,'brass')
++    solid('Pommel lower finial',[(0,-.45),(.034,-.393),(-.034,-.393)],.08,'brass',bevel=False)
++    solid('Red pommel gem',[(0,-.20),(.08,-.30),(0,-.40),(-.08,-.30)],.115,'red_lacquer',back='red_lacquer')
++    solid('Hour hand broad blade',[(-.10,.19),(.10,.19),(.18,.44),(.12,1.35),
++          (.20,1.57),(0,1.80),(-.20,1.57),(-.12,1.35),(-.18,.44)],.09,'silver')
++    solid('Recessed dark steel fuller',[(-.055,.31),(.055,.31),(.072,.50),
++          (.045,1.37),(0,1.60),(-.045,1.37),(-.072,.50)],.032,'steel',y=.055,bevel=False)
++    # Spade lobes taper into a sharp clock-hand point; inset follows the same
++    # contour, leaving a large through-cutout rather than a painted black inset.
++    outer=[(0,2.35),(.12,2.13),(.265,1.98),(.31,1.84),(.27,1.70),
++           (.17,1.65),(.07,1.72),(0,1.58),(-.07,1.72),(-.17,1.65),
++           (-.27,1.70),(-.31,1.84),(-.265,1.98),(-.12,2.13)]
++    inner=[(x*.69,1.89+(z-1.89)*.66) for x,z in outer]
++    frame('Open ornate spade tip',outer,inner,.085,'silver')
++    solid('Sharp hour hand apex',[(0,2.35),(.045,2.265),(-.045,2.265)],.075,'silver',bevel=False)
++    solid('Swept brass crossguard',[(-.43,.19),(-.35,.12),(-.15,.18),(0,.16),
++          (.15,.18),(.35,.12),(.43,.19),(.32,.27),(.13,.25),(-.13,.25),(-.32,.27)],.12,'brass')
++    gear('Crossguard small clock rim',(0,.015,.22),.19,.12,.14,'brass',10)
++    cylinder('Crossguard ivory dial',(0,.092,.22),.133,.045,'dial_face',24,FRONT)
++    ticks((0,.132,.22),.097,8,.037,.03)
++    tube('Hour dial hands',[(0,.155,.29),(0,.155,.22),(.055,.155,.19)],.016,'dial_mark',4)
++    pin((0,.166,.22),.022,'red_lacquer')
++    for s in (-1,1): pin((s*.32,.075,.20),.028,'dial_mark')
++
++
++def rapier():
++    grip('wood_dark','brass')
++    cylinder('Pommel stem',(0,0,-.12),.038,.10,'brass')
++    ring('Red ribbon pommel ring',(0,0,-.19),.06,.03,.045,'red_lacquer',FRONT,16)
++    # Shallow hollow cup, opening toward the fist (-Z).
++    lathe('Swept hollow iron cup',[(.15,.09),(.15,.13),(.125,.19),(.07,.23),
++          (.027,.24),(.027,.20),(.045,.19),(.09,.16),(.115,.12),(.115,.09)],
++          'iron_dark',20,bands={1:'steel',2:'steel',3:'brass',4:'brass'})
++    gear('Front cup gear rim',(0,.117,.135),.133,.087,.045,'brass',10)
++    # A graceful knuckle bow along one side, clear of the grip cylinder.
++    tube('Swept knuckle guard',[(.09,0,.15),(.18,0,.10),(.19,0,-.025),
++          (.14,0,-.12),(.035,0,-.15)],.023,'iron_dark')
++    solid('Minute hand slender blade',[(-.024,.22),(.024,.22),(.020,1.27),
++          (0,1.34),(-.020,1.27)],.04,'silver',bevel=False)
++    solid('Minute hand arrow point',[(0,1.45),(.072,1.25),(0,1.29),(-.072,1.25)],
++          .045,'silver',bevel=False)
++    box('Minute hand inset',(0,.027,.73),(.03,.03,.64),'steel',bevel=False)
++    pin((0,.155,.135),.025,'red_lacquer')
++
++
++SPECS = [
++    ('Rifle',rifle,-.40,.95), ('Bell',bell,-.10,.30),
++    ('Hammer',hammer,-.12,.38), ('NeedleDagger',needle_dagger,-.15,.75),
++    ('PendulumScythe',pendulum_scythe,-.45,1.75), ('Wrench',wrench,-.25,.95),
++    ('Greatsword',greatsword,-.45,2.35), ('Rapier',rapier,-.25,1.45),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3))) for fn in (min,max)]
++
++
++def finish(name, low_z, high_z):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active=obj
++        # Silhouette prisms may have either contour winding. Correct it BEFORE
++        # beveling: inward normals make a bevel grow over the surface insets.
++        bm=bmesh.new(); bm.from_mesh(obj.data)
++        bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++        bm.to_mesh(obj.data); bm.free(); obj.data.update()
++        for mod in list(obj.modifiers): bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS: obj.select_set(True)
++    bpy.context.view_layer.objects.active=PARTS[0]
++    bpy.ops.object.join()
++    obj=bpy.context.object
++    obj.name=name; obj.data.name=name+'_Mesh'
++    # Do not centre bounds or fit dimensions: either would move the hand anchor.
++    assert obj.location.length < 1e-7
++    if triangles(obj)>2980:
++        mod=obj.modifiers.new('Silhouette and material preserving budget','DECIMATE')
++        mod.ratio=2880/triangles(obj); mod.delimit={'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm=bmesh.new(); bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name+' open mesh'
++    bm.to_mesh(obj.data); bm.free()
++    for p in obj.data.polygons: p.use_smooth=False
++    obj.data.update(); bpy.context.view_layer.update()
++    lo,hi=bounds(obj)
++    assert abs(lo.z-low_z)<.0001 and abs(hi.z-high_z)<.0001,(name,lo.z,hi.z)
++    assert triangles(obj)<=3000,(name,triangles(obj))
++    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used)>=4,(name,used)
++    areas={}
++    for p in obj.data.polygons:
++        role=obj.data.materials[p.material_index].name
++        areas[role]=areas.get(role,0)+p.area
++    assert max(areas.values())/sum(areas.values())<=.55,(name,areas)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    for mat in obj.data.materials:
++        assert mat.name in PALETTE
++        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
++    obj['grip_centre_m']=[0.0,0.0,0.0]
++    obj['grip_radius_m']=.045; obj['grip_length_m']=.18
++    obj['long_axis']='+Z'; obj['front']='+Y'; obj['triangle_count']=triangles(obj)
++    dest=OUTPUT/f'Kit_W_{name}.fbx'
++    bpy.ops.export_scene.fbx(filepath=str(dest),use_selection=True,
++        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
++        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
++    assert dest.is_file() and dest.stat().st_size>1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    scene=bpy.context.scene
++    scene.render.engine='BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y=1800,1000
++    scene.render.resolution_percentage=100
++    scene.render.image_settings.file_format='PNG'
++    scene.render.filepath=str(PREVIEW)
++    scene.render.film_transparent=False
++    scene.view_settings.view_transform='Standard'
++    shade=scene.display.shading
++    shade.light='FLAT'; shade.color_type='MATERIAL'
++    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
++    shade.curvature_ridge_factor=1.4; shade.curvature_valley_factor=1.2
++    shade.show_specular_highlight=False
++    shade.background_type='WORLD'
++    scene.world=bpy.data.worlds.new('Neutral review background')
++    scene.world.color=(.085,.09,.105)
++    helpers=[]
++    try:
++        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
++        # Front camera +Y: screen-right is -X. All grip centres share Z=0.
++        screen_positions=[-2.78,-2.05,-1.40,-.76,.48,1.39,2.24,3.05]
++        for obj,x in zip(objects,screen_positions): obj.location=(-x,0,0)
++        # The scythe blade points local +X (screen-left); reserve that gap.
++        cam=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(cam); helpers.append(cam); scene.camera=cam
++        target=Vector((-.08,0,.90))
++        cam.location=target+Vector((0,14,3.0))
++        cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler()
++        cam.data.type='ORTHO'; cam.data.ortho_scale=7.3
++        toward_camera=(cam.location-target).normalized()
++
++        def caption(body, x, z, size=.085, role='silver', align='CENTER'):
++            data=bpy.data.curves.new('Preview text','FONT')
++            data.body=body; data.size=size; data.align_x=align
++            data.materials.append(MATS[role])
++            label=bpy.data.objects.new('Preview caption',data)
++            scene.collection.objects.link(label); helpers.append(label)
++            label.location=(-x,.32,z); label.rotation_euler=cam.rotation_euler
++
++        for obj,x,(_,_,low,high) in zip(objects,screen_positions,SPECS):
++            # Cross sits just in front of each grip, at its projected true origin.
++            for size in ((.105,.018,.016),(.016,.018,.105)):
++                cross=box('PREVIEW ONLY grip origin',Vector((-x,0,0))+toward_camera*.22,
++                          size,'red_lacquer',bevel=False)
++                helpers.append(cross)
++            title={'NeedleDagger':'NEEDLE\nDAGGER','PendulumScythe':'PENDULUM\nSCYTHE'}.get(obj.name,obj.name.upper())
++            caption(title,x,-.61,.083)
++            caption(f'{high-low:.2f} m  /  {triangles(obj):,} tri',x,-.83,.053,'brass')
++        caption('C H A P T E R   I V   /   C L O C K W O R K   A R M O U R Y',0,2.73,.125)
++        caption('HAND-HELD WEAPONS   |   TRUE SCALE   |   +Z WORKING END',0,2.53,.063,'brass')
++        caption('+   GRIP ORIGINS   /   COMMON HAND HEIGHT',0,-1.02,.065,'red_lacquer')
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
++        print(f'PREVIEW {PREVIEW}',flush=True)
++    finally:
++        scene.camera=None
++        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
++        for obj in objects: obj.location=(0,0,0)
++        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
++    scene=bpy.context.scene
++    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
++    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
++    objects=[]
++    for i,(name,build,lo,hi) in enumerate(SPECS):
++        PARTS=[]; random.seed(44081+i*7919)
++        build(); objects.append(finish(name,lo,hi))
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__=='__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py" in C:\Project\Cat_Tang
+ succeeded in 2510ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rifle.fbx'
+export finished in 0.0053 sec.
+EXPORTED Rifle 1736 (0.3133, 0.2235, 1.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Bell.fbx'
+export finished in 0.0048 sec.
+EXPORTED Bell 1120 (0.34, 0.34, 0.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Hammer.fbx'
+export finished in 0.0049 sec.
+EXPORTED Hammer 1024 (0.283, 0.1675, 0.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_NeedleDagger.fbx'
+export finished in 0.0043 sec.
+EXPORTED NeedleDagger 704 (0.25, 0.1335, 0.9)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_PendulumScythe.fbx'
+export finished in 0.0048 sec.
+EXPORTED PendulumScythe 1740 (1.48, 0.1925, 2.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Wrench.fbx'
+export finished in 0.0053 sec.
+EXPORTED Wrench 1720 (0.42, 0.2303, 1.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Greatsword.fbx'
+export finished in 0.0052 sec.
+EXPORTED Greatsword 2280 (0.842, 0.2435, 2.8)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rapier.fbx'
+export finished in 0.0041 sec.
+EXPORTED Rapier 1148 (0.3626, 0.3225, 1.7)
+00:02.219  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_weapons_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_weapons_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr \"import bpy; from mathutils import Vector; bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False); bpy.ops.import_scene.fbx(filepath='Game/Assets/Art/Characters/Ch4/Kit_W_Greatsword.fbx'); o=bpy.context.selected_objects[0]; hit,loc,norm,idx=o.ray_cast(Vector((0,.8,-5)),Vector((0,0,1))); print('RAY',hit,tuple(loc),tuple(norm),idx,o.data.materials[o.data.polygons[idx].material_index].name); print('MATS',[(m.name,tuple(m.diffuse_color)) for m in o.data.materials])\" " in C:\Project\Cat_Tang
+ succeeded in 1701ms:
+FBX version: 7400
+RAY True (0.0, 0.800000011920929, -0.0710000991821289) (-0.0, 0.0, -1.0) 343 steel
+MATS [('wood_dark', (0.5, 0.5, 0.5, 1.0)), ('brass', (0.5, 0.5, 0.5, 1.0)), ('steel', (0.5, 0.5, 0.5, 1.0)), ('red_lacquer', (0.5, 0.5, 0.5, 1.0)), ('silver', (0.5, 0.5, 0.5, 1.0)), ('dial_face', (0.5, 0.5, 0.5, 1.0)), ('dial_mark', (0.5, 0.5, 0.5, 1.0))]
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "python -c \"from PIL import Image; im=Image.open('Art/tools/specs/blender_kit_ch4_weapons_preview.png'); print([(p,im.getpixel(p)) for p in [(1432,500),(1420,500),(1400,500),(1445,500),(1432,400),(1432,600),(1000,510)]])\"" in C:\Project\Cat_Tang
+ exited 1 in 1024ms:
+python : 'python' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 
+시도하십시오.
+위치 줄:2 문자:1
++ python -c "from PIL import Image; im=Image.open('Art/tools/specs/blen ...
++ ~~~~~~
+    + CategoryInfo          : ObjectNotFound: (python:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py
+diff --git a/Art/tools/blender_kit_ch4_weapons.py b/Art/tools/blender_kit_ch4_weapons.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..94a69a5c8a7c426755adb393703e7256e5b6b4f0
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_weapons.py
+@@ -0,0 +1,515 @@
++# 4장 태엽 인형용 손 무기 8종: 손잡이 중심 원점, FBX와 검수 이미지 생성.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py
++"""Blender 5.x. Metres; grip centre = zero; working end +Z; front +Y.
++
++Only this source file is required. Export shaders are neutral grey; review
++colours, captions and origin crosses are applied AFTER all FBX exports.
++The mallet's head reaches .38; the greatsword pommel is centred at -.30,
++with its lower finial reaching -.45 to preserve the requested 2.80 length.
++"""
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_weapons_preview.png'
++TAU = math.tau
++FRONT = (math.pi / 2, 0, 0)
++MATS, PARTS = {}, []
++# Deliberately achromatic brass/copper/wood in the review, with lacquer red.
++PALETTE = {
++    'steel': (.27, .29, .32), 'steel_dark': (.18, .19, .21),
++    'iron': (.12, .13, .15), 'iron_dark': (.025, .028, .035),
++    'silver': (.86, .88, .90), 'brass': (.61, .62, .63),
++    'copper': (.33, .34, .36), 'wood': (.29, .30, .32),
++    'wood_dark': (.055, .06, .07), 'dial_face': (.94, .94, .92),
++    'dial_mark': (.018, .021, .027), 'red_lacquer': (.72, .018, .035),
++}
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes['Principled BSDF']
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Toy edge chamfer', 'BEVEL')
++        mod.width, mod.segments = .02, 2
++        mod.limit_method = 'ANGLE'
++        mod.angle_limit = math.radians(35)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
++         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
++    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, rot=(0, 0, 0), bevel=False):
++    v = [(radius*math.cos(TAU*j/n), radius*math.sin(TAU*j/n), z)
++         for z in (-depth/2, depth/2) for j in range(n)]
++    f = [tuple(reversed(range(n))), tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def lathe(label, profile, role, n=20, loc=(0,0,0), rot=(0,0,0), bands=None):
++    """Closed section: outer wall, lip, inner wall; no filled fake openings."""
++    v = [(r*math.cos(TAU*j/n), r*math.sin(TAU*j/n), z)
++         for r,z in profile for j in range(n)]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
++          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
++    obj = place(mesh(label, v, f, role), loc, rot)
++    if bands:
++        for k, name in bands.items():
++            if MATS[name] not in list(obj.data.materials): obj.data.materials.append(MATS[name])
++            idx = list(obj.data.materials).index(MATS[name])
++            for p in obj.data.polygons[k*n:(k+1)*n]: p.material_index = idx
++    return obj
++
++
++def ring(label, loc, radius, width, depth, role, rot=(0,0,0), n=16):
++    return lathe(label, [(radius-width,-depth/2),(radius,-depth/2),
++                         (radius,depth/2),(radius-width,depth/2)],role,n,loc,rot)
++
++
++def solid(label, outline, depth, role, y=0, bevel=True, back='steel'):
++    """Extruded X/Z silhouette, including concave jaws and curved blades."""
++    n = len(outline)
++    v = [(x, yy, z) for yy in (y-depth/2,y+depth/2) for x,z in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    obj = mesh(label,v,f,role,bevel)
++    if back and back != role:
++        obj.data.materials.append(MATS[back])
++        obj.data.polygons[0].material_index = 1
++    return obj
++
++
++def frame(label, outer, inner, depth, role, y=0):
++    """Matched contours make an actual through-cutout, with bevelled edges."""
++    n = len(outer)
++    assert n == len(inner)
++    v = [(x,yy,z) for yy,curve in ((y-depth/2,outer),(y+depth/2,outer),
++                                  (y+depth/2,inner),(y-depth/2,inner)) for x,z in curve]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++         for k in range(4) for j in range(n)]
++    obj = mesh(label,v,f,role,True)
++    obj.data.materials.append(MATS['steel'])
++    for p in obj.data.polygons[3*n:]: p.material_index = 1
++    return obj
++
++
++def gear(label, loc, radius, hole, depth, role, teeth=10):
++    outer,inner = [],[]
++    for j in range(teeth*4):
++        a = TAU*j/(teeth*4)
++        r = radius if j%4 in (1,2) else radius*.81
++        outer.append((loc[0]+r*math.sin(a),loc[2]+r*math.cos(a)))
++        inner.append((loc[0]+hole*math.sin(a),loc[2]+hole*math.cos(a)))
++    # Small gear teeth stay crisp; beveling every tooth wastes the triangle budget.
++    n=len(outer)
++    v=[(x,y,z) for y,curve in ((loc[1]-depth/2,outer),(loc[1]+depth/2,outer),
++                              (loc[1]+depth/2,inner),(loc[1]-depth/2,inner)) for x,z in curve]
++    f=[(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
++       for k in range(4) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def tube(label, points, radius, role, n=6):
++    v=[]
++    for i,p in enumerate(points):
++        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
++        ref=Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
++        u=ref.cross(t).normalized(); w=t.cross(u)
++        v += [tuple(Vector(p)+radius*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w)) for j in range(n)]
++    f=[tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
++    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
++          for i in range(len(points)-1) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def grip(role='wood_dark', band='brass'):
++    cylinder('Fist grip: radius .045 length .18', (0,0,0), .045,.18,role,n=12)
++    for z in (-.067,.067):
++        cylinder('Grip end band',(0,0,z),.052,.04,band,n=12)
++
++
++def ticks(loc, radius, count=12, length=.055, width=.032):
++    x,y,z=loc
++    for j in range(count):
++        a=TAU*j/count
++        box('Raised hour index',(x+radius*math.sin(a),y,z+radius*math.cos(a)),
++            (width,.032,length if j%3 else length*1.3),'dial_mark',rot=(0,a,0),bevel=False)
++
++
++def pin(loc, radius=.025, role='brass'):
++    cylinder('Broad clock rivet',loc,radius,.035,role,n=8,rot=FRONT)
++
++
++def rifle():
++    grip()
++    # Offset barrel leaves the cylindrical hand grip clear at the origin.
++    stock=[(-.047,-.09),(.047,-.09),(.105,-.27),(.09,-.40),
++           (-.12,-.40),(-.13,-.30),(-.075,-.15)]
++    solid('Carved musket butt',stock,.13,'wood_dark',back='wood_dark')
++    box('Butt plate',(-.015,0,-.376),(.23,.16,.048),'brass')
++    solid('Stock cheek inlay',[(-.067,-.17),(.023,-.17),(.060,-.30),(-.08,-.30)],
++          .032,'steel',y=.077)
++    box('Walnut fore-end',(-.025,0,.33),(.15,.13,.49),'wood_dark')
++    box('Fore-end front inset',(-.026,.073,.34),(.072,.035,.30),'steel')
++    # Annular barrel gives a real muzzle bore looking along +Z.
++    lathe('Long bored steel barrel',[(.055,.18),(.055,.95),(.024,.95),(.024,.18)],
++          'steel',16,loc=(.025,-.046,0),bands={1:'silver',2:'iron_dark'})
++    for z in (.24,.50,.87): cylinder('Brass barrel band',(.025,-.046,z),.067,.05,'brass')
++    box('Barrel breech block',(.025,-.035,.16),(.15,.13,.14),'iron')
++    gear('Gear shaped cocking hammer',(-.09,.082,.16),.083,.027,.045,'brass',8)
++    tube('Hammer spur',[(-.105,.08,.17),(-.15,.08,.235),(-.13,.08,.27)],.024,'iron')
++    ring('Red sling swivel',(-.10,.055,.43),.07,.031,.04,'red_lacquer',FRONT)
++    box('Bayonet mounting lug',(.095,-.046,.895),(.09,.08,.065),'iron')
++    box('Front sight',(.025,.032,.89),(.04,.05,.07),'silver')
++    pin((-.025,.093,-.335))
++
++
++def bell():
++    grip()
++    cylinder('Handle bottom button',(0,0,-.085),.052,.03,'brass')
++    # Bell flares in +Z. Lip opening is .30 across, exterior .36.
++    lathe('Hollow bell, open toward +Z',[(.047,.085),(.070,.11),(.085,.17),
++          (.12,.225),(.17,.27),(.17,.30),(.135,.30),(.135,.275),
++          (.09,.225),(.055,.17),(.035,.12),(.025,.10)],'copper',24,
++          bands={4:'brass',5:'brass',6:'brass',7:'iron',8:'iron',9:'iron',10:'brass'})
++    # Inner lip radius .15; revise the inner mouth vertices, without filling it.
++    shell=PARTS[-1]
++    for v in shell.data.vertices:
++        if v.co.z >= .274 and math.hypot(v.co.x,v.co.y) < .14:
++            r=math.hypot(v.co.x,v.co.y); v.co.x*=.15/r; v.co.y*=.15/r
++    ring('Shoulder molding',(0,0,.132),.079,.03,.035,'brass',n=20)
++    for j in range(8):
++        a=TAU*j/8
++        box('Bell tick band',(.108*math.cos(a),.108*math.sin(a),.216),
++            (.035,.035,.045),'dial_mark',rot=(0,0,a),bevel=False)
++    tube('Forward visible clapper',[(0,0,.12),(0,.025,.20),(0,.065,.265)],.017,'iron')
++    cylinder('Clapper ball',(0,.065,.266),.035,.055,'silver',n=10)
++    # A small red collar connects it visually to the dolls.
++    cylinder('Red neck collar',(0,0,.09),.053,.035,'red_lacquer')
++
++
++def hammer():
++    grip('wood_dark','brass')
++    cylinder('Wood mallet shaft',(0,0,.17),.043,.24,'wood')
++    cylinder('Grip butt',(0,0,-.105),.052,.03,'iron')
++    cylinder('Lacquer wrap below head',(0,0,.253),.054,.065,'red_lacquer')
++    box('Iron mallet head',(0,0,.33),(.18,.10,.10),'iron')
++    for x in (-.10,.10):
++        box('Brass striking cap',(x,0,.33),(.04,.13,.10),'brass')
++        box('Inset striking face',(x*1.24,0,.33),(.035,.085,.075),'silver')
++    gear('Clockwork mallet socket',(0,.063,.33),.045,.014,.03,'steel',6)
++    pin((0,.085,.33),.018,'brass')
++
++
++def needle_dagger():
++    grip()
++    box('Small straight crossguard',(0,0,.13),(.25,.10,.06),'brass')
++    solid('Second hand needle',[(-.033,.15),(.033,.15),(.036,.43),
++          (0,.53),(-.036,.43)],.045,'silver')
++    frame('Hollow diamond second hand',[(0,.75),(.095,.58),(0,.43),(-.095,.58)],
++          [(0,.668),(.048,.58),(0,.505),(-.048,.58)],.05,'silver')
++    solid('Sharp needle apex',[(0,.75),(.028,.697),(-.028,.697)],.045,'silver',bevel=False)
++    box('Dark second hand spine',(0,.027,.315),(.03,.03,.29),'steel',bevel=False)
++    # Flattened counterweight disc has its exact centre at -.12.
++    disc=cylinder('Red counterweight disc',(0,0,0),.070,.065,'red_lacquer',16,FRONT)
++    for v in disc.data.vertices: v.co.z *= .03/.07
++    place(disc,(0,0,-.12))
++    pin((0,.046,-.12),.027,'iron_dark')
++    pin((0,.064,.13),.03,'dial_mark')
++
++
++def pendulum_scythe():
++    cylinder('Long iron staff',(0,0,.60),.045,2.10,'iron',n=12)
++    grip('iron','red_lacquer')
++    cylinder('Butt ferrule',(0,0,-.4075),.065,.085,'brass')
++    for z in (-.30,.30,.72,1.05):
++        cylinder('Broad pole ring',(0,0,z),.058,.055,'brass')
++    ring('Silver pendulum outer disc',(0,0,1.40),.35,.105,.095,'silver',FRONT,32)
++    ring('Inset charcoal dial border',(0,.058,1.40),.302,.035,.035,'steel_dark',FRONT,24)
++    ticks((0,.087,1.40),.288,12,.055)
++    # Four curved spokes leave four ornate, genuinely open windows.
++    for j in range(4):
++        a=TAU*j/4
++        pts=[]
++        for r,twist in ((.045,0),(.13,.30),(.20,.24),(.25,.04)):
++            pts.append((r*math.sin(a+twist),0,1.40+r*math.cos(a+twist)))
++        tube('Curved pendulum tracery',pts,.023,'brass')
++    cylinder('Pendulum central hub',(0,.025,1.40),.084,.13,'iron_dark',12,FRONT)
++    cylinder('Red pendulum gem',(0,.105,1.40),.057,.045,'red_lacquer',8,FRONT,True)
++    # Broad forged sickle: follows a .9 m sweep toward +X, edge on +Y.
++    outer=[(.20,1.63),(.43,1.70),(.67,1.66),(.88,1.54),(1.04,1.34),
++           (1.13,1.09),(1.10,.83),(.98,1.11),(.82,1.29),(.62,1.40),(.40,1.44),(.22,1.44)]
++    solid('Pendulum scythe curved forge',outer,.09,'steel')
++    edge=[(.22,1.44),(.40,1.44),(.62,1.40),(.82,1.29),(.98,1.11),(1.10,.83),
++          (1.035,1.13),(.86,1.35),(.64,1.48),(.40,1.52),(.22,1.51)]
++    solid('Bright continuous cutting bevel',edge,.035,'silver',y=.063,bevel=False)
++    for x,z in ((.38,1.58),(.60,1.56),(.79,1.47)): pin((x,.065,z))
++
++
++def wrench():
++    cylinder('Iron tool core',(0,0,.02),.044,.48,'iron',12)
++    grip('iron','brass')
++    cylinder('Red rubber grip sleeve',(0,0,0),.052,.16,'red_lacquer',12)
++    for z in (-.065,.065): cylinder('Grip sleeve end cuff',(0,0,z),.056,.035,'iron_dark',12)
++    cylinder('Wrench butt',(0,0,-.225),.070,.05,'steel')
++    ring('Butt hanging eye',(0,.035,-.187),.049,.03,.04,'brass',FRONT,12)
++    outline=[(-.07,.09),(.07,.09),(.082,.52),(.18,.61),(.18,.78),
++             (.12,.86),(.12,.95),(.025,.95),(.025,.76),(-.10,.76),
++             (-.10,.95),(-.205,.95),(-.24,.83),(-.24,.69),(-.15,.56),(-.09,.50)]
++    solid('Forged open jaw wrench',outline,.12,'steel')
++    box('Long recessed handle panel',(0,.069,.33),(.075,.032,.35),'iron_dark')
++    box('Handle panel silver spine',(0,.089,.33),(.032,.03,.25),'silver',bevel=False)
++    box('Sliding jaw carriage',(-.053,.015,.69),(.20,.155,.095),'brass')
++    box('Movable silver jaw',(-.106,0,.835),(.072,.14,.23),'silver')
++    cylinder('Adjuster screw',(-.048,.108,.611),.048,.15,'iron_dark',12,(0,math.pi/2,0))
++    for x in (-.107,-.067,-.027,.013):
++        cylinder('Coarse adjustment threads',(x,.108,.611),.055,.023,'silver',10,(0,math.pi/2,0))
++    # Integrated rear rack with three visible negative notches between teeth.
++    for z in (.38,.46,.54): box('Back gear rack tooth',(-.105,0,z),(.07,.11,.042),'iron')
++    pin((.105,.083,.72),.028,'dial_mark')
++
++
++def greatsword():
++    grip()
++    cylinder('Long grip extension',(0,0,-.17),.044,.18,'wood_dark')
++    for z in (-.18,-.10): cylinder('Grip winding band',(0,0,z),.051,.035,'brass')
++    # Centre -.30, lower finial -.45, tip +2.35: exact 2.80 m envelope.
++    frame('Pommel gem mounting',[(0,-.15),(.12,-.30),(0,-.45),(-.12,-.30)],
++          [(0,-.215),(.064,-.30),(0,-.385),(-.064,-.30)],.09,'brass')
++    solid('Pommel lower finial',[(0,-.45),(.034,-.393),(-.034,-.393)],.08,'brass',bevel=False)
++    solid('Red pommel gem',[(0,-.20),(.08,-.30),(0,-.40),(-.08,-.30)],.115,'red_lacquer',back='red_lacquer')
++    solid('Hour hand broad blade',[(-.10,.19),(.10,.19),(.18,.44),(.12,1.35),
++          (.20,1.57),(0,1.80),(-.20,1.57),(-.12,1.35),(-.18,.44)],.09,'silver')
++    solid('Recessed dark steel fuller',[(-.055,.31),(.055,.31),(.072,.50),
++          (.045,1.37),(0,1.60),(-.045,1.37),(-.072,.50)],.032,'steel',y=.055,bevel=False)
++    # Spade lobes taper into a sharp clock-hand point; inset follows the same
++    # contour, leaving a large through-cutout rather than a painted black inset.
++    outer=[(0,2.35),(.12,2.13),(.265,1.98),(.31,1.84),(.27,1.70),
++           (.17,1.65),(.07,1.72),(0,1.58),(-.07,1.72),(-.17,1.65),
++           (-.27,1.70),(-.31,1.84),(-.265,1.98),(-.12,2.13)]
++    inner=[(x*.69,1.89+(z-1.89)*.66) for x,z in outer]
++    frame('Open ornate spade tip',outer,inner,.085,'silver')
++    solid('Sharp hour hand apex',[(0,2.35),(.045,2.265),(-.045,2.265)],.075,'silver',bevel=False)
++    solid('Swept brass crossguard',[(-.43,.19),(-.35,.12),(-.15,.18),(0,.16),
++          (.15,.18),(.35,.12),(.43,.19),(.32,.27),(.13,.25),(-.13,.25),(-.32,.27)],.12,'brass')
++    gear('Crossguard small clock rim',(0,.015,.22),.19,.12,.14,'brass',10)
++    cylinder('Crossguard ivory dial',(0,.092,.22),.133,.045,'dial_face',24,FRONT)
++    ticks((0,.132,.22),.097,8,.037,.03)
++    tube('Hour dial hands',[(0,.155,.29),(0,.155,.22),(.055,.155,.19)],.016,'dial_mark',4)
++    pin((0,.166,.22),.022,'red_lacquer')
++    for s in (-1,1): pin((s*.32,.075,.20),.028,'dial_mark')
++
++
++def rapier():
++    grip('wood_dark','brass')
++    cylinder('Pommel stem',(0,0,-.12),.038,.10,'brass')
++    ring('Red ribbon pommel ring',(0,0,-.19),.06,.03,.045,'red_lacquer',FRONT,16)
++    # Shallow hollow cup, opening toward the fist (-Z).
++    lathe('Swept hollow iron cup',[(.15,.09),(.15,.13),(.125,.19),(.07,.23),
++          (.027,.24),(.027,.20),(.045,.19),(.09,.16),(.115,.12),(.115,.09)],
++          'iron_dark',20,bands={1:'steel',2:'steel',3:'brass',4:'brass'})
++    gear('Front cup gear rim',(0,.117,.135),.133,.087,.045,'brass',10)
++    # A graceful knuckle bow along one side, clear of the grip cylinder.
++    tube('Swept knuckle guard',[(.09,0,.15),(.18,0,.10),(.19,0,-.025),
++          (.14,0,-.12),(.035,0,-.15)],.023,'iron_dark')
++    solid('Minute hand slender blade',[(-.024,.22),(.024,.22),(.020,1.27),
++          (0,1.34),(-.020,1.27)],.04,'silver',bevel=False)
++    solid('Minute hand arrow point',[(0,1.45),(.072,1.25),(0,1.29),(-.072,1.25)],
++          .045,'silver',bevel=False)
++    box('Minute hand inset',(0,.027,.73),(.03,.03,.64),'steel',bevel=False)
++    pin((0,.155,.135),.025,'red_lacquer')
++
++
++SPECS = [
++    ('Rifle',rifle,-.40,.95), ('Bell',bell,-.10,.30),
++    ('Hammer',hammer,-.12,.38), ('NeedleDagger',needle_dagger,-.15,.75),
++    ('PendulumScythe',pendulum_scythe,-.45,1.75), ('Wrench',wrench,-.25,.95),
++    ('Greatsword',greatsword,-.45,2.35), ('Rapier',rapier,-.25,1.45),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3))) for fn in (min,max)]
++
++
++def finish(name, low_z, high_z):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active=obj
++        # Silhouette prisms may have either contour winding. Correct it BEFORE
++        # beveling: inward normals make a bevel grow over the surface insets.
++        bm=bmesh.new(); bm.from_mesh(obj.data)
++        bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++        bm.to_mesh(obj.data); bm.free(); obj.data.update()
++        for mod in list(obj.modifiers): bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS: obj.select_set(True)
++    bpy.context.view_layer.objects.active=PARTS[0]
++    bpy.ops.object.join()
++    obj=bpy.context.object
++    obj.name=name; obj.data.name=name+'_Mesh'
++    # Do not centre bounds or fit dimensions: either would move the hand anchor.
++    assert obj.location.length < 1e-7
++    if triangles(obj)>2980:
++        mod=obj.modifiers.new('Silhouette and material preserving budget','DECIMATE')
++        mod.ratio=2880/triangles(obj); mod.delimit={'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm=bmesh.new(); bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name+' open mesh'
++    bm.to_mesh(obj.data); bm.free()
++    for p in obj.data.polygons: p.use_smooth=False
++    obj.data.update(); bpy.context.view_layer.update()
++    lo,hi=bounds(obj)
++    assert abs(lo.z-low_z)<.0001 and abs(hi.z-high_z)<.0001,(name,lo.z,hi.z)
++    assert triangles(obj)<=3000,(name,triangles(obj))
++    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used)>=4,(name,used)
++    areas={}
++    for p in obj.data.polygons:
++        role=obj.data.materials[p.material_index].name
++        areas[role]=areas.get(role,0)+p.area
++    assert max(areas.values())/sum(areas.values())<=.55,(name,areas)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    for mat in obj.data.materials:
++        assert mat.name in PALETTE
++        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
++    obj['grip_centre_m']=[0.0,0.0,0.0]
++    obj['grip_radius_m']=.045; obj['grip_length_m']=.18
++    obj['long_axis']='+Z'; obj['front']='+Y'; obj['triangle_count']=triangles(obj)
++    dest=OUTPUT/f'Kit_W_{name}.fbx'
++    bpy.ops.export_scene.fbx(filepath=str(dest),use_selection=True,
++        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
++        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
++    assert dest.is_file() and dest.stat().st_size>1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    scene=bpy.context.scene
++    scene.render.engine='BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y=1800,1000
++    scene.render.resolution_percentage=100
++    scene.render.image_settings.file_format='PNG'
++    scene.render.filepath=str(PREVIEW)
++    scene.render.film_transparent=False
++    scene.view_settings.view_transform='Standard'
++    shade=scene.display.shading
++    shade.light='FLAT'; shade.color_type='MATERIAL'
++    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='SCREEN'
++    # World cavity's default radius washes out these centimetre-scale insets.
++    shade.curvature_ridge_factor=1.1; shade.curvature_valley_factor=1.1
++    shade.show_specular_highlight=False
++    shade.background_type='WORLD'
++    scene.world=bpy.data.worlds.new('Neutral review background')
++    scene.world.color=(.085,.09,.105)
++    helpers=[]
++    try:
++        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
++        # Front camera +Y: screen-right is -X. All grip centres share Z=0.
++        screen_positions=[-2.78,-2.05,-1.40,-.76,.48,1.39,2.24,3.05]
++        for obj,x in zip(objects,screen_positions): obj.location=(-x,0,0)
++        # The scythe blade points local +X (screen-left); reserve that gap.
++        cam=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(cam); helpers.append(cam); scene.camera=cam
++        target=Vector((-.08,0,.90))
++        cam.location=target+Vector((0,14,3.0))
++        cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler()
++        cam.data.type='ORTHO'; cam.data.ortho_scale=7.3
++        toward_camera=(cam.location-target).normalized()
++
++        def caption(body, x, z, size=.085, role='silver', align='CENTER'):
++            data=bpy.data.curves.new('Preview text','FONT')
++            data.body=body; data.size=size; data.align_x=align
++            data.materials.append(MATS[role])
++            label=bpy.data.objects.new('Preview caption',data)
++            scene.collection.objects.link(label); helpers.append(label)
++            label.location=(-x,.32,z); label.rotation_euler=cam.rotation_euler
++
++        for obj,x,(_,_,low,high) in zip(objects,screen_positions,SPECS):
++            # Cross sits just in front of each grip, at its projected true origin.
++            for size in ((.105,.018,.016),(.016,.018,.105)):
++                cross=box('PREVIEW ONLY grip origin',Vector((-x,0,0))+toward_camera*.22,
++                          size,'red_lacquer',bevel=False)
++                helpers.append(cross)
++            title={'NeedleDagger':'NEEDLE\nDAGGER','PendulumScythe':'PENDULUM\nSCYTHE'}.get(obj.name,obj.name.upper())
++            caption(title,x,-.61,.083)
++            caption(f'{high-low:.2f} m  /  {triangles(obj):,} tri',x,-.83,.053,'brass')
++        caption('C H A P T E R   I V   /   C L O C K W O R K   A R M O U R Y',0,2.73,.125)
++        caption('HAND-HELD WEAPONS   |   TRUE SCALE   |   +Z WORKING END',0,2.53,.063,'brass')
++        caption('+   GRIP ORIGINS   /   COMMON HAND HEIGHT',0,-1.02,.065,'red_lacquer')
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
++        print(f'PREVIEW {PREVIEW}',flush=True)
++    finally:
++        scene.camera=None
++        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
++        for obj in objects: obj.location=(0,0,0)
++        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
++    scene=bpy.context.scene
++    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
++    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
++    objects=[]
++    for i,(name,build,lo,hi) in enumerate(SPECS):
++        PARTS=[]; random.seed(44081+i*7919)
++        build(); objects.append(finish(name,lo,hi))
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects)==8 and all(o.type=='MESH' for o in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__=='__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_weapons.py" in C:\Project\Cat_Tang
+ succeeded in 2674ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_weapons.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rifle.fbx'
+export finished in 0.0059 sec.
+EXPORTED Rifle 1736 (0.3133, 0.2235, 1.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Bell.fbx'
+export finished in 0.0053 sec.
+EXPORTED Bell 1120 (0.34, 0.34, 0.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Hammer.fbx'
+export finished in 0.0047 sec.
+EXPORTED Hammer 1024 (0.283, 0.1675, 0.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_NeedleDagger.fbx'
+export finished in 0.0046 sec.
+EXPORTED NeedleDagger 704 (0.25, 0.1335, 0.9)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_PendulumScythe.fbx'
+export finished in 0.0052 sec.
+EXPORTED PendulumScythe 1740 (1.48, 0.1925, 2.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Wrench.fbx'
+export finished in 0.0053 sec.
+EXPORTED Wrench 1720 (0.42, 0.2303, 1.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Greatsword.fbx'
+export finished in 0.0052 sec.
+EXPORTED Greatsword 2280 (0.842, 0.2435, 2.8)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_W_Rapier.fbx'
+export finished in 0.0045 sec.
+EXPORTED Rapier 1148 (0.3626, 0.3225, 1.7)
+00:02.375  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_weapons_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_weapons_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short; Get-ChildItem Game/Assets/Art/Characters/Ch4/Kit_W_*.fbx | Select-Object Name,Length; Get-Item Art/tools/specs/blender_kit_ch4_weapons_preview.png | Select-Object Name,Length' in C:\Project\Cat_Tang
+ succeeded in 252ms:
+?? .tripo/
+?? Art/tools/blender_kit_ch4_weapons.py
+?? Art/tools/specs/blender_kit_ch4_weapons_preview.png
+?? Art/tools/specs/kit_ch4_weapons.log
+?? Art/tools/specs/kit_ch4_weapons_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Art/tripo_input/ch4/
+?? Game/Assets/Art/Characters/Ch4/Kit_W_Bell.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_W_Greatsword.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_W_Hammer.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_W_NeedleDagger.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_W_PendulumScythe.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_W_Rapier.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_W_Rifle.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_W_Wrench.fbx
+
+Name                                 Length
+----                                 ------
+Kit_W_Bell.fbx                        33836
+Kit_W_Greatsword.fbx                  52108
+Kit_W_Hammer.fbx                      33004
+Kit_W_NeedleDagger.fbx                30732
+Kit_W_PendulumScythe.fbx              43756
+Kit_W_Rapier.fbx                      33724
+Kit_W_Rifle.fbx                       42796
+Kit_W_Wrench.fbx                      41740
+blender_kit_ch4_weapons_preview.png 1867759
+
+
+
+codex
+Created [blender_kit_ch4_weapons.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch4_weapons.py) and ran Blender 5.3 successfully through `DONE`.
+
+All eight FBXs exported at 704–2,280 triangles each. Inspected and refined the [1800×1000 preview](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch4_weapons_preview.png). No other source files changed.
+tokens used
+63,070
+Created [blender_kit_ch4_weapons.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch4_weapons.py) and ran Blender 5.3 successfully through `DONE`.
+
+All eight FBXs exported at 704–2,280 triangles each. Inspected and refined the [1800×1000 preview](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch4_weapons_preview.png). No other source files changed.
