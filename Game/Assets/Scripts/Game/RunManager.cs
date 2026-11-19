@@ -116,6 +116,7 @@ namespace CatTang
             stageIndex = index;
             pendingReward = reward;
             stageDone = false;
+            inCombat = false; spawning = false;   // 새 스테이지: 이전 방 전투 상태가 남아 방에 못 들어가는 일 없게
             int rooms = IsBossRoom ? 1 : Random.Range(4, 6);
             // 스테이지 2 마지막 방 뒤에 술집 홀(중간 보스)을 붙여 지음 (2026-11-17 사용자: 건물로 걸어 들어가 이어지게)
             bool saloon = index == 1 && HasMidBoss && !midBossDone;
@@ -174,6 +175,8 @@ namespace CatTang
 
         IEnumerator SpawnWave()
         {
+            // 웨이브가 예약된 사이 스테이지가 새로 지어지면(current = null) 사라진 방을 건드리지 않고 멈춤
+            if (current == null || runOver) yield break;
             wavesLeft--;
             var c = current.center;
             if (IsMidBossRoom)
@@ -434,7 +437,7 @@ namespace CatTang
             m.radius = 2.8f;
             m.Restock(player);
             go.AddComponent<EdgeMarker>().Init("UI/coin");                 // 화면 밖이면 가장자리 화살표
-            ui?.Toast(chapter >= 3 ? "거울 너머에 상인이 나타났다 (E)" : "상인이 나타났다 (E)");
+            ui?.Toast(chapter >= 4 ? "오르골이 울리며 상인이 나타났다 (E)" : chapter >= 3 ? "거울 너머에 상인이 나타났다 (E)" : "상인이 나타났다 (E)");
         }
 
         /// <summary>상인 자리: 방 벽을 따라 3.5m 안쪽 후보 중 화면 안 · 고양이와 4~10m · 막힌 곳 · 소품과 안 겹치는 곳 (없으면 조건을 풀어 가장 가까운 곳). 반환 = 방 기준 위치</summary>

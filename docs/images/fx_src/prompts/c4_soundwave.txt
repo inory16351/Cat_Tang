@@ -1,0 +1,13 @@
+Use your image generation tool to create ONE image and save it to `docs/images/fx_src/c4_soundwave.png` (create folders if needed). Do not edit any other file.
+
+What: a game VFX TEXTURE STRIP for the chapter-4 "bell ringer" enemy's sound-wave ring (a ring that expands across the floor, seen from a top-down camera). The texture will be wrapped AROUND the ring: the image's horizontal axis runs along the ring's circumference, the vertical axis runs across the ring band (top = outer edge, bottom = inner edge).
+Style reference: the attached concept image (noir black-and-white clock tower, the RED expanding sound-wave arcs on the right side of the room). Match that red sound-wave look: cel-shaded, flat colours, crisp ink outlines, NOT realistic, NOT blurry glow.
+
+Exact layout (2048 x 512 px, wide strip):
+- Background: pure flat magenta #FF00FF everywhere that is not part of the effect (it will be keyed out).
+- Middle band (about 45% of the height): the main sound-wave CREST — a bold red (#E01420) band with a bright white-hot core line through its middle, its top edge shaped like a gentle repeating wave (exactly 4 smooth wave bumps across the full width so the left and right edges meet seamlessly), a thin dark red (#7A0610) inner shade line under the white core, black ink outline around the band.
+- Above the crest (outer side): 2 thin parallel red ripple lines following the same wave shape, getting thinner and more broken (dashed) toward the top edge, like the sound spreading out.
+- Below the crest (inner side): 1 thin red ripple line and a row of small black-ink tick marks like a clock's minute marks (evenly spaced, 32 across the width), giving the clockwork/bell motif.
+- Small sharp white sparkle accents (4-point stars) on the crest, 6 of them, evenly spread.
+- The LEFT and RIGHT edges MUST tile seamlessly (the same shape continues across the seam). Nothing touches the top or bottom edges (leave ~6% magenta margin).
+- No text, no letters, no numbers, no frame or border.

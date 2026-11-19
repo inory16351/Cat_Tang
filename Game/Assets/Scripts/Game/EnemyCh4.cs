@@ -233,7 +233,8 @@ namespace CatTang
                 if (i > 0) { yield return Hold(RingSecond, r => ok = r); if (!ok) break; }
                 Streak("Hammer", 0.12f);
                 var bell = transform.position + Vector3.up * 1.1f + Effects.Flat(transform.forward) * 0.45f;
-                RippleRing.Spawn(transform.position, RingSpeed, projectileDamage, RingMax, RingWidth, Telegraph.Danger, 0.8f);
+                if (!SoundRing.Spawn(transform.position, RingSpeed, projectileDamage, RingMax, RingWidth, 0.8f))   // 3D 음파 고리 (블렌더 조각 + Codex 음파 그림)
+                    RippleRing.Spawn(transform.position, RingSpeed, projectileDamage, RingMax, RingWidth, Telegraph.Danger, 0.8f);
                 Sfx.Play("e4_bell", 0.65f, 0.05f, 2);
                 Spark(bell, 1.3f);
                 CameraFollow.Shake(0.05f);

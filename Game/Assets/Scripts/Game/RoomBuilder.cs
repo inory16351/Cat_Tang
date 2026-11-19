@@ -565,7 +565,8 @@ namespace CatTang
             // 장사 자리는 늘 카메라(남쪽)를 보고, 상인은 그 뒤(북쪽)에 섬 → 위에서 내려다봐도 카운터 너머 상인이 보임
             var dir = Vector3.back;
             float yaw = 180f;
-            string counter = rm && Kit.Has(rm.Chapter, "MerchantMirror") ? "MerchantMirror" : rm && Kit.Has(rm.Chapter, "TicketBooth") ? "TicketBooth" : "BarCounter";
+            string counter = rm && Kit.Has(rm.Chapter, "MusicBox") ? "MusicBox"
+                           : rm && Kit.Has(rm.Chapter, "MerchantMirror") ? "MerchantMirror" : rm && Kit.Has(rm.Chapter, "TicketBooth") ? "TicketBooth" : "BarCounter";
             var stall = rm ? Kit.Place(rm.Chapter, counter, go.transform, Vector3.zero, yaw) : null;
             // 상인이 서는 곳: 카운터는 그 뒤(손님 반대쪽). 지붕 있는 매표 창구는 위에서 안 보여서 창구 옆에 나와 섬
             Vector3 spot = -dir * 1.0f;
@@ -573,6 +574,7 @@ namespace CatTang
             {
                 var bb = Kit.LocalBounds(stall);
                 if (counter == "TicketBooth") spot = Vector3.right * (bb.size.x * 0.5f + 0.75f) + dir * 0.2f;
+                else if (counter == "MusicBox") spot = new Vector3(bb.center.x, bb.max.y * 0.786f, bb.center.z);   // 4장: 오르골 상자 위 돌림판 가운데에 섬 (윗면 1.1m / 전체 1.4m — 뒤로 젖힌 뚜껑이 더 높음, 재 본 값)
                 else if (counter == "MerchantMirror") spot = dir * Mathf.Clamp(bb.size.z * 0.5f - 0.45f, 0.3f, 1.2f) + Vector3.up * 0.35f;   // 3장: 선 거울 앞 발판 위 (거울에서 막 걸어 나온 거울 속 고양이)
                 else spot = -dir * Mathf.Clamp(Mathf.Min(bb.size.x, bb.size.z) * 0.5f + 0.55f, 0.8f, 2.2f);
             }
@@ -613,6 +615,7 @@ namespace CatTang
             fig.name = "MerchantFigure";
             fig.transform.localPosition = localPos;
             fig.transform.localRotation = Quaternion.Euler(0, yaw, 0);
+            if (prefab && chapter == 4) fig.AddComponent<MusicDollTurn>();   // 4장 오르골 인형: 상자 위에서 천천히 돎, 고양이가 다가오면 돌아봄
             if (ghost) MirrorGhost.Apply(fig);   // 거울 속 고양이: 반투명 거울빛 몸 + 가면 + 오라 (2026-11-18 사용자)
             return fig;
         }

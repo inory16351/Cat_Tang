@@ -571,6 +571,26 @@ namespace CatTang.EditorTools
             ("Kit_CogBits", 1.2f, 'w', "CogBits"),
             ("Kit_ScrewBits", 1.0f, 'w', "ScrewBits"),
             ("Kit_FloorGrate", 2.0f, 'w', "FloorGrate"),
+            // 큰 지형지물 (blender_kit_ch4_landmarks.py, 명세 kit_ch4_landmarks_spec.md)
+            ("Kit_LM_Clockwork", 5.0f, 'w', "LM_Clockwork"),
+            ("Kit_LM_PendulumCase", 3.6f, 'w', "LM_PendulumCase"),
+            ("Kit_LM_GearStack", 4.4f, 'w', "LM_GearStack"),
+            ("Kit_LM_BellFrame", 4.2f, 'w', "LM_BellFrame"),
+            ("Kit_LM_DialFragment", 5.2f, 'w', "LM_DialFragment"),
+            // 신전 느낌 (2026-11-19 사용자: 공장 느낌 → 신전, blender_kit_ch4_temple.py, 명세 kit_ch4_temple_spec.md)
+            ("Kit_Wall_Colonnade", 6f, 'w', "Facade_Colonnade"),
+            ("Kit_Wall_RoseDial", 6f, 'w', "Facade_RoseDial"),
+            ("Kit_LM_ClockAltar", 4.4f, 'w', "LM_ClockAltar"),
+            ("Kit_LM_ArchRuin", 5.0f, 'w', "LM_ArchRuin"),
+            ("Kit_Deco_BannerPillar", 4.2f, 'h', "Deco_BannerPillar"),
+            ("Kit_Deco_Candles", 1.0f, 'w', "Deco_Candles"),
+            // 넓은 방 채우기 (2026-11-19 사용자, blender_kit_ch4_temple2.py, 명세 kit_ch4_temple2_spec.md)
+            ("Kit_Deco_NaveColumn", 6.5f, 'h', "Deco_NaveColumn"),
+            ("Kit_Deco_AngelStatue", 3.0f, 'h', "Deco_AngelStatue"),
+            ("Kit_Deco_LanternStand", 3.2f, 'h', "Deco_LanternStand"),
+            ("Kit_Deco_Pew", 3.0f, 'w', "Deco_Pew"),
+            ("Kit_Deco_Reliquary", 2.0f, 'h', "Deco_Reliquary"),
+            ("Kit_Deco_FloorDial", 6.0f, 'w', "Deco_FloorDial"),
         };
 
         [MenuItem("CatTang/4장 키트 만들기 (블렌더)")]
@@ -584,6 +604,34 @@ namespace CatTang.EditorTools
                 int made = 0;
                 foreach (var k in Kit4)
                     if (File.Exists(Ch4Src + k.name + ".fbx") && Build(k.name, k.size, 180f, k.fit, Kit4Dir, k.outName)) made++;
+                GroundMat("Ground", "Assets/Art/Env/Ch4/ground_ch4.png", Kit4Dir, mirror: false);
+                // 톱니 맞물림 3D 불티 · 고철 재질 (메시 파티클, 색 = 파티클 색): 빛이 안 드는 단색(URP Particles/Unlit, 불투명) — GearPinch가 Resources에서 읽음
+                FxMat("FX_SparkMat", new Color(1f, 1f, 1f));
+                FxMat("FX_ScrapMat", new Color(1f, 1f, 1f));
+                // 종지기 3D 음파 고리 (SoundRing): Codex 음파 띠 그림(마젠타 빼고 투명) → 반투명 단색 재질
+                var wave = AssetDatabase.LoadAssetAtPath<Texture2D>(Kit4Dir + "FX_SoundWave.png");
+                if (wave)
+                {
+                    var wm = FxMat("FX_SoundWaveMat", Color.white);
+                    wm.SetTexture("_BaseMap", wave);
+                    wm.SetFloat("_Surface", 1f); wm.SetFloat("_Blend", 0f);           // 반투명 (알파 섞기)
+                    wm.SetOverrideTag("RenderType", "Transparent");
+                    wm.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    wm.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    wm.SetInt("_ZWrite", 0);
+                    wm.SetFloat("_Cull", 0f);                                          // 양면
+                    wm.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                    wm.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                    EditorUtility.SetDirty(wm);
+                }
+                // 상인 오르골 인형 (블렌더 + Codex, 사용자: Tripo 말고 블렌더로) → Resources/Merchants/Ch4_Merchant (RoomBuilder.MerchantFigure가 씀, 거울 고양이 대신)
+                if (File.Exists(Ch4Src + "Kit_Ch4_Merchant.fbx"))
+                {
+                    ModelPalette.Active = ModelPalette.Ch4Merchant;
+                    Directory.CreateDirectory(MerchantOut);
+                    if (Build("Kit_Ch4_Merchant", 2.6f, 180f, 'h', MerchantOut, "Ch4_Merchant")) made++;
+                    ModelPalette.Active = ModelPalette.Ch4;
+                }   // 4장 리벳 철판 바닥 (옆 창 ChatGPT 그림 → Art/tools/ground_texture_ch4.py로 이음매 맞춤)
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
                 Debug.Log($"[EnemyModelBuilder] 4장 키트 {made}개");
@@ -753,6 +801,19 @@ namespace CatTang.EditorTools
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }
 
+        /// <summary>파티클 메시용 단색 재질 (URP Particles/Unlit, 불투명, 정점 색 = 파티클 색 곱함)</summary>
+        static Material FxMat(string name, Color c)
+        {
+            string p = Kit4Dir + name + ".mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(p);
+            if (!m) { m = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit")); AssetDatabase.CreateAsset(m, p); }
+            m.SetFloat("_Surface", 0f);                     // 불투명
+            m.SetColor("_BaseColor", c);
+            m.renderQueue = -1;
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
         /// <summary>강화형 추가 장비를 뼈에 붙임: 원점 = 뼈 위치, 방향 = 몸 방향(쉬는 자세), 크기 = 키 / 2.2m</summary>
         static void AttachArmor(string prefabPath, (string piece, HumanBodyBones bone, Vector3 offset)[] ps, float height)
         {
@@ -903,11 +964,11 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>3장 바닥 재질: 2장 Ground.mat(같은 셰이더 · 설정)을 복사해 텍스처만 바꿈 (Art/tools/ground_texture_ch3.py)</summary>
-        static void GroundMat(string matName, string texPath)
+        static void GroundMat(string matName, string texPath, string dir = null, bool mirror = true)
         {
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
             if (!tex) { Debug.LogWarning($"[EnemyModelBuilder] 바닥 텍스처 없음 {texPath}"); return; }
-            string p = Kit3Dir + matName + ".mat";
+            string p = (dir ?? Kit3Dir) + matName + ".mat";
             var m = AssetDatabase.LoadAssetAtPath<Material>(p);
             if (!m)
             {
@@ -916,7 +977,7 @@ namespace CatTang.EditorTools
                 AssetDatabase.CreateAsset(m, p);
             }
             // 거울 호수(Ground)는 실시간 반사를 섞는 거울 바닥 셰이더, 구름 바닥은 그대로
-            if (matName == "Ground") { var sh = Shader.Find("CatTang/MirrorFloor"); if (sh) { m.shader = sh; m.SetFloat("_ReflStrength", 0.85f); m.SetColor("_ReflTint", new Color(1f, 1f, 1.05f, 1f)); } }
+            if (mirror && matName == "Ground") { var sh = Shader.Find("CatTang/MirrorFloor"); if (sh) { m.shader = sh; m.SetFloat("_ReflStrength", 0.85f); m.SetColor("_ReflTint", new Color(1f, 1f, 1.05f, 1f)); } }
             m.SetTexture("_BaseMap", tex);
             if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
             EditorUtility.SetDirty(m);

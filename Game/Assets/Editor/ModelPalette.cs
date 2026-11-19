@@ -173,6 +173,27 @@ namespace CatTang.EditorTools
             { "lamp_warm", new Color(1f, 0.84f, 0.6f) },
         };
 
+        // 4장 상인 오르골 인형 (블렌더 + Codex, 원화 Art/tripo_input/merchant/ch4_musicdoll.png): 느와르 장에서 혼자 따뜻한 색 — 상아 자기 · 금 · 포도주 벨벳 · 짙은 나무
+        public static readonly Dictionary<string, Color> Ch4Merchant = new()
+        {
+            { "porcelain", new Color(0.97f, 0.91f, 0.8f) },
+            { "dial_face", new Color(0.96f, 0.9f, 0.78f) },
+            { "dial_mark", new Color(0.3f, 0.18f, 0.12f) },
+            { "gold", new Color(0.95f, 0.74f, 0.3f) },
+            { "brass", new Color(0.86f, 0.64f, 0.3f) },
+            { "brass_dark", new Color(0.55f, 0.38f, 0.18f) },
+            { "copper", new Color(0.78f, 0.45f, 0.26f) },
+            { "silver", new Color(0.88f, 0.86f, 0.8f) },
+            { "velvet", new Color(0.45f, 0.1f, 0.18f) },
+            { "red_dark", new Color(0.4f, 0.08f, 0.14f) },
+            { "red_lacquer", new Color(0.62f, 0.12f, 0.16f) },
+            { "ribbon_red", new Color(0.55f, 0.12f, 0.2f) },
+            { "wood", new Color(0.55f, 0.36f, 0.22f) },
+            { "wood_dark", new Color(0.36f, 0.22f, 0.14f) },
+            { "glass", new Color(0.86f, 0.9f, 0.92f) },
+            { "lamp_warm", new Color(1f, 0.62f, 0.2f) },
+        };
+
         // 메인 마을 (2026-11-18 사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌 — 새벽에 사라져 가는 서부 마을, 허공에 뜬 큰 섬)
         // 물체는 따뜻하게(바랜 나무 · 놋쇠 · 금 · 크림 · 녹 · 새벽 장밋빛 칠), 차가운 색은 하늘 · 허공에만. 새벽 남색 조명 아래서도 칙칙하지 않게 밝게
         public static readonly Dictionary<string, Color> Village = new()

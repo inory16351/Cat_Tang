@@ -840,7 +840,138 @@ def bake_c4strip():
     render(sc, "c4strip", 0)
 
 
-SETS = {"c4orb": bake_c4orb, "c4needle": bake_c4needle, "c4spark": bake_c4spark, "c4slash": bake_c4slash, "c4strip": bake_c4strip,
+# ---------- 4장 톱니 바닥 맞물림: 고철 불꽃 (2026-11-19 사용자: 기존 불똥이 이상함 → 쇳물 · 고철이 튀는 느낌 확실하게, 제철소 불꽃 사진 참고) ----------
+# 흰 심지 → 노랑 → 주황 → 검붉은 꼬리. 불티는 속도 방향으로 길게 늘어진 가는 막대(움직임 줄), 포물선으로 떨어지며 식음. 고철 조각은 식은 쇠 + 달군 테
+HOT = [(0.0, (1.0, 0.9, 0.55)), (0.18, (1.0, 0.66, 0.16)), (0.45, (1.0, 0.4, 0.05)), (0.75, (0.66, 0.12, 0.02))]   # 사용자: 주황색으로 (흰 심지 줄임)
+SCRAP = [(0.0, (0.42, 0.4, 0.38)), (0.5, (0.2, 0.19, 0.19)), (0.78, (1.0, 0.45, 0.08))]
+
+
+# 분수 불티 (2026-11-19 사용자: 아래는 흰색으로 시작해 올라가면서 주황으로): 식어도 검게 되지 않고 주황에서 멈춤
+GRIND = [(0.0, (1.0, 1.0, 0.96)), (0.22, (1.0, 0.88, 0.5)), (0.42, (1.0, 0.6, 0.12)), (0.66, (1.0, 0.42, 0.04))]
+
+
+def _spark_rod(name, rnd, bands=None):
+    m = toon_mat(name, bands or HOT)
+    o = laser_rod(name, m, 1.0, 0.026, 0.16, 6)   # 가는 불티 (사용자: 너무 크지 않게)
+    return o, m
+
+
+def _place_rod(o, pos, vel, length, thin):
+    """막대(+X 축)를 속도 방향으로 눕혀 머리가 pos, 꼬리가 뒤로"""
+    v = Vector(vel)
+    if v.length < 1e-4:
+        v = Vector((0, 0, 1))
+    d = v.normalized()
+    o.location = Vector(pos) - d * (length / 2)
+    o.rotation_euler = (0, -math.atan2(d.z, d.x), 0)
+    o.scale = (max(0.001, length), thin, thin)
+
+
+def bake_c4grind():
+    """맞물린 이빨 자리에서 계속 뿜는 고철 불꽃 분수 (반복 16장): 바닥 한 점(아래 가운데)에서 불티 60개가 위 · 양옆으로 뿜어져 포물선으로 떨어짐 + 굴러 떨어지는 쇳조각 + 달군 바닥 빛"""
+    sc = reset(); ink4(sc, 0.55)   # 불티가 잉크선에 묻혀 검게 보이지 않게 얇게
+    sc.camera.data.ortho_scale = 4.2
+    rnd = random.Random(71)
+    src = Vector((0, 0, -1.55))
+    g = -6.5
+    sparks = []
+    for i in range(60):
+        o, m = _spark_rod(f"gs{i}", rnd, GRIND)
+        a = rnd.uniform(-1.15, 1.15) + (0.35 if rnd.random() < 0.5 else -0.35) * rnd.random()   # 위를 중심으로 양옆으로 넓게
+        sp = rnd.uniform(3.0, 5.6)
+        o["vx"] = math.sin(a) * sp; o["vz"] = math.cos(a) * sp
+        o["ph"] = rnd.random(); o["life"] = rnd.uniform(0.55, 1.0)
+        sparks.append((o, m))
+    chunks = []
+    for i in range(6):
+        m = toon_mat(f"gc{i}", SCRAP)
+        o = gear_obj(f"gc{i}", m, teeth=rnd.choice((5, 6, 7)), r=rnd.uniform(0.07, 0.11), t=0.04) if i % 2 == 0 else gem_obj(f"gc{i}", m, rnd.uniform(0.06, 0.09))
+        a = rnd.uniform(-0.9, 0.9)
+        o["vx"] = math.sin(a) * rnd.uniform(1.6, 2.6); o["vz"] = math.cos(a) * rnd.uniform(2.6, 3.6); o["ph"] = rnd.random(); o["spin"] = rnd.uniform(-9, 9)
+        chunks.append((o, m))
+    gm = toon_mat("gglow", GRIND)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.42, segments=20, ring_count=10)
+    glow = bpy.context.active_object; glow.data.materials.append(gm); glow.scale = (1.0, 0.4, 0.42); glow.location = src
+    flash = star_obj("gflash", toon_mat("gfl", GRIND), 4, 0.75, 0.1, 0.05); flash.location = src + Vector((0, -0.05, 0.08))
+    for f in range(FRAMES):
+        t = f / FRAMES
+        for o, m in sparks:
+            age = ((t + o["ph"]) % 1.0) / o["life"]
+            if age >= 1.0:
+                o.hide_render = True; continue
+            o.hide_render = False
+            tt = age * 0.55                                   # 초
+            pos = src + Vector((o["vx"] * tt, 0, o["vz"] * tt + 0.5 * g * tt * tt))
+            vel = Vector((o["vx"], 0, o["vz"] + g * tt))
+            _place_rod(o, pos, vel, 0.12 + 0.07 * vel.length, max(0.05, 1.0 - age))   # 식기보다 가늘어지며 사라짐
+            rise = max(0.0, pos.z - src.z)                    # 분출점에서 올라간 높이
+            setv(m, "heat", max(0.12, 1.0 - 0.7 * rise - 0.2 * age))   # 아래(분출점) = 흰색 → 올라갈수록 주황
+        for o, m in chunks:
+            age = (t + o["ph"]) % 1.0
+            tt = age * 0.6
+            o.location = src + Vector((o["vx"] * tt, -0.1, o["vz"] * tt + 0.5 * g * tt * tt))
+            o.rotation_euler = (0, o["spin"] * tt, 0)   # 톱니 · 볼트 면이 카메라(-Y)를 본 채 화면 안에서 돎
+            setv(m, "heat", 0.6 - 0.4 * age)
+        k = 0.85 + 0.15 * math.sin(TAU * 3 * t)
+        glow.scale = (1.0 * k, 0.4, 0.42 * k); setv(gm, "heat", 0.95)
+        fk = 0.6 + 0.4 * abs(math.sin(TAU * 2 * t + 0.7)); flash.scale = (fk, fk, fk); flash.rotation_euler = (0, 0.5 * t, 0)
+        render(sc, "c4grind", f)
+
+
+def bake_c4scrap():
+    """누가 이빨에 끼었을 때 고철 폭발 (한 번 16장): 흰 섬광 → 불티 70개가 사방(위쪽 많이)으로 터져 포물선으로 떨어지며 식음 + 톱니 · 볼트 고철 조각이 돌며 날아감 + 달군 연기 덩어리"""
+    sc = reset(); ink4(sc, 0.6)
+    sc.camera.data.ortho_scale = 4.6
+    rnd = random.Random(83)
+    src = Vector((0, 0, -0.4))
+    g = -5.5
+    sparks = []
+    for i in range(70):
+        o, m = _spark_rod(f"ss{i}", rnd)
+        a = rnd.uniform(-math.pi, math.pi) * (0.55 if rnd.random() < 0.7 else 1.0)   # 70%는 위쪽 반원
+        sp = rnd.uniform(3.5, 7.5)
+        o["vx"] = math.sin(a) * sp; o["vz"] = math.cos(a) * sp; o["life"] = rnd.uniform(0.6, 1.0)
+        sparks.append((o, m))
+    chunks = []
+    for i in range(10):
+        m = toon_mat(f"sc{i}", SCRAP)
+        o = gear_obj(f"sc{i}", m, teeth=rnd.choice((6, 8)), r=rnd.uniform(0.1, 0.17), t=0.05) if i % 3 != 2 else box_obj(f"sc{i}", m, -0.05, 0.05, -0.12, 0.12, 0.05)
+        a = rnd.uniform(-1.4, 1.4)
+        sp = rnd.uniform(2.2, 4.2)
+        o["vx"] = math.sin(a) * sp; o["vz"] = math.cos(a) * sp; o["spin"] = rnd.uniform(-14, 14)
+        chunks.append((o, m))
+    fm = toon_mat("sflash", HOT)
+    flash = star_obj("sflash", fm, 6, 1.5, 0.22, 0.08); flash.location = src
+    pm = toon_mat("spuff", HOT)
+    puff = lumpy("spuff", 5, pm, 3); puff.location = src
+    for f in range(FRAMES):
+        t = f / (FRAMES - 1)
+        pop = math.sin(min(1, t / 0.08) * math.pi / 2) * max(0.0, 1 - max(0, t - 0.08) / 0.22)
+        flash.scale = (pop, pop, pop); flash.hide_render = pop <= 0.01; flash.rotation_euler = (0, 0.3 + t, 0)
+        setv(fm, "heat", 1.0)
+        ps = 0.5 + 1.1 * ease_out(t, 2); puff.scale = (ps, ps * 0.6, ps * 0.8); puff.location = src + Vector((0, 0.1, 0.5 * t))
+        setv(pm, "heat", max(0.0, 0.9 - 1.2 * t)); setv(pm, "dissolve", min(1.0, max(0.0, (t - 0.15) / 0.5)))
+        puff.hide_render = t > 0.42                         # 녹아 사라진 뒤 외곽선 고리만 남지 않게
+        for o, m in sparks:
+            age = t / o["life"]
+            if age >= 1.0:
+                o.hide_render = True; continue
+            o.hide_render = False
+            tt = age * 0.7
+            pos = src + Vector((o["vx"] * tt, 0, o["vz"] * tt + 0.5 * g * tt * tt))
+            vel = Vector((o["vx"], 0, o["vz"] + g * tt))
+            _place_rod(o, pos, vel, 0.15 + 0.08 * vel.length, max(0.05, 1.0 - age))
+            setv(m, "heat", 1.0 - 0.5 * age)
+        for o, m in chunks:
+            tt = t * 0.75
+            o.location = src + Vector((o["vx"] * tt, -0.1, o["vz"] * tt + 0.5 * g * tt * tt))
+            o.rotation_euler = (0, o["spin"] * tt, 0)   # 톱니 · 볼트 면이 카메라(-Y)를 본 채 화면 안에서 돎
+            setv(m, "heat", 0.65 - 0.45 * t)
+            o.hide_render = t > 0.92
+        render(sc, "c4scrap", f)
+
+
+SETS = {"c4grind": bake_c4grind, "c4scrap": bake_c4scrap, "c4orb": bake_c4orb, "c4needle": bake_c4needle, "c4spark": bake_c4spark, "c4slash": bake_c4slash, "c4strip": bake_c4strip,
         "fire": bake_fire, "smoke": bake_smoke, "spark": bake_spark, "mist": bake_mist, "dodge": bake_dodge, "memclock": bake_memclock, "memshatter": bake_memshatter,
         "c3orb": bake_c3orb, "c3shard": bake_c3shard, "c3spark": bake_c3spark, "c3water": bake_c3water}
 only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(SETS)
