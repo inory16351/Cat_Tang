@@ -1,5 +1,5 @@
 // 메인 로비 (2026-11-18 사용자: 게임 이름 11:59 · 하데스풍 카툰 키 일러스트 + 주인공 · 그림에 맞춘 타이포 · 버튼 · 패널 ·
-//  메뉴 = 새로 시작 / 이어하기 / 설정, 이어하기를 눌러야 슬롯이 나옴 · 그림이 그려지는 듯한 연출)
+//  메뉴 = 새로 시작 / 이어하기 / 설정 / 게임 종료, 이어하기를 눌러야 슬롯이 나옴 · 그림이 그려지는 듯한 연출)
 // 그림: Codex CLI (docs/images/ui_src/prompts/lobby_key.txt · lobby_ui2.txt) → docs/tools/ui_lobby_cut.py · ui_lobby_ink.py → Resources/UI/Lobby
 //
 // 등장 연출 (클릭 · 키로 건너뜀):
@@ -7,7 +7,7 @@
 //  동시에 카메라가 천천히 뒤로 빠져 전체 그림으로 펼쳐짐 (옛 갱플랭크 로그인 화면 느낌) → 색(key)이 주인공 가슴 · 하늘 시계에서
 //  번져 나가며 채워짐(reveal_color, 가장자리 녹은 금빛) → 제목이 '쾅' 찍힘 + 흔들림 → 메뉴 버튼이 오른쪽에서 차례로 미끄러져 들어옴
 // 평소: 그림 숨쉬듯 확대 · 마우스 시차 · 붉은 먼지 · 불티 · 제목 1초마다 똑딱
-// 메뉴: 새로 시작(슬롯 고르기 — 쓴 슬롯은 두 번 눌러 덮어쓰기) / 이어하기(쓴 슬롯만, 없으면 꺼짐) / 설정(전체 · 음악 음량, 전체 화면, 게임 끝내기)
+// 메뉴: 새로 시작(슬롯 고르기 — 쓴 슬롯은 두 번 눌러 덮어쓰기) / 이어하기(쓴 슬롯만, 없으면 꺼짐) / 설정(전체 · 음악 음량, 전체 화면) / 게임 종료(확인 창)
 // 슬롯을 고르면 잿빛 라벤더 안개로 덮이며 마을로 → 마을에서 같은 안개가 걷히며 고양이가 깨어남 (VillageWake)
 using System.Collections;
 using System.Collections.Generic;
@@ -110,11 +110,12 @@ namespace CatTang
 
             vfx = LobbyVfx.Create(art, title);                 // 햇살 · 녹은 금 방울 · 총구 반짝임 · 불똥 (그림과 같이 움직임)
 
-            // 메뉴: 새로 시작 · 이어하기 · 설정
-            menuBox = UIKit.MakeRect("Menu", root, new Vector2(0.5f, 0.5f), new Vector2(TitleX, -205), new Vector2(520, 360));
+            // 메뉴: 새로 시작 · 이어하기 · 설정 · 게임 종료 (2026-11-19 사용자: 메인에도 게임 종료)
+            menuBox = UIKit.MakeRect("Menu", root, new Vector2(0.5f, 0.5f), new Vector2(TitleX, -255), new Vector2(520, 460));   // 위쪽 끝은 그대로, 아래로 한 칸 늘림
             AddMenu("새로 시작", 0, () => OpenPanel(Mode.New));
             AddMenu("이어하기", 1, () => OpenPanel(Mode.Continue));
             AddMenu("설정", 2, () => OpenPanel(Mode.Settings));
+            AddMenu("게임 종료", 3, OpenQuitConfirm);
             RefreshContinue();
             foreach (var m in menuButtons) m.gameObject.SetActive(false);
 
@@ -455,14 +456,41 @@ namespace CatTang
             Slider(body, "전체 음량", 140, GameSettings.MasterVolume, v => GameSettings.MasterVolume = v);
             Slider(body, "음악 음량", 50, GameSettings.MusicVolume, v => GameSettings.MusicVolume = v);
             Toggle(body, "전체 화면", -40, GameSettings.Fullscreen, v => GameSettings.Fullscreen = v);
-            PlateButton("Quit", body, new Vector2(0.5f, 0.5f), new Vector2(0, -135), new Vector2(340, 60), "게임 끝내기", () =>
-            {
+        }
+
+        /// <summary>게임 종료 확인 창 (2026-11-19 사용자: 로비 버튼 → '정말 종료하시겠습니까?' → 예 = 꺼짐). 패널 자리를 같이 써서 Esc · 바깥 클릭 = 닫기</summary>
+        void OpenQuitConfirm()
+        {
+            if (loading) return;
+            ClosePanel();
+            panel = new GameObject("QuitConfirm", typeof(RectTransform));
+            panel.transform.SetParent(root, false);
+            var prt = (RectTransform)panel.transform;
+            prt.anchorMin = Vector2.zero; prt.anchorMax = Vector2.one; prt.offsetMin = prt.offsetMax = Vector2.zero;
+            var dim = UIKit.Stretch("Dim", prt).gameObject.AddComponent<Image>();
+            dim.color = new Color(0.04f, 0.01f, 0.03f, 0.62f);
+            dim.gameObject.AddComponent<Button>().onClick.AddListener(() => { Sfx.Play("ui_close", 0.7f); ClosePanel(); });
+            const float k = 0.6f;                                                    // 설정 창 판을 60%로
+            var frame = UIKit.MakeRect("Frame", prt, new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(1320, 880) * k);
+            DropShadow(frame, L("panel"), new Vector2(12, -16), 0.75f, true);
+            var fi = UIKit.Stretch("Face", frame).gameObject.AddComponent<Image>();
+            fi.raycastTarget = true;
+            if (L("panel")) { fi.sprite = L("panel"); fi.preserveAspect = true; fi.material = FxMat(0.6f, 3f, 6f); }
+            else fi.sprite = UIKit.Spr("panel_plain");
+            var q = UIKit.Label("Question", frame, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(620, 60), 36, TextAnchor.MiddleCenter, true, UIKit.Gold);
+            q.text = "정말 종료하시겠습니까?";
+            PlateButton("Yes", frame, new Vector2(0.5f, 0.5f), new Vector2(-140, -100), new Vector2(230, 60), "예", QuitGame, "menu_button", 28);
+            PlateButton("No", frame, new Vector2(0.5f, 0.5f), new Vector2(140, -100), new Vector2(230, 60), "아니오", ClosePanel, "menu_button", 28);
+            StartCoroutine(Pop(frame));
+        }
+
+        static void QuitGame()
+        {
 #if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.isPlaying = false;
 #else
-                Application.Quit();
+            Application.Quit();
 #endif
-            }, "menu_button", 28);
         }
 
         void Slider(RectTransform body, string label, float y, float value, System.Action<float> set)
