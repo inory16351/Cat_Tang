@@ -256,7 +256,7 @@ namespace CatTang
         {
             var rel = Effects.Flat(pos - from);
             float along = Vector3.Dot(rel, dir);
-            return along >= -0.3f && along <= len && (rel - dir * along).magnitude <= width / 2;
+            return along >= 0f && along <= len && (rel - dir * along).magnitude <= width / 2;   // 예고 선과 똑같이 (뒤로 0.3m 여유 없앰)
         }
 
         public static Health MakeHp(GameObject go)

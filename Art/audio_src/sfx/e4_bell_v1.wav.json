@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "e4_bell",
+  "original_idea": "11:59 game SFX: e4_bell",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, small brass hand bell struck hard by a hammer, one loud clang followed by a pulsing wobbling sonic ring that fades out, brass bell, iron hammer, small room, short reverb.",
+  "sound_fields": {
+    "source": "small brass hand bell struck hard by a hammer",
+    "action": "one loud clang followed by a pulsing wobbling sonic ring that fades out",
+    "material": "brass bell, iron hammer",
+    "space": "small room, short reverb"
+  },
+  "bpm": null,
+  "seconds": 1.6,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 2,
+  "seed": 1159,
+  "candidate": 1,
+  "file": "e4_bell_v1.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-19T16:18:59",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -1.0,
+  "raw_peak_dbfs": -0.91,
+  "ceiling_gain_db": -0.09
+}

@@ -93,10 +93,10 @@ namespace CatTang
         protected override void Setup()
         {
             Add("산탄 부채꼴", Reach.Near, Shotgun);
-            Add("회전 난사", Reach.Near, SpinFire);
-            Add("수배 저격", Reach.Far, Snipe, null, "Special");
-            Add("돌진 태클", Reach.Far, Tackle);
-            Add("하수인 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2);
+            Add("회전 난사", Reach.Near, SpinFire, null, "SpinFire");        // 동작 = 스킬별 전용 상태 (EnemyModelBuilder.Moves)
+            Add("수배 저격", Reach.Far, Snipe, null, "Snipe");
+            Add("돌진 태클", Reach.Far, Tackle, null, "Tackle");
+            Add("하수인 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2, "Summon");
             nextBounty = Time.time + 8f;
         }
 
@@ -191,7 +191,8 @@ namespace CatTang
         IEnumerator Tackle()
         {
             var d = ToPlayer();
-            Telegraph.Lane(transform.position, d, 22f, 2f, T(0.6f), Telegraph.Danger);
+            var laneFrom = transform.position;
+            Telegraph.Lane(laneFrom, d, 22f, 2f, T(0.6f), Telegraph.Danger);
             float end = Time.time + T(0.6f);
             while (Time.time < end) { Face(d, 14f); yield return null; }
             bool hit = false;
@@ -205,7 +206,7 @@ namespace CatTang
                 if (rm) transform.position = rm.ClampToRoom(transform.position, 3f);
                 float moved = (transform.position - before).magnitude;
                 run += step;
-                if (!hit && P && Effects.Flat(P.transform.position - transform.position).magnitude < 1.8f)
+                if (!hit && P && Telegraph.InLane(P.transform.position, laneFrom, d, 22f, 2f, run - 1.3f, run + 1.3f))   // 예고 선(폭 2)과 같게
                 {
                     hit = true;
                     P.health.TakeDamage(15f * self.chapterDmg);
@@ -228,6 +229,7 @@ namespace CatTang
         // 하수인 호출: 태엽 무법자 2명 (필드 최대 4명)
         IEnumerator Summon()
         {
+            Sfx.Play("e_whistle", 0.8f);
             yield return Wait(T(0.5f));
             int room = 4 - (Enemy.All.Count - 1);
             for (int i = 0; i < Mathf.Min(2, room); i++)
@@ -262,10 +264,10 @@ namespace CatTang
         protected override void Setup()
         {
             Add("시계 바늘 휘두르기", Reach.Near, Sweep, null, "Special");
-            Add("녹은 웅덩이", Reach.Near, Puddles);
-            Add("12방향 숫자 탄", Reach.Far, Numbers);
-            Add("되감기 폭발", Reach.Far, Rewind);
-            Add("시간 지연 구역", Reach.Any, SlowZone);
+            Add("녹은 웅덩이", Reach.Near, Puddles, null, "Puddles");
+            Add("12방향 숫자 탄", Reach.Far, Numbers, null, "Numbers");
+            Add("되감기 폭발", Reach.Far, Rewind, null, "Rewind");
+            Add("시간 지연 구역", Reach.Any, SlowZone, null, "SlowZone");
             hand = transform.Find("Hand");
             hand2 = transform.Find("Hand2");
             nextSecond = Time.time + 1f;
@@ -383,6 +385,7 @@ namespace CatTang
                 spots.Add(at + Quaternion.Euler(0, i * 120 + Random.Range(-25f, 25f), 0) * Vector3.forward * Random.Range(2.2f, 3.6f));
             foreach (var s in spots) Telegraph.Ring(s, 1.5f, T(0.8f), Telegraph.Danger);
             yield return Wait(T(0.8f));
+            Sfx.Play("e_slam", 0.9f);
             bool hurt = false;
             foreach (var s in spots)
             {

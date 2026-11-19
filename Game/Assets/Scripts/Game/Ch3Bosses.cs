@@ -213,7 +213,7 @@ namespace CatTang
             var p = PlayerController.Instance;
             if (!p || !p.health.Alive || p.health.dashing) return;
             float d = Effects.Flat(p.transform.position - transform.position).magnitude;
-            if (Mathf.Abs(d - r) > width * 0.5f + 0.3f) return;
+            if (Mathf.Abs(d - r) > width * 0.5f) return;                          // 그린 링 폭 그대로 (예전 +0.3m 여유 없앰)
             hit = true;
             p.health.TakeDamage(dmg);
         }
@@ -1195,7 +1195,8 @@ namespace CatTang
             var p = P;
             var dir = p ? Effects.Flat(p.transform.position - transform.position).normalized : transform.forward;
             float len = Mathf.Min(RayExitCircle(transform.position, dir, Ch3Fx.ArenaC(), ArenaR - 3f), 24f);
-            Telegraph.Lane(transform.position, dir, len, 4f, 1f, Telegraph.Danger);
+            var laneFrom = transform.position;
+            Telegraph.Lane(laneFrom, dir, len, 4f, 1f, Telegraph.Danger);
             transform.rotation = Quaternion.LookRotation(dir);
             yield return Wait(1f);
             bool hit = false;
@@ -1203,7 +1204,7 @@ namespace CatTang
             {
                 float step = 18f * Time.deltaTime;
                 transform.position += dir * step; moved += step;
-                if (!hit && p && Ch2Kit.InLane(p.transform.position, transform.position - dir * 3f, dir, 5f, 4f)) { hit = true; p.health.TakeDamage(28f); }
+                if (!hit && p && Telegraph.InLane(p.transform.position, laneFrom, dir, len, 4f, moved - 3f, moved + 2f)) { hit = true; p.health.TakeDamage(28f); }
                 yield return null;
             }
             Height(1.5f);
@@ -1338,7 +1339,7 @@ namespace CatTang
             {
                 float step = 30f * Time.deltaTime;
                 transform.position += dir * step; moved += step;
-                if (!hit && p && Ch2Kit.InLane(p.transform.position, transform.position - dir * 4f, dir, 8f, 5f)) { hit = true; p.health.TakeDamage(28f); }
+                if (!hit && p && Telegraph.InLane(p.transform.position, from, dir, len, 5f, moved - 4f, moved + 4f)) { hit = true; p.health.TakeDamage(28f); }
                 yield return null;
             }
             var rel = Effects.Flat(transform.position - c);

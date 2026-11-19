@@ -120,26 +120,26 @@ namespace CatTang.EditorTools
             { "Ch1_Outlaw", ("revolver", 1.0f, null, 0, false) },
             { "Ch1_Outlaw_Plus", ("revolver", 0.9f, null, 0, false) },
             // 깡패 Attack = 돌진 예고 발 구르기 (MakeStompClip, Enemy.BruteWindup 0.6초와 맞춤). 돌진 자체는 Run(이동 속도)로
-            { "Ch1_Brute", ("brutestomp", 0.6f, "swings", 0.8f, false) },
-            { "Ch1_Brute_Plus", ("brutestomp", 0.6f, "swings", 0.7f, false) },
+            // Special = 내리찍기 전용 클립 (EnemyMotions — 예전엔 Tripo '휘두르기'를 돌려 씀), 회전 휘두르기는 Moves의 Spin
+            { "Ch1_Brute", ("brutestomp", 0.6f, "ch1m_bruteslam", 1.15f, false) },
+            { "Ch1_Brute_Plus", ("brutestomp", 0.6f, "ch1m_bruteslam", 1.15f, false) },
             // 폭탄병 Special = 점프(웅크림 0.35 → 체공 0.55 → 착지). 클립은 MakeJumpClip이 근육 커브로 만듦 (Enemy.BomberCrouch · BomberAir와 맞춤)
             { "Ch1_Bomber", ("shakes", 0.8f, "bomberjump", 1.0f, true) },
             { "Ch1_Bomber_Plus", ("shakes", 0.7f, "bomberjump", 1.0f, true) },
             { "Ch1_MidBoss", ("shotgun", 1.0f, "revolver", 1.2f, false) },
             { "Ch1_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
-            // 3장 (2026-11-18): 우선 1장 · 고양이 클립을 돌려 씀 — 전용 모션은 뒤에
-            { "Ch3_Shooter", ("revolver", 0.9f, null, 0, false) },
-            { "Ch3_Mage", ("shakes", 0.9f, null, 0, true) },
-            { "Ch3_Blade", ("swings", 0.8f, null, 0, false) },
-            { "Ch3_Knight", ("swings", 0.9f, null, 0, false) },
-            { "Ch3_Trickster", ("revolver", 0.9f, null, 0, false) },
-            // 4장 (2026-11-19): 우선 1장 · 고양이 클립을 돌려 씀 — 전용 모션은 뒤에
-            { "Ch4_Soldier", ("revolver", 0.9f, null, 0, false) },
-            { "Ch4_Ringer", ("swings", 0.8f, null, 0, false) },
-            { "Ch4_Dancer", ("shakes", 0.9f, null, 0, true) },
-            { "Ch4_Assassin", ("swings", 0.6f, null, 0, false) },
-            { "Ch4_Knight", ("swings", 0.9f, null, 0, false) },
-            { "Ch4_Repairman", ("swings", 0.8f, null, 0, false) },
+            // 3장 · 4장 (2026-11-19): 전용 모션 (EnemyMotions — 1장 Tripo 클립 돌려쓰기를 바꿈). 스킬이 여럿이면 아래 Moves에 상태를 더 둠
+            { "Ch3_Shooter", ("ch3m_shootermirror", 0.9f, null, 0, false) },
+            { "Ch3_Mage", ("ch3m_mageconjure", 1.5f, null, 0, false) },
+            { "Ch3_Blade", ("ch3m_bladeslash", 1.45f, null, 0, false) },
+            { "Ch3_Knight", ("ch3m_knightbash", 1.2f, null, 0, false) },
+            { "Ch3_Trickster", ("ch3m_trickflick", 0.6f, null, 0, false) },
+            { "Ch4_Soldier", ("ch4m_soldiershot", 0.8f, null, 0, false) },
+            { "Ch4_Ringer", ("ch4m_ringerring", 1.0f, null, 0, false) },
+            { "Ch4_Dancer", ("ch4m_dancerspin", 0.6f, null, 0, true) },
+            { "Ch4_Assassin", ("ch4m_assassinstab", 0.9f, null, 0, false) },
+            { "Ch4_Knight", ("ch4m_knightswingr", 1.2f, null, 0, false) },
+            { "Ch4_Repairman", ("ch4m_repairtoss", 0.65f, null, 0, false) },
             // 2장: 전용 클립 (Ch2Motion — 근육 커브로 만든 코드 클립, 짐꾼은 PorterRig)
             { "Ch2_Conductor", ("ch2m_conductorflick", 0.9f, null, 0, false) },
             { "Ch2_Conductor_Plus", ("ch2m_conductorflick", 0.8f, null, 0, false) },
@@ -151,6 +151,81 @@ namespace CatTang.EditorTools
             { "Ch2_MidBoss", ("ch2m_masterpunch", 1.0f, "ch2m_masterbaton", 1.0f, false) },
             { "Ch2_Boss", ("ch2m_giantbrace", 1.1f, "ch2m_giantrods", 0.9f, false) },
         };
+
+        // 스킬별 전용 상태 (트리거 없이 Enemy.Anim("상태 이름") → Animator.CrossFade): (상태, 클립 키워드, 재생 시간, 반복)
+        // 반복 상태는 Busy가 꺼질 때 Idle로, 아니면 다 재생 후 Idle로. 클립 = EnemyMotions · Ch2Motion (2026-11-19 사용자: 스킬마다 다른 모션, 단조롭지 않게)
+        static readonly Dictionary<string, (string state, string clip, float dur, bool loop)[]> Moves = new()
+        {
+            { "Ch1_Outlaw", new[] { ("Burst", "ch1m_outlawfan", 1.05f, false), ("Dash", "ch1m_outlawsidedash", 0.4f, false) } },
+            { "Ch1_Outlaw_Plus", new[] { ("Burst", "ch1m_outlawfan", 1.05f, false), ("Dash", "ch1m_outlawsidedash", 0.4f, false) } },
+            { "Ch1_Brute", new[] { ("Spin", "ch1m_brutespin", 1.0f, false) } },
+            { "Ch1_Brute_Plus", new[] { ("Spin", "ch1m_brutespin", 1.0f, false) } },
+            { "Ch1_MidBoss", new[] { ("SpinFire", "ch1m_hunterspinfire", 2.4f, false), ("Snipe", "ch1m_huntersnipe", 1.9f, false), ("Tackle", "ch1m_huntertackle", 1.6f, false), ("Summon", "ch1m_hunterwhistle", 0.9f, false) } },
+            { "Ch1_Boss", new[] { ("Puddles", "ch1m_giantdrip", 1.2f, false), ("Numbers", "ch1m_giantcast", 1.7f, false), ("Rewind", "ch1m_giantrewind", 1.8f, false), ("SlowZone", "ch1m_giantpress", 0.9f, false) } },
+            { "Ch2_MidBoss", new[] { ("Schedule", "ch2m_masterschedule", 2.9f, false), ("Whistle", "ch2m_masterwhistle", 1.3f, false), ("Call", "ch2m_mastercall", 0.9f, false) } },
+            { "Ch2_Boss", new[] { ("Vent", "ch2m_giantvent", 1.6f, false), ("Heave", "ch2m_giantheave", 1.5f, false), ("CoachSpin", "ch2m_giantcoachspin", 1.4f, false) } },
+            { "Ch3_Mage", new[] { ("FlingR", "ch3m_mageflingr", 0.4f, false), ("FlingL", "ch3m_mageflingl", 0.4f, false) } },
+            { "Ch3_Blade", new[] { ("Dive", "ch3m_bladedive", 0.45f, false), ("Emerge", "ch3m_bladeemerge", 1.4f, false) } },
+            { "Ch3_Knight", new[] { ("Stagger", "ch3m_knightstagger", 0.7f, false) } },
+            { "Ch3_Trickster", new[] { ("Bow", "ch3m_trickbow", 0.9f, false) } },
+            { "Ch4_Soldier", new[] { ("Shot", "ch4m_soldiershot", 0.8f, false), ("Drum", "ch4m_soldierdrum", 1.25f, false), ("Volley", "ch4m_soldiervolley", 1.25f, false), ("Bayonet", "ch4m_soldierbayonet", 1.45f, false) } },
+            { "Ch4_Ringer", new[] { ("Ring", "ch4m_ringerring", 1.0f, false), ("RingDouble", "ch4m_ringerdouble", 1.6f, false) } },
+            { "Ch4_Dancer", new[] { ("Rise", "ch4m_dancerrise", 0.4f, false), ("Spin", "ch4m_dancerspin", 0.6f, true), ("Finale", "ch4m_dancerfinale", 0.7f, false) } },
+            { "Ch4_Assassin", new[] { ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
+            { "Ch4_Knight", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
+            { "Ch4_Repairman", new[] { ("Wind", "ch4m_repairwind", 0.95f, false), ("Toss", "ch4m_repairtoss", 0.65f, false) } },
+        };
+        // 달리기 대신 쓸 전용 걷기 (없으면 고양이 run)
+        static readonly Dictionary<string, string> Walks = new()
+        {
+            { "Ch4_Soldier", "ch4m_soldiermarch" },      // 받들어총 행군 (고양이 run + 오른팔 고정)
+            { "Ch4_Ringer", "ch4m_ringerrun" },
+            { "Ch4_Assassin", "ch4m_assassinrun" },
+            { "Ch4_Knight", "ch4m_knightwalk" },
+            { "Ch4_Repairman", "ch4m_repairscurry" },
+        };
+
+        // 고양이 idle 대신 쓸 전용 idle (무기 든 팔을 고정)
+        static readonly Dictionary<string, string> Idles = new()
+        {
+            { "Ch4_Soldier", "ch4m_soldieridle" },
+            { "Ch4_Ringer", "ch4m_ringeridle" },
+            { "Ch4_Assassin", "ch4m_assassinidle" },
+            { "Ch4_Knight", "ch4m_knightidle" },
+            { "Ch4_Repairman", "ch4m_repairidle" },
+        };
+
+        /// <summary>4장 강화형(Ch4_*_Plus)은 기본 적의 무기 · 손잡이 각도 · 스킬 모션 · idle · 걸음을 그대로 씀</summary>
+        static string Base4(string n) => n != null && n.StartsWith("Ch4_") && n.EndsWith("_Plus") ? n.Substring(0, n.Length - 5) : n;
+
+        [MenuItem("CatTang/적 전용 모션 다시 만들기 (클립 + 컨트롤러)")]
+        public static void RebuildMotions()
+        {
+            Ch2Motion.MakeAll();
+            EnemyMotions.MakeAll();
+            MakeJumpClip(); MakeStompClip(); MakeThrowClip();                 // 1장 코드 클립도 앞뒤 방향 바로잡아 다시
+            AssetDatabase.Refresh();
+            var touched = new List<string>();
+            try
+            {
+                foreach (var kv in Anims)
+                {
+                    string n = kv.Key;
+                    if (PorterRig.IsPorter(n)) continue;                       // 짐꾼은 PorterRig 전용 (원본 FBX에서 클립을 굽기 때문에 따로)
+                    SrcDir = n.StartsWith("Ch2_") ? Ch2Src : n.StartsWith("Ch3_") ? Ch3Src : n.StartsWith("Ch4_") ? Ch4Src : Ch1Src;
+                    string cp = SrcDir + n + ".controller";
+                    if (!AssetDatabase.LoadAssetAtPath<AnimatorController>(cp)) continue;   // 프리팹이 아직 없는 적
+                    MakeController(n, kv.Value);                                // 같은 자산을 비우고 다시 채움 → 프리팹 참조 그대로
+                    touched.Add(cp);
+                    // 4장 강화형 컨트롤러 (기본과 같은 상태)
+                    if (n.StartsWith("Ch4_") && AssetDatabase.LoadAssetAtPath<AnimatorController>(SrcDir + n + "_Plus.controller")) { MakeController(n + "_Plus", kv.Value); touched.Add(SrcDir + n + "_Plus.controller"); }
+                }
+            }
+            finally { SrcDir = Ch1Src; }
+            AssetDatabase.SaveAssets();
+            foreach (var cp in touched) AssetDatabase.ImportAsset(cp, ImportAssetOptions.ForceUpdate);
+            Debug.Log($"[EnemyModelBuilder] 적 컨트롤러 {touched.Count}개 다시 만듦");
+        }
 
         // ---------- 2장 (멈춘 기차역, 2026-11-17) ----------
         // 원본: Art/Characters/Ch2 (Tripo 캐릭터 Ch2_* · 블렌더 + Codex 키트 Kit_*), 배색표 ModelPalette.Ch2 (맵 = 따뜻한 녹 · 놋쇠 · 검댕, 보라 X)
@@ -527,17 +602,47 @@ namespace CatTang.EditorTools
         static readonly (string name, float size)[] Models4 =
         {
             ("Ch4_Soldier", 2.5f), ("Ch4_Ringer", 2.4f), ("Ch4_Dancer", 2.6f), ("Ch4_Assassin", 2.6f), ("Ch4_Knight", 3.0f), ("Ch4_Repairman", 2.3f),
+            // 강화형 (2026-11-19 사용자: 색만 바꾸지 말고 이전 장처럼 새로 뽑기 — 같은 배색, 더 강력한 모습): 기본보다 약 15% 큼 (1 · 2장 강화형과 같은 비율)
+            ("Ch4_Soldier_Plus", 2.9f), ("Ch4_Ringer_Plus", 2.75f), ("Ch4_Dancer_Plus", 3.0f), ("Ch4_Assassin_Plus", 3.0f), ("Ch4_Knight_Plus", 3.45f), ("Ch4_Repairman_Plus", 2.65f),
         };
         // 무기: 적 이름 → (무기, 손) 목록. 손 = true 오른손
         static readonly Dictionary<string, (string weapon, bool right)[]> Weapons4 = new()
         {
-            { "Ch4_Soldier", new[] { ("Rifle", true) } },
+            { "Ch4_Soldier", new[] { ("Rifle", true) } },   // 손잡이 각도 = WeaponGrip4 (조준 자세 기준)
             { "Ch4_Ringer", new[] { ("Hammer", true), ("Bell", false) } },
             { "Ch4_Assassin", new[] { ("NeedleDagger", true) } },
             { "Ch4_Knight", new[] { ("PendulumScythe", true) } },
             { "Ch4_Repairman", new[] { ("Wrench", true) } },
+            // 강화 기사 (2026-11-19 사용자: Tripo가 계속 오류 → 블렌더로 추가 장비 + 주 무기): 기본 기사 몸(Ch4_Knight_Plus.fbx = 기본 FBX 복사 + 녹슨 텍스처) + 큰 양날 진자 낫
+            { "Ch4_Knight_Plus", new[] { ("PendulumScythePlus", true) } },
         };
-        static readonly string[] WeaponNames4 = { "Rifle", "Bell", "Hammer", "NeedleDagger", "PendulumScythe", "Wrench", "Greatsword", "Rapier" };
+        // 강화형 추가 장비: 블렌더 + Codex Kit_KP_*.fbx (원점 = 붙일 뼈 자리, +Y 앞 · +X 오른쪽, 2.2m 기사 기준) → Resources/Kit/Ch4/KP_*
+        // → 뼈 아래에 몸 방향 그대로(쉬는 자세 기준) 붙임. 명세 Art/tools/specs/kit_ch4_knight_plus_spec.md
+        // 보정 = 뼈 자리에서 더 옮길 거리 (2.2m 기준, 몸 방향: x 오른쪽 · y 위 · z 앞) — 화면으로 보고 맞춘 값
+        static readonly Dictionary<string, (string piece, HumanBodyBones bone, Vector3 offset)[]> Armor4 = new()
+        {
+            { "Ch4_Knight_Plus", new[] {
+                ("Pauldron_R", HumanBodyBones.RightUpperArm, new Vector3(-0.08f, 0.12f, 0)), ("Pauldron_L", HumanBodyBones.LeftUpperArm, new Vector3(0.08f, 0.12f, 0)),
+                // 가슴 진자(KP_ChestPendulum)는 뺌 (2026-11-19 사용자: 2등신이라 가슴 높이 판이 얼굴을 가림, 기본 몸에 가슴 진자가 이미 있음)
+                ("BackPendulum", HumanBodyBones.UpperChest, Vector3.zero),
+                ("Tasset", HumanBodyBones.Hips, Vector3.zero), ("HelmCrest", HumanBodyBones.Head, new Vector3(0, -0.12f, 0)) } },
+        };
+        static readonly string[] ArmorNames4 = { "Pauldron_R", "Pauldron_L", "BackPendulum", "ChestPendulum", "Tasset", "HelmCrest" };
+        // 무기 손잡이 각도 (손 뼈 기준 localEuler) — 쉬는 자세 기준(위로 세우고 앞 25°) 대신 공격 자세에서 맞춘 것.
+        // 소총 (2026-11-19 사용자: 총 쏘는 자세가 이상함 → 측정): 팔 0.41m · 어깨 너비 0.47m인 2등신이라 견착 · 두 손 받치기가 닿지 않음
+        // → 오른 겨드랑이에 끼고 한 손으로 수평 조준(왼손은 북 위). 조준 자세(Ch4M_SoldierShot 0.15~0.5초)에서 IK로 손을 놓고, 그때 총 +Y(총구) = 몸 앞 · 총 +Z = 위가 되는 손 기준 각도
+        static readonly Dictionary<string, Vector3> WeaponGrip4 = new()
+        {
+            { "Ch4_Soldier/Rifle", new Vector3(57.7f, 142.7f, 352.8f) },
+            // 나머지 무기: 그 적의 공격 자세 전체(손을 IK로 놓은 뒤)에서 무기가 가리켜야 할 방향들의 평균에 맞춘 손잡이 각도 (EnemyMotions의 *_RAISE · KN_* 등과 한 쌍)
+            { "Ch4_Ringer/Hammer", new Vector3(10.2f, 172.4f, 11.6f) },
+            { "Ch4_Ringer/Bell", new Vector3(302.5f, 346.5f, 235.8f) },
+            { "Ch4_Assassin/NeedleDagger", new Vector3(50.9f, 141.2f, 21.7f) },
+            { "Ch4_Knight/PendulumScythe", new Vector3(32.7f, 113.7f, 302.6f) },
+            { "Ch4_Knight/PendulumScythePlus", new Vector3(32.7f, 113.7f, 302.6f) },   // 같은 손잡이 규칙(원점 = 손잡이, 긴 축 +Z)이라 같은 각도
+            { "Ch4_Repairman/Wrench", new Vector3(37.7f, 142.9f, 344.6f) },
+        };
+        static readonly string[] WeaponNames4 = { "Rifle", "Bell", "Hammer", "NeedleDagger", "PendulumScythe", "Wrench", "Greatsword", "Rapier", "PendulumScythePlus" };
         const float WeaponDesignHeight = 2.2f;   // 무기 크기를 정한 기준 키 (명세: 2등신 인형 약 2.2m)
 
         [MenuItem("CatTang/4장 무기 만들기 (블렌더)")]
@@ -549,11 +654,14 @@ namespace CatTang.EditorTools
             try
             {
                 int made = 0;
-                foreach (var w in WeaponNames4)
+                var pieces = new List<string>();
+                foreach (var w in WeaponNames4) pieces.Add("W_" + w);
+                foreach (var a in ArmorNames4) pieces.Add("KP_" + a);
+                foreach (var w in pieces)
                 {
-                    var src = AssetDatabase.LoadAssetAtPath<GameObject>(Ch4Src + "Kit_W_" + w + ".fbx");
+                    var src = AssetDatabase.LoadAssetAtPath<GameObject>(Ch4Src + "Kit_" + w + ".fbx");
                     if (!src) continue;
-                    var root = new GameObject("W_" + w);
+                    var root = new GameObject(w);
                     var inst = (GameObject)Object.Instantiate(src);
                     inst.name = "Mesh";
                     inst.transform.SetParent(root.transform, false);           // 원점 = 손잡이 그대로 (옮기지 않음)
@@ -562,11 +670,11 @@ namespace CatTang.EditorTools
                     {
                         var mats = r.sharedMaterials;
                         for (int i = 0; i < mats.Length; i++)
-                            if (mats[i]) { if (!cache.TryGetValue(mats[i], out var t)) cache[mats[i]] = t = ToonFor("Kit_W_" + w, mats[i], cache.Count); mats[i] = t; }
+                            if (mats[i]) { if (!cache.TryGetValue(mats[i], out var t)) cache[mats[i]] = t = ToonFor("Kit_" + w, mats[i], cache.Count); mats[i] = t; }
                         r.sharedMaterials = mats;
                     }
                     foreach (var c in inst.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
-                    PrefabUtility.SaveAsPrefabAsset(root, Kit4Dir + "W_" + w + ".prefab");
+                    PrefabUtility.SaveAsPrefabAsset(root, Kit4Dir + w + ".prefab");
                     Object.DestroyImmediate(root);
                     made++;
                 }
@@ -606,7 +714,8 @@ namespace CatTang.EditorTools
                         imp.SaveAndReimport();
                     }
                     if (!Build(n, h, 0f, 'h', OutDir, n)) continue;
-                    if (Weapons4.TryGetValue(n, out var ws)) AttachWeapons(OutDir + n + ".prefab", ws, h);
+                    if (Weapons4.TryGetValue(n, out var ws) || Weapons4.TryGetValue(Base4(n), out ws)) AttachWeapons(OutDir + n + ".prefab", ws, h);
+                    if (Armor4.TryGetValue(n, out var ar)) AttachArmor(OutDir + n + ".prefab", ar, h);
                 }
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
@@ -637,6 +746,35 @@ namespace CatTang.EditorTools
                     go.transform.SetPositionAndRotation(grip, Quaternion.LookRotation((fwd - Vector3.Dot(fwd, up) * up).normalized, up));
                     go.transform.localScale = Vector3.one * (height / WeaponDesignHeight);
                     go.transform.SetParent(hand, true);
+                    if (WeaponGrip4.TryGetValue(Base4(System.IO.Path.GetFileNameWithoutExtension(prefabPath)) + "/" + w, out var ge)) go.transform.localRotation = Quaternion.Euler(ge);
+                }
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+
+        /// <summary>강화형 추가 장비를 뼈에 붙임: 원점 = 뼈 위치, 방향 = 몸 방향(쉬는 자세), 크기 = 키 / 2.2m</summary>
+        static void AttachArmor(string prefabPath, (string piece, HumanBodyBones bone, Vector3 offset)[] ps, float height)
+        {
+            var root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                var anim = root.GetComponentInChildren<Animator>();
+                if (!anim || !anim.avatar || !anim.avatar.isHuman) return;
+                foreach (var (p, b, off) in ps)
+                {
+                    var pp = AssetDatabase.LoadAssetAtPath<GameObject>(Kit4Dir + "KP_" + p + ".prefab");
+                    var bone = anim.GetBoneTransform(b);
+                    if (!pp || !bone) { Debug.LogWarning($"[EnemyModelBuilder] 장비 {p} 없음 — 건너뜀"); continue; }
+                    var go = (GameObject)PrefabUtility.InstantiatePrefab(pp);
+                    go.name = "Armor_" + p;
+                    // 블렌더 +Y(앞)는 FBX로 들어오면 유니티 -Z → 몸 앞(+Z)에 맞게 반 바퀴 돌림 (2026-11-19 화면 확인)
+                    go.transform.SetPositionAndRotation(bone.position + root.transform.rotation * off * (height / WeaponDesignHeight), root.transform.rotation * Quaternion.Euler(0, 180, 0));
+                    go.transform.localScale = Vector3.one * (height / WeaponDesignHeight);
+                    // 어깨 갑옷: 자리는 위팔 관절이지만 쇄골 뼈에 붙임 (팔을 내리고 휘둘러도 갑옷이 어깨 위에 남게)
+                    var parent = b == HumanBodyBones.RightUpperArm ? anim.GetBoneTransform(HumanBodyBones.RightShoulder)
+                               : b == HumanBodyBones.LeftUpperArm ? anim.GetBoneTransform(HumanBodyBones.LeftShoulder) : null;
+                    go.transform.SetParent(parent ? parent : bone, true);
                 }
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             }
@@ -1004,7 +1142,7 @@ namespace CatTang.EditorTools
             inst.transform.localRotation = Quaternion.Euler(0, yaw, 0) * inst.transform.localRotation;
             foreach (var c in inst.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
             var avatar = HumanAvatar(src);
-            if (avatar && Anims.TryGetValue(outName, out var spec))
+            if (avatar && (Anims.TryGetValue(outName, out var spec) || Anims.TryGetValue(Base4(outName), out spec)))
             {
                 // ??는 유니티의 '가짜 null'(없는 컴포넌트)을 걸러내지 못하므로 명시적으로 확인
                 var anim = inst.GetComponent<Animator>();
@@ -1133,6 +1271,7 @@ namespace CatTang.EditorTools
                 if (curve == null) curve = new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
                 AnimationUtility.SetEditorCurve(clip, b, curve);
             }
+            Ch2Motion.MirrorFrontBack(clip, idle);                         // 앞뒤 근육 방향 바로잡기 ('Front-Back' + = 뒤, Ch2Motion 참고)
             var s = new AnimationClipSettings { loopTime = false, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end };
             AnimationUtility.SetAnimationClipSettings(clip, s);
             EditorUtility.SetDirty(clip);
@@ -1193,6 +1332,7 @@ namespace CatTang.EditorTools
                 else curve = new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
                 AnimationUtility.SetEditorCurve(clip, b, curve);
             }
+            Ch2Motion.MirrorFrontBack(clip, idle);                         // 앞뒤 근육 방향 바로잡기 ('Front-Back' + = 뒤, Ch2Motion 참고)
             AnimationUtility.SetAnimationClipSettings(clip, new AnimationClipSettings { loopTime = false, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end });
             EditorUtility.SetDirty(clip);
             AssetDatabase.SaveAssets();
@@ -1249,6 +1389,7 @@ namespace CatTang.EditorTools
                 else curve = new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
                 AnimationUtility.SetEditorCurve(clip, b, curve);
             }
+            Ch2Motion.MirrorFrontBack(clip, idle);                         // 앞뒤 근육 방향 바로잡기 ('Front-Back' + = 뒤, Ch2Motion 참고)
             AnimationUtility.SetAnimationClipSettings(clip, new AnimationClipSettings { loopTime = false, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end });
             EditorUtility.SetDirty(clip);
             AssetDatabase.SaveAssets();
@@ -1299,8 +1440,8 @@ namespace CatTang.EditorTools
             var sm = ctrl.layers[0].stateMachine;
             bool porter = PorterRig.IsPorter(outName);
             string pk = outName.ToLower();
-            var idle = sm.AddState("Idle"); idle.motion = porter ? FindClip(pk + "idle") : FindClip("idle");
-            var run = sm.AddState("Run"); run.motion = porter ? FindClip(pk + "walk") : FindClip(Ch2Motion.WalkFor(outName) ?? "run");
+            var idle = sm.AddState("Idle"); idle.motion = porter ? FindClip(pk + "idle") : FindClip(Idles.TryGetValue(Base4(outName), out var idk) ? idk : "idle");
+            var run = sm.AddState("Run"); run.motion = porter ? FindClip(pk + "walk") : FindClip(Walks.TryGetValue(Base4(outName), out var wk) ? wk : Ch2Motion.WalkFor(outName) ?? "run");
             sm.defaultState = idle;
             var t = idle.AddTransition(run); t.AddCondition(AnimatorConditionMode.Greater, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.12f;
             t = run.AddTransition(idle); t.AddCondition(AnimatorConditionMode.Less, 0.15f, "Speed"); t.hasExitTime = false; t.duration = 0.18f;
@@ -1309,6 +1450,13 @@ namespace CatTang.EditorTools
             // 폭탄병 모래 폭탄 투척 (2026-11-17: 떨기 클립으로 던져서 모션 없이 터지는 것처럼 보였음)
             if (outName.Contains("Bomber")) AddAction(sm, idle, "Throw", FindClip("bomberthrow"), ThrowEnd, false);
             if (porter) AddAction(sm, idle, "Throw", FindClip(pk + "throw"), PorterRig.ThrowEnd, false);
+            if (Moves.TryGetValue(Base4(outName), out var mv))
+                foreach (var (state, key, dur, loop) in mv)
+                {
+                    var clip = FindClip(key);
+                    if (!clip) { Debug.LogWarning($"[EnemyModelBuilder] {outName} 상태 {state}: 클립 '{key}' 없음"); continue; }
+                    AddMove(sm, idle, state, clip, dur, loop);
+                }
             EditorUtility.SetDirty(ctrl);
             return ctrl;
         }
@@ -1323,6 +1471,18 @@ namespace CatTang.EditorTools
             var t = sm.AddAnyStateTransition(st);
             t.AddCondition(AnimatorConditionMode.If, 0, trigger);
             t.hasExitTime = false; t.duration = 0.06f; t.canTransitionToSelf = false;
+            var back = st.AddTransition(idle);
+            if (loop) { back.AddCondition(AnimatorConditionMode.IfNot, 0, "Busy"); back.hasExitTime = false; }
+            else { back.hasExitTime = true; back.exitTime = 0.95f; }
+            back.duration = 0.12f;
+        }
+
+        /// <summary>스킬별 전용 상태: 트리거 전이 없이 코드가 이름으로 바로 재생 (Animator.CrossFade). 끝나면 Idle로 (반복이면 Busy가 꺼질 때)</summary>
+        static void AddMove(AnimatorStateMachine sm, AnimatorState idle, string name, AnimationClip clip, float dur, bool loop)
+        {
+            var st = sm.AddState(name);
+            st.motion = clip;
+            st.speed = dur > 0 ? clip.length / dur : 1f;
             var back = st.AddTransition(idle);
             if (loop) { back.AddCondition(AnimatorConditionMode.IfNot, 0, "Busy"); back.hasExitTime = false; }
             else { back.hasExitTime = true; back.exitTime = 0.95f; }

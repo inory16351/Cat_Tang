@@ -116,11 +116,12 @@ namespace CatTang
         IEnumerator OutlawBurst(PlayerController p, Vector3 dir, float dist)
         {
             busy = true;
-            Anim("Attack");
+            Anim("Burst");                                                         // 허리춤 부채질 사격 (왼손바닥으로 공이를 세 번)
             tele = Telegraph.Lane(transform.position + dir * 0.6f, dir, Mathf.Min(dist + 2f, 12f), 0.22f, 0.6f, Telegraph.Aim);
             bool ok = false;
             yield return Hold(0.6f, r => ok = r);
             var d = dir;
+            if (ok) Sfx.Play("e_fan", 0.5f);                                       // 부채질 3연발 (한 번에)
             for (int i = 0; ok && i < 3; i++)
             {
                 if (!health.Alive || health.Stunned) break;
@@ -138,6 +139,7 @@ namespace CatTang
         IEnumerator OutlawDash(PlayerController p, Vector3 dir)
         {
             busy = true; Dashing = true;
+            Anim("Dash");                                                          // 몸을 옆으로 눕혀 미끄러짐
             var side = Vector3.Cross(Vector3.up, dir) * (Random.value < 0.5f ? 1 : -1);
             var from = transform.position;
             var to = from + side * RollDist;
@@ -221,6 +223,7 @@ namespace CatTang
             {
                 var d = Effects.Flat(p.transform.position - transform.position);
                 if (d.magnitude <= SlamRadius) { p.health.TakeDamage(contactDamage); p.health.Knockback((d.sqrMagnitude > 1e-4f ? d.normalized : transform.forward) * 7f); }
+                Sfx.Play("e_slam", 0.7f);
                 FxBurst.Spawn(transform.position + Vector3.up * 0.15f, SlamRadius * 1.6f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 PropHit.Area(transform.position, SlamRadius, contactDamage);
                 GunkataFx.HitImpact(transform.position + Vector3.up * 0.3f, Vector3.down, new Color(1f, 0.6f, 0.3f), false, 1.4f);

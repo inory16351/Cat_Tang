@@ -12,7 +12,8 @@ namespace CatTang
     [RequireComponent(typeof(Health))]
     public partial class Enemy : MonoBehaviour
     {
-        public enum Kind { Outlaw, Brute, Bomber, Boss, Conductor, Porter, Signal, MirrorShooter, LightMage, MirrorBlade, GlassKnight, Trickster }   // Conductor~Signal = 2장 (EnemyCh2.cs), MirrorShooter~ = 3장 (EnemyCh3.cs)
+        public enum Kind { Outlaw, Brute, Bomber, Boss, Conductor, Porter, Signal, MirrorShooter, LightMage, MirrorBlade, GlassKnight, Trickster,
+                           ClockSoldier, BellRinger, MusicDancer, TickAssassin, PendulumKnight, Repairman }   // Conductor~Signal = 2장 (EnemyCh2.cs), MirrorShooter~ = 3장 (EnemyCh3.cs), ClockSoldier~ = 4장 (EnemyCh4.cs)
         public static readonly List<Enemy> All = new();
 
         public Kind kind = Kind.Outlaw;
@@ -49,6 +50,7 @@ namespace CatTang
         enum Act { Move, Windup, Charge, Recover, Fuse, Roll, Spin, Leap }
         Act act = Act.Move;
         float actUntil, charged;
+        Vector3 chargeFrom;                           // 돌진 예고 선의 시작 (판정 = 예고 선과 같게)
         Vector3 lockDir;
         readonly HashSet<Health> chargeProps = new();
         bool chargeHit;
@@ -72,7 +74,7 @@ namespace CatTang
         void OnEnable() { All.Add(this); nextAttack = Time.time + Random.Range(0.6f, 1.4f); }
         void OnDisable() { All.Remove(this); if (tele) tele.Kill(); }
 
-        float AtkMul => Mathf.Max(0.2f, health.AttackSpeedMul);
+        float AtkMul => Mathf.Max(0.2f, health.AttackSpeedMul) * (Wound ? WindBoost : 1f);   // 4장 시계 수리공이 태엽을 감아 주면 1.3배
 
         void Update()
         {
@@ -83,7 +85,7 @@ namespace CatTang
             to.y = 0;
             float dist = to.magnitude;
             Vector3 dir = dist > 0.01f ? to / dist : transform.forward;
-            float spd = speed * health.SlowMul;
+            float spd = speed * health.SlowMul * (Wound ? WindBoost : 1f);
             Vector3 before = transform.position;
 
             switch (kind)
@@ -99,6 +101,12 @@ namespace CatTang
                 case Kind.MirrorBlade: BladeUpdate(p, dir, dist, spd); break;
                 case Kind.GlassKnight: KnightUpdate(p, dir, dist, spd); break;
                 case Kind.Trickster: TricksterUpdate(p, dir, dist, spd); break;
+                case Kind.ClockSoldier: SoldierUpdate(p, dir, dist, spd); break;
+                case Kind.BellRinger: RingerUpdate(p, dir, dist, spd); break;
+                case Kind.MusicDancer: DancerUpdate(p, dir, dist, spd); break;
+                case Kind.TickAssassin: AssassinUpdate(p, dir, dist, spd); break;
+                case Kind.PendulumKnight: PKnightUpdate(p, dir, dist, spd); break;
+                case Kind.Repairman: RepairUpdate(p, dir, dist, spd); break;
                 case Kind.Boss:
                     if (!brain) brain = GetComponent<BossBrain>();
                     if (brain) brain.Tick(p, dir, dist, spd); else BossUpdate(p, dir, dist, spd);
@@ -136,7 +144,7 @@ namespace CatTang
             {
                 case Act.Windup:
                     Face(lockDir);
-                    if (Time.time >= actUntil) { act = Act.Charge; charged = 0; chargeHit = false; chargeProps.Clear(); }
+                    if (Time.time >= actUntil) { act = Act.Charge; charged = 0; chargeHit = false; chargeProps.Clear(); chargeFrom = transform.position; }
                     return;
                 case Act.Charge:
                 {
@@ -148,7 +156,7 @@ namespace CatTang
                     float moved = (transform.position - before).magnitude;
                     charged += step;
                     PropHit.Area(transform.position + lockDir * 0.8f, 1.3f, contactDamage, chargeProps);   // 돌진 길의 엄폐물 · 폭발물
-                    if (!chargeHit && Effects.Flat(p.transform.position - transform.position).magnitude < 1.5f)   // 몸이 커져(반지름 0.95) 판정도 넓힘
+                    if (!chargeHit && Telegraph.InLane(p.transform.position, chargeFrom, lockDir, BruteChargeDist + 0.8f, 1.6f, charged - 0.95f, charged + 0.95f))   // 예고 선(폭 1.6) 안 · 지금 몸이 덮은 구간
                     {
                         chargeHit = true;
                         p.health.TakeDamage(contactDamage);
@@ -167,7 +175,8 @@ namespace CatTang
                 case Act.Spin:
                     if (Time.time < actUntil) return;
                     // 시계추를 들고 한 바퀴: 주변 원형 타격
-                    if (model && !anim) StartCoroutine(SpinModel());
+                    if (model) StartCoroutine(anim ? SpinBody(0.3f, 1f) : SpinModel());
+                    Sfx.Play("e_spin", 0.6f);
                     if (Effects.Flat(p.transform.position - transform.position).magnitude <= SpinRadius) p.health.TakeDamage(contactDamage);
                     GunkataFx.Swirl(transform.position + Vector3.up, SpinRadius, 540f);
                     PropHit.Area(transform.position, SpinRadius, contactDamage);
@@ -181,7 +190,7 @@ namespace CatTang
             {
                 act = Act.Spin;
                 actUntil = Time.time + SpinWindup / AtkMul;
-                Anim("Special");
+                Anim("Spin");                                // 허리 감아 웅크림 → 풀어내며 한 바퀴 (전용 클립 Ch1M_BruteSpin)
                 tele = Telegraph.Ring(transform.position, SpinRadius, actUntil - Time.time, Telegraph.Danger, transform);
                 return;
             }
@@ -296,6 +305,7 @@ namespace CatTang
                 // 애니메이터가 걷기 · 동작을 맡음. 돌진 중엔 앞으로 살짝 숙이기만
                 anim.SetFloat("Speed", Mathf.Clamp01(moveSpeed / Mathf.Max(0.5f, speed)));
                 float lean2 = act == Act.Charge ? 12f : 0f;          // 짐꾼 빈틈 자세는 전용 내리찍기 클립이 맡음
+                if (modelSpinning) return;                           // 회전 동작(무희 피루엣 · 회전 베기 · 회전 난사)은 코드가 모델을 직접 돌림
                 model.localRotation = Quaternion.Slerp(model.localRotation, Quaternion.Euler(lean2, 0, 0) * modelBaseRot, 12f * Time.deltaTime);
                 if (act != Act.Fuse && act != Act.Roll) model.localScale = modelScale;
                 if (act != Act.Roll) model.localPosition = Vector3.zero;
@@ -315,8 +325,43 @@ namespace CatTang
         // 리깅된 모델의 애니메이터 (없으면 코드 흔들림으로 대신)
         Animator anim;
         public bool HasAnimator => anim;
-        /// <summary>동작 트리거: "Attack" · "Special"</summary>
-        public void Anim(string trigger) { if (anim) anim.SetTrigger(trigger); }
+        /// <summary>동작: 컨트롤러에 그 이름의 트리거("Attack" · "Special" · "Throw")가 있으면 트리거, 없으면 스킬별 전용 상태(EnemyModelBuilder.Moves)를 바로 재생.
+        /// 전용 상태도 없으면 Attack으로 대신 (옛 프리팹 호환)</summary>
+        public void Anim(string name)
+        {
+            if (!anim || !anim.runtimeAnimatorController || string.IsNullOrEmpty(name)) return;
+            if (HasTrigger(anim, name)) { anim.SetTrigger(name); return; }
+            int h = Animator.StringToHash(name);
+            if (anim.HasState(0, h)) anim.CrossFadeInFixedTime(h, 0.06f, 0, 0f);
+            else if (HasTrigger(anim, "Attack")) anim.SetTrigger("Attack");
+        }
+        static bool HasTrigger(Animator a, string n)
+        {
+            foreach (var p in a.parameters) if (p.type == AnimatorControllerParameterType.Trigger && p.name == n) return true;
+            return false;
+        }
+        /// <summary>모델(몸)을 제자리에서 돌림: dur초 동안 turns바퀴 (회전 베기 · 피루엣). 애니메이터의 몸 기울임 맞춤을 그동안 멈춤</summary>
+        public System.Collections.IEnumerator SpinBody(float dur, float turns, float fromDeg = 0f)
+        {
+            if (!model) yield break;
+            modelSpinning = true;
+            var m = model;
+            for (float t = 0; t < dur && m; t += Time.deltaTime)
+            {
+                m.localRotation = Quaternion.Euler(0, Mathf.Lerp(fromDeg, 360f * turns, t / dur), 0) * modelBaseRot;
+                yield return null;
+            }
+            if (m) m.localRotation = modelBaseRot;
+            modelSpinning = false;
+        }
+        bool modelSpinning;
+        /// <summary>몸(모델)만 deg도 돌린 채 붙잡음 (등 돌린 예고 자세). 풀 때는 SpinBody(…, fromDeg: deg) 또는 HoldYaw(null)</summary>
+        void HoldYaw(float? deg)
+        {
+            if (!model) return;
+            modelSpinning = deg.HasValue;
+            model.localRotation = Quaternion.Euler(0, deg ?? 0f, 0) * modelBaseRot;
+        }
         public void AnimBusy(bool on) { if (anim) anim.SetBool("Busy", on); }
 
         // 넉백 · 이동 뒤에 방 밖으로 나가지 않게 붙잡음 (보스는 몸이 커서 벽에서 더 띄움)
@@ -431,6 +476,7 @@ namespace CatTang
                 else FxBurst.Spawn(transform.position + Vector3.up, kind == Kind.Boss ? 6f : 2.2f, FxBurst.Kind.Explosion);
             }
             OnDieCh3();
+            OnDieCh4();
             if (!noReward) RunManager.Instance?.OnEnemyKilled(this);
             Destroy(gameObject);
         }

@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "e4_wind",
+  "original_idea": "11:59 game SFX: e4_wind",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, clockwork wind-up key turned by a wrench, rapid ratcheting cranking clicks of a spring being wound tight, brass, steel spring, close mic, dry.",
+  "sound_fields": {
+    "source": "clockwork wind-up key turned by a wrench",
+    "action": "rapid ratcheting cranking clicks of a spring being wound tight",
+    "material": "brass, steel spring",
+    "space": "close mic, dry"
+  },
+  "bpm": null,
+  "seconds": 1.0,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 1,
+  "seed": 1159,
+  "candidate": 1,
+  "file": "e4_wind.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-19T16:19:06",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -3.82,
+  "raw_peak_dbfs": -3.82,
+  "ceiling_gain_db": 0.0
+}

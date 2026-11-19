@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "e_fan",
+  "original_idea": "11:59 game SFX: e_fan",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, old western revolver fanned rapidly, three very fast gunshots in a row, bang-bang-bang, steel, gunpowder, close mic, dry, game sound.",
+  "sound_fields": {
+    "source": "old western revolver fanned rapidly",
+    "action": "three very fast gunshots in a row, bang-bang-bang",
+    "material": "steel, gunpowder",
+    "space": "close mic, dry, game sound"
+  },
+  "bpm": null,
+  "seconds": 0.8,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 1,
+  "seed": 1159,
+  "candidate": 1,
+  "file": "e_fan.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-19T16:19:07",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -2.06,
+  "raw_peak_dbfs": -2.06,
+  "ceiling_gain_db": 0.0
+}

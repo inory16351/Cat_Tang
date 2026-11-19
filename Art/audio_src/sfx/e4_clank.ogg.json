@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e4_clank.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e4_clank",
+    "original_idea": "11:59 game SFX: e4_clank",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, heavy steel wrench, lands with a loud metallic clank and a small bounce, steel on stone, close mic, dry.",
+    "sound_fields": {
+      "source": "heavy steel wrench",
+      "action": "lands with a loud metallic clank and a small bounce",
+      "material": "steel on stone",
+      "space": "close mic, dry"
+    },
+    "bpm": null,
+    "seconds": 0.6,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e4_clank.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T16:19:07",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-19T16:19:07",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.339,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (-0.05 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1599,
+  "file": "e4_clank.ogg"
+}

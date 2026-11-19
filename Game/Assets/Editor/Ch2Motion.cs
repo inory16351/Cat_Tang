@@ -100,7 +100,7 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>걷기: stride = 다리 앞뒤 폭, sway = 상체 좌우 기우뚱 (무거울수록 보폭 작고 몸이 크게 내려앉음)</summary>
-        static void Walk(AnimationClip idle, string name, float W, float stride, float sway)
+        internal static void Walk(AnimationClip idle, string name, float W, float stride, float sway, float lean = 0.1f)
         {
             float q = W / 4, a = 0.62f + stride, b = 0.62f - stride;
             Make(idle, name, W, true, new()
@@ -113,41 +113,46 @@ namespace CatTang.EditorTools
                 { "+Left Arm Front-Back", K(0, -stride, 2 * q, stride, W, -stride) },
                 { "+Right Arm Front-Back", K(0, stride, 2 * q, -stride, W, stride) },
                 { "Spine Left-Right", K(0, sway, 2 * q, -sway, W, sway) },
-                { "+Spine Front-Back", K(0, 0.1f, W, 0.1f) },
+                { "+Spine Front-Back", K(0, lean, W, lean) },
             }, K(0, -0.05f, q, 0.02f, 2 * q, -0.05f, 3 * q, 0.02f, W, -0.05f));
         }
 
-        static AnimationClip CatIdle()
+        internal static AnimationClip CatIdle()
         {
             foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
                 if (o is AnimationClip c && c.name == "idle") return c;
             return null;
         }
 
-        static void Make(AnimationClip idle, string name, float end, bool loop, Dictionary<string, float[][]> keys, float[][] rootDy)
+        /// <param name="name">클립 이름 (2장 폴더) 또는 "Assets/..."로 시작하는 확장자 뺀 전체 경로 (다른 장 전용 모션 EnemyMotions)</param>
+        internal static void Make(AnimationClip idle, string name, float end, bool loop, Dictionary<string, float[][]> keys, float[][] rootDy)
         {
-            string path = Dir + name + ".anim";
+            string path = name.StartsWith("Assets/") ? name + ".anim" : Dir + name + ".anim";
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
             if (!clip) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, path); }
             clip.ClearCurves();
-            clip.name = name;
+            clip.name = Path.GetFileNameWithoutExtension(path);
+            var used = new HashSet<string>();
             foreach (var bnd in AnimationUtility.GetCurveBindings(idle))
             {
                 float v0 = AnimationUtility.GetEditorCurve(idle, bnd).Evaluate(0.3f);
                 string pn = bnd.propertyName;
                 AnimationCurve curve = null;
-                if (keys.TryGetValue(pn, out var abs)) curve = Curve(abs, 0);
-                else if (keys.TryGetValue("+" + pn, out var add)) curve = Curve(add, v0);
+                if (keys.TryGetValue(pn, out var abs)) { curve = Curve(abs, 0); used.Add(pn); }
+                else if (keys.TryGetValue("+" + pn, out var add)) { curve = Curve(add, v0); used.Add("+" + pn); }
                 else
                 {
                     // "+Upper Leg In-Out"처럼 좌우를 뺀 이름이면 양쪽에 같이
                     foreach (var lr in new[] { "Left ", "Right " })
-                        if (pn.StartsWith(lr) && keys.TryGetValue("+" + pn.Substring(lr.Length), out var both)) curve = Curve(both, v0);
+                        if (pn.StartsWith(lr) && keys.TryGetValue("+" + pn.Substring(lr.Length), out var both)) { curve = Curve(both, v0); used.Add("+" + pn.Substring(lr.Length)); }
                 }
                 if (curve == null && pn == "RootT.y" && rootDy != null) curve = Curve(rootDy, v0);
                 curve ??= new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
                 AnimationUtility.SetEditorCurve(clip, bnd, curve);
             }
+            foreach (var k in keys.Keys) if (!used.Contains(k)) Debug.LogWarning($"[Ch2Motion] {clip.name}: 근육 이름 '{k}'을 고양이 idle 클립에서 못 찾음 — 무시됨");
+            MirrorFrontBack(clip, idle);
             AnimationUtility.SetAnimationClipSettings(clip, new AnimationClipSettings { loopTime = loop, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end });
             EditorUtility.SetDirty(clip);
         }
@@ -161,6 +166,31 @@ namespace CatTang.EditorTools
             return c;
         }
 
-        static float[][] K(params float[] tv) { var r = new float[tv.Length / 2][]; for (int i = 0; i < r.Length; i++) r[i] = new[] { tv[i * 2], tv[i * 2 + 1] }; return r; }
+        /// <summary>
+        /// 앞뒤 근육 방향 바로잡기 (2026-11-19 측정): 유니티 근육 이름은 '음수-양수' 순서라 "Front-Back"은 + = 뒤쪽.
+        /// (적 리그 12종 + 고양이 모두 같음: Arm Front-Back +0.5 → 손이 뒤로 0.3m, Chest/Spine +0.5 → 머리가 엉덩이 뒤로, Upper Leg +0.5 → 발이 뒤로)
+        /// 코드 클립 표는 모두 '+ = 앞'으로 적어 왔으므로, 다 만든 클립의 Front-Back 커브를 기준값(고양이 idle 또는 pivot) 둘레로 뒤집음 → 표는 그대로 '+ = 앞'.
+        /// 덧셈 키(기준 + off → 기준 − off) · 절대 키(v → 2·기준 − v) 모두 같은 식. 키가 없는(기준 그대로) 커브는 안 바뀜.
+        /// </summary>
+        internal static void MirrorFrontBack(AnimationClip clip, AnimationClip idle, Dictionary<string, float> pivot = null)
+        {
+            foreach (var b in AnimationUtility.GetCurveBindings(clip))
+            {
+                if (!b.propertyName.EndsWith("Front-Back")) continue;
+                float p;
+                if (pivot == null || !pivot.TryGetValue(b.propertyName, out p))
+                {
+                    var ic = idle ? AnimationUtility.GetEditorCurve(idle, b) : null;
+                    p = ic != null ? ic.Evaluate(0.3f) : 0f;
+                }
+                var c = AnimationUtility.GetEditorCurve(clip, b);
+                var ks = c.keys;
+                for (int i = 0; i < ks.Length; i++) { var k = ks[i]; k.value = 2f * p - k.value; k.inTangent = -k.inTangent; k.outTangent = -k.outTangent; ks[i] = k; }
+                c.keys = ks;
+                AnimationUtility.SetEditorCurve(clip, b, c);
+            }
+        }
+
+        internal static float[][] K(params float[] tv) { var r = new float[tv.Length / 2][]; for (int i = 0; i < r.Length; i++) r[i] = new[] { tv[i * 2], tv[i * 2 + 1] }; return r; }
     }
 }

@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e_glass.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e_glass",
+    "original_idea": "11:59 game SFX: e_glass",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, magic mirror shield, cracks and shatters into glass shards with a shimmer, glass, crystal, close, short reverb.",
+    "sound_fields": {
+      "source": "magic mirror shield",
+      "action": "cracks and shatters into glass shards with a shimmer",
+      "material": "glass, crystal",
+      "space": "close, short reverb"
+    },
+    "bpm": null,
+    "seconds": 1.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e_glass.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T16:19:10",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -4.39,
+    "raw_peak_dbfs": -4.39,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T16:19:10",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.394,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+5.71 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.072,
+  "file": "e_glass.ogg"
+}

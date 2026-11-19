@@ -71,6 +71,34 @@ SFX = {
     "gunkata_spin": ("twin revolvers spun rapidly around a whirling gunslinger", "continuous fast whirling whoosh with rhythmic metallic spinning clicks, steady, no start or end",
                    "steel, brass, swirling air", "close, dry, seamless loop for a game", 3.0, 1),
     "bridge":     ("broken floating stone bridge", "pieces float back together: rumbling stones clack into place with a magical shimmer", "stone, wood, magic", "outdoor, open air", 2.5, 1),
+    # ---- 적 스킬 전용 모션에 맞춘 소리 (2026-11-19 사용자: 새 모션에 어울리는 효과음) — 공격이 나가는 박자에 냄 ----
+    # 4장 시계 장치 속
+    "e4_rifle":   ("toy soldier clockwork musket", "single sharp gunshot crack with a tiny springy click before it and a short metallic ring",
+                   "brass, steel, clockwork", "close mic, dry, video game sound effect", 0.9, 2),
+    "e4_drum":    ("small toy snare drum on a soldier's hip", "two quick crisp military drum taps, ra-tap", "wood, taut drum skin, snare wires", "close mic, dry", 0.8, 1),
+    "e4_bayonet": ("bayonet charge", "fast forward whoosh ending in a sharp steel stab shing", "steel, air", "close mic, dry, game sound", 0.7, 1),
+    "e4_bell":    ("small brass hand bell struck hard by a hammer", "one loud clang followed by a pulsing wobbling sonic ring that fades out",
+                   "brass bell, iron hammer", "small room, short reverb", 1.6, 2),
+    "e4_spin":    ("clockwork music box ballerina twirling", "fast spinning music box melody over a whirring wind-up spring, steady and continuous",
+                   "music box tines, spring, brass", "close, slight reverb", 3.0, 1),
+    "e4_finale":  ("music box finale", "bright sparkling music box chord burst ending with a ting", "metal tines, glass", "close, slight reverb", 1.0, 1),
+    "e4_tick":    ("second hand of a giant clock", "single sharp heavy tick with a tiny electric zap", "brass, steel spring", "close mic, dry", 0.4, 2),
+    "e4_stab":    ("thin needle blade", "very fast zip thrust with a thin metallic shing", "silver steel, air", "close mic, dry, game sound", 0.5, 2),
+    "e4_scythe":  ("giant pendulum scythe", "heavy swinging whoosh with a deep tick and a humming metal tail", "iron, brass, air", "close mic, dry, game sound", 0.9, 2),
+    "e4_whirl":   ("giant pendulum scythe spun in a full circle", "heavy whirling swoosh all the way around with a ringing metal sweep", "iron, air", "close mic, dry", 1.0, 1),
+    "e4_wind":    ("clockwork wind-up key turned by a wrench", "rapid ratcheting cranking clicks of a spring being wound tight", "brass, steel spring", "close mic, dry", 1.0, 1),
+    "e4_toss":    ("big steel wrench thrown end over end", "spinning whirring whoosh as it flies", "steel, air", "close mic, dry", 0.7, 1),
+    "e4_clank":   ("heavy steel wrench", "lands with a loud metallic clank and a small bounce", "steel on stone", "close mic, dry", 0.6, 1),
+    # 1~3장 새 모션
+    "e_fan":      ("old western revolver fanned rapidly", "three very fast gunshots in a row, bang-bang-bang", "steel, gunpowder", "close mic, dry, game sound", 0.8, 1),
+    "e_slam":     ("heavy brute", "smashes both fists into the ground: deep thud with rocks and dust crunching", "earth, stone, wood", "close, outdoor", 1.0, 2),
+    "e_spin":     ("heavy club swung around in a full circle", "big whooshing swing all the way around", "wood, air", "close mic, dry", 0.8, 1),
+    "e_whistle":  ("conductor's brass whistle", "one loud shrill whistle blast", "brass whistle", "outdoor, short reverb", 0.9, 1),
+    "e_glass":    ("magic mirror shield", "cracks and shatters into glass shards with a shimmer", "glass, crystal", "close, short reverb", 1.0, 1),
+    "e_dive":     ("figure diving into a magic mirror", "glassy swoosh with a liquid ripple", "glass, water, magic", "close, slight reverb", 0.8, 1),
+    "e_conjure":  ("magic orbs of light gathering", "soft rising sparkling shimmer swell", "glass, chimes", "airy reverb", 1.5, 1),
+    "e_bow":      ("stage magician", "theatrical flourish: a magic poof with a short sparkling glissando", "cloth, chimes, smoke", "small theater reverb", 1.0, 1),
+    "e_steam":    ("steam locomotive valve", "big pressurized steam blast hiss burst", "steam, iron", "outdoor, close", 1.5, 1),
 }
 SEED = {}   # 이름: 시드 (기본 1159)
 LOOPS = {"gunkata_spin"}   # 끊김 없이 반복되게 다듬을 효과음

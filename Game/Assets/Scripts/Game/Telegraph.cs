@@ -148,7 +148,21 @@ namespace CatTang
         public void SetDir(Vector3 dir) { dir.y = 0; if (dir.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(dir.normalized); }
         public void SetColor(Color c) => col = c;
 
-        bool grow, glint = true, glinted;
+        bool grow, glint = true, glinted, laser = true;
+        /// <summary>4장: 끝날 때 레이저 베기 호 · 레이저 줄을 띄우지 않음 (무기 칼빛 BladeStreak가 칼날에 붙어 대신 그림)</summary>
+        public Telegraph NoLaser() { laser = false; return this; }
+
+        /// <summary>
+        /// 직선 예고(Lane)와 똑같은 판정 (2026-11-19 사용자: 실제 타격 범위와 예고를 같게): from에서 dir로 [0, len] · 폭 width 안에 점(몸 중심)이 있으면 참.
+        /// 돌진은 lo~hi = 지금 몸이 덮고 있는 구간(나아간 거리 ± 몸 반지름)만 — 몸이 지나간 뒤 남은 길에 들어가도 맞지 않음
+        /// </summary>
+        public static bool InLane(Vector3 pt, Vector3 from, Vector3 dir, float len, float width, float lo = 0f, float hi = float.MaxValue)
+        {
+            dir.y = 0; if (dir.sqrMagnitude < 1e-6f) return false; dir.Normalize();
+            var rel = Effects.Flat(pt - from);
+            float along = Vector3.Dot(rel, dir);
+            return along >= Mathf.Max(0f, lo) && along <= Mathf.Min(len, hi) && (rel - dir * along).magnitude <= width * 0.5f;
+        }
         /// <summary>끝나기 직전 예고 섬광을 띄우지 않음 (공격이 아닌 표시: 폭탄병 착지 조준 등)</summary>
         public Telegraph NoGlint() { glint = false; return this; }
         /// <summary>원 자체가 작게 시작해 끝날 때 반경까지 커짐 (폭탄병 점멸: 다 커지는 순간 폭발). 깜빡임도 점점 빨라짐</summary>
@@ -204,7 +218,7 @@ namespace CatTang
             if (Time.time - born >= life)
             {
                 // 4장 (느와르): 적 예고가 끝나는 순간 = 공격이 나가는 순간 → 레이저 베기 호 · 레이저 줄 (LaserFx)
-                if (LaserFx.On && col.r > 0.8f && col.g < 0.3f)
+                if (laser && LaserFx.On && col.r > 0.8f && col.g < 0.3f)
                 {
                     if (shape == Shape.Sector) LaserFx.Slash(transform.position, transform.forward, radius);
                     else if (shape == Shape.Lane) LaserFx.Streak(transform.position, transform.forward, len, width);

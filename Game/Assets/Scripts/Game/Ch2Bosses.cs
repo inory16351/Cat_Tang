@@ -77,9 +77,9 @@ namespace CatTang
         {
             Add("신호봉 휘두르기", Reach.Near, Baton, null, "Special");
             Add("개찰 펀치", Reach.Near, GatePunch);
-            Add("시간표 탄막", Reach.Far, Timetable);
-            Add("호루라기 열차", Reach.Far, WhistleTrain, null, "Special");
-            Add("차장 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2);
+            Add("시간표 탄막", Reach.Far, Timetable, null, "Schedule");
+            Add("호루라기 열차", Reach.Far, WhistleTrain, null, "Whistle");
+            Add("차장 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2, "Call");
             nextRed = Time.time + 12f;
         }
 
@@ -169,14 +169,16 @@ namespace CatTang
             {
                 var d = ToPlayer();
                 float tele = k == 0 ? T(0.5f) : T(0.25f);
-                Telegraph.Lane(transform.position, d, 3.6f, 1.8f, tele, Telegraph.Danger);
+                var laneFrom = transform.position;
+                Telegraph.Lane(laneFrom, d, 3.6f, 1.8f, tele, Telegraph.Danger);
                 float end = Time.time + tele;
                 while (Time.time < end) { Face(d, 18f); yield return null; }
                 for (float t = 0; t < 0.15f; t += Time.deltaTime)
                 {
                     transform.position += d * (3f / 0.15f) * Time.deltaTime;
                     if (rm) transform.position = rm.ClampToRoom(transform.position, 1.5f);
-                    if (!hit && P && Effects.Flat(P.transform.position - transform.position).magnitude < 1.6f)
+                    float mv = Effects.Flat(transform.position - laneFrom).magnitude;
+                    if (!hit && P && Telegraph.InLane(P.transform.position, laneFrom, d, 3.6f, 1.8f, mv - 1.3f, mv + 1.3f))   // 예고 선과 같게
                     {
                         hit = true;                                  // 3연타 중 한 번만 (몸통 접촉 피해 없음 규칙)
                         P.health.TakeDamage(15f);
@@ -246,6 +248,7 @@ namespace CatTang
             }
             BossFx.Toast("호루라기 — 열차가 지나간다");
             foreach (var l in lanes) Telegraph.Lane(l, dir, len, 2f, T(1f), Telegraph.Danger);
+            Sfx.Play("e_whistle", 0.85f);                                           // 호루라기를 부는 박자
             yield return Wait(T(1f));
             foreach (var l in lanes) ToyTrain.Run(l, dir, len, 20f, 2f, 18f, 0.45f);
             yield return Wait(T(0.6f));
@@ -254,6 +257,7 @@ namespace CatTang
         // 차장 호출: 태엽 차장 2명 (필드 최대 4명)
         IEnumerator Summon()
         {
+            Sfx.Play("e_whistle", 0.8f);
             yield return Wait(T(0.5f));
             int room = 4 - (Enemy.All.Count - 1);
             for (int i = 0; i < Mathf.Min(2, room); i++)
@@ -489,10 +493,10 @@ namespace CatTang
         protected override void Setup()
         {
             Add("연결봉 휘두르기", Reach.Near, Rods, null, "Special");
-            Add("증기 분출", Reach.Near, SteamBurst);
+            Add("증기 분출", Reach.Near, SteamBurst, null, "Vent");
             Add("레일 돌진", Reach.Far, RailCharge);
-            Add("석탄 포격", Reach.Far, CoalBarrage);
-            Add("객차 회전", Reach.Any, CoachSpin, () => !phase2 && !coachesOrbit);
+            Add("석탄 포격", Reach.Far, CoalBarrage, null, "Heave");
+            Add("객차 회전", Reach.Any, CoachSpin, () => !phase2 && !coachesOrbit, "CoachSpin");
             nextRing = Time.time + 2f;
         }
 
@@ -768,6 +772,7 @@ namespace CatTang
             Telegraph.Ring(transform.position, 3.5f, T(1f), BossFx.Safe);
             Telegraph.Ring(transform.position, 2f, T(1f), Telegraph.Danger);
             yield return Wait(T(1f));
+            Sfx.Play("e_steam", 0.9f);
             var p = P;
             if (p && p.health.Alive)
             {
@@ -818,6 +823,8 @@ namespace CatTang
             bool hit = false;
             var once = new HashSet<Health>();
             var rm = RunManager.Instance;
+            var laneFrom = transform.position;                                      // 예고 선 시작 (돌진 패턴은 모두 지금 자리에서 예고)
+            var cc = GetComponent<CapsuleCollider>(); float bodyR = cc ? cc.radius : 2f;
             while (run < len && hp.Alive)
             {
                 float step = speed * hp.SlowMul * Time.deltaTime;
@@ -826,7 +833,7 @@ namespace CatTang
                 var fromC = Effects.Flat(transform.position - ArenaC());                   // 원형 경기장 안으로
                 if (fromC.magnitude > ArenaR()) transform.position = ArenaC() + fromC.normalized * ArenaR();
                 run += step;
-                if (!hit && P && Effects.Flat(P.transform.position - transform.position).magnitude < width / 2 + 0.9f)
+                if (!hit && P && Telegraph.InLane(P.transform.position, laneFrom, d, len, width, run - bodyR, run + bodyR))   // 예고 선(폭 width)과 같게
                 {
                     hit = true;
                     P.health.TakeDamage(dmg());

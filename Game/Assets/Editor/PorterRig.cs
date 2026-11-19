@@ -208,6 +208,10 @@ namespace CatTang.EditorTools
                 curve ??= new AnimationCurve(new Keyframe(0, v0), new Keyframe(end, v0));
                 AnimationUtility.SetEditorCurve(clip, b, curve);
             }
+            // 앞뒤 근육 방향 바로잡기 ('Front-Back' + = 뒤, Ch2Motion.MirrorFrontBack): 팔은 트렁크 든 기본 자세 둘레로, 나머지는 고양이 idle 둘레로
+            var piv = new Dictionary<string, float>();
+            foreach (var m in ArmMuscles) foreach (var lr in new[] { "Left ", "Right " }) if (rest.TryGetValue(lr + m, out var rv)) piv[lr + m] = rv;
+            Ch2Motion.MirrorFrontBack(clip, idle, piv);
             AnimationUtility.SetAnimationClipSettings(clip, new AnimationClipSettings { loopTime = loop, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end });
             EditorUtility.SetDirty(clip);
             return clip;

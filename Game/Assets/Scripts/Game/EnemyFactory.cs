@@ -54,14 +54,8 @@ namespace CatTang
         /// <summary>일반 적 웨이브 구성: 무법자 = 챕터 사격형 비율 + 10%, 폭탄병 25%, 나머지 깡패</summary>
         public static Enemy RandomMinion(Vector3 pos, ChapterDef ch, bool elite = false)
         {
-            if (ch != null && ch.Id == 4)
-            {
-                // 4장 적 모델이 아직 없어 3장 적을 빌려 씀 → 4장 레이저 눈빛 꼬리만 붙임 (EnemyCh4가 생기면 거기서)
-                var e4 = RandomCh3(pos, ch, elite);
-                EyeTrail.Attach(e4);
-                return e4;
-            }
-            if (ch != null && ch.Id >= 3) return RandomCh3(pos, ch, elite);
+            if (ch != null && ch.Id >= 4) return RandomCh4(pos, ch, elite);
+            if (ch != null && ch.Id == 3) return RandomCh3(pos, ch, elite);
             if (ch != null && ch.Id == 2)
             {
                 // 2장: 차장 40% · 짐꾼 30% · 신호수 30% (세 종류가 처음부터 섞여 나옴)
@@ -98,8 +92,9 @@ namespace CatTang
             foreach (var r in model.GetComponentsInChildren<Renderer>())
             {
                 var mats = r.materials;
-                // 3장 강화형: 더 밝고 차가운 빛 (md: 더 투명하고 일렁이는 모습), 1 · 2장: 더 달군 색
-                var mul = e.chapter != null && e.chapter.Id >= 3 ? new Color(0.9f, 1.15f, 1.35f) : new Color(1.15f, 0.82f, 0.68f);
+                // 4장 강화형: 더 녹슨 붉은 기 (md: 더 녹슬고 태엽 · 톱니가 튀어나온 모습, 붉은 눈빛), 3장: 더 밝고 차가운 빛 (md: 더 투명하고 일렁이는 모습), 1 · 2장: 더 달군 색
+                var mul = e.chapter != null && e.chapter.Id >= 4 ? new Color(1.12f, 0.86f, 0.82f)
+                        : e.chapter != null && e.chapter.Id >= 3 ? new Color(0.9f, 1.15f, 1.35f) : new Color(1.15f, 0.82f, 0.68f);
                 foreach (var m in mats) if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", m.GetColor("_BaseColor") * mul);
                 r.materials = mats;
             }
@@ -249,26 +244,8 @@ namespace CatTang
 
         static readonly Color Ch3Body = new Color(0.62f, 0.6f, 0.82f), Ch3Glass = new Color(0.78f, 0.93f, 1f);
 
-        // 4장 임시 (2026-11-19): 4장 전용 행동(EnemyCh4)이 생기기 전까지 3장 행동에 4장 모델(Resources/Enemies/Ch4_*)을 끼움.
-        // 사수 → 태엽 병정 · 법사 → 종지기 / 오르골 무희 · 검객 → 초침 자객 · 기사 → 진자 기사 · 분신술사 → 시계 수리공. 체력은 4장 기준(약 1.44배)
-        static string Ch4Model(string model) => model switch
-        {
-            "Ch3_Shooter" => "Ch4_Soldier",
-            "Ch3_Mage" => Random.value < 0.5f ? "Ch4_Ringer" : "Ch4_Dancer",
-            "Ch3_Blade" => "Ch4_Assassin",
-            "Ch3_Knight" => "Ch4_Knight",
-            "Ch3_Trickster" => "Ch4_Repairman",
-            _ => model,
-        };
-
         static Enemy Make3(string name, string model, Vector3 pos, ChapterDef ch, bool elite, float hp, Enemy.Kind kind, float r, float h, float speed, Color tint, System.Action<Transform> extra = null)
         {
-            if (ch != null && ch.Id == 4)
-            {
-                var m4 = Ch4Model(model);
-                if (Resources.Load<GameObject>("Enemies/" + m4)) model = m4;
-                hp *= 1.44f;
-            }
             var e = Root(name, pos, hp, kind, r, h);
             if (!AttachModelFor(e, model, elite, out bool plus))
             {
@@ -279,6 +256,57 @@ namespace CatTang
             e.speed = speed;
             if (elite) MakeElite(e, plus);
             e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // ---------- 4장 (시계 장치 속, 느와르, 2026-11-19) — 체력 · 피해는 md 4장 값 그대로. 행동 = EnemyCh4.cs, 모델 = Resources/Enemies/Ch4_* (Tripo + 손 뼈 무기) ----------
+        // 적 구성: 여섯 종류가 처음부터 섞여 나오고 방마다 3~4종을 뽑아 섞음, 시계 수리공은 방마다 최대 1
+        static object ch4MixRoom;
+        static readonly System.Collections.Generic.List<int> ch4Mix = new();
+        static int ch4Repairmen;
+
+        static Enemy RandomCh4(Vector3 pos, ChapterDef ch, bool elite)
+        {
+            var room = RunManager.Instance ? (object)RunManager.Instance.CurrentRoom : null;
+            if (room == null || room != ch4MixRoom || ch4Mix.Count == 0)
+            {
+                ch4MixRoom = room;
+                ch4Mix.Clear();
+                ch4Repairmen = 0;
+                var all = new System.Collections.Generic.List<int> { 0, 1, 2, 3, 4, 5 };
+                int n = Random.value < 0.5f ? 3 : 4;
+                while (ch4Mix.Count < n) { int i = Random.Range(0, all.Count); ch4Mix.Add(all[i]); all.RemoveAt(i); }
+            }
+            int pick = ch4Mix[Random.Range(0, ch4Mix.Count)];
+            if (pick == 5 && ch4Repairmen >= 1)
+            {
+                // 수리공은 방마다 하나: 이미 나왔으면 다른 종류로
+                var rest = ch4Mix.FindAll(k => k != 5);
+                pick = rest.Count > 0 ? rest[Random.Range(0, rest.Count)] : 0;
+            }
+            if (pick == 5) ch4Repairmen++;
+            return pick switch
+            {
+                0 => Make4("Enemy_ClockSoldier", "Ch4_Soldier", pos, ch, elite, 156, Enemy.Kind.ClockSoldier, 0.55f, 2.5f, 2.6f, Enemy.SoldierShotDmg, Enemy.SoldierBayonetDmg),
+                1 => Make4("Enemy_BellRinger", "Ch4_Ringer", pos, ch, elite, 156, Enemy.Kind.BellRinger, 0.55f, 2.4f, 2.4f, Enemy.RingDmg, 0),
+                2 => Make4("Enemy_MusicDancer", "Ch4_Dancer", pos, ch, elite, 208, Enemy.Kind.MusicDancer, 0.55f, 2.6f, 2.2f, Enemy.DancerDmg, 0),
+                3 => Make4("Enemy_TickAssassin", "Ch4_Assassin", pos, ch, elite, 156, Enemy.Kind.TickAssassin, 0.55f, 2.6f, 0f, 0, Enemy.StabDmg),
+                4 => Make4("Enemy_PendulumKnight", "Ch4_Knight", pos, ch, elite, 416, Enemy.Kind.PendulumKnight, 0.95f, 3.0f, 2.8f, 0, Enemy.PKDmg),
+                _ => Make4("Enemy_Repairman", "Ch4_Repairman", pos, ch, elite, 156, Enemy.Kind.Repairman, 0.55f, 2.3f, 3.0f, Enemy.TossDmg, 0),
+            };
+        }
+
+        static Enemy Make4(string name, string model, Vector3 pos, ChapterDef ch, bool elite, float hp, Enemy.Kind kind, float r, float h, float speed, float shotDmg, float meleeDmg)
+        {
+            var e = Root(name, pos, hp, kind, r, h);
+            if (!AttachModelFor(e, model, elite, out bool plus)) Proto2(e, ch, new Color(0.3f, 0.3f, 0.33f), h * 0.85f, r * 1.1f);
+            e.chapter = ch;
+            e.speed = speed;
+            e.projectileDamage = shotDmg;
+            e.contactDamage = meleeDmg;
+            if (elite) MakeElite(e, plus);
+            e.GetComponent<Health>().RefreshRenderers();
+            EyeTrail.Attach(e);                     // 빠르게 움직일 때(점멸 · 돌진 · 회전) 붉은 레이저 눈빛 꼬리
             return e;
         }
 

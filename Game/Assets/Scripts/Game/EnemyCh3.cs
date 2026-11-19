@@ -135,6 +135,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Attack");
+            Sfx.Play("e_conjure", 0.5f, 0.05f, 2);
             heldOrbs.Clear();
             var back = -Effects.Flat(transform.forward).normalized;
             var side = Vector3.Cross(Vector3.up, back);
@@ -158,6 +159,7 @@ namespace CatTang
                 var o = heldOrbs[i];
                 if (o && o.enabled)
                 {
+                    Anim(i % 2 == 0 ? "FlingR" : "FlingL");                        // 구슬마다 한 손씩 번갈아 내던짐
                     o.frozenUntil = 0;
                     o.Retarget(p.transform.position - o.transform.position);
                     o.homing = MageHoming;
@@ -208,7 +210,10 @@ namespace CatTang
         {
             busy = true;
             nextSpecial = Time.time + BladeDiveCooldown * Random.Range(0.85f, 1.2f);
-            // 빛가루로 흩어지며 거울 속으로 (2초 잠복, 무적)
+            // 웅크렸다 머리부터 뛰어듦 (전용 클립) → 빛가루로 흩어지며 거울 속으로 (2초 잠복, 무적)
+            Anim("Dive");
+            Sfx.Play("e_dive", 0.6f);
+            yield return Hold(0.38f, _ => { });
             var from = transform.position;
             Fx3("Stardust", from + Vector3.up, 1.1f);
             SetHidden(true);
@@ -260,7 +265,7 @@ namespace CatTang
         IEnumerator BladeSlash(PlayerController p, Vector3? fixedDir, bool instant = false)
         {
             busy = true;
-            Anim("Attack");
+            Anim(instant ? "Emerge" : "Attack");                                    // 거울에서 솟구치며 올려 베기 / 걸어와 가로 베기
             var d = fixedDir ?? ToP(p);
             bool ok = true;
             if (!instant)
@@ -301,6 +306,8 @@ namespace CatTang
         {
             mirrorHits = 0;
             mirrorBrokenUntil = Time.time + KnightBroken;
+            Anim("Stagger");                                                        // 거울이 깨지는 충격에 뒤로 휘청
+            Sfx.Play("e_glass", 0.7f);
             var shield = model ? model.Find("Mirror") : null;
             var at = transform.position + Effects.Flat(transform.forward) * 0.8f;
             Fx3("GlassBurst", at + Vector3.up * 1.1f, 1.1f);
@@ -335,7 +342,8 @@ namespace CatTang
             busy = true;
             Anim("Attack");
             var d = Effects.Flat(transform.forward).normalized;
-            tele = Telegraph.Lane(transform.position, d, KnightBashDist + 0.8f, 1.8f, KnightBashWindup / AtkMul, Telegraph.Danger);
+            var laneFrom = transform.position;
+            tele = Telegraph.Lane(laneFrom, d, KnightBashDist + 0.8f, 1.8f, KnightBashWindup / AtkMul, Telegraph.Danger);
             bool ok = false;
             yield return Hold(KnightBashWindup, r => ok = r);
             if (ok)
@@ -345,7 +353,7 @@ namespace CatTang
                 {
                     float step = KnightBashSpeed * Time.deltaTime;
                     transform.position += d * step; moved += step;
-                    if (!hit && p && p.health.Alive && Vector3.Distance(Effects.Flat(p.transform.position), Effects.Flat(transform.position + d * 0.8f)) < 1.3f)
+                    if (!hit && p && p.health.Alive && Telegraph.InLane(p.transform.position, laneFrom, d, KnightBashDist + 0.8f, 1.8f, moved - 0.95f, moved + 0.95f))   // 예고 선과 같게
                     {
                         hit = true;
                         p.health.TakeDamage(contactDamage);
@@ -386,6 +394,8 @@ namespace CatTang
         IEnumerator TrickClones(PlayerController p)
         {
             busy = true;
+            Anim("Bow");                                                            // 팔을 활짝 펼쳤다 극장식 인사 → 분신이 나타남
+            Sfx.Play("e_bow", 0.6f);
             nextSpecial = Time.time + TrickCloneInterval;
             clones.RemoveAll(c => !c || !c.health.Alive);
             int max = elite ? 3 : 2;

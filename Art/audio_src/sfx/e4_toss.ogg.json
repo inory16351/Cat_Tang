@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e4_toss.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e4_toss",
+    "original_idea": "11:59 game SFX: e4_toss",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, big steel wrench thrown end over end, spinning whirring whoosh as it flies, steel, air, close mic, dry.",
+    "sound_fields": {
+      "source": "big steel wrench thrown end over end",
+      "action": "spinning whirring whoosh as it flies",
+      "material": "steel, air",
+      "space": "close mic, dry"
+    },
+    "bpm": null,
+    "seconds": 0.7,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e4_toss.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T16:19:06",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": -0.86,
+    "ceiling_gain_db": -0.14
+  },
+  "created": "2026-11-19T16:19:06",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.675,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+1.23 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1155,
+  "file": "e4_toss.ogg"
+}

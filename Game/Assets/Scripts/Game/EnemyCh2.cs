@@ -375,7 +375,8 @@ namespace CatTang
             busy = true;
             var dir = ToP(p);
             Anim("Attack");
-            tele = Telegraph.Lane(transform.position, dir, BashDist + 0.8f, 1.8f, BashWindup / AtkMul, Telegraph.Danger);
+            var laneFrom = transform.position;
+            tele = Telegraph.Lane(laneFrom, dir, BashDist + 0.8f, 1.8f, BashWindup / AtkMul, Telegraph.Danger);
             float end = Time.time + BashWindup / AtkMul;
             bool ok = true;
             while (Time.time < end)
@@ -403,7 +404,7 @@ namespace CatTang
                     ghost += Time.deltaTime;
                     PropHit.Area(transform.position + dir * 0.9f, 1.3f, contactDamage, bashProps);
                     if (model && ghost > 0.05f) { ghost = 0; Afterimage.Spawn(model, DashSil * new Color(1, 1, 1, 0.5f), 0.25f, false); }
-                    if (!hit && p && p.health.Alive && Effects.Flat(p.transform.position - transform.position).magnitude < 1.7f)
+                    if (!hit && p && p.health.Alive && Telegraph.InLane(p.transform.position, laneFrom, dir, BashDist + 0.8f, 1.8f, run - 0.95f, run + 0.95f))   // 예고 선과 같게
                     {
                         hit = true;
                         p.health.TakeDamage(contactDamage * 0.8f);
@@ -500,7 +501,7 @@ namespace CatTang
                 go.transform.position = pos;
                 go.transform.rotation = Quaternion.AngleAxis(travelled * 70f, Vector3.Cross(Vector3.up, dir)) * baseRot;   // 앞으로 굴러가듯 회전
                 var pl = PlayerController.Instance;
-                if (pl && pl.health.Alive && Effects.Flat(pl.transform.position - pos).magnitude < 1.0f)
+                if (pl && pl.health.Alive && Telegraph.InLane(pl.transform.position, pos - dir * 0.5f, dir, 1.0f, 1.4f))   // 트렁크가 지금 덮은 구간 · 예고 폭 1.4
                 {
                     pl.health.TakeDamage(dmg);
                     pl.health.Knockback(dir * 7f);

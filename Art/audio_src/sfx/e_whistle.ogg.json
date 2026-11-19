@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e_whistle.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e_whistle",
+    "original_idea": "11:59 game SFX: e_whistle",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, conductor's brass whistle, one loud shrill whistle blast, brass whistle, outdoor, short reverb.",
+    "sound_fields": {
+      "source": "conductor's brass whistle",
+      "action": "one loud shrill whistle blast",
+      "material": "brass whistle",
+      "space": "outdoor, short reverb"
+    },
+    "bpm": null,
+    "seconds": 0.9,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e_whistle.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T16:19:10",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.66,
+    "raw_peak_dbfs": -1.66,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T16:19:10",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.88,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+1.44 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.2371,
+  "file": "e_whistle.ogg"
+}
