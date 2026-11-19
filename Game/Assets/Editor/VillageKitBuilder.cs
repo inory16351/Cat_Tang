@@ -190,6 +190,40 @@ namespace CatTang.EditorTools
         static float RimDist(Isle s, Vector3 dir) => ShapePoint(s, Mathf.Atan2(dir.x / s.rx, dir.z / s.rz)).magnitude;
 
         /// <summary>타원 섬 윗면 (가운데 + 동심 고리 4겹), 흙 텍스처 8m 반복. 씬에 저장하려면 메시를 에셋으로</summary>
+        /// <summary>섬 윗면 메시의 바깥 고리(마지막 seg개 정점)를 섬 로컬 (x, z)로 IsleOutline에 저장</summary>
+        static void StoreOutline(Transform isle, Transform top, Mesh m)
+        {
+            var vs = m.vertices;
+            int seg = (vs.Length - 1) / 4;
+            if (seg < 3) return;
+            var pts = new Vector2[seg];
+            for (int i = 0; i < seg; i++)
+            {
+                var w = isle.InverseTransformPoint(top.TransformPoint(vs[1 + 3 * seg + i]));
+                pts[i] = new Vector2(w.x, w.z);
+            }
+            var o = isle.GetComponent<IsleOutline>();
+            if (!o) o = isle.gameObject.AddComponent<IsleOutline>();
+            o.points = pts;
+        }
+
+        /// <summary>지금 열린 마을 씬의 섬에 지도용 둘레만 채움 (마을을 다시 짓지 않고)</summary>
+        [MenuItem("Cat_Tang/Village Map Outlines")]
+        public static void FillOutlines()
+        {
+            int c = 0;
+            foreach (var mf in Object.FindObjectsByType<MeshFilter>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (mf.name == "Top" && mf.transform.parent && mf.transform.parent.name.StartsWith("Isle_") && mf.sharedMesh)
+                {
+                    StoreOutline(mf.transform.parent, mf.transform, mf.sharedMesh);
+                    EditorUtility.SetDirty(mf.transform.parent.gameObject);
+                    c++;
+                }
+            EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+            EditorSceneManager.SaveOpenScenes();
+            Debug.Log($"[Village] 지도용 섬 둘레 {c}개");
+        }
+
         static Mesh IslandMesh(string name, Isle s, float pad, int seg)
         {
             var vs = new List<Vector3> { Vector3.zero };
@@ -464,7 +498,9 @@ namespace CatTang.EditorTools
             var top = new GameObject("Top");
             top.transform.SetParent(root, false);
             top.transform.localPosition = new Vector3(0, 0.01f, 0);
-            top.AddComponent<MeshFilter>().sharedMesh = IslandMesh("Island_" + s.name, s, 0.6f, 72);
+            var topMesh = IslandMesh("Island_" + s.name, s, 0.6f, 72);
+            top.AddComponent<MeshFilter>().sharedMesh = topMesh;
+            StoreOutline(root, top.transform, topMesh);                                // 마을 지도용 둘레 (플레이 중엔 static batching으로 메시를 못 읽음)
             var mr = top.AddComponent<MeshRenderer>();
             mr.sharedMaterial = EnvMat("Ground_Village", "ground_village.png", false);
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

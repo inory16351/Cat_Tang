@@ -27,6 +27,7 @@ namespace CatTang
             }
             foreach (var g in FindObjectsByType<ChapterGate>(FindObjectsSortMode.None))
                 Interactable.WorldLabel(g.transform, $"시간의 문\n<size=40>다음: {Mathf.Min(Meta.ChaptersCleared + 1, Meta.ChapterCount)}장</size>", new Vector3(0, 8.3f, 0), 0.075f, UIKit.Gold);
+            if (!GetComponent<VillageMap>()) gameObject.AddComponent<VillageMap>();   // M 키 마을 지도
             Music.Play("bgm_village");
         }
     }

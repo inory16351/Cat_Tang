@@ -67,7 +67,8 @@ namespace CatTang
             var handTex = Resources.Load<Texture2D>("HUD/hand_toon");
             hand = Img("Hand", root, "HUD/hand_toon", new Vector2(L.clockX, L.clockY),
                 new Vector2(L.handPivotX / handTex.width, 1 - L.handPivotY / handTex.height)).rectTransform;
-            fxMat = new Material(Shader.Find("CatTang/FX"));
+            var fxShader = Shader.Find("CatTang/FX");                 // 빌드에서 빠지면 null → 이펙트만 안 나오게 (예전엔 여기서 예외 → GameUI.Awake 중단)
+            fxMat = fxShader ? new Material(fxShader) : null;
             SetHand(1, true);
         }
 
@@ -172,6 +173,7 @@ namespace CatTang
         // ---------- 이펙트 (UI 위 벡터 셰이더) ----------
         void Fx(Vector2 imgPos, float size, int mode, float life, Transform parent = null)
         {
+            if (!fxMat) return;
             var ri = NewRect("FX", parent ? parent : root).gameObject.AddComponent<RawImage>();
             ri.material = new Material(fxMat);
             ri.material.SetFloat("_Mode", mode);

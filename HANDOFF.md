@@ -503,6 +503,13 @@ Tripo 웹 요령: 직접 URL로 열면 고면수 모델 로딩에 20초쯤 걸�
 - **스크롤바 그림** = Codex(`docs/images/ui_src/prompts/scrollbar.txt` → `scrollbar.png` → `python docs/tools/ui_scroll_cut.py docs/images/ui_src`) → `Resources/UI/scroll_track`(놋쇠 마개 홈) · `scroll_handle`(금빛 손잡이, 줄무늬 지움) · `scroll_grip`(줄무늬 조각, 손잡이 가운데에 얹음). 9분할 테두리는 `UIKit.Spr`의 이름 표(홈 위아래 26 · 손잡이 18), 반 크기로 그림(ppu 배율 2, 폭 24px), 손잡이는 마개를 안 덮게 위아래 14px 안쪽. 그림이 없으면 예전 단색. 넘칠 때만 보임(AutoHide).
 - **깨어남 연기** = 적 사망 안개 `bk_mist`(회보라)로 (`VillageWake`).
 - **확인함 (Unity 플레이)**: 컴파일 에러 없음, 기억의 방 열어 스크롤바 그림 · 맨 위 / 맨 아래(세 번째 줄 다 보임) 화면 확인. 직접 휠 · 끌기 손맛은 사용자 확인 필요.
+- **빌드 버그 (사용자: 빌드에서 커서 안 나옴 · 레벨 업 선택지 안 나옴)**: 원인 = 코드에서 `Shader.Find("CatTang/...")`로만 찾는 셰이더가 빌드에서 빠짐 → `HudView.Build`의 `new Material(null)` 예외 → `GameUI.Awake`가 중간에 멈춰 그 뒤(조준 커서 · 특성 HUD · 창 층 `screens` · 토스트)가 안 만들어짐. 에디터에선 안 보임.
+  - `Editor/ShaderBuildInclude.cs`(빌드 전처리 + 메뉴 `Cat_Tang/Include Code Shaders In Build`): CatTang 셰이더 전부(Toon · MirrorFloor는 변형이 많아 제외 — 재질이 써서 원래 들어감) + Sprites/Default를 Graphics Settings '항상 포함'에 넣음. **새 셰이더를 `Shader.Find`로만 쓰면 이게 챙겨 줌.**
+  - `HudView`: FX 셰이더가 없으면 이펙트만 건너뜀(예외 안 냄).
+  - **빌드 점검** `Scripts/Dev/BuildSmoke.cs`: `1159.exe -smoke -logFile smoke.log` → 판으로 바로 들어가 커서 · HUD · 셰이더 · 레벨 업 창 확인 후 종료, 로그의 `[Smoke]` 줄. 인자 없으면 아무것도 안 함, 저장 안 건드림. 결과: GameUI · AimCursor · HudView · 셰이더 · 레벨업창 모두 True, 오류 0.
+- **마을 지도 (M)** `UI/VillageMap.cs` (사용자: 마을에서도 맵): 판 지도와 같은 양피지 판 · 고양이 머리. **열린 곳만**(사용자): 다리가 이어진 섬(둘레 모양 그대로, 짙은 테) · 열린 다리 · 해금된 시설 · 시간의 문(마름모 + 이름)만 그림, 잠긴 섬 · 다리 · 시설은 안 그림(닫힌 섬 위 표식도 뺌). 범위도 열린 섬 기준(최소 60m)이라 열린 곳이 적으면 크게 보임. 다른 창 · 대화 · 깨어나는 중엔 안 열림, Esc는 지도만 닫음(`VillageMap.EscUsed` → 마을 메뉴 안 열림). 안내 줄에 'M 지도'.
+  - 섬 모양은 `IsleOutline`(섬 둘레 72점, 섬 로컬)에서 읽음 — 섬 윗면이 정적이라 플레이 중엔 static batching으로 메시가 합쳐져 못 읽기 때문. `VillageKitBuilder.BuildIsle`가 붙이고, 지금 씬은 메뉴 `Cat_Tang/Village Map Outlines`로 채워 저장함.
+  - 확인함(에디터 플레이): 다 열린 상태(섬 5 · 다리 4 · 시설 4 · 문 · 고양이 위치), 총포상 · 의상실 다리를 잠근 상태(플레이 중에만 해금 장을 임시로 올림 → 섬 3개만, 확대됨). Esc · M 키로 직접 열고 닫기는 사용자 확인 필요.
 
 ## 남은 다음 작업 (2026-11-17 밤 정리 — 사용자: 브롤풍 기본 적용까지만 하고 나머지는 여기 남기고 대기)
 

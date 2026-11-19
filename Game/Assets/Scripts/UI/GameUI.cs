@@ -276,7 +276,7 @@ namespace CatTang
             heatText = UIKit.Label("Heat", hudRoot, new Vector2(0.5f, 0), new Vector2(390, 40 + up), new Vector2(260, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Gold);
             skillText = UIKit.Label("Skill", hudRoot, new Vector2(1, 0), new Vector2(-30, 30), new Vector2(420, 130), 20, TextAnchor.LowerRight);
             var help = UIKit.Label("Help", hudRoot, new Vector2(0, 0), new Vector2(26, 26), new Vector2(560, 150), 18, TextAnchor.LowerLeft, false, new Color(1, 1, 1, 0.55f));
-            help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\n우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리";
+            help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리 · M 지도" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\n우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리";
             // 상호작용 안내
             prompt = UIKit.Img("Prompt", hudRoot, "button", new Vector2(0.5f, 0), new Vector2(0, 340 + up), new Vector2(460, 84), true, 2.2f).gameObject;
             promptText = UIKit.Label("Text", prompt.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 2), new Vector2(420, 60), 28, TextAnchor.MiddleCenter, true);
@@ -311,7 +311,7 @@ namespace CatTang
                     else if (!current) OpenInventory();
                 }
                 if (kb.escapeKey.wasPressedThisFrame && current && !resultsOpen) CloseAll();
-                else if (kb.escapeKey.wasPressedThisFrame && village && !current && !player.InputLocked && !leaving) OpenVillageMenu();   // 깨어나는 중엔 안 열림
+                else if (kb.escapeKey.wasPressedThisFrame && village && !current && !player.InputLocked && !leaving && !VillageMap.EscUsed) OpenVillageMenu();   // 깨어나는 중엔 안 열림
             }
             UpdateDodge();
             UpdateHeatGlow();
