@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\shot_v1.wav",
+  "source": {
+    "kind": "generate",
+    "title": "shot",
+    "original_idea": "11:59 game SFX: shot",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, old western six-shooter revolver, single sharp gunshot crack with a short punchy tail, no echo repeats, brass and steel, gunpowder snap, close mic, dry, video game sound effect.",
+    "sound_fields": {
+      "source": "old western six-shooter revolver",
+      "action": "single sharp gunshot crack with a short punchy tail, no echo repeats",
+      "material": "brass and steel, gunpowder snap",
+      "space": "close mic, dry, video game sound effect"
+    },
+    "bpm": null,
+    "seconds": 1.2,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 3,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "shot_v1.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:08:26",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.03,
+    "raw_peak_dbfs": -1.03,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:08:26",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.998,
+  "steps": [
+    "trim_silence -45.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30.0 ms",
+    "peak normalize -1.0 dBFS (+0.05 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0531,
+  "file": "shot_1.ogg"
+}

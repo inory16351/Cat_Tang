@@ -96,6 +96,8 @@ Shader "CatTang/Toon"
 
         // 브롤 스타즈풍 시험 모드 스위치 (전역, Shader.SetGlobalFloat). 0 = 원래 모습
         float _CatTangBrawl;
+        // 3장 거울 바닥 반사 카메라가 그리는 중 (MirrorReflection): 외곽선 껍질은 뒤집힌 시점에서 검은 덩어리가 되니 건너뜀
+        float _CatTangMirrorPass;
 
         half3 RgbToHsv(half3 c)
         {
@@ -330,6 +332,7 @@ Shader "CatTang/Toon"
             {
                 Varyings o = (Varyings)0;
                 UNITY_SETUP_INSTANCE_ID(v);
+                if (_CatTangMirrorPass > 0.5) { o.positionCS = float4(0, 0, -2, 1); return o; }   // 거울 반사에선 외곽선 X
                 float4 posCS = TransformObjectToHClip(v.positionOS.xyz);
                 float3 nWS = TransformObjectToWorldNormal(v.normalOS);
                 float2 nCS = mul((float3x3)UNITY_MATRIX_VP, nWS).xy;
@@ -386,7 +389,7 @@ Shader "CatTang/Toon"
             {
                 Varyings o = (Varyings)0;
                 UNITY_SETUP_INSTANCE_ID(v);
-                if (_OuterOutlineWidth <= 0.01) { o.positionCS = float4(0, 0, -2, 1); return o; }   // 끔: 화면 밖
+                if (_OuterOutlineWidth <= 0.01 || _CatTangMirrorPass > 0.5) { o.positionCS = float4(0, 0, -2, 1); return o; }   // 끔: 화면 밖
                 float4 posCS = TransformObjectToHClip(v.positionOS.xyz);
                 float3 nWS = TransformObjectToWorldNormal(v.normalOS);
                 float2 nCS = mul((float3x3)UNITY_MATRIX_VP, nWS).xy;

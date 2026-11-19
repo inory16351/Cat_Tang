@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\fac_wardrobe.wav",
+  "source": {
+    "kind": "generate",
+    "title": "fac_wardrobe",
+    "original_idea": "11:59 game SFX: fac_wardrobe",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, tailor wardrobe, fabric swish, scissors snip twice and a soft wooden drawer slide, cloth, steel scissors, wood, indoor, close.",
+    "sound_fields": {
+      "source": "tailor wardrobe",
+      "action": "fabric swish, scissors snip twice and a soft wooden drawer slide",
+      "material": "cloth, steel scissors, wood",
+      "space": "indoor, close"
+    },
+    "bpm": null,
+    "seconds": 1.2,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "fac_wardrobe.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:39:10",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -7.1,
+    "raw_peak_dbfs": -7.1,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:39:10",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 1.127,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+6.14 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0574,
+  "file": "fac_wardrobe.ogg"
+}

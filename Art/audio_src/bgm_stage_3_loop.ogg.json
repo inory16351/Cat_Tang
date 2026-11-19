@@ -1,0 +1,53 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\bgm_stage_3.wav",
+  "source": {
+    "kind": "generate",
+    "title": "bgm_stage_3",
+    "original_idea": "11:59 game BGM: bgm_stage_3",
+    "audio_type": "music",
+    "prompt": "Dreamy mysterious action instrumental for a mirage desert mirror world: shimmering glassy synths, reverb western guitar, middle-eastern hand drums, ethereal choir pads, sparkling bells, adventurous video game battle music",
+    "prompt_used": "TrackType: Music, VocalType: Instrumental, Dreamy mysterious action instrumental for a mirage desert mirror world: shimmering glassy synths, reverb western guitar, middle-eastern hand drums, ethereal choir pads, sparkling bells, adventurous video game battle music. BPM: 118.",
+    "sound_fields": {
+      "source": "",
+      "action": "",
+      "material": "",
+      "space": ""
+    },
+    "bpm": 118,
+    "seconds": 120.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "bgm_stage_3.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:15:47",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-19T10:15:51",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 2,
+  "seconds": 118.5,
+  "steps": [
+    "resample 44100→48000",
+    "loudnorm -16.0 LUFS",
+    "loop xfade 1500.0 ms"
+  ],
+  "peak": 0.78,
+  "peak_dbfs": -2.16,
+  "rms": 0.1305,
+  "input_lufs": -14.62,
+  "input_true_peak_db": -0.64,
+  "output_lufs": -15.96,
+  "loudnorm_mode": "linear",
+  "file": "bgm_stage_3_loop.ogg"
+}

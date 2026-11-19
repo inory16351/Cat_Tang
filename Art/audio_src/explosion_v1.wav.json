@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "explosion",
+  "original_idea": "11:59 game SFX: explosion",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, gunpowder keg, big explosion boom with wood debris crackle and sand hiss, wood, gunpowder, sand, outdoor, short tail.",
+  "sound_fields": {
+    "source": "gunpowder keg",
+    "action": "big explosion boom with wood debris crackle and sand hiss",
+    "material": "wood, gunpowder, sand",
+    "space": "outdoor, short tail"
+  },
+  "bpm": null,
+  "seconds": 2.2,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 2,
+  "seed": 1159,
+  "candidate": 1,
+  "file": "explosion_v1.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-19T10:10:54",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -4.05,
+  "raw_peak_dbfs": -4.05,
+  "ceiling_gain_db": 0.0
+}

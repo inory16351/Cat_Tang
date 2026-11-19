@@ -1,0 +1,2976 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1ecc6-765c-7663-bad2-651cf3d83629
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch3_landmarks.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece.
+Read `Art/tools/specs/_ch3_common.md` first: it has the material names, coordinate and export rules you must follow.
+
+## Goal
+LARGE obstacle landmarks placed inside combat rooms (28 x 24 m) of the mirror world to break up the rectangle and give cover (players walk around them; they are solid, so the footprint must be compact and mostly filled at ground level). Each must read instantly from a high camera at ~55 deg.
+
+## Pieces (footprint W x D x H in m)
+1. `LM_ArchRuin` (5 x 1.8 x 4.6): free-standing ruined double arcade: 3 white `marble` columns on `marble_dark` square bases with `gold` capitals, two round `sandstone` arches spanning them (the right arch broken half-way with a jagged end), `gold` keystone on the intact arch, rubble at the foot.
+2. `LM_CrystalSpire` (3.6 x 3.4 x 4.6): a giant crystal formation: 7-9 big hexagonal `crystal` prisms with pointed tips fanning out of a lumpy `rock` / `sandstone` mound (1 m high), the tallest 4.6 m, a glowing `crystal_core` prism inside the two biggest, 6 small `stardust` octahedra floating around the top (separate islands).
+3. `LM_Hourglass` (3.6 x 3.0 x 4.2): a giant broken HOURGLASS monument half sunk and tilted ~20 deg in a `sand` mound: `gold` top and bottom discs with 4 twisted `gold_dark` posts, the upper `crystal` bulb cracked open with a jagged hole, a `sand` stream frozen mid-air pouring from the hole down to the mound (chunky curved tube), the mound wider than the hourglass.
+4. `LM_FloatRock` (4.0 x 3.4 x 4.2): a FLOATING rock island chunk: on the floor a low `sand` / `rock` mound (0.6 m) with a few crystals; hovering above it from Z 1.4 to 4.2 an inverted jagged cone of `rock_dark` (point down) with a flat `sandstone` top surface carrying two tiny broken `marble` columns and a `crystal` cluster; 3 small loose rocks floating between mound and island (separate islands).
+5. `LM_MirrorGate` (5.0 x 1.4 x 5.2): a big standing ring PORTAL: a circular ornate `gold` ring (outer diameter 4.2, profile 0.35) with sun-ray spikes around its outside, holding a round `mirror` disc (double sided), standing on a stepped `sandstone` / `marble` plinth (2 steps, 5 x 1.4 x 0.7), two small `gold` lantern finials on the plinth corners.
+6. `LM_Obelisk` (2.4 x 2.4 x 6.0): a rose `sandstone` obelisk on a square stepped `marble` base (2.4 x 2.4 x 0.8), tapering shaft with a pyramid `gold` tip, a round `gold` clock face inset on the front (+Y) near the top (with two hands), a diagonal crack line, and 2 `crystal` shards growing from the base corner.
+7. `LM_Dune` (5.6 x 4.0 x 1.7): a smooth wind-shaped `sand` dune mound (soft, low-poly but smooth top), a half-buried tilted ornate `gold` mirror frame (with `mirror` glass) sticking out of its crest, 2-3 `sandstone` rocks at its foot.
+
+Keep each under ~4500 triangles.
+
+codex
+I’ll read the common spec, create the Blender script, then run it headless and check that all seven pieces export.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath Art/tools/specs/_ch3_common.md' in C:\Project\Cat_Tang
+ succeeded in 179ms:
+## Common rules (chapter 3 "Mirage Desert = Mirror World")
+Setting: a dreamlike MIRROR WORLD beyond a desert mirage (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+The floor is a calm mirror lake that reflects a pink sunset sky; around it: rose sandstone rocks, ruined white marble colonnades with gold trim, gold-framed standing mirrors, glowing memory crystals, small fountains, floating mirror shards. Mood: serene, magical, sunset (peach / rose / cream / gold, teal only for water, white glow for crystals).
+Signature accent: GOLD ornate trim and frames, broken marble, and pale glowing crystal. Chunky silhouettes, no tiny detail, slightly hand-made irregularity (seeded random per piece, `random.seed(<fixed>)`). BEVEL modifier (0.02-0.05, 2 segments) on stone / marble / gold parts.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`sandstone`, `sandstone_light`, `sandstone_dark`, `rock`, `rock_dark`, `sand`, `marble`, `marble_dark`, `gold`, `gold_dark`, `mirror`, `mirror_back`, `crystal`, `crystal_core`, `water`, `water_foam`, `cloud`, `cloud_shade`, `cloth_rose`, `stardust`, `wood`, `roof_tile`, `window_lit`.
+`mirror` = the reflective glass face of every mirror. `mirror_back` = the dull back board of a mirror. `crystal` = pale crystal body, `crystal_core` = glowing inner crystal. `stardust` = tiny glowing floating bits. `water` = water surface, `water_foam` = ripples / splash.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece (unless the piece says otherwise).
+Each piece = ONE joined mesh object named exactly as listed, exported to its own FBX `Game/Assets/Art/Characters/Ch3/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end.
+Use `Art/tools/blender_kit_ch2_props.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+Finally render ONE preview PNG of all pieces laid out in a row (Workbench engine, flat MATERIAL color with a distinct viewport color per material name so pieces are readable, camera ~55 deg from above-front, 1600x900) to `Art/tools/specs/<script name without .py>_preview.png`. The preview is only for review; it must not change the exported FBX files.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '*landmark*' -g 'blender_kit_ch3*' -g '*.py' Art/tools" in C:\Project\Cat_Tang
+ exited 1 in 1045ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '*landmark*' -g 'blender_kit_ch3*' -g '*.p ...
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath Art/tools/blender_kit_ch2_props.py -TotalCount 220' in C:\Project\Cat_Tang
+ succeeded in 194ms:
+# 硫덉텣 ??쓽 ?꾪닾 ?뚰뭹怨??꾪룓臾?10醫낆쓣 ?뚯깋 ??븷 ?ъ쭏濡?留뚮뱾??FBX濡??대낫?낅땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch2_props.py
+"""Deterministic, metre-scale chapter-two props. Requires only stock Blender."""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2'
+ROLES = (
+    'wood', 'wood_dark', 'wood_light', 'iron', 'iron_dark', 'rust', 'brass',
+    'rail_steel', 'brick', 'brick_dark', 'stone', 'stone_dark', 'roof_tin',
+    'soot', 'coal', 'window', 'window_lit', 'glass_lamp', 'canvas', 'leather',
+    'leather_dark', 'cloth_red', 'paint_cream', 'paint_green', 'clock_face',
+    'steam', 'signal_red', 'signal_amber', 'signal_green',
+)
+HARD = {'wood', 'wood_dark', 'wood_light', 'iron', 'iron_dark', 'rust',
+        'brass', 'rail_steel', 'roof_tin', 'paint_cream'}
+MATS = {}
+PARTS = []
+RNG = random.Random(0)
+
+
+def setup_materials():
+    for name in ROLES:
+        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        nodes = mat.node_tree.nodes
+        nodes.clear()
+        shader = nodes.new('ShaderNodeBsdfPrincipled')
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Roughness'].default_value = .85
+        shader.inputs['Metallic'].default_value = 0
+        output = nodes.new('ShaderNodeOutputMaterial')
+        mat.node_tree.links.new(shader.outputs['BSDF'], output.inputs['Surface'])
+        MATS[name] = mat
+
+
+def mesh(label, verts, faces, mat, bevel=False):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[mat])
+    if bevel:
+        mod = obj.modifiers.new('Soft cast and worn edges', 'BEVEL')
+        mod.width = .025
+        mod.segments = 2
+        mod.limit_method = 'ANGLE'
+        mod.angle_limit = math.radians(60)
+    PARTS.append(obj)
+    return obj
+
+
+def move(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, mat, rot=(0, 0, 0), bevel=True):
+    x, y, z = (s / 2 for s in size)
+    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
+             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    return move(mesh(label, verts, faces, mat, bevel), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, mat, n=12, top=None,
+             rot=(0, 0, 0), bevel=True):
+    top = radius if top is None else top
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for r, z in [(radius, -depth / 2), (top, depth / 2)]
+             for j in range(n)]
+    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return move(mesh(label, verts, faces, mat, bevel and mat in HARD), loc, rot)
+
+
+def rod(label, a, b, radius, mat, n=6, bevel=False):
+    a, b = Vector(a), Vector(b)
+    obj = cylinder(label, (0, 0, 0), radius, (b - a).length, mat,
+                   n=n, bevel=bevel)
+    obj.data.transform(Matrix.Translation((a + b) / 2) @
+                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
+    return obj
+
+
+def beam(label, a, b, width, depth, mat, bevel=True):
+    a, b = Vector(a), Vector(b)
+    obj = box(label, (0, 0, 0), (width, depth, (b - a).length), mat,
+              bevel=bevel)
+    obj.data.transform(Matrix.Translation((a + b) / 2) @
+                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
+    return obj
+
+
+def hoop(label, loc, radius, thickness, depth, mat, axis='Z', n=16,
+         bevel=True):
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for z, r in [(-depth / 2, radius - thickness), (-depth / 2, radius),
+                          (depth / 2, radius), (depth / 2, radius - thickness)]
+             for j in range(n)]
+    faces = [(k * n + j, k * n + (j + 1) % n,
+              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+             for k in range(4) for j in range(n)]
+    rotation = {'X': (0, math.pi / 2, 0), 'Y': (math.pi / 2, 0, 0),
+                'Z': (0, 0, 0)}[axis]
+    return move(mesh(label, verts, faces, mat, bevel and mat in HARD), loc, rotation)
+
+
+def tube(label, points, radius, mat, n=6, bevel=True):
+    verts = []
+    previous = None
+    for i, point in enumerate(points):
+        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
+                   Vector(points[max(i - 1, 0)])).normalized()
+        reference = Vector((1, 0, 0)) if abs(tangent.y) > .9 else Vector((0, 1, 0))
+        basis = reference.cross(tangent)
+        if previous is not None:
+            basis = previous - tangent * previous.dot(tangent)
+        basis.normalize()
+        other = tangent.cross(basis)
+        previous = basis
+        for j in range(n):
+            angle = j * math.tau / n
+            verts.append(tuple(Vector(point) + radius *
+                               (basis * math.cos(angle) + other * math.sin(angle))))
+    faces = [tuple(reversed(range(n)))]
+    faces += [(i * n + j, i * n + (j + 1) % n,
+               (i + 1) * n + (j + 1) % n, (i + 1) * n + j)
+              for i in range(len(points) - 1) for j in range(n)]
+    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
+    return mesh(label, verts, faces, mat, bevel and mat in HARD)
+
+
+def lump(label, loc, size, mat, irregular=.08, subdivisions=1):
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=subdivisions, radius=1)
+    for vert in bm.verts:
+        vert.co *= 1 + RNG.uniform(-irregular, irregular)
+        vert.co = Vector(loc) + Vector(tuple(vert.co[i] * size[i] / 2
+                                             for i in range(3)))
+    bm.verts.ensure_lookup_table()
+    obj = mesh(label, [tuple(v.co) for v in bm.verts],
+               [tuple(v.index for v in f.verts) for f in bm.faces], mat)
+    bm.free()
+    return obj
+
+
+def extrude_y(label, profile, y0, y1, mat, bevel=True):
+    """Closed X/Z polygon extruded along Y, with intact coplanar end faces."""
+    n = len(profile)
+    verts = [(x, y, z) for y in (y0, y1) for x, z in profile]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return mesh(label, verts, faces, mat, bevel)
+
+
+def clock_face(x, y, z, radius, side=1, detailed=True):
+    cylinder('Clock dial', (x, y, z), radius * .91, .018, 'clock_face',
+             n=24, rot=(math.pi / 2, 0, 0), bevel=False)
+    hoop('Brass clock rim', (x, y, z), radius, radius * .09, .04,
+         'brass', 'Y', n=24, bevel=False)
+    surface = y + side * .017
+    if detailed:
+        for i in range(12):
+            angle = i * math.tau / 12
+            inner = radius * (.68 if i % 3 == 0 else .77)
+            beam('Clock hour marker',
+                 (x - side * inner * math.sin(angle), surface, z + inner * math.cos(angle)),
+                 (x - side * radius * .85 * math.sin(angle), surface,
+                  z + radius * .85 * math.cos(angle)),
+                 radius * .045, .012, 'iron_dark', bevel=False)
+    # 11:59. The hour hand has advanced to half a degree before twelve.
+    for angle, length, width in [(-.5, .51, .065), (-6, .74, .045)]:
+        angle = math.radians(angle)
+        beam('Frozen clock hand', (x, surface + side * .012, z),
+             (x - side * radius * length * math.sin(angle), surface + side * .012,
+              z + radius * length * math.cos(angle)),
+             radius * width, .012, 'iron_dark', bevel=False)
+    cylinder('Clock pin', (x, surface + side * .019, z), radius * .065, .018,
+             'brass', n=8, rot=(math.pi / 2, 0, 0), bevel=False)
+
+
+def steam_valve():
+    box('Floor casting', (0, -.28, .055), (1, .24, .11), 'iron')
+    cylinder('Pipe floor flange', (0, -.28, .14), .22, .12, 'rust', n=12)
+    cylinder('Cast steam riser', (0, -.28, .63), .125, .94, 'iron', n=12)
+    for z in (.28, .89):
+        cylinder('Rusted pipe collar', (0, -.28, z), .155, .09, 'rust', n=12)
+    rod('Valve spindle', (0, -.28, .99), (0, -.28, 1.22), .065, 'brass', bevel=True)
+    hoop('Large valve wheel', (0, -.28, 1.11), .49, .075, .075, 'brass', 'Y', n=20)
+    cylinder('Wheel hub', (0, -.28, 1.11), .105, .105, 'brass', n=10,
+             rot=(math.pi / 2, 0, 0))
+    for i in range(4):
+        angle = i * math.tau / 4 + math.pi / 4
+        rod('Valve wheel spoke', (0, -.28, 1.11),
+            (.43 * math.cos(angle), -.28, 1.11 + .43 * math.sin(angle)),
+            .036, 'brass', n=6)
+    rod('Steam outlet neck', (0, -.28, .69), (0, -.035, .69), .09, 'iron', bevel=True)
+    hoop('Open nozzle rim', (0, -.015, .69), .115, .032, .07, 'iron', 'Y', n=12)
+    cylinder('Nozzle dark bore', (0, -.04, .69), .081, .01, 'iron_dark',
+             n=12, rot=(math.pi / 2, 0, 0), bevel=False)
+    rod('Gauge mounting elbow', (.08, -.28, .58), (.28, -.24, .61), .035, 'brass')
+    cylinder('Pressure gauge housing', (.28, -.20, .67), .16, .10, 'brass',
+             n=16, rot=(math.pi / 2, 0, 0))
+    cylinder('Pressure gauge dial', (.28, -.14, .67), .132, .012, 'clock_face',
+             n=16, rot=(math.pi / 2, 0, 0), bevel=False)
+    beam('Gauge needle', (.28, -.126, .67), (.22, -.126, .75), .016, .012,
+         'iron_dark', bevel=False)
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -Path . -Filter AGENTS.md -Recurse -File | Select-Object -ExpandProperty FullName; Get-Item -LiteralPath 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'; Get-ChildItem -Path Art/tools -Filter 'blender_kit_ch3*' | Select-Object Name" in C:\Project\Cat_Tang
+ succeeded in 1049ms:
+
+
+    디렉터리: C:\Program Files\Blender Foundation\Blender 5.3
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+-a----        2026-11-10   오전 2:36      127347152 blender.exe                                                          
+
+Name : blender_kit_ch3_props.py
+
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath Art/tools/blender_kit_ch3_props.py -Tail 180; Get-ChildItem -Path C:/,C:/Project,C:/Project/Cat_Tang,C:/Project/Cat_Tang/Art,C:/Project/Cat_Tang/Art/tools -Filter AGENTS.md -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName; Get-Content -LiteralPath $_.FullName }; git status --short' in C:\Project\Cat_Tang
+ succeeded in 225ms:
+    ('MerchantMirror', (2.8, 1.2, 3.6), merchant_mirror),
+    ('SandRock', (1.8, 1.4, 1.3), sand_rock),
+    ('FallenPillar', (2.6, 1.0, 1.0), fallen_pillar),
+    ('MirrorShard', (2.5, .15, 3.05), mirror_shard),
+    ('Pebbles3', (1.2, 1.2, .15), pebbles3),
+    ('CrystalBits', (1.0, 1.0, .35), crystal_bits),
+    ('Ripple', (1.6, 1.6, .02), ripple),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return (Vector(tuple(min(v.co[i] for v in obj.data.vertices) for i in range(3))),
+            Vector(tuple(max(v.co[i] for v in obj.data.vertices) for i in range(3))))
+
+
+def finish(name, dimensions):
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name, obj.data.name = name, name + '_Mesh'
+    # Weld nothing: disconnected floating dust and scattered ground bits survive.
+    count = triangles(obj)
+    budget = 4000 if name == 'MerchantMirror' else 2500
+    if count > budget:
+        mod = obj.modifiers.new('Preserve material regions within triangle budget', 'DECIMATE')
+        mod.ratio = (budget - 100) / count
+        mod.delimit = {'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj) <= budget, (name, triangles(obj))
+
+    low, high = bounds(obj)
+    centre = (low + high) / 2
+    span = high - low
+    # The shard and ripple have deliberate air under them, not a raised origin.
+    floor = .6 if name == 'MirrorShard' else (.005 if name == 'Ripple' else 0)
+    top = dimensions[2]
+    for v in obj.data.vertices:
+        v.co.x = (v.co.x - centre.x) * dimensions[0] / span.x
+        v.co.y = (v.co.y - centre.y) * dimensions[1] / span.y
+        v.co.z = floor + (v.co.z - low.z) * (top - floor) / span.z
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
+    bm.to_mesh(obj.data)
+    bm.free()
+    for poly in obj.data.polygons:
+        poly.use_smooth = False
+    obj.data.update()
+    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
+    bpy.context.view_layer.update()
+    low, high = bounds(obj)
+    assert abs(low.z - floor) < 1e-5 and abs(high.z - top) < 1e-5, name
+    assert all(abs(obj.dimensions[i] - dimensions[i]) < 1e-4 for i in (0, 1)), name
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
+    assert all(mat.name in ROLES for mat in obj.data.materials), name
+    for mat in obj.data.materials:
+        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+    obj['chapter'], obj['front'] = 'Mirage Desert / Mirror World', '+Y'
+    obj['footprint_and_top_m'], obj['triangle_count'] = list(dimensions), triangles(obj)
+    obj['collision'] = name not in {'Pebbles3', 'CrystalBits', 'Ripple'}
+    if name == 'MemoryCrystal':
+        obj['interactive'] = 'shootable explosive'
+    if name == 'MirrorShard':
+        obj['floor_clearance_m'], obj['reflective_faces'] = .6, '+Y / -Y'
+    destination = OUTPUT / f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size > 1024, destination
+    print(f'EXPORTED {name} {triangles(obj)} '
+          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+    return obj
+
+
+def preview(objects):
+    """Export is already complete. Only the review image uses viewport colours."""
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = str(PREVIEW)
+    scene.render.film_transparent = False
+    scene.view_settings.view_transform = 'Standard'
+    shade = scene.display.shading
+    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
+    shade.show_shadows = False
+    shade.show_cavity = True
+    shade.cavity_type = 'BOTH'
+    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.3, 1.0
+    shade.show_specular_highlight = False
+    shade.background_type, shade.background_color = 'WORLD', (.045, .055, .08)
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new('Review background')
+    scene.world.color = (.045, .055, .08)
+    helpers = []
+    old_locations = [obj.location.copy() for obj in objects]
+    try:
+        for role, mat in MATS.items():
+            mat.diffuse_color = (*PALETTE.get(role, (.5, .5, .5)), 1)
+        total = sum(spec[1][0] for spec in SPECS) + .65 * (len(objects) - 1)
+        x = -total / 2
+        for obj, (_, dims, _) in zip(objects, SPECS):
+            obj.location.x = x + dims[0] / 2
+            x += dims[0] + .65
+        camera = bpy.data.objects.new('Review camera only', bpy.data.cameras.new('Review camera only'))
+        scene.collection.objects.link(camera)
+        helpers.append(camera)
+        scene.camera = camera
+        camera.data.type, camera.data.ortho_scale = 'ORTHO', total + 1.0
+        elevation = math.radians(55)
+        target = Vector((0, 0, .8))
+        camera.location = target + Vector((0, 30 * math.cos(elevation), 30 * math.sin(elevation)))
+        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
+        # Camera-facing captions are review-only and never enter an FBX.
+        for obj in objects:
+            text_data = bpy.data.curves.new('Review caption', 'FONT')
+            text_data.body, text_data.align_x, text_data.size = obj.name, 'CENTER', .19
+            text_data.materials.append(MATS['crystal_core'])
+            label = bpy.data.objects.new('Review label ' + obj.name, text_data)
+            scene.collection.objects.link(label)
+            label.location = (obj.location.x, 1.52, -.05)
+            label.rotation_euler = camera.rotation_euler
+            helpers.append(label)
+        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
+        print(f'PREVIEW {PREVIEW}', flush=True)
+    finally:
+        scene.camera = None
+        for helper in helpers:
+            bpy.data.objects.remove(helper, do_unlink=True)
+        for obj, loc in zip(objects, old_locations):
+            obj.location = loc
+        for mat in MATS.values():
+            mat.diffuse_color = (.5, .5, .5, 1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials):
+        bpy.data.materials.remove(mat)
+    scene = bpy.context.scene
+    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
+    setup_materials()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    exported = []
+    for index, (name, dimensions, build) in enumerate(SPECS):
+        PARTS = []
+        random.seed(33117 + index * 7919)
+        build()
+        exported.append(finish(name, dimensions))
+    assert len(scene.objects) == 10 and all(obj.type == 'MESH' for obj in scene.objects)
+    preview(exported)
+    assert len(scene.objects) == 10 and all(obj.type == 'MESH' for obj in scene.objects)
+    print('DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()
+ M Art/tools/blender_bake_fx.py
+ M Art/tools/blender_fx.py
+ M Game/Assets/Data/Tables/Chapter.csv
+ M Game/Assets/Data/Tables/Costume.csv
+ M Game/Assets/Data/Tables/Effect.csv
+ M Game/Assets/Data/Tables/Enum.csv
+ M Game/Assets/Data/Tables/TraitTier.csv
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/ModelPalette.cs
+ M Game/Assets/Scripts/Core/Tables.cs
+ M Game/Assets/Scripts/Game/BossBrain.cs
+ M Game/Assets/Scripts/Game/Ch2Bosses.cs
+ M Game/Assets/Scripts/Game/Ch2Kit.cs
+ M Game/Assets/Scripts/Game/Effects.cs
+ M Game/Assets/Scripts/Game/Enemy.cs
+ M Game/Assets/Scripts/Game/EnemyCh2.cs
+ M Game/Assets/Scripts/Game/EnemyFactory.cs
+ M Game/Assets/Scripts/Game/EnemyHpBar.cs
+ M Game/Assets/Scripts/Game/EnemyMoves.cs
+ M Game/Assets/Scripts/Game/EnemyProjectile.cs
+ M Game/Assets/Scripts/Game/ExtraFx.cs
+ M Game/Assets/Scripts/Game/FxPart.cs
+ M Game/Assets/Scripts/Game/GunkataFx.cs
+ M Game/Assets/Scripts/Game/Health.cs
+ M Game/Assets/Scripts/Game/Kit.cs
+ M Game/Assets/Scripts/Game/PlayerController.cs
+ M Game/Assets/Scripts/Game/Revolver.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RoomDoor.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M Game/Assets/Scripts/Game/RunManagerXp.cs
+ M Game/Assets/Scripts/UI/CursorTip.cs
+ M Game/Assets/Scripts/UI/GameUI.cs
+ M Game/Assets/Scripts/UI/InventoryScreen.cs
+ M Game/Assets/Scripts/UI/UIKit.cs
+ M HANDOFF.md
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+ M "docs/Cat_Tang_\353\252\251\353\241\235_\354\264\210\354\225\210.md"
+ M "docs/Cat_Tang_\354\264\235_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\273\250\354\205\211_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234.md"
+ M docs/data/Cat_Tang_Data.xlsx
+ M docs/tools/build_ch2_ppt.js
+ M docs/tools/build_docs.py
+ M docs/tools/build_level_ppts.js
+ M docs/tools/build_tables.py
+?? .tripo/
+?? Art/tools/__pycache__/
+?? Art/tools/blender_kit_ch2_arena.py
+?? Art/tools/blender_kit_ch3_props.py
+?? Art/tools/ground_texture_ch3.py
+?? Art/tools/memclock_v2.py
+?? Art/tools/memshatter.py
+?? Art/tools/specs/_ch3_common.md
+?? Art/tools/specs/blender_kit_ch3_props_preview.png
+?? Art/tools/specs/ch3_concept_spec.md
+?? Art/tools/specs/kit_ch2_arena.log
+?? Art/tools/specs/kit_ch2_arena_preview.png
+?? Art/tools/specs/kit_ch2_arena_spec.md
+?? Art/tools/specs/kit_ch2_arena_v2.log
+?? Art/tools/specs/kit_ch2_arena_v3.log
+?? Art/tools/specs/kit_ch3_landmarks.log
+?? Art/tools/specs/kit_ch3_landmarks_spec.md
+?? Art/tools/specs/kit_ch3_props.log
+?? Art/tools/specs/kit_ch3_props_spec.md
+?? Art/tools/specs/kit_ch3_walls.log
+?? Art/tools/specs/kit_ch3_walls_spec.md
+?? Art/tools/specs/ui_bell_spec.md
+?? Art/tools/specs/ui_memory_clock_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Art/tripo_input/ch3/
+?? Art/tripo_input/merchant/
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat.meta
+?? Game/Assets/Art/Characters/Ch3.meta
+?? Game/Assets/Art/Characters/Ch3/
+?? Game/Assets/Art/Characters/Merchant.meta
+?? Game/Assets/Art/Characters/Merchant/
+?? Game/Assets/Art/Env/Ch3.meta
+?? Game/Assets/Art/Env/Ch3/
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx.meta
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab.meta
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png.meta
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab.meta
+?? Game/Assets/Resources/Merchants.meta
+?? Game/Assets/Resources/Merchants/
+?? Game/Assets/Resources/UI/bell_icon.png
+?? Game/Assets/Resources/UI/bell_icon.png.meta
+?? Game/Assets/Resources/UI/memory_clock.png
+?? Game/Assets/Resources/UI/memory_clock.png.meta
+?? Game/Assets/Resources/UI/merchant_arrow.png
+?? Game/Assets/Resources/UI/merchant_arrow.png.meta
+?? Game/Assets/Scripts/Game/Ch3Kit.cs
+?? Game/Assets/Scripts/Game/Ch3Kit.cs.meta
+?? Game/Assets/Scripts/Game/EnemyCh3.cs
+?? Game/Assets/Scripts/Game/EnemyCh3.cs.meta
+?? Game/Assets/Scripts/Game/MemoryClock.cs
+?? Game/Assets/Scripts/Game/MemoryClock.cs.meta
+?? Game/Assets/Scripts/Game/MirrorShard.cs
+?? Game/Assets/Scripts/Game/MirrorShard.cs.meta
+?? Game/Assets/Scripts/UI/EdgeMarker.cs
+?? Game/Assets/Scripts/UI/EdgeMarker.cs.meta
+?? Game/Assets/Scripts/UI/Terms.cs
+?? Game/Assets/Scripts/UI/Terms.cs.meta
+?? Game/Assets/_Recovery.meta
+?? Game/Assets/_Recovery/
+?? "docs/1159_2\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_3\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? "docs/1159_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? docs/images/ch3/
+?? docs/images/fx_preview/
+?? docs/images/ui_src/merchant_arrow.png
+?? docs/images/ui_src/prompts/merchant_arrow.log
+?? docs/images/ui_src/prompts/merchant_arrow.txt
+?? docs/tools/build_ch3_ppt.js
+?? docs/tools/ui_merchant_cut.py
+
+codex
+The common spec requires grey role-named materials, one joined mesh per FBX, and a colored preview. I’ll use continuous footings or mounds to fill the ground footprints and keep the floating details as separate mesh islands within each piece.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Test-Path -LiteralPath Art/tools/blender_kit_ch3_landmarks.py; Get-Content -LiteralPath Art/tools/specs/kit_ch3_landmarks_spec.md -TotalCount 100' in C:\Project\Cat_Tang
+ succeeded in 213ms:
+False
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch3_landmarks.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece.
+Read `Art/tools/specs/_ch3_common.md` first: it has the material names, coordinate and export rules you must follow.
+
+## Goal
+LARGE obstacle landmarks placed inside combat rooms (28 x 24 m) of the mirror world to break up the rectangle and give cover (players walk around them; they are solid, so the footprint must be compact and mostly filled at ground level). Each must read instantly from a high camera at ~55 deg.
+
+## Pieces (footprint W x D x H in m)
+1. `LM_ArchRuin` (5 x 1.8 x 4.6): free-standing ruined double arcade: 3 white `marble` columns on `marble_dark` square bases with `gold` capitals, two round `sandstone` arches spanning them (the right arch broken half-way with a jagged end), `gold` keystone on the intact arch, rubble at the foot.
+2. `LM_CrystalSpire` (3.6 x 3.4 x 4.6): a giant crystal formation: 7-9 big hexagonal `crystal` prisms with pointed tips fanning out of a lumpy `rock` / `sandstone` mound (1 m high), the tallest 4.6 m, a glowing `crystal_core` prism inside the two biggest, 6 small `stardust` octahedra floating around the top (separate islands).
+3. `LM_Hourglass` (3.6 x 3.0 x 4.2): a giant broken HOURGLASS monument half sunk and tilted ~20 deg in a `sand` mound: `gold` top and bottom discs with 4 twisted `gold_dark` posts, the upper `crystal` bulb cracked open with a jagged hole, a `sand` stream frozen mid-air pouring from the hole down to the mound (chunky curved tube), the mound wider than the hourglass.
+4. `LM_FloatRock` (4.0 x 3.4 x 4.2): a FLOATING rock island chunk: on the floor a low `sand` / `rock` mound (0.6 m) with a few crystals; hovering above it from Z 1.4 to 4.2 an inverted jagged cone of `rock_dark` (point down) with a flat `sandstone` top surface carrying two tiny broken `marble` columns and a `crystal` cluster; 3 small loose rocks floating between mound and island (separate islands).
+5. `LM_MirrorGate` (5.0 x 1.4 x 5.2): a big standing ring PORTAL: a circular ornate `gold` ring (outer diameter 4.2, profile 0.35) with sun-ray spikes around its outside, holding a round `mirror` disc (double sided), standing on a stepped `sandstone` / `marble` plinth (2 steps, 5 x 1.4 x 0.7), two small `gold` lantern finials on the plinth corners.
+6. `LM_Obelisk` (2.4 x 2.4 x 6.0): a rose `sandstone` obelisk on a square stepped `marble` base (2.4 x 2.4 x 0.8), tapering shaft with a pyramid `gold` tip, a round `gold` clock face inset on the front (+Y) near the top (with two hands), a diagonal crack line, and 2 `crystal` shards growing from the base corner.
+7. `LM_Dune` (5.6 x 4.0 x 1.7): a smooth wind-shaped `sand` dune mound (soft, low-poly but smooth top), a half-buried tilted ornate `gold` mirror frame (with `mirror` glass) sticking out of its crest, 2-3 `sandstone` rocks at its foot.
+
+Keep each under ~4500 triangles.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py
+diff --git a/Art/tools/blender_kit_ch3_landmarks.py b/Art/tools/blender_kit_ch3_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..6d994f3fd4efca9aac06fef0b9d78f106c51b406
+--- /dev/null
++++ b/Art/tools/blender_kit_ch3_landmarks.py
+@@ -0,0 +1,651 @@
++# 거울 세계 전투방의 대형 장애물 랜드마크 7종과 검토용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py
++"""Seven deterministic, metre-scale landmarks; stock Blender 5.x only."""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_landmarks_preview.png'
++ROLES = ('sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
++         'sand', 'marble', 'marble_dark', 'gold', 'gold_dark', 'mirror',
++         'mirror_back', 'crystal', 'crystal_core', 'water', 'water_foam',
++         'cloud', 'cloud_shade', 'cloth_rose', 'stardust', 'wood', 'roof_tile',
++         'window_lit')
++HARD = {'sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
++        'marble', 'marble_dark', 'gold', 'gold_dark'}
++PALETTE = {
++    'sandstone': (.67, .35, .31), 'sandstone_light': (.85, .58, .45),
++    'sandstone_dark': (.43, .22, .24), 'rock': (.48, .35, .39),
++    'rock_dark': (.24, .18, .29), 'sand': (.84, .65, .43),
++    'marble': (.90, .88, .83), 'marble_dark': (.47, .43, .49),
++    'gold': (.96, .62, .16), 'gold_dark': (.45, .26, .075),
++    'mirror': (.43, .68, .79), 'mirror_back': (.24, .29, .37),
++    'crystal': (.65, .83, .89), 'crystal_core': (.98, .99, 1.0),
++    'stardust': (1.0, .86, .53),
++}
++MATS = {}
++PARTS = []
++
++
++def materials():
++    for role in ROLES:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        nodes = mat.node_tree.nodes
++        nodes.clear()
++        shader = nodes.new('ShaderNodeBsdfPrincipled')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        output = nodes.new('ShaderNodeOutputMaterial')
++        mat.node_tree.links.new(shader.outputs['BSDF'], output.inputs['Surface'])
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=True, smooth=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.materials.append(MATS[role])
++    data.update()
++    for face in data.polygons:
++        face.use_smooth = smooth
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    if bevel and role in HARD:
++        mod = obj.modifiers.new('Worn edges 0.025m', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(45)
++    PARTS.append(obj)
++    return obj
++
++
++def transform(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return transform(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def lathe(label, rings, role, n=16, bevel=True, smooth=False):
++    """Closed surface of revolution, rings = (z, radius). No zero radii."""
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for z, r in rings for j in range(n)]
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(len(rings)-1) for j in range(n)]
++    faces.append(tuple(range((len(rings)-1)*n, len(rings)*n)))
++    return mesh(label, verts, faces, role, bevel, smooth)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, top=None,
++             rot=(0, 0, 0), bevel=True):
++    obj = lathe(label, [(-depth/2, radius),
++                       (depth/2, radius if top is None else top)], role, n, bevel)
++    return transform(obj, loc, rot)
++
++
++def tube(label, points, radius, role, n=6, bevel=True):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i+1, len(points)-1)]) -
++                   Vector(points[max(0, i-1)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        u = reference.cross(tangent).normalized()
++        v = tangent.cross(u)
++        verts += [tuple(Vector(point) + radius *
++                        (u*math.cos(j*math.tau/n) + v*math.sin(j*math.tau/n)))
++                  for j in range(n)]
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(len(points)-1) for j in range(n)]
++    faces.append(tuple(range((len(points)-1)*n, len(points)*n)))
++    return mesh(label, verts, faces, role, bevel)
++
++
++def rod(label, a, b, radius, role, n=6, bevel=True):
++    return tube(label, [a, b], radius, role, n, bevel)
++
++
++def extrude(label, polygon, depth, role, y=0, bevel=True):
++    n = len(polygon)
++    verts = [(x, y+d, z) for d in (-depth/2, depth/2) for x, z in polygon]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2*n))]
++    faces += [(j, (j+1) % n, (j+1) % n+n, j+n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def hoop(label, loc, radius, band, depth, role, n=32):
++    verts = [(r*math.cos(j*math.tau/n), y, r*math.sin(j*math.tau/n))
++             for r, y in ((radius-band, -depth/2), (radius, -depth/2),
++                          (radius, depth/2), (radius-band, depth/2))
++             for j in range(n)]
++    faces = [(k*n+j, k*n+(j+1) % n, ((k+1) % 4)*n+(j+1) % n,
++              ((k+1) % 4)*n+j) for k in range(4) for j in range(n)]
++    return transform(mesh(label, verts, faces, role), loc)
++
++
++def lump(label, loc, size, role, detail=1):
++    bm = bmesh.new()
++    bmesh.ops.create_icosphere(bm, subdivisions=detail, radius=1)
++    for vert in bm.verts:
++        vert.co *= random.uniform(.89, 1.11)
++        vert.co = Vector(loc) + Vector(tuple(vert.co[i]*size[i]/2 for i in range(3)))
++    bm.verts.ensure_lookup_table()
++    obj = mesh(label, [tuple(v.co) for v in bm.verts],
++               [tuple(v.index for v in f.verts) for f in bm.faces], role)
++    bm.free()
++    return obj
++
++
++def mound(label, width, depth, height, role='sand', dune=False):
++    """Solid continuous ground footprint; asymmetric crest and smooth top."""
++    n = 24
++    verts = []
++    for ring, (r, z) in enumerate(((1, 0), (.93, .14), (.69, .55),
++                                  (.36, .88), (.09, 1))):
++        for j in range(n):
++            a = j*math.tau/n
++            ripple = 1 + .035*math.sin(3*a+.4) + .025*math.cos(5*a)
++            shift = (1-r)*(.53 if dune else .13)
++            x = width/2*(r*math.cos(a)*ripple + shift)
++            y = depth/2*(r*math.sin(a)*ripple - shift*.30)
++            zz = height*z*(1 + .045*math.sin(2*a)) if ring else 0
++            verts.append((x, y, zz))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(4) for j in range(n)]
++    verts.append((width*(.265 if dune else .065), -depth*.03, height))
++    faces += [(4*n+j, 4*n+(j+1) % n, len(verts)-1) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel=False, smooth=True)
++
++
++def crystal(label, a, b, radius, core=False):
++    """Hexagonal prism, a single pointed termination, an actual inner core.
++
++    The inner core is exposed in a recessed split in the +Y prism facet;
++    it therefore reads in opaque material previews without shader tricks.
++    """
++    a, b = Vector(a), Vector(b)
++    length = (b-a).length
++    verts = [(r*math.cos(j*math.tau/6), r*math.sin(j*math.tau/6), z)
++             for z, r in ((0, radius*.77), (length*.74, radius))
++             for j in range(6)]
++    verts.append((radius*.13, -radius*.08, length))
++    faces = [tuple(reversed(range(6)))]
++    faces += [(j, (j+1) % 6, (j+1) % 6+6, j+6) for j in range(6)]
++    faces += [(j+6, (j+1) % 6+6, 12) for j in range(6)]
++    if core:
++        # Replace the forward facet with a recessed slit capped by the core.
++        index = 2  # j=1, normal +Y
++        outer = faces[index]
++        mid = sum((Vector(verts[k]) for k in outer), Vector())/4
++        inner = []
++        for k in outer:
++            v = mid + (Vector(verts[k])-mid)*.56
++            v.y -= radius*.20
++            inner.append(len(verts))
++            verts.append(tuple(v))
++        faces[index] = tuple(inner)
++        for j in range(4):
++            faces.append((outer[j], outer[(j+1) % 4], inner[(j+1) % 4], inner[j]))
++    obj = mesh(label, verts, faces, 'crystal', bevel=False)
++    if core:
++        obj.data.materials.append(MATS['crystal_core'])
++        obj.data.polygons[2].material_index = 1
++    matrix = Matrix.Translation(a) @ (b-a).to_track_quat('Z', 'Y').to_matrix().to_4x4()
++    obj.data.transform(matrix)
++    if core:
++        inside = lathe(label+' inner luminous prism',
++                       [(length*.14, radius*.33), (length*.78, radius*.36),
++                        (length*.91, radius*.025)], 'crystal_core', n=6, bevel=False)
++        inside.data.transform(matrix)
++    return obj
++
++
++def octahedron(label, loc, radius, role='stardust'):
++    x, y, z = loc
++    verts = [(x+radius,y,z), (x,y+radius,z), (x-radius,y,z),
++             (x,y-radius,z), (x,y,z+radius*1.6), (x,y,z-radius*1.6)]
++    return mesh(label, verts, [(i, (i+1) % 4, p) for p in (4, 5) for i in range(4)],
++                role, bevel=False)
++
++
++def arch_ruin():
++    # A continuous ruined footing makes the arcade an obstacle, not a doorway.
++    box('Continuous buried stylobate', (0, 0, .16), (5, 1.8, .32), 'sandstone')
++    for x in (-1.85, 0, 1.85):
++        box('Square dark column base', (x, 0, .48), (.86, 1.12, .34), 'marble_dark')
++        cylinder('Column torus block', (x, 0, .72), .40, .18, 'marble', n=10)
++        cylinder('Tapered white column', (x, 0, 1.90), .31, 2.30,
++                 'marble', n=10, top=.27)
++        cylinder('Gold echinus', (x, 0, 3.06), .31, .17, 'gold', n=10, top=.43)
++        box('Gold capital abacus', (x, 0, 3.22), (.87, .94, .19), 'gold')
++    def wedge(cx, start, end, broken=False):
++        steps = 3
++        outer = [(cx+1.22*math.cos(t), 3.31+1.22*math.sin(t))
++                 for t in [start+(end-start)*i/steps for i in range(steps+1)]]
++        inner = [(cx+.90*math.cos(t), 3.31+.90*math.sin(t))
++                 for t in [end-(end-start)*i/steps for i in range(steps+1)]]
++        if broken:
++            angle = end
++            # Alternating radii and angles produce a real saw-tooth fracture.
++            jagged = [(cx+r*math.cos(angle+offset), 3.31+r*math.sin(angle+offset))
++                      for r, offset in ((1.15,.07),(1.08,-.07),(.99,.055))]
++            outer += jagged
++        extrude('Jagged arch end' if broken else 'Sandstone arch voussoir',
++                outer+inner, .78, 'sandstone')
++    for i in range(7):
++        wedge(-.925, i*math.pi/7+.008, (i+1)*math.pi/7-.008)
++    for i in range(4):
++        wedge(.925, i*.40+.008, (i+1)*.40-.008, i == 3)
++    extrude('Oversize gold keystone', [(-1.10,4.29),(-1.18,4.60),
++                                      (-.67,4.60),(-.75,4.29)], .88, 'gold')
++    for x, y, size, angle in ((-1.10,.50,(.70,.56,.48),.3),
++                               (1.02,.43,(.88,.66,.54),-.3),
++                               (1.48,-.38,(.64,.72,.42),.6),
++                               (-.60,-.45,(.62,.64,.39),-.2)):
++        box('Fallen arch rubble', (x,y,.42), size, 'sandstone',
++            (0,.16,angle))
++
++
++def crystal_spire():
++    mound('Solid mineral mound', 3.6, 3.4, .96, 'rock')
++    for loc, size in (((-.72,.35,.57),(1.2,1.25,.85)),
++                      ((.80,-.34,.54),(1.40,1.05,.92)),
++                      ((-.36,-.72,.36),(1.4,.85,.64))):
++        lump('Rose matrix boulder', loc, size, 'sandstone')
++    specs = [((-.38,-.05,.66),(-.50,-.13,4.6),.53),
++             ((.43,-.10,.69),(.91,-.21,4.08),.46),
++             ((-.88,.02,.46),(-1.45,.06,3.01),.36),
++             ((.56,.40,.54),(1.49,.62,2.89),.35),
++             ((-.46,.55,.49),(-.93,1.03,2.77),.34),
++             ((.01,-.61,.50),(.12,-1.18,3.10),.36),
++             ((.84,-.42,.43),(1.46,-.79,2.24),.29),
++             ((-.68,-.59,.45),(-1.31,-1.00,2.05),.30),
++             ((.02,.59,.60),(.05,1.12,2.35),.29)]
++    for i, (a,b,r) in enumerate(specs):
++        crystal('Giant hexagonal crystal %02d' % i, a,b,r, core=i<2)
++    for i, (x,y,z) in enumerate(((-1.17,.34,3.75),(.23,.63,4.16),
++                                  (1.20,.36,3.57),(-.92,-.66,4.14),
++                                  (.31,-.83,3.69),(.99,-.57,4.36))):
++        octahedron('Floating stardust %d' % i, (x,y,z), .095)
++
++
++def broken_bulb():
++    """Thick upper bulb with a jagged, truly missing patch facing +Y."""
++    n = 16
++    rings = [(1.87,.16),(2.14,.45),(2.48,.73),(2.84,.84),
++             (3.15,.72),(3.36,.40)]
++    verts = [(r*math.cos(j*math.tau/n), r*math.sin(j*math.tau/n),z)
++             for thickness in (0,.065) for z, radius in rings
++             for j in range(n) for r in (radius-thickness,)]
++    count = n*len(rings)
++    # The stepped outline is deliberately asymmetric, not a clean cutout.
++    missing = {(2,3),(2,4),(3,2),(3,3),(3,4),(3,5),(4,3)}
++    outer = []
++    for i in range(len(rings)-1):
++        for j in range(n):
++            if (i,j) not in missing:
++                outer.append((i*n+j,i*n+(j+1) % n,(i+1)*n+(j+1) % n,(i+1)*n+j))
++    faces = outer + [tuple(k+count for k in reversed(face)) for face in outer]
++    # Close shell walls around the hole and both bulb rims.
++    edges = {}
++    for face in outer:
++        for a,b in zip(face, face[1:]+face[:1]):
++            key = tuple(sorted((a,b)))
++            edges.setdefault(key, []).append((a,b))
++    for uses in edges.values():
++        if len(uses) == 1:
++            a,b = uses[0]
++            faces.append((b,a,a+count,b+count))
++    return mesh('Cracked open upper crystal bulb', verts, faces, 'crystal', bevel=False)
++
++
++def hourglass():
++    mound('Wide bank of spilled sand', 3.6, 3.0, .87)
++    start = len(PARTS)
++    for z in (.28,3.53):
++        cylinder('Heavy gold hourglass disc', (0,0,z), 1.02, .21, 'gold', n=20)
++        cylinder('Dark disc inset', (0,0,z+.115), .86, .055, 'gold_dark', n=16)
++    for i in range(4):
++        angle = math.pi/4+i*math.pi/2
++        points = []
++        for j in range(11):
++            t = j/10
++            a = angle+.22*math.sin(t*math.tau)
++            r = .86+.07*math.sin(t*math.pi)
++            points.append((r*math.cos(a),r*math.sin(a),.40+3.01*t))
++        tube('Twisted dark gold support', points, .095, 'gold_dark', n=6)
++    lathe('Lower hourglass crystal bulb', [(.46,.58),(.64,.78),(.93,.83),
++          (1.20,.69),(1.51,.42),(1.84,.16)], 'crystal', n=16, bevel=False)
++    lathe('Sand trapped in lower bulb', [(.48,.50),(.80,.61),(1.24,.11)],
++          'sand', n=12, bevel=False)
++    broken_bulb()
++    cylinder('Gold neck collar', (0,0,1.86), .235, .14, 'gold', n=12)
++    tilt = Matrix.Translation(Vector((-.25,-.05,.29))) @ Euler(
++        (0,math.radians(20),math.radians(-7))).to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(tilt)
++    pour = [tuple(tilt @ Vector(p)) for p in ((.05,.74,2.81),(.10,.98,2.53),
++            (.18,1.10,2.13),(.27,1.12,1.67),(.37,1.08,1.15),(.44,1.02,.66))]
++    tube('Frozen chunky curved sand stream', pour, .16, 'sand', n=8, bevel=False)
++    for p in ((-.22,.72,3.00),(.29,.86,2.80)):
++        q = tilt @ Vector(p)
++        octahedron('Detached crystal splinter', q, .10, 'crystal')
++
++
++def float_rock():
++    mound('Grounded island shadow mound', 4.0, 3.4, .60)
++    for loc, size in (((-.90,.31,.25),(1.0,.92,.51)),
++                      ((.68,-.59,.22),(1.1,.89,.44))):
++        lump('Ground rock',loc,size,'rock')
++    crystal('Ground shard left',(-1.15,-.32,.23),(-1.46,-.42,.94),.18)
++    crystal('Ground shard right',(.95,.53,.25),(1.20,.65,.96),.20)
++    n = 13
++    outline = [(math.cos(j*math.tau/n)*random.uniform(.91,1.04),
++                math.sin(j*math.tau/n)*random.uniform(.91,1.04)) for j in range(n)]
++    verts = [(.20,.05,1.4)]
++    for ring in range(3):
++        for j,(x,y) in enumerate(outline):
++            if ring == 0:
++                verts.append((x*.73+.12,y*.63,1.94+random.uniform(-.14,.13)))
++            elif ring == 1:
++                verts.append((x*1.76,y*1.40,2.81+random.uniform(-.18,.16)))
++            else:
++                verts.append((x*1.74,y*1.39,3.10))
++    faces = [(0,1+j,1+(j+1) % n) for j in range(n)]
++    for ring in range(2):
++        for j in range(n):
++            a,b = 1+ring*n+j,1+ring*n+(j+1) % n
++            faces += [(a,b,b+n),(a,b+n,a+n)]
++    faces.append(tuple(range(1+2*n,1+3*n)))
++    mesh('Hovering inverted jagged rock cone',verts,faces,'rock_dark')
++    # Separate flat sandstone slab makes the top surface unambiguous.
++    v = [(x*1.73,y*1.38,z) for z in (3.075,3.20) for x,y in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1) % n,(j+1) % n+n,j+n) for j in range(n)]
++    mesh('Flat sandstone island cap',v,f,'sandstone')
++    for x,y,h in ((-.87,-.06,.64),(.45,-.52,.45)):
++        box('Tiny ruined column foot',(x,y,3.25),(.48,.46,.15),'marble')
++        obj = cylinder('Tiny broken marble column',(x,y,3.31+h/2),.17,h,
++                       'marble',n=8)
++        for vert in obj.data.vertices:
++            if vert.co.z > 3.31+h*.8:
++                vert.co.z += random.uniform(-.12,.04)
++    for a,b,r in (((.21,.28,3.16),(.34,.37,4.20),.24),
++                   ((.53,.31,3.15),(.94,.40,3.86),.20),
++                   ((-.02,.48,3.15),(-.30,.65,3.83),.17)):
++        crystal('Island crystal',a,b,r)
++    for loc,size in (((-1.20,.30,1.14),(.43,.39,.45)),
++                      ((.93,.30,1.04),(.42,.43,.39)),
++                      ((-.44,-.65,.96),(.34,.32,.33))):
++        lump('Loose floating stone',loc,size,'rock_dark')
++
++
++def mirror_gate():
++    box('Lower sandstone plinth',(0,0,.175),(5,1.4,.35),'sandstone')
++    box('Upper white marble step',(0,0,.525),(4.65,1.18,.35),'marble')
++    center = (0,0,2.85)
++    hoop('Great circular gold portal frame',center,2.10,.35,.32,'gold',n=32)
++    hoop('Raised outer rim',(0,.19,2.85),2.06,.065,.085,'gold_dark',n=32)
++    hoop('Inner gold lip',(0,.19,2.85),1.80,.065,.075,'gold',n=32)
++    # A closed thin disc has outward mirror material on BOTH circular faces.
++    cylinder('Double sided round mirror',center,1.76,.10,'mirror',n=48,
++             rot=(math.pi/2,0,0),bevel=False)
++    for i in range(16):
++        angle = i*math.tau/16
++        # Lower rays are buried in the plinth; no spikes outside its footprint.
++        if math.sin(angle) < -.86:
++            continue
++        r, tip, half = 2.065, 2.35 if i % 2 == 0 else 2.27, .095
++        u,v = Vector((math.cos(angle),math.sin(angle))),Vector((-math.sin(angle),math.cos(angle)))
++        pts = [r*u+half*v,tip*u,r*u-half*v]
++        extrude('Chunky sun ray',[(p.x,2.85+p.y) for p in pts],.22,'gold')
++        if i % 2 == 0:
++            octahedron('Rim diamond ornament',(1.94*u.x,.27,2.85+1.94*u.y),.10,'gold')
++    for x in (-2.10,2.10):
++        cylinder('Lantern gold pedestal',(x,.12,.88),.16,.36,'gold',n=8)
++        lathe_obj = lathe('Gold lantern finial',[(1.02,.20),(1.22,.24),
++                          (1.43,.09),(1.52,.025)],'gold',n=8)
++        transform(lathe_obj,(x,.12,0))
++
++
++def obelisk():
++    box('Obelisk lower white step',(0,0,.20),(2.4,2.4,.40),'marble')
++    box('Obelisk upper white step',(0,0,.60),(1.98,1.98,.40),'marble')
++    box('Gold shaft shoe',(0,0,.85),(1.49,1.49,.10),'gold')
++    verts = [(x*r,y*r,z) for z,r in ((.88,.66),(5.22,.38))
++             for x,y in ((-1,-1),(1,-1),(1,1),(-1,1))]
++    faces = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    mesh('Tapering rose sandstone obelisk',verts,faces,'sandstone')
++    tip = [(-.39,-.39,5.20),(.39,-.39,5.20),(.39,.39,5.20),
++           (-.39,.39,5.20),(0,0,6.00)]
++    mesh('Gold pyramidion',tip,[(0,3,2,1),(0,1,4),(1,2,4),(2,3,4),(3,0,4)],'gold')
++    z = 4.54
++    cylinder('Inset clock gold dial',(0,.452,z),.345,.035,'gold',n=24,
++             rot=(math.pi/2,0,0))
++    hoop('Clock dark gold bezel',(0,.481,z),.365,.045,.045,'gold_dark',n=24)
++    for i in range(12):
++        a = i*math.tau/12
++        rod('Clock raised hour mark',(.265*math.sin(a),.505,z+.265*math.cos(a)),
++            (.301*math.sin(a),.505,z+.301*math.cos(a)),.014,'gold_dark',n=4,bevel=False)
++    rod('Clock minute hand',(0,.526,z),(-.06,.526,z+.25),.024,'gold_dark',n=4)
++    rod('Clock hour hand',(0,.529,z),(.17,.529,z+.07),.028,'gold_dark',n=4)
++    cylinder('Clock hand pin',(0,.545,z),.042,.045,'gold',n=8,
++             rot=(math.pi/2,0,0))
++    crack = [(-.51,2.34),(-.24,2.56),(-.31,2.77),(.06,3.04),(.14,3.32),(.46,3.52)]
++    def front(z):
++        return .66-(z-.88)*(.28/4.34)+.008
++    tube('Diagonal dark fracture',[(x,front(z),z) for x,z in crack],.026,
++         'sandstone_dark',n=4,bevel=False)
++    tube('Crack branch',[(-.24,front(2.56),2.56),(.02,front(2.63),2.63),
++                         (.14,front(2.78),2.78)],.018,'sandstone_dark',n=4,bevel=False)
++    crystal('Corner crystal tall',(.68,.69,.42),(.96,.91,1.65),.22)
++    crystal('Corner crystal small',(.87,.51,.39),(1.15,.55,1.16),.18)
++
++
++def dune():
++    mound('Smooth wind sculpted dune',5.6,4.0,1.15,dune=True)
++    # The lower half of this oval mirror is genuinely buried inside the dune.
++    start = len(PARTS)
++    frame = hoop('Buried ornate oval mirror', (0,0,0), .91,.13,.16,'gold',n=28)
++    disc = cylinder('Buried mirror glass',(0,0,0),.79,.065,'mirror',n=32,
++                    rot=(math.pi/2,0,0),bevel=False)
++    board = cylinder('Buried mirror back',(0,-.055,0),.80,.045,'mirror_back',n=32,
++                     rot=(math.pi/2,0,0))
++    hoop('Oval engraved dark gold trim',(0,.10,0),.88,.035,.035,'gold_dark',n=28)
++    for a in (0,math.pi/2,math.pi):
++        x,z = .93*math.cos(a),.93*math.sin(a)
++        octahedron('Buried frame fleur',(x,0,z),.115,'gold')
++    matrix = Matrix.Translation(Vector((.40,.05,.93))) @ Euler(
++        (math.radians(-24),math.radians(-24),math.radians(8))).to_matrix().to_4x4()
++    oval = Matrix.Diagonal(Vector((1.12,1,.74,1)))
++    for obj in PARTS[start:]:
++        obj.data.transform(matrix @ oval)
++    for loc,size in (((-1.90,.47,.25),(1.03,.81,.53)),
++                      ((1.77,-.91,.20),(.85,.76,.41)),
++                      ((-1.38,-1.05,.17),(.69,.62,.37))):
++        lump('Dune foot sandstone rock',loc,size,'sandstone',detail=2)
++
++
++SPECS = [
++    ('LM_ArchRuin',(5.0,1.8,4.6),arch_ruin),
++    ('LM_CrystalSpire',(3.6,3.4,4.6),crystal_spire),
++    ('LM_Hourglass',(3.6,3.0,4.2),hourglass),
++    ('LM_FloatRock',(4.0,3.4,4.2),float_rock),
++    ('LM_MirrorGate',(5.0,1.4,5.2),mirror_gate),
++    ('LM_Obelisk',(2.4,2.4,6.0),obelisk),
++    ('LM_Dune',(5.6,4.0,1.7),dune),
++]
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++            for fn in (min,max)]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dims):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = name, name+'_Mesh'
++    # Only bevel tessellation may need reduction; preserve material regions.
++    if triangles(obj) > 4400:
++        mod = obj.modifiers.new('Landmark triangle budget','DECIMATE')
++        mod.ratio, mod.delimit = 4250/triangles(obj), {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    assert triangles(obj) <= 4500, (name,triangles(obj))
++    lo, hi = bounds(obj)
++    span, center = hi-lo, (hi+lo)/2
++    for v in obj.data.vertices:
++        v.co.x = (v.co.x-center.x)*dims[0]/span.x
++        v.co.y = (v.co.y-center.y)*dims[1]/span.y
++        v.co.z = (v.co.z-lo.z)*dims[2]/span.z
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert all(e.is_manifold for e in bm.edges), name+' has an open/nonmanifold edge'
++    bm.to_mesh(obj.data)
++    bm.free()
++    obj.data.update()
++    bpy.context.view_layer.update()
++    lo, hi = bounds(obj)
++    assert abs(lo.z) < 1e-5 and abs(hi.z-dims[2]) < 1e-5, name
++    assert all(abs(obj.dimensions[i]-dims[i]) < 1e-4 for i in range(3)), name
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    for mat in obj.data.materials:
++        assert mat.name in ROLES and tuple(mat.diffuse_color) == (.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5,.5,.5,1)
++        assert not any(n.type == 'TEX_IMAGE' for n in mat.node_tree.nodes)
++    obj['chapter'],obj['front'] = 'Mirage Desert / Mirror World','+Y'
++    obj['footprint_and_height_m'],obj['triangle_count'] = list(dims),triangles(obj)
++    obj['solid_obstacle'] = True
++    destination = OUTPUT / ('Kit_'+name+'.fbx')
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024, destination
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    """Review-only colours and transforms, applied strictly after all exports."""
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y = 1600,900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shading = scene.display.shading
++    shading.light,shading.color_type = 'FLAT','MATERIAL'
++    shading.show_shadows,shading.show_cavity = False,True
++    shading.cavity_type = 'BOTH'
++    shading.curvature_ridge_factor,shading.curvature_valley_factor = 1.5,1.2
++    shading.show_specular_highlight = False
++    shading.background_type,shading.background_color = 'WORLD',(.035,.043,.063)
++    if scene.world is None:
++        scene.world = bpy.data.worlds.new('Review world')
++    scene.world.color = (.035,.043,.063)
++    old_locations = [obj.location.copy() for obj in objects]
++    helpers = []
++    try:
++        for role,mat in MATS.items():
++            mat.diffuse_color = (*PALETTE.get(role,(.5,.5,.5)),1)
++        gap = .85
++        total = sum(dims[0] for _,dims,_ in SPECS)+gap*(len(objects)-1)
++        x = -total/2
++        for obj,(_,dims,_) in zip(objects,SPECS):
++            obj.location.x = x+dims[0]/2
++            x += dims[0]+gap
++        camera = bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type,camera.data.ortho_scale = 'ORTHO',total+1.0
++        target = Vector((0,0,1.5))
++        a = math.radians(55)
++        camera.location = target+Vector((0,35*math.cos(a),35*math.sin(a)))
++        camera.rotation_euler = (target-camera.location).to_track_quat('-Z','Y').to_euler()
++        for obj in objects:
++            data = bpy.data.curves.new('Review caption','FONT')
++            data.body,data.align_x,data.size = obj.name,'CENTER',.24
++            data.materials.append(MATS['crystal_core'])
++            caption = bpy.data.objects.new('Caption '+obj.name,data)
++            scene.collection.objects.link(caption)
++            caption.location = (obj.location.x,2.75,-.20)
++            caption.rotation_euler = camera.rotation_euler
++            helpers.append(caption)
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print('PREVIEW '+str(PREVIEW),flush=True)
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            bpy.data.objects.remove(obj,do_unlink=True)
++        for obj,loc in zip(objects,old_locations):
++            obj.location = loc
++        for mat in MATS.values():
++            mat.diffuse_color = (.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system,scene.unit_settings.scale_length = 'METRIC',1.0
++    materials()
++    OUTPUT.mkdir(parents=True,exist_ok=True)
++    exported = []
++    for i,(name,dims,build) in enumerate(SPECS):
++        PARTS = []
++        random.seed(33181+i*7919)
++        build()
++        exported.append(finish(name,dims))
++    assert len(scene.objects) == 7 and all(obj.type == 'MESH' for obj in scene.objects)
++    preview(exported)
++    assert len(scene.objects) == 7 and all(obj.type == 'MESH' for obj in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 1909ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py:41: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_ArchRuin.fbx'
+export finished in 0.0055 sec.
+EXPORTED LM_ArchRuin 4140 (5.0, 1.8, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_CrystalSpire.fbx'
+export finished in 0.0049 sec.
+EXPORTED LM_CrystalSpire 848 (3.6, 3.4, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_Hourglass.fbx'
+export finished in 0.0063 sec.
+EXPORTED LM_Hourglass 3922 (3.6, 3.0, 4.2)
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py", line 651, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py", line 643, in main
+    exported.append(finish(name,dims))
+                    ~~~~~~^^^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py", line 538, in finish
+    assert all(e.is_manifold for e in bm.edges), name+' has an open/nonmanifold edge'
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: LM_FloatRock has an open/nonmanifold edge
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py
+diff --git a/Art/tools/blender_kit_ch3_landmarks.py b/Art/tools/blender_kit_ch3_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..086dd5ab8f91095f354f5a1fa0e54d118ed8521c
+--- /dev/null
++++ b/Art/tools/blender_kit_ch3_landmarks.py
+@@ -0,0 +1,656 @@
++# 거울 세계 전투방의 대형 장애물 랜드마크 7종과 검토용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py
++"""Seven deterministic, metre-scale landmarks; stock Blender 5.x only."""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_landmarks_preview.png'
++ROLES = ('sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
++         'sand', 'marble', 'marble_dark', 'gold', 'gold_dark', 'mirror',
++         'mirror_back', 'crystal', 'crystal_core', 'water', 'water_foam',
++         'cloud', 'cloud_shade', 'cloth_rose', 'stardust', 'wood', 'roof_tile',
++         'window_lit')
++HARD = {'sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
++        'marble', 'marble_dark', 'gold', 'gold_dark'}
++PALETTE = {
++    'sandstone': (.67, .35, .31), 'sandstone_light': (.85, .58, .45),
++    'sandstone_dark': (.43, .22, .24), 'rock': (.48, .35, .39),
++    'rock_dark': (.24, .18, .29), 'sand': (.84, .65, .43),
++    'marble': (.90, .88, .83), 'marble_dark': (.47, .43, .49),
++    'gold': (.96, .62, .16), 'gold_dark': (.45, .26, .075),
++    'mirror': (.43, .68, .79), 'mirror_back': (.24, .29, .37),
++    'crystal': (.65, .83, .89), 'crystal_core': (.98, .99, 1.0),
++    'stardust': (1.0, .86, .53),
++}
++MATS = {}
++PARTS = []
++
++
++def materials():
++    for role in ROLES:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        nodes = mat.node_tree.nodes
++        nodes.clear()
++        shader = nodes.new('ShaderNodeBsdfPrincipled')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        output = nodes.new('ShaderNodeOutputMaterial')
++        mat.node_tree.links.new(shader.outputs['BSDF'], output.inputs['Surface'])
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=True, smooth=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.materials.append(MATS[role])
++    data.update()
++    bm = bmesh.new()
++    bm.from_mesh(data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    bm.to_mesh(data)
++    bm.free()
++    for face in data.polygons:
++        face.use_smooth = smooth
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    if bevel and role in HARD:
++        mod = obj.modifiers.new('Worn edges 0.025m', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(45)
++    PARTS.append(obj)
++    return obj
++
++
++def transform(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return transform(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def lathe(label, rings, role, n=16, bevel=True, smooth=False):
++    """Closed surface of revolution, rings = (z, radius). No zero radii."""
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for z, r in rings for j in range(n)]
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(len(rings)-1) for j in range(n)]
++    faces.append(tuple(range((len(rings)-1)*n, len(rings)*n)))
++    return mesh(label, verts, faces, role, bevel, smooth)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, top=None,
++             rot=(0, 0, 0), bevel=True):
++    obj = lathe(label, [(-depth/2, radius),
++                       (depth/2, radius if top is None else top)], role, n, bevel)
++    return transform(obj, loc, rot)
++
++
++def tube(label, points, radius, role, n=6, bevel=True):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i+1, len(points)-1)]) -
++                   Vector(points[max(0, i-1)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        u = reference.cross(tangent).normalized()
++        v = tangent.cross(u)
++        verts += [tuple(Vector(point) + radius *
++                        (u*math.cos(j*math.tau/n) + v*math.sin(j*math.tau/n)))
++                  for j in range(n)]
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(len(points)-1) for j in range(n)]
++    faces.append(tuple(range((len(points)-1)*n, len(points)*n)))
++    return mesh(label, verts, faces, role, bevel)
++
++
++def rod(label, a, b, radius, role, n=6, bevel=True):
++    return tube(label, [a, b], radius, role, n, bevel)
++
++
++def extrude(label, polygon, depth, role, y=0, bevel=True):
++    n = len(polygon)
++    verts = [(x, y+d, z) for d in (-depth/2, depth/2) for x, z in polygon]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2*n))]
++    faces += [(j, (j+1) % n, (j+1) % n+n, j+n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def hoop(label, loc, radius, band, depth, role, n=32):
++    verts = [(r*math.cos(j*math.tau/n), y, r*math.sin(j*math.tau/n))
++             for r, y in ((radius-band, -depth/2), (radius, -depth/2),
++                          (radius, depth/2), (radius-band, depth/2))
++             for j in range(n)]
++    faces = [(k*n+j, k*n+(j+1) % n, ((k+1) % 4)*n+(j+1) % n,
++              ((k+1) % 4)*n+j) for k in range(4) for j in range(n)]
++    return transform(mesh(label, verts, faces, role), loc)
++
++
++def lump(label, loc, size, role, detail=1):
++    bm = bmesh.new()
++    bmesh.ops.create_icosphere(bm, subdivisions=detail, radius=1)
++    for vert in bm.verts:
++        vert.co *= random.uniform(.89, 1.11)
++        vert.co = Vector(loc) + Vector(tuple(vert.co[i]*size[i]/2 for i in range(3)))
++    bm.verts.ensure_lookup_table()
++    obj = mesh(label, [tuple(v.co) for v in bm.verts],
++               [tuple(v.index for v in f.verts) for f in bm.faces], role)
++    bm.free()
++    return obj
++
++
++def mound(label, width, depth, height, role='sand', dune=False):
++    """Solid continuous ground footprint; asymmetric crest and smooth top."""
++    n = 24
++    verts = []
++    for ring, (r, z) in enumerate(((1, 0), (.93, .14), (.69, .55),
++                                  (.36, .88), (.09, 1))):
++        for j in range(n):
++            a = j*math.tau/n
++            ripple = 1 + .035*math.sin(3*a+.4) + .025*math.cos(5*a)
++            shift = (1-r)*(.53 if dune else .13)
++            x = width/2*(r*math.cos(a)*ripple + shift)
++            y = depth/2*(r*math.sin(a)*ripple - shift*.30)
++            zz = height*z*(1 + .045*math.sin(2*a)) if ring else 0
++            verts.append((x, y, zz))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(4) for j in range(n)]
++    verts.append((width*(.265 if dune else .065), -depth*.03, height))
++    faces += [(4*n+j, 4*n+(j+1) % n, len(verts)-1) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel=False, smooth=True)
++
++
++def crystal(label, a, b, radius, core=False):
++    """Hexagonal prism, a single pointed termination, an actual inner core.
++
++    The inner core is exposed in a recessed split in the +Y prism facet;
++    it therefore reads in opaque material previews without shader tricks.
++    """
++    a, b = Vector(a), Vector(b)
++    length = (b-a).length
++    verts = [(r*math.cos(j*math.tau/6), r*math.sin(j*math.tau/6), z)
++             for z, r in ((0, radius*.77), (length*.74, radius))
++             for j in range(6)]
++    verts.append((radius*.13, -radius*.08, length))
++    faces = [tuple(reversed(range(6)))]
++    faces += [(j, (j+1) % 6, (j+1) % 6+6, j+6) for j in range(6)]
++    faces += [(j+6, (j+1) % 6+6, 12) for j in range(6)]
++    if core:
++        # Replace the forward facet with a recessed slit capped by the core.
++        index = 2  # j=1, normal +Y
++        outer = faces[index]
++        mid = sum((Vector(verts[k]) for k in outer), Vector())/4
++        inner = []
++        for k in outer:
++            v = mid + (Vector(verts[k])-mid)*.56
++            v.y -= radius*.20
++            inner.append(len(verts))
++            verts.append(tuple(v))
++        faces[index] = tuple(inner)
++        for j in range(4):
++            faces.append((outer[j], outer[(j+1) % 4], inner[(j+1) % 4], inner[j]))
++    obj = mesh(label, verts, faces, 'crystal', bevel=False)
++    if core:
++        obj.data.materials.append(MATS['crystal_core'])
++        obj.data.polygons[2].material_index = 1
++    matrix = Matrix.Translation(a) @ (b-a).to_track_quat('Z', 'Y').to_matrix().to_4x4()
++    obj.data.transform(matrix)
++    if core:
++        inside = lathe(label+' inner luminous prism',
++                       [(length*.14, radius*.33), (length*.78, radius*.36),
++                        (length*.91, radius*.025)], 'crystal_core', n=6, bevel=False)
++        inside.data.transform(matrix)
++    return obj
++
++
++def octahedron(label, loc, radius, role='stardust'):
++    x, y, z = loc
++    verts = [(x+radius,y,z), (x,y+radius,z), (x-radius,y,z),
++             (x,y-radius,z), (x,y,z+radius*1.6), (x,y,z-radius*1.6)]
++    return mesh(label, verts, [(i, (i+1) % 4, p) for p in (4, 5) for i in range(4)],
++                role, bevel=False)
++
++
++def arch_ruin():
++    # A continuous ruined footing makes the arcade an obstacle, not a doorway.
++    box('Continuous buried stylobate', (0, 0, .16), (5, 1.8, .32), 'sandstone')
++    for x in (-1.85, 0, 1.85):
++        box('Square dark column base', (x, 0, .48), (.86, 1.12, .34), 'marble_dark')
++        cylinder('Column torus block', (x, 0, .72), .40, .18, 'marble', n=10)
++        cylinder('Tapered white column', (x, 0, 1.90), .31, 2.30,
++                 'marble', n=10, top=.27)
++        cylinder('Gold echinus', (x, 0, 3.06), .31, .17, 'gold', n=10, top=.43)
++        box('Gold capital abacus', (x, 0, 3.22), (.87, .94, .19), 'gold')
++    def wedge(cx, start, end, broken=False):
++        steps = 3
++        outer = [(cx+1.22*math.cos(t), 3.31+1.22*math.sin(t))
++                 for t in [start+(end-start)*i/steps for i in range(steps+1)]]
++        inner = [(cx+.90*math.cos(t), 3.31+.90*math.sin(t))
++                 for t in [end-(end-start)*i/steps for i in range(steps+1)]]
++        if broken:
++            angle = end
++            # Alternating radii and angles produce a real saw-tooth fracture.
++            jagged = [(cx+r*math.cos(angle+offset), 3.31+r*math.sin(angle+offset))
++                      for r, offset in ((1.15,.07),(1.08,-.07),(.99,.055))]
++            outer += jagged
++        extrude('Jagged arch end' if broken else 'Sandstone arch voussoir',
++                outer+inner, .78, 'sandstone')
++    for i in range(7):
++        wedge(-.925, i*math.pi/7+.008, (i+1)*math.pi/7-.008)
++    for i in range(4):
++        wedge(.925, i*.40+.008, (i+1)*.40-.008, i == 3)
++    extrude('Oversize gold keystone', [(-1.10,4.29),(-1.18,4.60),
++                                      (-.67,4.60),(-.75,4.29)], .88, 'gold')
++    for x, y, size, angle in ((-1.10,.50,(.70,.56,.48),.3),
++                               (1.02,.43,(.88,.66,.54),-.3),
++                               (1.48,-.38,(.64,.72,.42),.6),
++                               (-.60,-.45,(.62,.64,.39),-.2)):
++        box('Fallen arch rubble', (x,y,.42), size, 'sandstone',
++            (0,.16,angle))
++
++
++def crystal_spire():
++    mound('Solid mineral mound', 3.6, 3.4, .96, 'rock')
++    for loc, size in (((-.72,.35,.57),(1.2,1.25,.85)),
++                      ((.80,-.34,.54),(1.40,1.05,.92)),
++                      ((-.36,-.72,.36),(1.4,.85,.64))):
++        lump('Rose matrix boulder', loc, size, 'sandstone')
++    specs = [((-.38,-.05,.66),(-.50,-.13,4.6),.53),
++             ((.43,-.10,.69),(.91,-.21,4.08),.46),
++             ((-.88,.02,.46),(-1.45,.06,3.01),.36),
++             ((.56,.40,.54),(1.49,.62,2.89),.35),
++             ((-.46,.55,.49),(-.93,1.03,2.77),.34),
++             ((.01,-.61,.50),(.12,-1.18,3.10),.36),
++             ((.84,-.42,.43),(1.46,-.79,2.24),.29),
++             ((-.68,-.59,.45),(-1.31,-1.00,2.05),.30),
++             ((.02,.59,.60),(.05,1.12,2.35),.29)]
++    for i, (a,b,r) in enumerate(specs):
++        crystal('Giant hexagonal crystal %02d' % i, a,b,r, core=i<2)
++    for i, (x,y,z) in enumerate(((-1.17,.34,3.75),(.23,.63,4.16),
++                                  (1.20,.36,3.57),(-.92,-.66,4.14),
++                                  (.31,-.83,3.69),(.99,-.57,4.36))):
++        octahedron('Floating stardust %d' % i, (x,y,z), .095)
++
++
++def broken_bulb():
++    """Thick upper bulb with a jagged, truly missing patch facing +Y."""
++    n = 16
++    rings = [(1.87,.16),(2.14,.45),(2.48,.73),(2.84,.84),
++             (3.15,.72),(3.36,.40)]
++    verts = [(r*math.cos(j*math.tau/n), r*math.sin(j*math.tau/n),z)
++             for thickness in (0,.065) for z, radius in rings
++             for j in range(n) for r in (radius-thickness,)]
++    count = n*len(rings)
++    # The stepped outline is deliberately asymmetric, not a clean cutout.
++    missing = {(2,3),(2,4),(3,2),(3,3),(3,4),(3,5),(4,3)}
++    outer = []
++    for i in range(len(rings)-1):
++        for j in range(n):
++            if (i,j) not in missing:
++                outer.append((i*n+j,i*n+(j+1) % n,(i+1)*n+(j+1) % n,(i+1)*n+j))
++    faces = outer + [tuple(k+count for k in reversed(face)) for face in outer]
++    # Close shell walls around the hole and both bulb rims.
++    edges = {}
++    for face in outer:
++        for a,b in zip(face, face[1:]+face[:1]):
++            key = tuple(sorted((a,b)))
++            edges.setdefault(key, []).append((a,b))
++    for uses in edges.values():
++        if len(uses) == 1:
++            a,b = uses[0]
++            faces.append((b,a,a+count,b+count))
++    return mesh('Cracked open upper crystal bulb', verts, faces, 'crystal', bevel=False)
++
++
++def hourglass():
++    mound('Wide bank of spilled sand', 3.6, 3.0, .87)
++    start = len(PARTS)
++    for z in (.28,3.53):
++        cylinder('Heavy gold hourglass disc', (0,0,z), 1.02, .21, 'gold', n=20)
++        cylinder('Dark disc inset', (0,0,z+.115), .86, .055, 'gold_dark', n=16)
++    for i in range(4):
++        angle = math.pi/4+i*math.pi/2
++        points = []
++        for j in range(11):
++            t = j/10
++            a = angle+.22*math.sin(t*math.tau)
++            r = .86+.07*math.sin(t*math.pi)
++            points.append((r*math.cos(a),r*math.sin(a),.40+3.01*t))
++        tube('Twisted dark gold support', points, .095, 'gold_dark', n=6)
++    lathe('Lower hourglass crystal bulb', [(.46,.58),(.64,.78),(.93,.83),
++          (1.20,.69),(1.51,.42),(1.84,.16)], 'crystal', n=16, bevel=False)
++    lathe('Sand trapped in lower bulb', [(.48,.50),(.80,.61),(1.24,.11)],
++          'sand', n=12, bevel=False)
++    broken_bulb()
++    cylinder('Gold neck collar', (0,0,1.86), .235, .14, 'gold', n=12)
++    tilt = Matrix.Translation(Vector((-.25,-.05,.29))) @ Euler(
++        (0,math.radians(20),math.radians(-7))).to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(tilt)
++    pour = [tuple(tilt @ Vector(p)) for p in ((.05,.74,2.81),(.10,.98,2.53),
++            (.18,1.10,2.13),(.27,1.12,1.67),(.37,1.08,1.15),(.44,1.02,.66))]
++    tube('Frozen chunky curved sand stream', pour, .16, 'sand', n=8, bevel=False)
++    for p in ((-.22,.72,3.00),(.29,.86,2.80)):
++        q = tilt @ Vector(p)
++        octahedron('Detached crystal splinter', q, .10, 'crystal')
++
++
++def float_rock():
++    mound('Grounded island shadow mound', 4.0, 3.4, .60)
++    for loc, size in (((-.90,.31,.25),(1.0,.92,.51)),
++                      ((.68,-.59,.22),(1.1,.89,.44))):
++        lump('Ground rock',loc,size,'rock')
++    crystal('Ground shard left',(-1.15,-.32,.23),(-1.46,-.42,.94),.18)
++    crystal('Ground shard right',(.95,.53,.25),(1.20,.65,.96),.20)
++    n = 13
++    outline = [(math.cos(j*math.tau/n)*random.uniform(.91,1.04),
++                math.sin(j*math.tau/n)*random.uniform(.91,1.04)) for j in range(n)]
++    verts = [(.20,.05,1.4)]
++    for ring in range(3):
++        for j,(x,y) in enumerate(outline):
++            if ring == 0:
++                verts.append((x*.73+.12,y*.63,1.94+random.uniform(-.14,.13)))
++            elif ring == 1:
++                verts.append((x*1.76,y*1.40,2.81+random.uniform(-.18,.16)))
++            else:
++                verts.append((x*1.74,y*1.39,3.10))
++    faces = [(0,1+j,1+(j+1) % n) for j in range(n)]
++    for ring in range(2):
++        for j in range(n):
++            a,b = 1+ring*n+j,1+ring*n+(j+1) % n
++            faces += [(a,b,b+n),(a,b+n,a+n)]
++    faces.append(tuple(range(1+2*n,1+3*n)))
++    mesh('Hovering inverted jagged rock cone',verts,faces,'rock_dark')
++    # Separate flat sandstone slab makes the top surface unambiguous.
++    v = [(x*1.73,y*1.38,z) for z in (3.075,3.20) for x,y in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1) % n,(j+1) % n+n,j+n) for j in range(n)]
++    mesh('Flat sandstone island cap',v,f,'sandstone')
++    for x,y,h in ((-.87,-.06,.64),(.45,-.52,.45)):
++        box('Tiny ruined column foot',(x,y,3.25),(.48,.46,.15),'marble')
++        obj = cylinder('Tiny broken marble column',(x,y,3.31+h/2),.17,h,
++                       'marble',n=8)
++        for vert in obj.data.vertices:
++            if vert.co.z > 3.31+h*.8:
++                vert.co.z += random.uniform(-.12,.04)
++    for a,b,r in (((.21,.28,3.16),(.34,.37,4.20),.24),
++                   ((.53,.31,3.15),(.94,.40,3.86),.20),
++                   ((-.02,.48,3.15),(-.30,.65,3.83),.17)):
++        crystal('Island crystal',a,b,r)
++    for loc,size in (((-1.20,.30,1.14),(.43,.39,.45)),
++                      ((.93,.30,1.04),(.42,.43,.39)),
++                      ((-.44,-.65,.96),(.34,.32,.33))):
++        lump('Loose floating stone',loc,size,'rock_dark')
++
++
++def mirror_gate():
++    box('Lower sandstone plinth',(0,0,.175),(5,1.4,.35),'sandstone')
++    box('Upper white marble step',(0,0,.525),(4.65,1.18,.35),'marble')
++    center = (0,0,2.85)
++    hoop('Great circular gold portal frame',center,2.10,.35,.32,'gold',n=32)
++    hoop('Raised outer rim',(0,.19,2.85),2.06,.065,.085,'gold_dark',n=32)
++    hoop('Inner gold lip',(0,.19,2.85),1.80,.065,.075,'gold',n=32)
++    # A closed thin disc has outward mirror material on BOTH circular faces.
++    cylinder('Double sided round mirror',center,1.76,.10,'mirror',n=48,
++             rot=(math.pi/2,0,0),bevel=False)
++    for i in range(16):
++        angle = i*math.tau/16
++        # Lower rays are buried in the plinth; no spikes outside its footprint.
++        if math.sin(angle) < -.86:
++            continue
++        r, tip, half = 2.065, 2.35 if i % 2 == 0 else 2.27, .095
++        u,v = Vector((math.cos(angle),math.sin(angle))),Vector((-math.sin(angle),math.cos(angle)))
++        pts = [r*u+half*v,tip*u,r*u-half*v]
++        extrude('Chunky sun ray',[(p.x,2.85+p.y) for p in pts],.22,'gold')
++        if i % 2 == 0:
++            octahedron('Rim diamond ornament',(1.94*u.x,.27,2.85+1.94*u.y),.10,'gold')
++    for x in (-2.10,2.10):
++        cylinder('Lantern gold pedestal',(x,.12,.88),.16,.36,'gold',n=8)
++        lathe_obj = lathe('Gold lantern finial',[(1.02,.20),(1.22,.24),
++                          (1.43,.09),(1.52,.025)],'gold',n=8)
++        transform(lathe_obj,(x,.12,0))
++
++
++def obelisk():
++    box('Obelisk lower white step',(0,0,.20),(2.4,2.4,.40),'marble')
++    box('Obelisk upper white step',(0,0,.60),(1.98,1.98,.40),'marble')
++    box('Gold shaft shoe',(0,0,.85),(1.49,1.49,.10),'gold')
++    verts = [(x*r,y*r,z) for z,r in ((.88,.66),(5.22,.38))
++             for x,y in ((-1,-1),(1,-1),(1,1),(-1,1))]
++    faces = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    mesh('Tapering rose sandstone obelisk',verts,faces,'sandstone')
++    tip = [(-.39,-.39,5.20),(.39,-.39,5.20),(.39,.39,5.20),
++           (-.39,.39,5.20),(0,0,6.00)]
++    mesh('Gold pyramidion',tip,[(0,3,2,1),(0,1,4),(1,2,4),(2,3,4),(3,0,4)],'gold')
++    z = 4.54
++    cylinder('Inset clock gold dial',(0,.452,z),.345,.035,'gold',n=24,
++             rot=(math.pi/2,0,0))
++    hoop('Clock dark gold bezel',(0,.481,z),.365,.045,.045,'gold_dark',n=24)
++    for i in range(12):
++        a = i*math.tau/12
++        rod('Clock raised hour mark',(.265*math.sin(a),.505,z+.265*math.cos(a)),
++            (.301*math.sin(a),.505,z+.301*math.cos(a)),.014,'gold_dark',n=4,bevel=False)
++    rod('Clock minute hand',(0,.526,z),(-.06,.526,z+.25),.024,'gold_dark',n=4)
++    rod('Clock hour hand',(0,.529,z),(.17,.529,z+.07),.028,'gold_dark',n=4)
++    cylinder('Clock hand pin',(0,.545,z),.042,.045,'gold',n=8,
++             rot=(math.pi/2,0,0))
++    crack = [(-.51,2.34),(-.24,2.56),(-.31,2.77),(.06,3.04),(.14,3.32),(.46,3.52)]
++    def front(z):
++        return .66-(z-.88)*(.28/4.34)+.008
++    tube('Diagonal dark fracture',[(x,front(z),z) for x,z in crack],.026,
++         'sandstone_dark',n=4,bevel=False)
++    tube('Crack branch',[(-.24,front(2.56),2.56),(.02,front(2.63),2.63),
++                         (.14,front(2.78),2.78)],.018,'sandstone_dark',n=4,bevel=False)
++    crystal('Corner crystal tall',(.68,.69,.42),(.96,.91,1.65),.22)
++    crystal('Corner crystal small',(.87,.51,.39),(1.15,.55,1.16),.18)
++
++
++def dune():
++    mound('Smooth wind sculpted dune',5.6,4.0,1.15,dune=True)
++    # The lower half of this oval mirror is genuinely buried inside the dune.
++    start = len(PARTS)
++    frame = hoop('Buried ornate oval mirror', (0,0,0), .91,.13,.16,'gold',n=28)
++    disc = cylinder('Buried mirror glass',(0,0,0),.79,.065,'mirror',n=32,
++                    rot=(math.pi/2,0,0),bevel=False)
++    board = cylinder('Buried mirror back',(0,-.055,0),.80,.045,'mirror_back',n=32,
++                     rot=(math.pi/2,0,0))
++    hoop('Oval engraved dark gold trim',(0,.10,0),.88,.035,.035,'gold_dark',n=28)
++    for a in (0,math.pi/2,math.pi):
++        x,z = .93*math.cos(a),.93*math.sin(a)
++        octahedron('Buried frame fleur',(x,0,z),.115,'gold')
++    matrix = Matrix.Translation(Vector((.40,.05,.93))) @ Euler(
++        (math.radians(-24),math.radians(-24),math.radians(8))).to_matrix().to_4x4()
++    oval = Matrix.Diagonal(Vector((1.12,1,.74,1)))
++    for obj in PARTS[start:]:
++        obj.data.transform(matrix @ oval)
++    for loc,size in (((-1.90,.47,.25),(1.03,.81,.53)),
++                      ((1.77,-.91,.20),(.85,.76,.41)),
++                      ((-1.38,-1.05,.17),(.69,.62,.37))):
++        lump('Dune foot sandstone rock',loc,size,'sandstone',detail=2)
++
++
++SPECS = [
++    ('LM_ArchRuin',(5.0,1.8,4.6),arch_ruin),
++    ('LM_CrystalSpire',(3.6,3.4,4.6),crystal_spire),
++    ('LM_Hourglass',(3.6,3.0,4.2),hourglass),
++    ('LM_FloatRock',(4.0,3.4,4.2),float_rock),
++    ('LM_MirrorGate',(5.0,1.4,5.2),mirror_gate),
++    ('LM_Obelisk',(2.4,2.4,6.0),obelisk),
++    ('LM_Dune',(5.6,4.0,1.7),dune),
++]
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++            for fn in (min,max)]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dims):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = name, name+'_Mesh'
++    # Only bevel tessellation may need reduction; preserve material regions.
++    if triangles(obj) > 4400:
++        mod = obj.modifiers.new('Landmark triangle budget','DECIMATE')
++        mod.ratio, mod.delimit = 4250/triangles(obj), {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    assert triangles(obj) <= 4500, (name,triangles(obj))
++    lo, hi = bounds(obj)
++    span, center = hi-lo, (hi+lo)/2
++    for v in obj.data.vertices:
++        v.co.x = (v.co.x-center.x)*dims[0]/span.x
++        v.co.y = (v.co.y-center.y)*dims[1]/span.y
++        v.co.z = (v.co.z-lo.z)*dims[2]/span.z
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert all(e.is_manifold for e in bm.edges), name+' has an open/nonmanifold edge'
++    bm.to_mesh(obj.data)
++    bm.free()
++    obj.data.update()
++    bpy.context.view_layer.update()
++    lo, hi = bounds(obj)
++    assert abs(lo.z) < 1e-5 and abs(hi.z-dims[2]) < 1e-5, name
++    assert all(abs(obj.dimensions[i]-dims[i]) < 1e-4 for i in range(3)), name
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    for mat in obj.data.materials:
++        assert mat.name in ROLES and tuple(mat.diffuse_color) == (.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5,.5,.5,1)
++        assert not any(n.type == 'TEX_IMAGE' for n in mat.node_tree.nodes)
++    obj['chapter'],obj['front'] = 'Mirage Desert / Mirror World','+Y'
++    obj['footprint_and_height_m'],obj['triangle_count'] = list(dims),triangles(obj)
++    obj['solid_obstacle'] = True
++    destination = OUTPUT / ('Kit_'+name+'.fbx')
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024, destination
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    """Review-only colours and transforms, applied strictly after all exports."""
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y = 1600,900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shading = scene.display.shading
++    shading.light,shading.color_type = 'FLAT','MATERIAL'
++    shading.show_shadows,shading.show_cavity = False,True
++    shading.cavity_type = 'BOTH'
++    shading.curvature_ridge_factor,shading.curvature_valley_factor = 1.5,1.2
++    shading.show_specular_highlight = False
++    shading.background_type,shading.background_color = 'WORLD',(.035,.043,.063)
++    if scene.world is None:
++        scene.world = bpy.data.worlds.new('Review world')
++    scene.world.color = (.035,.043,.063)
++    old_locations = [obj.location.copy() for obj in objects]
++    helpers = []
++    try:
++        for role,mat in MATS.items():
++            mat.diffuse_color = (*PALETTE.get(role,(.5,.5,.5)),1)
++        gap = .85
++        total = sum(dims[0] for _,dims,_ in SPECS)+gap*(len(objects)-1)
++        x = -total/2
++        for obj,(_,dims,_) in zip(objects,SPECS):
++            obj.location.x = x+dims[0]/2
++            x += dims[0]+gap
++        camera = bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type,camera.data.ortho_scale = 'ORTHO',total+1.0
++        target = Vector((0,0,1.5))
++        a = math.radians(55)
++        camera.location = target+Vector((0,35*math.cos(a),35*math.sin(a)))
++        camera.rotation_euler = (target-camera.location).to_track_quat('-Z','Y').to_euler()
++        for obj in objects:
++            data = bpy.data.curves.new('Review caption','FONT')
++            data.body,data.align_x,data.size = obj.name,'CENTER',.24
++            data.materials.append(MATS['crystal_core'])
++            caption = bpy.data.objects.new('Caption '+obj.name,data)
++            scene.collection.objects.link(caption)
++            caption.location = (obj.location.x,2.75,-.20)
++            caption.rotation_euler = camera.rotation_euler
++            helpers.append(caption)
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print('PREVIEW '+str(PREVIEW),flush=True)
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            bpy.data.objects.remove(obj,do_unlink=True)
++        for obj,loc in zip(objects,old_locations):
++            obj.location = loc
++        for mat in MATS.values():
++            mat.diffuse_color = (.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system,scene.unit_settings.scale_length = 'METRIC',1.0
++    materials()
++    OUTPUT.mkdir(parents=True,exist_ok=True)
++    exported = []
++    for i,(name,dims,build) in enumerate(SPECS):
++        PARTS = []
++        random.seed(33181+i*7919)
++        build()
++        exported.append(finish(name,dims))
++    assert len(scene.objects) == 7 and all(obj.type == 'MESH' for obj in scene.objects)
++    preview(exported)
++    assert len(scene.objects) == 7 and all(obj.type == 'MESH' for obj in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 2721ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py:41: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_ArchRuin.fbx'
+export finished in 0.0054 sec.
+EXPORTED LM_ArchRuin 4140 (5.0, 1.8, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_CrystalSpire.fbx'
+export finished in 0.0046 sec.
+EXPORTED LM_CrystalSpire 848 (3.6, 3.4, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_Hourglass.fbx'
+export finished in 0.0059 sec.
+EXPORTED LM_Hourglass 3922 (3.6, 3.0, 4.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_FloatRock.fbx'
+export finished in 0.0052 sec.
+EXPORTED LM_FloatRock 1696 (4.0, 3.4, 4.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_MirrorGate.fbx'
+export finished in 0.0058 sec.
+EXPORTED LM_MirrorGate 4364 (5.0, 1.4, 5.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_Obelisk.fbx'
+export finished in 0.0053 sec.
+EXPORTED LM_Obelisk 2018 (2.4, 2.4, 6.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_Dune.fbx'
+export finished in 0.0055 sec.
+EXPORTED LM_Dune 2386 (5.6, 4.0, 1.7)
+00:02.485  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_landmarks_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_landmarks_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+All seven pieces now export, and the preview renders. The first run caught a mesh-normal issue on the floating island; that’s fixed. The script verifies dimensions, closed mesh edges, material names, and triangle counts. The largest piece is 4,364 triangles.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -Path Game/Assets/Art/Characters/Ch3 -Filter 'Kit_LM_*.fbx' | Select-Object Name,Length; git diff --stat -- Art/tools/blender_kit_ch3_landmarks.py; Get-Item -LiteralPath Art/tools/blender_kit_ch3_landmarks.py | Select-Object FullName,Length" in C:\Project\Cat_Tang
+ succeeded in 235ms:
+
+Name                    Length
+----                    ------
+Kit_LM_ArchRuin.fbx      77276
+Kit_LM_CrystalSpire.fbx  37468
+Kit_LM_Dune.fbx          67212
+Kit_LM_FloatRock.fbx     52556
+Kit_LM_Hourglass.fbx     92812
+Kit_LM_MirrorGate.fbx    77292
+Kit_LM_Obelisk.fbx       49116
+                         29737
+
+
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py
+diff --git a/Art/tools/blender_kit_ch3_landmarks.py b/Art/tools/blender_kit_ch3_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..412f3f2e26bcc3480f3283361cdb97a9536acff7
+--- /dev/null
++++ b/Art/tools/blender_kit_ch3_landmarks.py
+@@ -0,0 +1,656 @@
++# 거울 세계 전투방의 대형 장애물 랜드마크 7종과 검토용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py
++"""Seven deterministic, metre-scale landmarks; stock Blender 5.x only."""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_landmarks_preview.png'
++ROLES = ('sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
++         'sand', 'marble', 'marble_dark', 'gold', 'gold_dark', 'mirror',
++         'mirror_back', 'crystal', 'crystal_core', 'water', 'water_foam',
++         'cloud', 'cloud_shade', 'cloth_rose', 'stardust', 'wood', 'roof_tile',
++         'window_lit')
++HARD = {'sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
++        'marble', 'marble_dark', 'gold', 'gold_dark'}
++PALETTE = {
++    'sandstone': (.67, .35, .31), 'sandstone_light': (.85, .58, .45),
++    'sandstone_dark': (.43, .22, .24), 'rock': (.48, .35, .39),
++    'rock_dark': (.24, .18, .29), 'sand': (.84, .65, .43),
++    'marble': (.90, .88, .83), 'marble_dark': (.47, .43, .49),
++    'gold': (.96, .62, .16), 'gold_dark': (.45, .26, .075),
++    'mirror': (.43, .68, .79), 'mirror_back': (.24, .29, .37),
++    'crystal': (.65, .83, .89), 'crystal_core': (.98, .99, 1.0),
++    'stardust': (1.0, .86, .53),
++}
++MATS = {}
++PARTS = []
++
++
++def materials():
++    for role in ROLES:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        nodes = mat.node_tree.nodes
++        nodes.clear()
++        shader = nodes.new('ShaderNodeBsdfPrincipled')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Metallic'].default_value = 0
++        shader.inputs['Roughness'].default_value = .8
++        output = nodes.new('ShaderNodeOutputMaterial')
++        mat.node_tree.links.new(shader.outputs['BSDF'], output.inputs['Surface'])
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=True, smooth=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.materials.append(MATS[role])
++    data.update()
++    bm = bmesh.new()
++    bm.from_mesh(data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    bm.to_mesh(data)
++    bm.free()
++    for face in data.polygons:
++        face.use_smooth = smooth
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    if bevel and role in HARD:
++        mod = obj.modifiers.new('Worn edges 0.025m', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(45)
++    PARTS.append(obj)
++    return obj
++
++
++def transform(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return transform(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def lathe(label, rings, role, n=16, bevel=True, smooth=False):
++    """Closed surface of revolution, rings = (z, radius). No zero radii."""
++    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
++             for z, r in rings for j in range(n)]
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(len(rings)-1) for j in range(n)]
++    faces.append(tuple(range((len(rings)-1)*n, len(rings)*n)))
++    return mesh(label, verts, faces, role, bevel, smooth)
++
++
++def cylinder(label, loc, radius, depth, role, n=12, top=None,
++             rot=(0, 0, 0), bevel=True):
++    obj = lathe(label, [(-depth/2, radius),
++                       (depth/2, radius if top is None else top)], role, n, bevel)
++    return transform(obj, loc, rot)
++
++
++def tube(label, points, radius, role, n=6, bevel=True):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i+1, len(points)-1)]) -
++                   Vector(points[max(0, i-1)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        u = reference.cross(tangent).normalized()
++        v = tangent.cross(u)
++        verts += [tuple(Vector(point) + radius *
++                        (u*math.cos(j*math.tau/n) + v*math.sin(j*math.tau/n)))
++                  for j in range(n)]
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(len(points)-1) for j in range(n)]
++    faces.append(tuple(range((len(points)-1)*n, len(points)*n)))
++    return mesh(label, verts, faces, role, bevel)
++
++
++def rod(label, a, b, radius, role, n=6, bevel=True):
++    return tube(label, [a, b], radius, role, n, bevel)
++
++
++def extrude(label, polygon, depth, role, y=0, bevel=True):
++    n = len(polygon)
++    verts = [(x, y+d, z) for d in (-depth/2, depth/2) for x, z in polygon]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2*n))]
++    faces += [(j, (j+1) % n, (j+1) % n+n, j+n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def hoop(label, loc, radius, band, depth, role, n=32):
++    verts = [(r*math.cos(j*math.tau/n), y, r*math.sin(j*math.tau/n))
++             for r, y in ((radius-band, -depth/2), (radius, -depth/2),
++                          (radius, depth/2), (radius-band, depth/2))
++             for j in range(n)]
++    faces = [(k*n+j, k*n+(j+1) % n, ((k+1) % 4)*n+(j+1) % n,
++              ((k+1) % 4)*n+j) for k in range(4) for j in range(n)]
++    return transform(mesh(label, verts, faces, role), loc)
++
++
++def lump(label, loc, size, role, detail=1):
++    bm = bmesh.new()
++    bmesh.ops.create_icosphere(bm, subdivisions=detail, radius=1)
++    for vert in bm.verts:
++        vert.co *= random.uniform(.89, 1.11)
++        vert.co = Vector(loc) + Vector(tuple(vert.co[i]*size[i]/2 for i in range(3)))
++    bm.verts.ensure_lookup_table()
++    obj = mesh(label, [tuple(v.co) for v in bm.verts],
++               [tuple(v.index for v in f.verts) for f in bm.faces], role)
++    bm.free()
++    return obj
++
++
++def mound(label, width, depth, height, role='sand', dune=False):
++    """Solid continuous ground footprint; asymmetric crest and smooth top."""
++    n = 24
++    verts = []
++    for ring, (r, z) in enumerate(((1, 0), (.93, .14), (.69, .55),
++                                  (.36, .88), (.09, 1))):
++        for j in range(n):
++            a = j*math.tau/n
++            ripple = 1 + .035*math.sin(3*a+.4) + .025*math.cos(5*a)
++            shift = (1-r)*(.53 if dune else .13)
++            x = width/2*(r*math.cos(a)*ripple + shift)
++            y = depth/2*(r*math.sin(a)*ripple - shift*.30)
++            zz = height*z*(1 + .045*math.sin(2*a)) if ring else 0
++            verts.append((x, y, zz))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(i*n+j, i*n+(j+1) % n, (i+1)*n+(j+1) % n, (i+1)*n+j)
++              for i in range(4) for j in range(n)]
++    verts.append((width*(.265 if dune else .065), -depth*.03, height))
++    faces += [(4*n+j, 4*n+(j+1) % n, len(verts)-1) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel=False, smooth=True)
++
++
++def crystal(label, a, b, radius, core=False):
++    """Hexagonal prism, a single pointed termination, an actual inner core.
++
++    The inner core is exposed in a recessed split in the +Y prism facet;
++    it therefore reads in opaque material previews without shader tricks.
++    """
++    a, b = Vector(a), Vector(b)
++    length = (b-a).length
++    verts = [(r*math.cos(j*math.tau/6), r*math.sin(j*math.tau/6), z)
++             for z, r in ((0, radius*.77), (length*.74, radius))
++             for j in range(6)]
++    verts.append((radius*.13, -radius*.08, length))
++    faces = [tuple(reversed(range(6)))]
++    faces += [(j, (j+1) % 6, (j+1) % 6+6, j+6) for j in range(6)]
++    faces += [(j+6, (j+1) % 6+6, 12) for j in range(6)]
++    if core:
++        # Replace the forward facet with a recessed slit capped by the core.
++        index = 2  # j=1, normal +Y
++        outer = faces[index]
++        mid = sum((Vector(verts[k]) for k in outer), Vector())/4
++        inner = []
++        for k in outer:
++            v = mid + (Vector(verts[k])-mid)*.56
++            v.y -= radius*.20
++            inner.append(len(verts))
++            verts.append(tuple(v))
++        faces[index] = tuple(inner)
++        for j in range(4):
++            faces.append((outer[j], outer[(j+1) % 4], inner[(j+1) % 4], inner[j]))
++    obj = mesh(label, verts, faces, 'crystal', bevel=False)
++    if core:
++        obj.data.materials.append(MATS['crystal_core'])
++        obj.data.polygons[2].material_index = 1
++    matrix = Matrix.Translation(a) @ (b-a).to_track_quat('Z', 'Y').to_matrix().to_4x4()
++    obj.data.transform(matrix)
++    if core:
++        inside = lathe(label+' inner luminous prism',
++                       [(length*.14, radius*.33), (length*.78, radius*.36),
++                        (length*.91, radius*.025)], 'crystal_core', n=6, bevel=False)
++        inside.data.transform(matrix)
++    return obj
++
++
++def octahedron(label, loc, radius, role='stardust'):
++    x, y, z = loc
++    verts = [(x+radius,y,z), (x,y+radius,z), (x-radius,y,z),
++             (x,y-radius,z), (x,y,z+radius*1.6), (x,y,z-radius*1.6)]
++    return mesh(label, verts, [(i, (i+1) % 4, p) for p in (4, 5) for i in range(4)],
++                role, bevel=False)
++
++
++def arch_ruin():
++    # A continuous ruined footing makes the arcade an obstacle, not a doorway.
++    box('Continuous buried stylobate', (0, 0, .16), (5, 1.8, .32), 'sandstone')
++    for x in (-1.85, 0, 1.85):
++        box('Square dark column base', (x, 0, .48), (.86, 1.12, .34), 'marble_dark')
++        cylinder('Column torus block', (x, 0, .72), .40, .18, 'marble', n=10)
++        cylinder('Tapered white column', (x, 0, 1.90), .31, 2.30,
++                 'marble', n=10, top=.27)
++        cylinder('Gold echinus', (x, 0, 3.06), .31, .17, 'gold', n=10, top=.43)
++        box('Gold capital abacus', (x, 0, 3.22), (.87, .94, .19), 'gold')
++    def wedge(cx, start, end, broken=False):
++        steps = 3
++        outer = [(cx+1.22*math.cos(t), 3.31+1.22*math.sin(t))
++                 for t in [start+(end-start)*i/steps for i in range(steps+1)]]
++        inner = [(cx+.90*math.cos(t), 3.31+.90*math.sin(t))
++                 for t in [end-(end-start)*i/steps for i in range(steps+1)]]
++        if broken:
++            angle = end
++            # Alternating radii and angles produce a real saw-tooth fracture.
++            jagged = [(cx+r*math.cos(angle+offset), 3.31+r*math.sin(angle+offset))
++                      for r, offset in ((1.15,.07),(1.08,-.07),(.99,.055))]
++            outer += jagged
++        extrude('Jagged arch end' if broken else 'Sandstone arch voussoir',
++                outer+inner, .78, 'sandstone')
++    for i in range(7):
++        wedge(-.925, i*math.pi/7+.008, (i+1)*math.pi/7-.008)
++    for i in range(4):
++        wedge(.925, i*.40+.008, (i+1)*.40-.008, i == 3)
++    extrude('Oversize gold keystone', [(-1.10,4.29),(-1.18,4.60),
++                                      (-.67,4.60),(-.75,4.29)], .88, 'gold')
++    for x, y, size, angle in ((-1.10,.50,(.70,.56,.48),.3),
++                               (1.02,.43,(.88,.66,.54),-.3),
++                               (1.48,-.38,(.64,.72,.42),.6),
++                               (-.60,-.45,(.62,.64,.39),-.2)):
++        box('Fallen arch rubble', (x,y,.42), size, 'sandstone',
++            (0,.16,angle))
++
++
++def crystal_spire():
++    mound('Solid mineral mound', 3.6, 3.4, .96, 'rock')
++    for loc, size in (((-.72,.35,.57),(1.2,1.25,.85)),
++                      ((.80,-.34,.54),(1.40,1.05,.92)),
++                      ((-.36,-.72,.36),(1.4,.85,.64))):
++        lump('Rose matrix boulder', loc, size, 'sandstone')
++    specs = [((-.38,-.05,.66),(-.50,-.13,4.6),.53),
++             ((.43,-.10,.69),(.91,-.21,4.08),.46),
++             ((-.88,.02,.46),(-1.45,.06,3.01),.36),
++             ((.56,.40,.54),(1.49,.62,2.89),.35),
++             ((-.46,.55,.49),(-.93,1.03,2.77),.34),
++             ((.01,-.61,.50),(.12,-1.18,3.10),.36),
++             ((.84,-.42,.43),(1.46,-.79,2.24),.29),
++             ((-.68,-.59,.45),(-1.31,-1.00,2.05),.30),
++             ((.02,.59,.60),(.05,1.12,2.35),.29)]
++    for i, (a,b,r) in enumerate(specs):
++        crystal('Giant hexagonal crystal %02d' % i, a,b,r, core=i<2)
++    for i, (x,y,z) in enumerate(((-1.17,.34,3.75),(.23,.63,4.16),
++                                  (1.20,.36,3.57),(-.92,-.66,4.14),
++                                  (.31,-.83,3.69),(.99,-.57,4.36))):
++        octahedron('Floating stardust %d' % i, (x,y,z), .095)
++
++
++def broken_bulb():
++    """Thick upper bulb with a jagged, truly missing patch facing +Y."""
++    n = 16
++    rings = [(1.87,.16),(2.14,.45),(2.48,.73),(2.84,.84),
++             (3.15,.72),(3.36,.40)]
++    verts = [(r*math.cos(j*math.tau/n), r*math.sin(j*math.tau/n),z)
++             for thickness in (0,.065) for z, radius in rings
++             for j in range(n) for r in (radius-thickness,)]
++    count = n*len(rings)
++    # The stepped outline is deliberately asymmetric, not a clean cutout.
++    missing = {(2,3),(2,4),(3,2),(3,3),(3,4),(3,5),(4,3)}
++    outer = []
++    for i in range(len(rings)-1):
++        for j in range(n):
++            if (i,j) not in missing:
++                outer.append((i*n+j,i*n+(j+1) % n,(i+1)*n+(j+1) % n,(i+1)*n+j))
++    faces = outer + [tuple(k+count for k in reversed(face)) for face in outer]
++    # Close shell walls around the hole and both bulb rims.
++    edges = {}
++    for face in outer:
++        for a,b in zip(face, face[1:]+face[:1]):
++            key = tuple(sorted((a,b)))
++            edges.setdefault(key, []).append((a,b))
++    for uses in edges.values():
++        if len(uses) == 1:
++            a,b = uses[0]
++            faces.append((b,a,a+count,b+count))
++    return mesh('Cracked open upper crystal bulb', verts, faces, 'crystal', bevel=False)
++
++
++def hourglass():
++    mound('Wide bank of spilled sand', 3.6, 3.0, .87)
++    start = len(PARTS)
++    for z in (.28,3.53):
++        cylinder('Heavy gold hourglass disc', (0,0,z), 1.02, .21, 'gold', n=20)
++        cylinder('Dark disc inset', (0,0,z+.115), .86, .055, 'gold_dark', n=16)
++    for i in range(4):
++        angle = math.pi/4+i*math.pi/2
++        points = []
++        for j in range(11):
++            t = j/10
++            a = angle+.22*math.sin(t*math.tau)
++            r = .86+.07*math.sin(t*math.pi)
++            points.append((r*math.cos(a),r*math.sin(a),.40+3.01*t))
++        tube('Twisted dark gold support', points, .095, 'gold_dark', n=6)
++    lathe('Lower hourglass crystal bulb', [(.46,.58),(.64,.78),(.93,.83),
++          (1.20,.69),(1.51,.42),(1.84,.16)], 'crystal', n=16, bevel=False)
++    lathe('Sand trapped in lower bulb', [(.48,.50),(.80,.61),(1.24,.11)],
++          'sand', n=12, bevel=False)
++    broken_bulb()
++    cylinder('Gold neck collar', (0,0,1.86), .235, .14, 'gold', n=12)
++    tilt = Matrix.Translation(Vector((-.25,-.05,.29))) @ Euler(
++        (0,math.radians(20),math.radians(-7))).to_matrix().to_4x4()
++    for obj in PARTS[start:]:
++        obj.data.transform(tilt)
++    pour = [tuple(tilt @ Vector(p)) for p in ((.05,.74,2.81),(.10,.98,2.53),
++            (.18,1.10,2.13),(.27,1.12,1.67),(.37,1.08,1.15),(.44,1.02,.66))]
++    tube('Frozen chunky curved sand stream', pour, .16, 'sand', n=8, bevel=False)
++    for p in ((-.22,.72,3.00),(.29,.86,2.80)):
++        q = tilt @ Vector(p)
++        octahedron('Detached crystal splinter', q, .10, 'crystal')
++
++
++def float_rock():
++    mound('Grounded island shadow mound', 4.0, 3.4, .60)
++    for loc, size in (((-.90,.31,.25),(1.0,.92,.51)),
++                      ((.68,-.59,.22),(1.1,.89,.44))):
++        lump('Ground rock',loc,size,'rock')
++    crystal('Ground shard left',(-1.15,-.32,.23),(-1.46,-.42,.94),.18)
++    crystal('Ground shard right',(.95,.53,.25),(1.20,.65,.96),.20)
++    n = 13
++    outline = [(math.cos(j*math.tau/n)*random.uniform(.91,1.04),
++                math.sin(j*math.tau/n)*random.uniform(.91,1.04)) for j in range(n)]
++    verts = [(.20,.05,1.4)]
++    for ring in range(3):
++        for j,(x,y) in enumerate(outline):
++            if ring == 0:
++                verts.append((x*.73+.12,y*.63,1.94+random.uniform(-.14,.13)))
++            elif ring == 1:
++                verts.append((x*1.76,y*1.40,2.81+random.uniform(-.18,.16)))
++            else:
++                verts.append((x*1.74,y*1.39,3.10))
++    faces = [(0,1+j,1+(j+1) % n) for j in range(n)]
++    for ring in range(2):
++        for j in range(n):
++            a,b = 1+ring*n+j,1+ring*n+(j+1) % n
++            faces += [(a,b,b+n),(a,b+n,a+n)]
++    faces.append(tuple(range(1+2*n,1+3*n)))
++    mesh('Hovering inverted jagged rock cone',verts,faces,'rock_dark')
++    # Separate flat sandstone slab makes the top surface unambiguous.
++    v = [(x*1.73,y*1.38,z) for z in (3.075,3.20) for x,y in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1) % n,(j+1) % n+n,j+n) for j in range(n)]
++    mesh('Flat sandstone island cap',v,f,'sandstone')
++    for x,y,h in ((-.87,-.06,.64),(.45,-.52,.45)):
++        box('Tiny ruined column foot',(x,y,3.25),(.48,.46,.15),'marble')
++        obj = cylinder('Tiny broken marble column',(x,y,3.31+h/2),.17,h,
++                       'marble',n=8)
++        for vert in obj.data.vertices:
++            if vert.co.z > 3.31+h*.8:
++                vert.co.z += random.uniform(-.12,.04)
++    for a,b,r in (((.21,.28,3.16),(.34,.37,4.20),.24),
++                   ((.53,.31,3.15),(.94,.40,3.86),.20),
++                   ((-.02,.48,3.15),(-.30,.65,3.83),.17)):
++        crystal('Island crystal',a,b,r)
++    for loc,size in (((-1.20,.30,1.14),(.43,.39,.45)),
++                      ((.93,.30,1.04),(.42,.43,.39)),
++                      ((-.44,-.65,.96),(.34,.32,.33))):
++        lump('Loose floating stone',loc,size,'rock_dark')
++
++
++def mirror_gate():
++    box('Lower sandstone plinth',(0,0,.175),(5,1.4,.35),'sandstone')
++    box('Upper white marble step',(0,0,.525),(4.65,1.18,.35),'marble')
++    center = (0,0,2.85)
++    hoop('Great circular gold portal frame',center,2.10,.35,.32,'gold',n=32)
++    hoop('Raised outer rim',(0,.19,2.85),2.06,.065,.085,'gold_dark',n=32)
++    hoop('Inner gold lip',(0,.19,2.85),1.80,.065,.075,'gold',n=32)
++    # A closed thin disc has outward mirror material on BOTH circular faces.
++    cylinder('Double sided round mirror',center,1.76,.10,'mirror',n=48,
++             rot=(math.pi/2,0,0),bevel=False)
++    for i in range(16):
++        angle = i*math.tau/16
++        # Lower rays are buried in the plinth; no spikes outside its footprint.
++        if math.sin(angle) < -.86:
++            continue
++        r, tip, half = 2.065, 2.35 if i % 2 == 0 else 2.27, .095
++        u,v = Vector((math.cos(angle),math.sin(angle))),Vector((-math.sin(angle),math.cos(angle)))
++        pts = [r*u+half*v,tip*u,r*u-half*v]
++        extrude('Chunky sun ray',[(p.x,2.85+p.y) for p in pts],.22,'gold')
++        if i % 2 == 0:
++            octahedron('Rim diamond ornament',(1.94*u.x,.27,2.85+1.94*u.y),.10,'gold')
++    for x in (-2.10,2.10):
++        cylinder('Lantern gold pedestal',(x,.12,.88),.16,.36,'gold',n=8)
++        lathe_obj = lathe('Gold lantern finial',[(1.02,.20),(1.22,.24),
++                          (1.43,.09),(1.52,.025)],'gold',n=8)
++        transform(lathe_obj,(x,.12,0))
++
++
++def obelisk():
++    box('Obelisk lower white step',(0,0,.20),(2.4,2.4,.40),'marble')
++    box('Obelisk upper white step',(0,0,.60),(1.98,1.98,.40),'marble')
++    box('Gold shaft shoe',(0,0,.85),(1.49,1.49,.10),'gold')
++    verts = [(x*r,y*r,z) for z,r in ((.88,.66),(5.22,.38))
++             for x,y in ((-1,-1),(1,-1),(1,1),(-1,1))]
++    faces = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    mesh('Tapering rose sandstone obelisk',verts,faces,'sandstone')
++    tip = [(-.39,-.39,5.20),(.39,-.39,5.20),(.39,.39,5.20),
++           (-.39,.39,5.20),(0,0,6.00)]
++    mesh('Gold pyramidion',tip,[(0,3,2,1),(0,1,4),(1,2,4),(2,3,4),(3,0,4)],'gold')
++    z = 4.54
++    cylinder('Inset clock gold dial',(0,.452,z),.345,.035,'gold',n=24,
++             rot=(math.pi/2,0,0))
++    hoop('Clock dark gold bezel',(0,.481,z),.365,.045,.045,'gold_dark',n=24)
++    for i in range(12):
++        a = i*math.tau/12
++        rod('Clock raised hour mark',(.265*math.sin(a),.505,z+.265*math.cos(a)),
++            (.301*math.sin(a),.505,z+.301*math.cos(a)),.014,'gold_dark',n=4,bevel=False)
++    rod('Clock minute hand',(0,.526,z),(-.06,.526,z+.25),.024,'gold_dark',n=4)
++    rod('Clock hour hand',(0,.529,z),(.17,.529,z+.07),.028,'gold_dark',n=4)
++    cylinder('Clock hand pin',(0,.545,z),.042,.045,'gold',n=8,
++             rot=(math.pi/2,0,0))
++    crack = [(-.51,2.34),(-.24,2.56),(-.31,2.77),(.06,3.04),(.14,3.32),(.46,3.52)]
++    def front(z):
++        return .66-(z-.88)*(.28/4.34)+.008
++    tube('Diagonal dark fracture',[(x,front(z),z) for x,z in crack],.026,
++         'sandstone_dark',n=4,bevel=False)
++    tube('Crack branch',[(-.24,front(2.56),2.56),(.02,front(2.63),2.63),
++                         (.14,front(2.78),2.78)],.018,'sandstone_dark',n=4,bevel=False)
++    crystal('Corner crystal tall',(.68,.69,.42),(.96,.91,1.65),.22)
++    crystal('Corner crystal small',(.87,.51,.39),(1.15,.55,1.16),.18)
++
++
++def dune():
++    mound('Smooth wind sculpted dune',5.6,4.0,1.15,dune=True)
++    # The lower half of this oval mirror is genuinely buried inside the dune.
++    start = len(PARTS)
++    hoop('Buried ornate oval mirror', (0,0,0), .91,.13,.16,'gold',n=28)
++    cylinder('Buried mirror glass',(0,0,0),.79,.065,'mirror',n=32,
++             rot=(math.pi/2,0,0),bevel=False)
++    cylinder('Buried mirror back',(0,-.055,0),.80,.045,'mirror_back',n=32,
++             rot=(math.pi/2,0,0))
++    hoop('Oval engraved dark gold trim',(0,.10,0),.88,.035,.035,'gold_dark',n=28)
++    for a in (0,math.pi/2,math.pi):
++        x,z = .93*math.cos(a),.93*math.sin(a)
++        octahedron('Buried frame fleur',(x,0,z),.115,'gold')
++    matrix = Matrix.Translation(Vector((.55,.50,.93))) @ Euler(
++        (math.radians(24),math.radians(-24),math.radians(8))).to_matrix().to_4x4()
++    oval = Matrix.Diagonal(Vector((1.12,1,.74,1)))
++    for obj in PARTS[start:]:
++        obj.data.transform(matrix @ oval)
++    for loc,size in (((-1.90,.47,.25),(1.03,.81,.53)),
++                      ((1.77,-.91,.20),(.85,.76,.41)),
++                      ((-1.38,-1.05,.17),(.69,.62,.37))):
++        lump('Dune foot sandstone rock',loc,size,'sandstone',detail=2)
++
++
++SPECS = [
++    ('LM_ArchRuin',(5.0,1.8,4.6),arch_ruin),
++    ('LM_CrystalSpire',(3.6,3.4,4.6),crystal_spire),
++    ('LM_Hourglass',(3.6,3.0,4.2),hourglass),
++    ('LM_FloatRock',(4.0,3.4,4.2),float_rock),
++    ('LM_MirrorGate',(5.0,1.4,5.2),mirror_gate),
++    ('LM_Obelisk',(2.4,2.4,6.0),obelisk),
++    ('LM_Dune',(5.6,4.0,1.7),dune),
++]
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++            for fn in (min,max)]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dims):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = name, name+'_Mesh'
++    # Only bevel tessellation may need reduction; preserve material regions.
++    if triangles(obj) > 4400:
++        mod = obj.modifiers.new('Landmark triangle budget','DECIMATE')
++        mod.ratio, mod.delimit = 4250/triangles(obj), {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    assert triangles(obj) <= 4500, (name,triangles(obj))
++    lo, hi = bounds(obj)
++    span, center = hi-lo, (hi+lo)/2
++    for v in obj.data.vertices:
++        v.co.x = (v.co.x-center.x)*dims[0]/span.x
++        v.co.y = (v.co.y-center.y)*dims[1]/span.y
++        v.co.z = (v.co.z-lo.z)*dims[2]/span.z
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert all(e.is_manifold for e in bm.edges), name+' has an open/nonmanifold edge'
++    bm.to_mesh(obj.data)
++    bm.free()
++    obj.data.update()
++    bpy.context.view_layer.update()
++    lo, hi = bounds(obj)
++    assert abs(lo.z) < 1e-5 and abs(hi.z-dims[2]) < 1e-5, name
++    assert all(abs(obj.dimensions[i]-dims[i]) < 1e-4 for i in range(3)), name
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    for mat in obj.data.materials:
++        assert mat.name in ROLES and tuple(mat.diffuse_color) == (.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5,.5,.5,1)
++        assert not any(n.type == 'TEX_IMAGE' for n in mat.node_tree.nodes)
++    obj['chapter'],obj['front'] = 'Mirage Desert / Mirror World','+Y'
++    obj['footprint_and_height_m'],obj['triangle_count'] = list(dims),triangles(obj)
++    obj['solid_obstacle'] = True
++    destination = OUTPUT / ('Kit_'+name+'.fbx')
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024, destination
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    """Review-only colours and transforms, applied strictly after all exports."""
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y = 1600,900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shading = scene.display.shading
++    shading.light,shading.color_type = 'FLAT','MATERIAL'
++    shading.show_shadows,shading.show_cavity = False,True
++    shading.cavity_type = 'BOTH'
++    shading.curvature_ridge_factor,shading.curvature_valley_factor = 1.5,1.2
++    shading.show_specular_highlight = False
++    shading.background_type,shading.background_color = 'WORLD',(.035,.043,.063)
++    if scene.world is None:
++        scene.world = bpy.data.worlds.new('Review world')
++    scene.world.color = (.035,.043,.063)
++    old_locations = [obj.location.copy() for obj in objects]
++    helpers = []
++    try:
++        for role,mat in MATS.items():
++            mat.diffuse_color = (*PALETTE.get(role,(.5,.5,.5)),1)
++        gap = .85
++        total = sum(dims[0] for _,dims,_ in SPECS)+gap*(len(objects)-1)
++        x = -total/2
++        for obj,(_,dims,_) in zip(objects,SPECS):
++            obj.location.x = x+dims[0]/2
++            x += dims[0]+gap
++        camera = bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type,camera.data.ortho_scale = 'ORTHO',total+1.0
++        target = Vector((0,0,1.5))
++        a = math.radians(55)
++        camera.location = target+Vector((0,35*math.cos(a),35*math.sin(a)))
++        camera.rotation_euler = (target-camera.location).to_track_quat('-Z','Y').to_euler()
++        for obj in objects:
++            data = bpy.data.curves.new('Review caption','FONT')
++            data.body,data.align_x,data.size = obj.name,'CENTER',.24
++            data.materials.append(MATS['crystal_core'])
++            caption = bpy.data.objects.new('Caption '+obj.name,data)
++            scene.collection.objects.link(caption)
++            caption.location = (obj.location.x,2.75,-.20)
++            caption.rotation_euler = camera.rotation_euler
++            helpers.append(caption)
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print('PREVIEW '+str(PREVIEW),flush=True)
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            bpy.data.objects.remove(obj,do_unlink=True)
++        for obj,loc in zip(objects,old_locations):
++            obj.location = loc
++        for mat in MATS.values():
++            mat.diffuse_color = (.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system,scene.unit_settings.scale_length = 'METRIC',1.0
++    materials()
++    OUTPUT.mkdir(parents=True,exist_ok=True)
++    exported = []
++    for i,(name,dims,build) in enumerate(SPECS):
++        PARTS = []
++        random.seed(33181+i*7919)
++        build()
++        exported.append(finish(name,dims))
++    assert len(scene.objects) == 7 and all(obj.type == 'MESH' for obj in scene.objects)
++    preview(exported)
++    assert len(scene.objects) == 7 and all(obj.type == 'MESH' for obj in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 2913ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_landmarks.py:41: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_ArchRuin.fbx'
+export finished in 0.0066 sec.
+EXPORTED LM_ArchRuin 4140 (5.0, 1.8, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_CrystalSpire.fbx'
+export finished in 0.0050 sec.
+EXPORTED LM_CrystalSpire 848 (3.6, 3.4, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_Hourglass.fbx'
+export finished in 0.0064 sec.
+EXPORTED LM_Hourglass 3922 (3.6, 3.0, 4.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_FloatRock.fbx'
+export finished in 0.0056 sec.
+EXPORTED LM_FloatRock 1696 (4.0, 3.4, 4.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_MirrorGate.fbx'
+export finished in 0.0053 sec.
+EXPORTED LM_MirrorGate 4364 (5.0, 1.4, 5.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_Obelisk.fbx'
+export finished in 0.0055 sec.
+EXPORTED LM_Obelisk 2018 (2.4, 2.4, 6.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_LM_Dune.fbx'
+export finished in 0.0055 sec.
+EXPORTED LM_Dune 2386 (5.6, 4.0, 1.7)
+00:02.625  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_landmarks_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_landmarks_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$landmarkAudit = @'"'
+import bpy
+from pathlib import Path
+from mathutils import Vector
+root=Path.cwd()
+files=sorted((root/'Game/Assets/Art/Characters/Ch3').glob('Kit_LM_*.fbx'))
+assert len(files)==7
+for path in files:
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=False)
+    for mat in list(bpy.data.materials):
+        bpy.data.materials.remove(mat)
+    bpy.ops.import_scene.fbx(filepath=str(path))
+    meshes=[o for o in bpy.context.scene.objects if o.type=='MESH']
+    assert len(meshes)==1, path.name
+    obj=meshes[0]
+    assert obj.name==path.stem[4:], (path.name,obj.name)
+    obj.data.calc_loop_triangles()
+    count=len(obj.data.loop_triangles)
+    assert count<=4500
+    for mat in obj.data.materials:
+        color=mat.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value
+        assert all(abs(color[i]-.5)<.0001 for i in range(3)), (path.name,mat.name,tuple(color))
+    assert obj.location.length < .0001, (path.name,tuple(obj.location))
+    print('FBX VERIFIED',path.name,count,'triangles',flush=True)
+print('ALL SEVEN FBX FILES VERIFIED',flush=True)
+'@
+& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr "'$landmarkAudit' in C:\Project\Cat_Tang
+ succeeded in 1628ms:
+FBX version: 7400
+FBX VERIFIED Kit_LM_ArchRuin.fbx 4140 triangles
+FBX version: 7400
+FBX VERIFIED Kit_LM_CrystalSpire.fbx 848 triangles
+FBX version: 7400
+FBX VERIFIED Kit_LM_Dune.fbx 2386 triangles
+FBX version: 7400
+FBX VERIFIED Kit_LM_FloatRock.fbx 1696 triangles
+FBX version: 7400
+FBX VERIFIED Kit_LM_Hourglass.fbx 3922 triangles
+FBX version: 7400
+FBX VERIFIED Kit_LM_MirrorGate.fbx 4364 triangles
+FBX version: 7400
+FBX VERIFIED Kit_LM_Obelisk.fbx 2018 triangles
+ALL SEVEN FBX FILES VERIFIED
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+Created [blender_kit_ch3_landmarks.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch3_landmarks.py) and ran it successfully through `DONE`.
+
+All seven FBXs exported and passed re-import checks. Each has one mesh and stays below 4,500 triangles.
+
+[View preview](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch3_landmarks_preview.png)
+tokens used
+37,038
+Created [blender_kit_ch3_landmarks.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch3_landmarks.py) and ran it successfully through `DONE`.
+
+All seven FBXs exported and passed re-import checks. Each has one mesh and stays below 4,500 triangles.
+
+[View preview](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch3_landmarks_preview.png)

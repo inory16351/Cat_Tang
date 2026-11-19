@@ -2,20 +2,21 @@
 // 실행: NODE_PATH=<pptxgenjs · image-size가 있는 node_modules> node build_ch2_ppt.js
 // 틀 · 색 · 도식 도우미는 build_level_ppts.js(makeDeck)와 같음. 1장 Ver02 규칙대로 나열 구분자는 " / "
 // Ver02 (2026-11-17): Ver01 pptx에서 손으로 고친 문구를 이 생성기에 옮기고, 구현으로 확정된 값(빨간불 · 출발 시각 · 레일 돌진 ·
-//   객차 회전 · 지나가는 열차 · 패턴 고르기 70/30 · 전용 모션)을 반영
+//   객차 회전 · 지나가는 열차 · 전용 모션)을 반영
+// Ver03 (2026-11-18): 패턴 고르기를 모든 보스 공통 '거리에 맞는 패턴 + 거리 무관 패턴 동일 확률'로, 보스 경기장 지름 24m → 32m (원형 경계 · 새 바닥)
 const path = require("path");
 const L = require("./build_level_ppts.js");
 const { makeDeck, AUTHOR, BG, CARD, TXT, MUTED, GOLD, RED, TEAL, PURPLE, LAV, FLOOR, has } = L;
 
 const OUT_DIR = process.env.OUT_DIR || path.resolve(__dirname, "..");
-const VER = "Ver02";
-const FILE = `1159_2장_기획서_20261117_정승운_${VER}.pptx`;
+const VER = "Ver03";
+const FILE = `1159_2장_기획서_20261118_정승운_${VER}.pptx`;
 const STEAM = "BFC9D1", COAL = "3A3440", AMBER = "E8B23A", GREEN = "4FA36B";
 
 function build() {
   const SEC = ["2장 개요", "스테이지 구성", "일반 몬스터", "중간 보스", "보스", "수치 기획"];
   const D = makeDeck(`11:59 2장 기획서 ${VER}`, `11:59 / 2장 기획서: 멈춘 기차역 ${VER} / ${AUTHOR}`, SEC);
-  D.date = "2026.11.17"; D.sep = " / ";
+  D.date = "2026.11.18"; D.sep = " / ";
   const { pres, text, card, bullets, picture, caption, chip, arrow, content } = D;
   const BGIMG = has("ch2/ch2_bg.jpg") ? "ch2/ch2_bg.jpg" : "05_zone1_western.png";
   const infoRows = (s, rows, fs = 12) => rows.forEach((r, i) => {
@@ -30,7 +31,7 @@ function build() {
     for (let k = 0; k <= Math.floor(w / 0.15); k++) D.line(s, x + k * 0.15, y - 0.11, 0, 0.22, "5C4E40", { width: 1 });
   };
 
-  const cv = D.cover(BGIMG, "2장 기획서", "멈춘 기차역 / 중간 보스 / 보스 상세", "Ver 02");
+  const cv = D.cover(BGIMG, "2장 기획서", "멈춘 기차역 / 중간 보스 / 보스 상세", "Ver 03");
   cv.addNotes("공통 규칙(챕터 구조 / 전투방 / 보스 세 박자 / 수치 기준)은 공통 레벨 디자인 기획서를 따름. 방 크기 / 웨이브 / 보상 / 방 사이 문 규칙은 1장과 같음");
   D.toc(has("ch2/ch2_boss.jpg") ? "ch2/ch2_boss.jpg" : BGIMG);
 
@@ -296,7 +297,7 @@ function build() {
     text(s, "패턴 고르기", { x: X[2] + 0.25, y: Y[1] + 0.15, w: 3, h: 0.38, fontSize: 15, bold: true, color: GOLD });
     bullets(s, [
       "'가까움' 기준 = 5m 안",
-      "거리에 맞는 패턴 묶음 70% / 거리 무관 묶음 30% (한쪽이 비면 다른 쪽)",
+      "거리에 맞는 패턴 + 거리 무관 패턴을 같은 확률로 추첨",
       "직전 패턴은 제외",
       "빨간불은 추첨과 별개로 25초마다",
     ], { x: X[2] + 0.25, y: Y[1] + 0.6, w: W - 0.4, h: 1.8, fontSize: 11.5, paraSpaceAfter: 2 });
@@ -311,7 +312,7 @@ function build() {
     caption(s, "보스 컨셉 시안", 0.6, 5.78, 7.3);
     text(s, "2장의 출구를 지키는 시간의 존재. 시계 문자판 헤드라이트를 달고 몸을 일으킨 증기 기관차", { x: 0.6, y: 6.15, w: 7.3, h: 0.65, fontSize: 14 });
     infoRows(s, [
-      ["보스맵", "전차대 / 지름 24m / 바닥에 +자 선로 2줄"],
+      ["보스맵", "거대한 시계 바닥 / 지름 32m / 원형 경계 / 갈색 테두리 시각 눈금 / +자 선로 2줄"],
       ["이동", "느린 속도로 고양이 추적 (이속 2.5m/초) / 보라 / 금색 객차 4량이 뒤를 따라옴"],
       ["체력", "4860 (목표 처치 시간 90초)"],
       ["페이즈", "2페이즈 / 체력 50%에 객차를 떼어 내고 가속"],
@@ -363,9 +364,9 @@ function build() {
     D.cat(s, cx + Math.cos(-0.8) * 1.3 + 0.1, cy + Math.sin(-0.8) * 1.3, 0.1);
     text(s, "빈틈", { x: cx + 0.8, y: cy - 1.75, w: 0.7, h: 0.25, fontSize: 10, bold: true, color: TEAL });
     bullets(s, [
-      "3초마다 굴뚝에서 퍼지는 연기 링",
-      "빈틈 한 곳(45°)으로 통과 / 빈틈 방향은 매번 무작위",
-      "6m/초 / 피해 12 / 패턴과 별개로 전투 내내 지속",
+      "5초마다 굴뚝에서 연기 링 3겹 (0.6초 간격)",
+      "겹마다 빈틈 한 곳(45°) / 다음 겹 빈틈은 같은 쪽으로 40~70° 밀림",
+      "4.5m/초 / 겹마다 피해 12 / 거리를 조절하며 빈틈 셋을 차례로 통과",
     ], { x: 0.85, y: 5.3, w: 5.0, h: 1.45, fontSize: 13.5, paraSpaceAfter: 3 });
 
     text(s, "2페이즈 (체력 50%)", { x: 6.3, y: 1.65, w: 5, h: 0.4, fontSize: 17, bold: true, color: GOLD });
@@ -379,19 +380,19 @@ function build() {
     bullets(s, [
       "객차를 떼어 냄 → 이속 / 패턴 간격 1.2배",
       "레일 돌진 2연속",
-      "떼어 낸 객차가 경기장 둘레(반경 약 11m)를 6초에 한 바퀴씩 상시 회전",
+      "떼어 낸 객차가 경기장 둘레(반경 약 15m)를 6초에 한 바퀴씩 상시 회전",
       "→ 객차 회전 패턴은 상시화, 후보에서 제외",
     ], { x: 9.05, y: 2.15, w: 3.7, h: 2.4, fontSize: 12.5, paraSpaceAfter: 3 });
 
     text(s, "패턴 고르기", { x: 6.3, y: 4.75, w: 2.0, h: 0.4, fontSize: 17, bold: true, color: GOLD });
-    text(s, "거리에 맞는 묶음 70% / 거리 무관 묶음 30% / 직전 패턴 제외", { x: 8.4, y: 4.79, w: 4.3, h: 0.32, fontSize: 10.5, color: MUTED, valign: "middle" });
+    text(s, "거리에 맞는 패턴 + 거리 무관 패턴 같은 확률 / 직전 패턴 제외", { x: 8.4, y: 4.79, w: 4.3, h: 0.32, fontSize: 10.5, color: MUTED, valign: "middle" });
     const groups = [["가까울 때 (6m 안)", ["연결봉 휘두르기", "증기 분출"], RED], ["멀 때", ["레일 돌진", "석탄 포격"], PURPLE], ["거리 무관", ["객차 회전 (1페이즈)"], TEAL]];
     groups.forEach((g, i) => {
       const y = 5.2 + i * 0.55;
       text(s, g[0], { x: 6.3, y, w: 2.0, h: 0.45, fontSize: 12, bold: true, valign: "middle" });
       g[1].forEach((p, k) => chip(s, p, 8.4 + k * 2.15, y + 0.04, 2.05, g[2], g[2] === TEAL ? BG : TXT, { size: 11, h: 0.37 }));
     });
-    s.addNotes("거리에 맞는 패턴 묶음 70% / 거리 무관 패턴 묶음 30% (한쪽이 비면 다른 쪽), 직전 패턴 제외. 출발 시각은 추첨과 별개로 체력 75 / 50 / 25%에 확정");
+    s.addNotes("거리에 맞는 패턴 + 거리 무관 패턴을 같은 확률로 추첨, 직전 패턴 제외 (모든 보스 공통). 출발 시각은 추첨과 별개로 체력 75 / 50 / 25%에 확정");
   }
   {
     const s = content(5, "보스 패턴");
@@ -423,7 +424,7 @@ function build() {
       [[0, 0], [-0.45, -0.35], [0.45, -0.3], [-0.4, 0.4], [0.42, 0.38]].forEach(([dx, dy]) => D.circle(s, cx + dx, cy + dy, 0.2, "B5622E", { tr: 40, line: AMBER }));
       D.cat(s, cx + 0.05, cy + 0.02, 0.08);
     }, "멀 때");
-    D.patternCard(s, X[1], Y[1], W, H, "객차 회전", "뒤따르던 객차 4량이 경기장 외곽을 돌며 원형 범위 피해. 가장자리에서 안쪽으로 몰아냄", "반경 약 11m / 한 바퀴 6초 / 피해 20\n(객차마다 1초에 한 번) / 1페이즈만", (bx, by, sz) => {
+    D.patternCard(s, X[1], Y[1], W, H, "객차 회전", "뒤따르던 객차 4량이 경기장 외곽을 돌며 원형 범위 피해. 가장자리에서 안쪽으로 몰아냄", "반경 약 15m / 한 바퀴 6초 / 피해 20\n(객차마다 1초에 한 번) / 1페이즈만", (bx, by, sz) => {
       const cx = bx + sz / 2, cy = by + sz / 2, R = sz * 0.4;
       D.circle(s, cx, cy, R + 0.12, RED, { tr: 70, line: RED });
       D.circle(s, cx, cy, R - 0.12, FLOOR, { line: FLOOR });
@@ -453,7 +454,7 @@ function build() {
       ["신호수", "60", "3.0m/초", "12", "신호등 2개 4초마다 / 반경 2m"],
       ["강화형", "기본 ×1.5", "-", "10~15", "공격 하나 추가"],
       ["태엽 역장", "2520", "3.5m/초", "15~18", "목표 60초 / 대합실 28×24m"],
-      ["멈춘 기관차 거인", "4860", "2.5m/초", "12~25", "목표 90초 / 전차대 지름 24m"],
+      ["멈춘 기관차 거인", "4860", "2.5m/초", "12~25", "목표 90초 / 전차대 지름 32m"],
     ], 0.6, 1.6, [2.3, 1.45, 1.25, 1.0, 3.4], { rowH: 0.48, size: 12 });
     const cards = [
       ["피해 기준", "1장보다 약 25% 상향\n일반 10~15 / 중간 보스 15~18\n보스 18~25 (기믹은 최대 체력 비례)"],

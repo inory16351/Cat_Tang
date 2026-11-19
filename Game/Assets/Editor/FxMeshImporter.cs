@@ -15,6 +15,8 @@ namespace CatTang.EditorTools
         [MenuItem("CatTang/FX 메시 가져오기 (블렌더)")]
         public static void ImportAll()
         {
+            // 2026-11-18: 플레이 중에 돌리면 쓰이고 있는 메시를 제자리에서 덮어써 렌더러가 빈 메시를 그리다 Unity가 꺼짐(D3D12 DrawNullGeometry) → 플레이 중엔 막음
+            if (EditorApplication.isPlaying) { Debug.LogWarning("[FxMeshImporter] 플레이 중에는 메시를 가져오지 않음 — 플레이를 멈춘 뒤 다시 실행"); return; }
             Directory.CreateDirectory(Dst);
             int n = 0;
             foreach (var path in Directory.GetFiles(Src, "*.fbx"))

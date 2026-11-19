@@ -442,7 +442,7 @@ def m_ring(bm):
 U2B = Matrix(((-1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))     # Unity → Blender
 
 
-def build(name, fn, bevel=0.0):
+def build(name, fn, bevel=0.0, smooth=False):
     me = bpy.data.meshes.new(name)
     bm = bmesh.new()
     fn(bm)
@@ -452,6 +452,9 @@ def build(name, fn, bevel=0.0):
     bmesh.ops.reverse_faces(bm, faces=bm.faces)          # 거울 변환(행렬식 -1)으로 뒤집힌 감김을 되돌림
     bm.to_mesh(me)
     bm.free()
+    if smooth:                                           # 물 메시: 매끈한 법선 (반사 · 가장자리 빛이 물처럼 흐르게)
+        for p_ in me.polygons:
+            p_.use_smooth = True
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
     if bevel > 0:
@@ -470,6 +473,260 @@ def build(name, fn, bevel=0.0):
     print("EXPORTED", name, len(me.polygons))
 
 
+# ---------- 3장 거울 세계 (2026-11-18 사용자: 이펙트는 그림 말고 블렌더 3D로) ----------
+def m_glass(seed):
+    """얇은 유리 파편: 비뚤어진 삼각 · 사각 판 (XY 평면, +Z를 봄, 반지름 약 0.5), 가운데가 살짝 부푼 단면"""
+    def f(bm):
+        rnd = random.Random(seed)
+        k = rnd.choice([3, 3, 4])
+        pts = []
+        for i in range(k):
+            a = TAU * i / k + rnd.uniform(-0.35, 0.35) + 0.4
+            r = 0.5 * rnd.uniform(0.55, 1.0)
+            pts.append(V(math.cos(a) * r, math.sin(a) * r * rnd.uniform(0.7, 1.2)))
+        puffy(bm, pts, 0.045, rings=2)
+    return f
+
+
+def m_diamond(bm):
+    """신기루 마름모 조각 (세로로 긴 마름모 판)"""
+    puffy(bm, [V(0, 0.5), V(0.24, 0), V(0, -0.5), V(-0.24, 0)], 0.05, rings=2)
+
+
+def m_glint(bm):
+    """반사 빛살: 가로가 아주 긴 4갈래 빛 (가로 반지름 0.5, 세로 0.22), 팔이 가늘게 파임"""
+    pts = []
+    for i in range(48):
+        a = TAU * i / 48
+        c, sn = math.cos(a), math.sin(a)
+        r = 0.035 + 0.465 * abs(c) ** 9 + 0.19 * abs(sn) ** 9
+        pts.append(V(c * r, sn * r))
+    puffy(bm, pts, 0.03, rings=2)
+
+
+
+# ---------- 3장 분수 샘 물 폭발 (2026-11-18 사용자: 그림 말고 블렌더 3D로, 확실히 물처럼) ----------
+# 매끈한 회전체 (Unity 좌표: Y 위, XZ 둘레). 셰이더 CatTang/Water가 물체 좌표(높이 · 둘레 각)로 물결 줄무늬를 흘려서 UV 없음.
+def revolve(bm, prof, sides, fn=None, closed=False):
+    """prof: [(r, y)] 단면. r == 0 이면 축 위 한 점(극). closed = 단면 고리(두께 있는 껍질).
+    fn(a, t) -> (r 배율, y 더함): a = 둘레 각, t = 단면 위치 0~1"""
+    rings = []
+    n = len(prof)
+    for i, (r, y) in enumerate(prof):
+        t = i / max(1, n - 1)
+        if r <= 1e-6:
+            rings.append([bm.verts.new(V(0, y, 0))])
+            continue
+        ring = []
+        for j in range(sides):
+            a = TAU * j / sides
+            k, dy = fn(a, t) if fn else (1.0, 0.0)
+            ring.append(bm.verts.new(V(math.cos(a) * r * k, y + dy, math.sin(a) * r * k)))
+        rings.append(ring)
+    pairs = list(zip(rings, rings[1:])) + ([(rings[-1], rings[0])] if closed else [])
+    for A, B in pairs:
+        if len(A) == 1 and len(B) == 1:
+            continue
+        if len(A) == 1:
+            for j in range(sides):
+                bm.faces.new((A[0], B[(j + 1) % sides], B[j]))
+        elif len(B) == 1:
+            for j in range(sides):
+                bm.faces.new((A[j], A[(j + 1) % sides], B[0]))
+        else:
+            for j in range(sides):
+                bm.faces.new((A[j], A[(j + 1) % sides], B[(j + 1) % sides], B[j]))
+
+
+def m_water_column(bm):
+    """물기둥: 밑지름 1 · 높이 1 (y 0~1), 허리가 살짝 잘록하고 위가 부푼 둥근 머리, 비틀린 물결 혹"""
+    prof = [(0, 0.0), (0.5, 0.0)]
+    for i in range(1, 20):
+        y = i / 20
+        prof.append((0.42 + 0.06 * math.cos(y * math.pi * 1.6) + 0.06 * y * y, y))
+    prof += [(0.46, 1.0), (0.4, 1.06), (0.26, 1.11), (0, 1.13)]
+
+    def fn(a, t):
+        return 1 + 0.07 * math.sin(3 * a + t * 10) + 0.04 * math.sin(5 * a - t * 16), 0.0
+    revolve(bm, prof, 32, fn)
+
+
+def m_water_crown(bm):
+    """버섯 물 왕관: 위로 둥글게 부풀었다 바깥 · 아래로 말려 떨어지는 물 막 (지름 약 1, 두께 있는 껍질), 가장자리가 8갈래로 처짐"""
+    prof = [(0.03, 0.14), (0.2, 0.13), (0.34, 0.08), (0.44, -0.02), (0.5, -0.14), (0.52, -0.26), (0.5, -0.32),
+            (0.46, -0.27), (0.43, -0.13), (0.36, -0.03), (0.22, 0.05), (0.03, 0.07)]
+
+    def fn(a, t):
+        lip = max(0.0, 1 - abs(t - 0.55) / 0.3)               # 가장자리일수록
+        sc = 0.5 + 0.5 * math.cos(8 * a)
+        return 1 + 0.1 * lip * sc, -0.14 * lip * sc + 0.03 * math.sin(3 * a)
+    revolve(bm, prof, 48, fn, closed=True)
+
+
+def m_water_drop(bm):
+    """물방울: 둥근 머리(반지름 0.3, 가운데 y 0.3)에서 +Y로 가늘어지는 꼬리 (길이 1). 날아가는 반대쪽으로 꼬리를 둠"""
+    prof = [(0, 0.0)]
+    for i in range(1, 9):
+        a = math.pi * i / 16                                  # 아래 반구
+        prof.append((0.3 * math.sin(a), 0.3 - 0.3 * math.cos(a)))
+    for i in range(1, 9):
+        u = i / 9
+        prof.append((0.3 * (1 - u) ** 1.6, 0.3 + 0.7 * u))
+    prof.append((0, 1.0))
+    revolve(bm, prof, 16)
+
+
+def m_water_splash(bm):
+    """밑동 물보라 왕관: 바닥에서 솟은 얇은 물 벽 고리(반지름 약 0.5), 윗변이 10갈래 뾰족하게 튀어오름"""
+    prof = [(0.36, 0.0), (0.52, 0.0), (0.58, 0.12), (0.62, 0.26), (0.6, 0.32), (0.55, 0.27), (0.5, 0.12), (0.4, 0.03)]
+
+    def fn(a, t):
+        top = max(0.0, 1 - abs(t - 0.57) / 0.25)
+        spike = max(0.0, math.cos(10 * a)) ** 6
+        return 1 + 0.06 * top * spike, 0.32 * top * spike
+    revolve(bm, prof, 60, fn, closed=True)
+
+
+
+# ---------- 종말 처형 · 보스 추가 피해: X자 상처 (2026-11-18 사용자: 다키스트 던전 '상처 찢기'처럼) ----------
+def m_slash(bm):
+    """베인 자국 한 획: X축 -0.5 → 0.5 (시작이 굵고 끝으로 갈수록 날카롭게 가늘어짐), 살짝 휜 칼 획, 위 가장자리가 찢긴 듯 들쭉날쭉.
+    XY 평면, +Z를 봄 (부푼 단면이라 툰 불꽃 셰이더가 가운데 → 가장자리로 색이 층짐)"""
+    top, bot = [], []
+    n = 40
+    for i in range(n + 1):
+        u = i / n
+        x = -0.5 + u
+        w = 0.1 * (math.sin(math.pi * u) ** 0.75) * (1.25 - 0.55 * u)
+        bend = 0.07 * math.sin(math.pi * u)
+        tear = 0.012 * math.sin(u * 47) * math.sin(math.pi * u)
+        top.append(V(x, bend + w + tear))
+        bot.append(V(x, bend - w * 0.55))
+    outline = top + list(reversed(bot[1:-1]))
+    puffy(bm, outline, 0.035, center=V(-0.08, 0.08), rings=2)
+
+
+
+# ---------- 은빛 메아리 관통 폭발 (2026-11-18 사용자: 관통 자리 폭발을 그림 + 블렌더 3D로) ----------
+def m_echo_blade(bm):
+    """은빛 칼날 파편: 원점에서 +Z로 뻗는 길이 1의 날카로운 마름모 단면 날. 뿌리 쪽이 좁고 1/3 지점이 가장 넓다가 끝이 바늘처럼.
+    면이 각진 마름모(가로 넓고 세로 얇음)라 툰 셰이더가 날 등줄기는 흰 심지, 양 날은 탄 색 → 짙은 테로 층짐"""
+    n = 14
+    rows = []
+    for i in range(n + 1):
+        u = i / n
+        z = u
+        w = 0.11 * (math.sin(math.pi * min(1, u / 0.34) * 0.5) if u < 0.34 else (1 - (u - 0.34) / 0.66) ** 1.35)
+        w = max(w, 0.004)
+        t = w * 0.32
+        kink = 0.018 * math.sin(u * 9.0) * (1 - u)          # 살짝 비뚤게 (깨진 금속 조각 느낌)
+        rows.append([bm.verts.new((kink + w, 0, z)), bm.verts.new((kink, t, z)), bm.verts.new((kink - w, 0, z)), bm.verts.new((kink, -t, z))])
+    for i in range(n):
+        a, b = rows[i], rows[i + 1]
+        for k in range(4):
+            l = (k + 1) % 4
+            bm.faces.new((a[k], a[l], b[l], b[k]))
+    bm.faces.new(list(reversed(rows[0])))
+    tip = bm.verts.new((0, 0, 1.06))
+    last = rows[-1]
+    for k in range(4):
+        bm.faces.new((last[k], last[(k + 1) % 4], tip))
+
+
+def m_echo_star(bm):
+    """메아리 별: 날카로운 8갈래 별 (긴 4갈래 + 짧은 4갈래를 22° 비틂), 오목하게 파인 팔. XY 평면 +Z를 봄, 반지름 0.5"""
+    pts = []
+    n = 8
+    for i in range(n * 2):
+        a = TAU * i / (n * 2) + (0.0 if (i // 2) % 2 == 0 else 0.06)
+        if i % 2 == 0:
+            r = 0.5 if (i // 2) % 2 == 0 else 0.3
+        else:
+            r = 0.085
+        pts.append(V(math.cos(a) * r, math.sin(a) * r))
+    puffy(bm, pts, 0.07, rings=3)
+
+
+# ---------- 망각: 얼음에 갇힘 · 얼음 깨짐 (2026-11-18 사용자: 불똥 빼고 얼음에 갇히는 느낌만, 터질 땐 얼음 깨지듯) ----------
+def crystal(bm, base, r, h, tilt=0.0, yaw=0.0, sides=6, seed=0):
+    """육각 수정 기둥: base(바닥 가운데)에서 기울기 tilt(라디안)로 서서 끝이 뾰족함"""
+    rnd = random.Random(seed)
+    up = Vector((math.sin(tilt) * math.cos(yaw), math.cos(tilt), math.sin(tilt) * math.sin(yaw)))
+    side = up.cross(Vector((0, 0, 1)))
+    if side.length < 1e-3:
+        side = up.cross(Vector((1, 0, 0)))
+    side.normalize()
+    fwd = up.cross(side).normalized()
+    def ring(h_, rr):
+        return [bm.verts.new(base + up * h_ + (side * math.cos(TAU * k / sides) + fwd * math.sin(TAU * k / sides)) * rr * rnd.uniform(0.85, 1.1)) for k in range(sides)]
+    b0 = ring(0.0, r)
+    b1 = ring(h * 0.78, r * 0.95)
+    tip = bm.verts.new(base + up * h + side * rnd.uniform(-0.05, 0.05) * r)
+    bm.faces.new(list(reversed(b0)))
+    for k in range(sides):
+        l = (k + 1) % sides
+        bm.faces.new((b0[k], b0[l], b1[l], b1[k]))
+        bm.faces.new((b1[k], b1[l], tip))
+
+
+def m_ice_block(bm):
+    """얼음 감옥: 몸을 감싸는 굵은 여덟모 얼음 덩어리(반지름 0.5 · 높이 약 0.95, 꼭짓점이 비뚤비뚤) + 위 · 옆으로 삐죽 솟은 얼음 수정 6개. 바닥 y 0"""
+    rnd = random.Random(91)
+    n = 8
+    def ring(y, r, j):
+        return [bm.verts.new(V(math.cos(TAU * k / n + 0.2) * r * rnd.uniform(1 - j, 1 + j), y + rnd.uniform(-j, j) * 0.3, math.sin(TAU * k / n + 0.2) * r * rnd.uniform(1 - j, 1 + j))) for k in range(n)]
+    r0 = ring(0.0, 0.5, 0.04)
+    r1 = ring(0.42, 0.53, 0.08)
+    r2 = ring(0.78, 0.46, 0.1)
+    top = bm.verts.new(V(rnd.uniform(-0.05, 0.05), 0.95, rnd.uniform(-0.05, 0.05)))
+    bm.faces.new(list(reversed(r0)))
+    for A, B in ((r0, r1), (r1, r2)):
+        for k in range(n):
+            l = (k + 1) % n
+            bm.faces.new((A[k], A[l], B[l], B[k]))
+    for k in range(n):
+        bm.faces.new((r2[k], r2[(k + 1) % n], top))
+    spikes = [(V(0.12, 0.72, 0.05), 0.13, 0.55, 0.35, 0.3), (V(-0.18, 0.7, -0.1), 0.11, 0.45, 0.5, 3.3),
+              (V(0.3, 0.45, -0.15), 0.1, 0.4, 1.0, 5.6), (V(-0.32, 0.35, 0.2), 0.12, 0.42, 1.05, 2.4),
+              (V(0.05, 0.6, 0.32), 0.09, 0.35, 0.8, 1.6), (V(-0.05, 0.85, 0.0), 0.1, 0.4, 0.1, 0.0)]
+    for i, (b, r, h, tilt, yaw) in enumerate(spikes):
+        crystal(bm, b, r, h, tilt, yaw, 6, 200 + i)
+
+
+def m_ice_chunk(seed):
+    """얼음 조각: 각진 덩어리 (뾰족한 볼록 다면체, 지름 약 0.5~0.7)"""
+    def f(bm):
+        rnd = random.Random(seed)
+        pts = []
+        for _ in range(14):
+            v = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), rnd.uniform(-1, 1)))
+            if v.length < 1e-3:
+                continue
+            v.normalize()
+            pts.append(bm.verts.new(V(v.x * 0.32 * rnd.uniform(0.7, 1.15), v.y * 0.24 * rnd.uniform(0.7, 1.3), v.z * 0.22 * rnd.uniform(0.7, 1.1))))
+        bmesh.ops.convex_hull(bm, input=pts)
+        for v in [v for v in bm.verts if not v.link_faces]:
+            bm.verts.remove(v)
+    return f
+
+
+
+def m_ice_petal(bm):
+    """얼음 꽃잎: 밑(원점)에서 +Y로 길이 1, 납작한 육각 수정 칼날 (가운데쯤 가장 넓고 끝이 뾰족), 각진 면"""
+    n = 6
+    def ring(y, rx, rz, rot=0.0):
+        return [bm.verts.new(V(math.cos(TAU * k / n + rot) * rx, y, math.sin(TAU * k / n + rot) * rz)) for k in range(n)]
+    rings = [ring(0.0, 0.09, 0.05), ring(0.32, 0.2, 0.09, 0.15), ring(0.72, 0.13, 0.065, 0.05)]
+    tip = bm.verts.new(V(0.0, 1.0, 0.0))
+    bm.faces.new(list(reversed(rings[0])))
+    for A, B in zip(rings, rings[1:]):
+        for k in range(n):
+            l = (k + 1) % n
+            bm.faces.new((A[k], A[l], B[l], B[k]))
+    for k in range(n):
+        bm.faces.new((rings[-1][k], rings[-1][(k + 1) % n], tip))
+
+
 SHAPES = [
     ("fx_star", m_star, 0), ("fx_sparkle", m_sparkle, 0), ("fx_crown", m_crown, 0),
     ("fx_shard_0", m_shard(3), 0), ("fx_shard_1", m_shard(17), 0), ("fx_shard_2", m_shard(29), 0),
@@ -480,10 +737,19 @@ SHAPES = [
     ("fx_flame_0", m_flame(101), 0), ("fx_flame_1", m_flame(118), 0), ("fx_flame_2", m_flame(135), 0),
     ("fx_ball_0", m_ball(7), 0), ("fx_ball_1", m_ball(20), 0), ("fx_ball_2", m_ball(33), 0),
     ("fx_ring", m_ring, 0),
+    ("fx_glass_0", m_glass(5), 0), ("fx_glass_1", m_glass(12), 0), ("fx_glass_2", m_glass(27), 0),
+    ("fx_diamond", m_diamond, 0), ("fx_glint", m_glint, 0),
+    ("fx_water_column", m_water_column, 0), ("fx_water_crown", m_water_crown, 0),
+    ("fx_water_drop", m_water_drop, 0), ("fx_water_splash", m_water_splash, 0),
+    ("fx_slash", m_slash, 0),
+    ("fx_ice_block", m_ice_block, 0), ("fx_ice_chunk_0", m_ice_chunk(301), 0), ("fx_ice_chunk_1", m_ice_chunk(317), 0), ("fx_ice_chunk_2", m_ice_chunk(333), 0),
+    ("fx_ice_petal", m_ice_petal, 0),
+    ("fx_echo_blade", m_echo_blade, 0), ("fx_echo_star", m_echo_star, 0),
 ]
+WATER = {"fx_water_column", "fx_water_crown", "fx_water_drop", "fx_water_splash"}
 import sys
 ONLY = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 SHAPES = [s for s in SHAPES if not ONLY or s[0] in ONLY]
 for name, fn, bev in SHAPES:
-    build(name, fn, bev)
+    build(name, fn, bev, smooth=name in WATER)
 print("DONE", len(SHAPES))

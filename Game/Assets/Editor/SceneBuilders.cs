@@ -21,14 +21,15 @@ namespace CatTang.EditorTools
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             BuildRunInternal();
-            BuildVillageInternal();
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(VillagePath, true), new EditorBuildSettingsScene(RunPath, true) };
+            VillageKitBuilder.BuildVillage();                       // 2026-11-18: 1장 서부 키트로 지은 마을 (예전 도형 마을 BuildVillageInternal은 안 씀)
+            VillageKitBuilder.BuildLobby();
+            VillageKitBuilder.SetBuildList();
             AssetDatabase.SaveAssets();
             Debug.Log("[CatTang] 마을 · 판 씬 생성 완료 (빌드 목록: Village, Run)");
         }
 
         [MenuItem("Cat_Tang/Build Village Scene")]
-        public static void BuildVillage() { if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) BuildVillageInternal(); }
+        public static void BuildVillage() { if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) VillageKitBuilder.BuildVillage(); }
 
         [MenuItem("Cat_Tang/Build Run Scene")]
         public static void BuildRun() { if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) BuildRunInternal(); }
@@ -62,7 +63,7 @@ namespace CatTang.EditorTools
             return go;
         }
 
-        static void MakeLight()
+        internal static void MakeLight()
         {
             var sun = new GameObject("Sun").AddComponent<Light>();
             sun.type = LightType.Directional;
@@ -76,7 +77,7 @@ namespace CatTang.EditorTools
             RenderSettings.ambientLight = new Color(0.36f, 0.3f, 0.44f);
         }
 
-        static GameObject MakeCamera(Vector3 at)
+        internal static GameObject MakeCamera(Vector3 at)
         {
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
@@ -92,7 +93,7 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>도형 고양이 총잡이 (3등신 · 큰 모자 · 쌍권총 · 줄무늬 꼬리)</summary>
-        static PlayerController MakePlayer(Vector3 pos)
+        internal static PlayerController MakePlayer(Vector3 pos)
         {
             var coatM = Mat("CatCoat", new Color(0.35f, 0.24f, 0.2f), 5);
             var furM = Mat("CatFur", new Color(0.62f, 0.6f, 0.62f), 5);

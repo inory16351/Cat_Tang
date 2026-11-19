@@ -3,7 +3,7 @@
 // 뒤에 약한 가산 빛 번짐 + 짧은 꼬리. 적 탄은 보라 ~ 붉은 계열이라 플레이어의 금빛 궤적과 구분됨.
 // - Orb      보라 에너지 구체 (보스 탄막)       - Revolver 무법자 리볼버 탄
 // - Pellet   산탄 알갱이                        - Sniper   수배 저격 관통탄 (긴 창)
-// - Needle   초침 탄 (시곗바늘)                 - Numeral  12방향 숫자 탄 (시계판 + 로마 숫자)
+// - Needle   초침 탄 (시곗바늘)                 - Numeral  12방향 숫자 탄 (시계판 + 아라비아 숫자, 2026-11-18 사용자: 로마 숫자 X)
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,8 +23,33 @@ namespace CatTang
         public float frozenUntil;
         /// <summary>고양이 탄에 맞으면 부서짐 (2장 중간 보스 빨간불의 느린 표 탄)</summary>
         public bool shootable;
+        /// <summary>이미 거울 조각에 한 번 튕김 (3장)</summary>
+        public bool mirrored;
+        /// <summary>벽 · 거울 조각에 튕기는 남은 횟수 (3장 거울 사수 반사탄 = 1). 튕길 때 OnBounced</summary>
+        public int bounces;
+        public System.Action<EnemyProjectile, Vector3> OnBounced;
+        /// <summary>유도: 초당 이만큼(°) 고양이 쪽으로 꺾음 (3장 빛가루 법사 구슬)</summary>
+        public float homing;
+        /// <summary>방향을 새로 정함 (멈춰 있던 구슬을 쏠 때)</summary>
+        public void Retarget(Vector3 d) { d = Effects.Flat(d); if (d.sqrMagnitude > 1e-6f) { dir = d.normalized; Face(); } }
+        /// <summary>조용히 사라짐</summary>
+        public void Vanish() { if (enabled) Pop(transform.position, true); }
+        public float SpeedNow { get => speed; set => speed = value; }
 
         /// <summary>고양이 탄 한 줄(from → to, 반지름 radius)에 걸린 부서지는 적 탄을 깨뜨림. 깬 수를 돌려줌</summary>
+        /// <summary>반경 안 적 탄을 지움 (3장 분수 샘 물 폭발). 지운 개수</summary>
+        public static int WashAway(Vector3 at, float radius)
+        {
+            int n = 0;
+            foreach (var p in All.ToArray())
+            {
+                if (!p || !p.enabled || Effects.Flat(p.transform.position - at).magnitude > radius) continue;
+                p.Pop(p.transform.position, true);
+                n++;
+            }
+            return n;
+        }
+
         public static int ShootDown(Vector3 from, Vector3 to, float radius = 0.7f)
         {
             int n = 0;
@@ -55,7 +80,28 @@ namespace CatTang
         Transform sprite, halo;
         static Material glowMat, numeralMat;
         static readonly Dictionary<Style, Material> spriteMats = new();
-        static readonly string[] Roman = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" };
+        Material[] flip;                                   // 3장: 블렌더로 구운 3D 탄 프레임 (반복)
+        MeshRenderer sprR;
+
+        // 3장 (거울 세계) 일반 몬스터 탄 · 불똥 = 블렌더로 구운 3D 플립북 (2026-11-18 사용자: 2D 말고 블렌더로 구워서)
+        //   구슬 → bk_c3orb (깎은 장미빛 보석 + 빛 고리), 산탄 → bk_c3shard (구르는 유리 조각), 맞음 · 튕김 → bk_c3spark (Art/tools/blender_bake_fx.py)
+        static bool Ch3 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 3;
+
+        static Material[] Ch3Frames(Style s)
+        {
+            if (!Ch3) return null;
+            string set = s == Style.Orb ? "bk_c3orb" : s == Style.Pellet ? "bk_c3shard" : null;
+            if (set == null) return null;
+            var fr = FxFlipbook.Frames(set);
+            return fr.Length > 0 ? fr : null;
+        }
+
+        /// <summary>탄 맞음 · 튕김 불똥: 3장은 구운 유리 섬광, 그 밖엔 2D 불똥</summary>
+        static void Spark(Vector3 at, float size, Color c)
+        {
+            if (Ch3 && FxFlipbook.Spawn("bk_c3spark", at, Vector3.zero, size * 1.3f, 0.4f, false)) return;
+            FxBurst.Spawn(at, size, FxBurst.Kind.Spark, c);
+        }
 
         static string TexName(Style s) => s switch
         {
@@ -146,6 +192,8 @@ namespace CatTang
             root.transform.position = pos;
             var c = ColorOf(style);
             float len = LengthOf(style);
+            var flip = Ch3Frames(style);
+            if (flip != null) len = style == Style.Orb ? 1.7f : 1.0f;      // 구운 그림은 정사각 캔버스 (내용이 가운데 약 2/3)
 
             // 빛 번짐 (뒤)
             float hs = len * (style == Style.Sniper ? 0.55f : style == Style.Pellet ? 1.6f : style == Style.Numeral ? 0.7f : 1.05f);
@@ -153,8 +201,8 @@ namespace CatTang
 
             // 손그림 탄 스프라이트
             var mat = SpriteMat(style, out var tex);
-            float aspect = tex ? tex.height / (float)tex.width : 0.3f;
-            var spr = QuadObj("Sprite", root.transform, mat, Color.white);
+            float aspect = flip != null ? 1f : tex ? tex.height / (float)tex.width : 0.3f;
+            var spr = QuadObj("Sprite", root.transform, flip != null ? flip[0] : mat, Color.white);
             spr.transform.localScale = new Vector3(len, len * aspect, 1);
 
             if (style == Style.Numeral)
@@ -168,7 +216,7 @@ namespace CatTang
                 tm.font = font;
                 if (!numeralMat) numeralMat = new Material(font.material) { renderQueue = 3006 };    // 스프라이트(3005) 위에
                 t.GetComponent<MeshRenderer>().sharedMaterial = numeralMat;
-                tm.text = Roman[Mathf.Clamp(hour, 1, 12) - 1];
+                tm.text = Mathf.Clamp(hour, 1, 12).ToString();
                 tm.fontSize = 64; tm.characterSize = 0.075f; tm.fontStyle = FontStyle.Bold;
                 tm.anchor = TextAnchor.MiddleCenter; tm.color = new Color(0.22f, 0.03f, 0.3f);
                 t.transform.localScale = new Vector3(1f / len, 1f / (len * aspect), 1) * 0.55f;
@@ -193,6 +241,8 @@ namespace CatTang
             p.damage = damage;
             p.style = style;
             p.sprite = spr.transform;
+            p.flip = flip;
+            p.sprR = spr.GetComponent<MeshRenderer>();
             p.halo = halo.transform;
             p.haloSize = hs;
             p.length = len;
@@ -209,7 +259,7 @@ namespace CatTang
             var cam = Camera.main;
             if (!cam) return;
             var fwd = cam.transform.forward;
-            var right = Vector3.ProjectOnPlane(dir, fwd);
+            var right = flip != null && style == Style.Orb ? cam.transform.right : Vector3.ProjectOnPlane(dir, fwd);   // 구운 보석 구슬은 고리가 늘 같은 쪽으로 기울게 세워 둠
             if (right.sqrMagnitude < 0.0001f) right = cam.transform.right;
             right.Normalize();
             var up = Vector3.Cross(fwd, right);
@@ -226,7 +276,8 @@ namespace CatTang
             float pulse = 1f + 0.1f * Mathf.Sin((Time.time - born) * 32f);
             if (halo) halo.localScale = Vector3.one * haloSize * pulse;
             // 구체 · 시계판은 살짝 출렁, 바늘은 떨림
-            if (style == Style.Orb && sprite) sprite.localScale = new Vector3(length, sprite.localScale.y, 1) * (1f + 0.06f * Mathf.Sin((Time.time - born) * 40f));
+            if (flip != null) { if (sprR) sprR.sharedMaterial = flip[(int)((Time.time - born) * 20f) % flip.Length]; }
+            else if (style == Style.Orb && sprite) sprite.localScale = new Vector3(length, sprite.localScale.y, 1) * (1f + 0.06f * Mathf.Sin((Time.time - born) * 40f));
         }
 
         void Update()
@@ -240,12 +291,49 @@ namespace CatTang
             }
             if (sprite && sprite.localPosition != Vector3.zero) sprite.localPosition = Vector3.zero;
             float step = speed * Time.deltaTime;
+            if (homing > 0)
+            {
+                var pt = PlayerController.Instance;
+                if (pt && pt.health.Alive)
+                {
+                    var want = Effects.Flat(pt.transform.position - transform.position);
+                    if (want.sqrMagnitude > 0.01f) { dir = Vector3.RotateTowards(dir, want.normalized, homing * Mathf.Deg2Rad * Time.deltaTime, 0); Face(); }
+                }
+            }
+            // 3장 떠다니는 거울 조각: 한 번 튕겨 냄 (판에 닿은 자리에서 꺾여 남은 거리를 감)
+            if (!mirrored && MirrorShard.All.Count > 0)
+            {
+                var ms = MirrorShard.Raycast(transform.position, dir, step, null, out float mt, out var mp);
+                if (ms)
+                {
+                    mirrored = true;
+                    dir = ms.Reflect(dir);
+                    transform.position = mp + dir * 0.05f;
+                    rangeLeft -= mt;
+                    ms.OnBounce(mp, ColorOf(style), false);
+                    Face();
+                    if (bounces > 0) { bounces--; OnBounced?.Invoke(this, mp); }
+                    return;
+                }
+            }
             if (Physics.Raycast(transform.position, dir, out var hit, step + 0.2f, ~0, QueryTriggerInteraction.Ignore))
             {
                 var hp = hit.collider.GetComponentInParent<Health>();
+                if (hp == null && bounces > 0)
+                {
+                    // 반사탄: 벽에 한 번 튕김
+                    bounces--;
+                    var n = Effects.Flat(hit.normal);
+                    dir = Effects.Flat(Vector3.Reflect(dir, n.sqrMagnitude > 1e-4f ? n.normalized : -dir)).normalized;
+                    transform.position = hit.point + dir * 0.15f + Vector3.up * (transform.position.y - hit.point.y);
+                    Spark(hit.point, 0.8f, ColorOf(style));
+                    Face();
+                    OnBounced?.Invoke(this, hit.point);
+                    return;
+                }
                 if (hp == null) { Pop(hit.point); return; }                                                     // 벽
                 // 엄폐물 · 화약통은 적 탄을 막음 (맞으면 깎임). 관통 탄은 깎기만 하고 지나감
-                if (!hp.isPlayer && !hp.GetComponent<Enemy>() && !pierceCover) { hp.HitFrom(dir); hp.TakeDamage(damage); Pop(hit.point); return; }
+                if (!hp.isPlayer && !hp.GetComponent<Enemy>() && !hp.GetComponent<PlayerOnlyTarget>() && !pierceCover) { hp.HitFrom(dir); hp.TakeDamage(damage); Pop(hit.point); return; }
             }
             transform.position += dir * step;
             rangeLeft -= step;
@@ -270,7 +358,7 @@ namespace CatTang
         /// <summary>사라짐: 맞으면 탄 색 불꽃, 사거리 끝이면 조용히. 꼬리는 남겨 흐려지게</summary>
         void Pop(Vector3 at, bool quiet = false)
         {
-            if (!quiet) FxBurst.Spawn(at, style == Style.Pellet ? 0.7f : style == Style.Orb ? 1.4f : 1.0f, FxBurst.Kind.Spark, ColorOf(style));
+            if (!quiet) Spark(at, style == Style.Pellet ? 0.7f : style == Style.Orb ? 1.4f : 1.0f, ColorOf(style));
             var tr = GetComponent<TrailRenderer>();
             foreach (Transform ch in transform) Destroy(ch.gameObject);
             enabled = false;

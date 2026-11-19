@@ -28,7 +28,7 @@ namespace CatTang
     {
         public int Id; public string Trigger, Cond; public int CondValue; public float Chance;
         public string Target, Type; public float Value, Value2, Duration; public string Desc;
-        public bool Borrowed;          // 다른 깨어난 탄에서 빌려 온 효과 (Chance = 빌림 확률)
+        public bool Borrowed;          // 다른 활성화된 탄에서 빌려 온 효과 (Chance = 빌림 확률)
     }
 
     public class OpDef { public int Id; public string Name, OpType; public int Operand, DropWeight; }
@@ -51,8 +51,15 @@ namespace CatTang
         public int Id; public string Name, UnlockType; public int UnlockValue, Cost, Effect1, Effect2, Effect3; public string Desc;
     }
 
+    /// <summary>해금 묶음 (총포상 · 탄약 공방, 세피리아식): 조각으로 사면 Items가 드랍 · 상점 · 시작 총에 풀림. Cost 0 = 처음부터</summary>
+    public class UnlockGroupDef
+    {
+        public int Id; public string Facility, Name; public int Cost, ReqChapter; public List<int> Items = new(); public string Desc;
+    }
+
     public static class Tables
     {
+        public static readonly List<UnlockGroupDef> UnlockGroups = new();
         public static readonly List<ChapterDef> Chapters = new();
         public static readonly Dictionary<int, CostumeDef> Costumes = new();
         public static readonly Dictionary<int, BulletDef> Bullets = new();
@@ -68,6 +75,7 @@ namespace CatTang
         {
             if (loaded) return;
             loaded = true;
+            Terms.Reset();                                       // 고유명사 표(특성 이름)를 표를 읽은 뒤 다시 만들게
             foreach (var r in Read("Bullet"))
                 Bullets[I(r, "Id")] = new BulletDef
                 {
@@ -115,7 +123,13 @@ namespace CatTang
                     Id = I(r, "Id"), Name = r["Name"], UnlockType = r["UnlockType"], UnlockValue = I(r, "UnlockValue"), Cost = I(r, "Cost"),
                     Effect1 = I(r, "Effect1"), Effect2 = I(r, "Effect2"), Effect3 = I(r, "Effect3"), Desc = r["Desc"]
                 };
-            Debug.Log($"[Tables] 챕터 {Chapters.Count} · 코스튬 {Costumes.Count}");
+            foreach (var r in Read("Unlock"))
+            {
+                var g = new UnlockGroupDef { Id = I(r, "Id"), Facility = r["Facility"], Name = r["Name"], Cost = I(r, "Cost"), ReqChapter = I(r, "ReqChapter"), Desc = r["Desc"] };
+                foreach (var s in r["Items"].Split('|')) if (int.TryParse(s.Trim(), out var id)) g.Items.Add(id);
+                UnlockGroups.Add(g);
+            }
+            Debug.Log($"[Tables] 챕터 {Chapters.Count} · 코스튬 {Costumes.Count} · 해금 묶음 {UnlockGroups.Count}");
             Debug.Log($"[Tables] 탄 {Bullets.Count} · 총 {Guns.Count} · 효과 {Effects.Count} · 연산 {Ops.Count} · 기억 {MemoryNodes.Count}");
         }
 

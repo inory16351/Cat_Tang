@@ -1,6 +1,6 @@
 # 핸드오프 — 1장 적 · 보스 · Tripo 모델 · 리깅 · 적 탄 이펙트
 
-마지막 갱신: 2026-11-17 밤 (브롤 스타즈풍 그림체 기본 적용. 남은 일은 아래 "남은 다음 작업"에 정리 — 사용자 지시로 대기 중). 이전 핸드오프(연출 · HUD · 판 구조)는 git 기록 `459df5c`의 HANDOFF.md 참고.
+마지막 갱신: 2026-11-19 (시설 화면 스크롤바 그림 연결 · 빌드 표 복사 — "2026-11-19 — 윈도우 빌드" 절). 그 전: 2026-11-18 밤 (마을 오브젝트 정리 뒤 씬 다시 지음 · 확인 — "(마지막, 다른 세션에서 이어서)" 항목). 그 전: 2026-11-18 밤 (새 마을: 다리로 이어진 섬 5개 · 장 해금 · NPC 5 — "2026-11-18 (밤 2) 새 마을" 절). 그 전: 2026-11-18 밤 늦게 (아웃게임 개편 · 메인 로비 · 마을 — "2026-11-18 (밤 늦게)" 절). 그 전: 2026-11-18 저녁 (3장 맵 키트 · 거울 반사 바닥 — "2026-11-18 (저녁)" 절). 그 전: 2026-11-18 오후 (상인 · 추억 · 3장 구현 시작). 그 전: 2026-11-18 (3장 레벨 디자인 확정 · 3장 기획서 Ver01 — 구현 전, 아래 "3장 구현 할 일" 참고). 이전 핸드오프(연출 · HUD · 판 구조)는 git 기록 `459df5c`의 HANDOFF.md 참고.
 
 ## 작업 원칙 (사용자 지시)
 
@@ -297,6 +297,212 @@ Tripo 웹 요령: 직접 URL로 열면 고면수 모델 로딩에 20초쯤 걸�
 - **전용 모션 `Editor/Ch2Motion.cs`**(메뉴 `CatTang/2장 전용 모션 클립 만들기`, 2장 빌드 때 자동): 고양이 idle 기준 덧셈 근육 커브 → `Art/Characters/Ch2/Anim/Ch2M_*.anim` 8개. 차장 Attack 승차권 튕기기 · 신호수 Attack 신호등 던지기 · 역장 Attack 펀치 / Special 신호봉 / Run 걷기 · 거인 Attack 버팀 / Special 연결봉 / Run 무거운 걸음(`Ch2Motion.WalkFor`).
 - **플레이 확인(MCP, 리플렉션으로 방 지음)**: 대합실에 역장 등장 · 차장 호출 · 개찰 펀치 · 노란불 배지 · 초록불 → 콘솔 에러 없음. 보스: 연기 링 빈틈 · 석탄 포격 · 출발 시각 저지 → 기절 · 2페이즈 객차 둘레 회전 · 객차 모델 표시. 열차: 예고 → 통과(느린 시간으로 봄). 거인 Special에 `Ch2M_GiantRods` 재생 확인.
 - **확인 안 됨**: 빨간불 움직임 벌칙(도구 호출 사이가 느려 그 3초를 못 잡음, 코드만), 직접 조작으로 역장 · 거인 한 판, 모션이 보기 좋은지(멈춘 화면 한두 장뿐), 열차가 실제 선로 위로 지나가는 모습(모델 자체는 화면으로 확인), 처음부터 2장 끝까지 이어서.
+
+## 2026-11-18 — 보스 패턴 동일 확률 · 2장 보스 경기장 32m · 거대한 시계 바닥 · 연기 링 3겹 이펙트
+
+- **패턴 고르기 = 모든 보스 공통 '거리에 맞는 패턴 + 거리 무관 패턴 동일 확률, 직전 제외'**(사용자 확정). 70/30(`PickWeighted` · `PickNext`) 지움. md · 2장 기획서 Ver03 · `build_level_ppts.js` 문구도.
+- **2장 보스 경기장 지름 24 → 32m**(사용자: 패턴 설계상 좁음): `Ch2Kit.BossArenaDiameter` · 방 `BossRoomSize` 40×38, 원형 경계 `Ch2Kit.ArenaFence`(보이지 않는 벽 48조각, 모서리로 빠져 객차 · 증기를 피하던 구멍을 막음), 거인 돌진도 원 안으로, 고양이 시작 자리도 원 안(`RunManager.BuildStage`). 객차 둘레 반경 약 14.8m.
+- **바닥 `Kit_Arena`**(블렌더 + Codex, 명세 `Art/tools/specs/kit_ch2_arena_spec.md`, 스크립트 `blender_kit_ch2_arena.py`, 미리보기 `kit_ch2_arena_preview.png`): 1차 방사형 판자 · 2차 돌 구덩이 + 판자 다리 모두 사용자 "타일과 안 맞음" → 3차 = **거대한 시계**: 원판 없이 방 타일이 그대로 문자판, 그 위에 갈색 테두리(나무 · 녹 빛 블록 번갈아, 사용자 요청) + 시각 막대 눈금(12 · 3 · 6 · 9는 놋쇠, 둥근 슬롯은 사용자 요청으로 뺌) · 놋쇠 띠 · +자 선로(12-6 · 3-9 줄) · 바닥에 누운 브레게식 바늘 둘(금 테두리 검은 날 · 속 빈 놋쇠 달 · 창끝 · 마름모 상감, 사용자: 더 고급스럽게) · 겹친 놋쇠 축. 바늘 · 테두리 손질은 Codex 없이 스크립트 직접 수정(블렌더 `--factory-startup -P`로 다시 뽑음, 바늘이 선로와 겹치면 스크립트가 assert). 빌더 표 `Kit_Arena`(FlatFloor), 밑면 = 바닥(y 0).
+- **연기 링 3겹**(사용자: 거리로 컨트롤하는 감각 · 너무 잦고 빠름): 5초마다 0.6초 간격 3개, 4.5m/초, 빈틈 45°가 겹마다 같은 쪽으로 40~70° 밀림. 겉모습 = 이펙트 프리팹 `Resources/FX/Prefabs/FX_SmokePuff`(MCP로 만듦, 블렌더 구운 `bk_smoke` 플립북, 수명 3.6초) 30개가 링 따라 퍼짐 + 옅은 앞 선.
+- **확인**: 원형 경계(밀어도 반경 15.5에서 멈춤) · 시작 자리 반경 13 · 연기 3겹 화면(느린 시간), 콘솔 에러 없음. **안 됨**: 직접 조작으로 3겹 통과 손맛 · 난이도.
+
+## 2026-11-18 — 레벨 업 연산 · 고유명사 설명 상자
+
+- **연산 보상**: 레벨 업 3택 후보에 연산(가중치 2.0, `RunManagerXp.LvReward.Op`). 스테이지 문 이름 '총탄 강화' → '연산'(`RoomDoor.NameOf`).
+- **고유명사** (`Scripts/UI/Terms.cs`): 낱말 표 = 특성 표 9종 + `Terms.Fixed`의 '판정 시각'만 (사용자: 특성 설명 + 연산은 판정 시각 정도, 보면 알거나 장르에 익숙한 개념은 설명 안 함). 모든 `UIKit.Label` 글에 `TermText`가 붙어 고유명사를 파랑(#2E9BE6)으로 칠함.
+  - 설명은 낱말 호버 링크가 아니라(사용자: 호버링 UI라 불편) **세피리아 아이템 툴팁처럼 `CursorTip` 옆에 작은 설명 상자를 최대 4개 쌓음**(`CursorTip.FillSide`, 오른쪽에 자리가 없으면 왼쪽). 처음 만든 낱말 호버 방식(TermHover)은 지움. 특성 상자는 롤체 시너지식(`Terms.TraitBox`, 사용자 요청): 제목 = 이름 + 2 / 4 / 6(닿은 단계 금빛) + 깨어난 수, 본문 = 한 줄 설명 + 단계별 효과(켜짐 금빛 · 꺼짐 회색) + 다음 단계까지 남은 수. 데이터는 `TraitTier.csv` · `Revolver.TraitCounts`(TraitHud 툴팁과 같은 계산).
+- **레벨 업 가중치**(사용자: 방어구 줄이고 총탄 · 연산 · 총 올림): 총탄 2.8 · 연산 2.6 · 총 1.8 · 골드 1.4 · 시간의 조각 1.2 · 방어구 0.9 · 체력 회복 0.2 + 4 × 잃은 비율(최대 2.5). 칸 비율(잃은 체력 0%): 총탄 23 · 연산 22 · 총 17 · 골드 14 · 조각 12 · 방어구 10 · 회복 2%.
+- **용어 바꿈**(사용자): 탄의 '깨어남 / 깨어난' → '활성화 / 활성화된', '잠듦 / 잠든' → '비활성화 / 비활성화된'. 게임 문구(C#) · 데이터 생성기 `build_tables.py` → CSV · xlsx 다시 뽑음 · md 기획서 · `총탄` · `코스튬` 기획서 Ver03(20261118). 2장 굳은 승객이 '하수인으로 깨어남'은 뜻이 달라 그대로.
+- **확인**: 레벨 업 3택에 연산 카드, 총탄 카드 툴팁 옆 설명 상자 4개(연산 슬롯 · 특성 · 지연 · 영원) 화면, 콘솔 에러 없음.
+
+## 2026-11-18 (오후) — 상인 고침 · 추억 표식 · 3장 구현 시작
+
+### 상인 (모든 챕터)
+- **등장 규칙**(`RunManager.TryMerchant` · `SpawnMerchant` · `MerchantSpot`): 방을 비울 때마다 15%, 챕터에서 못 만났으면 **스테이지 2 마지막 방에 확정**(챕터 바뀌면 다시). 예전 '스테이지 보상 뒤에만 · 스테이지 3 끝 보장'은 지움. 자리 = 벽 3.5m 안쪽 후보 중 화면 안(아래 30% HUD 피함) · 고양이와 7m 쯤 · 막힘 · 소품 피함.
+- **화면 밖 화살표** `Scripts/UI/EdgeMarker.cs` (Codex 그림 `Resources/UI/merchant_arrow.png`, 프롬프트 `docs/images/ui_src/prompts/merchant_arrow.txt`, 자르기 `docs/tools/ui_merchant_cut.py`) — 메달 안에 코인, 상인 쪽으로 돌아감.
+- **상인 모습**(사용자: 사람 말고 시간에 잠식된 몽환적 존재): ChatGPT 원화 → Tripo H3.1 + 리깅 → `Art/Characters/Merchant/Ch{1,2}_Merchant.fbx` → 메뉴 `CatTang/상인 프리팹 만들기 (Tripo)` → `Resources/Merchants/Ch{1,2}_Merchant.prefab` (고양이 idle 클립, 적 테두리 · 배색 안 씀). 1장 = 녹아내리는 회중시계 머리 바텐더(카운터 뒤), 2장 = 얼어붙은 불꽃 랜턴 머리 매표원(지붕 있는 창구라 **옆**에 섬). 키 2.9 · 3.0m (고양이 2.27m, 카운터 1.3m 너머로 보이게 측정 후). 3장은 프리팹이 없으면 고양이 모델을 좌우 반전(거울 속 고양이). 매표원 아바타는 자동 매핑이 손가락 뼈를 겹쳐 깨져서 1장 바텐더 매핑을 빌림(빌더에 들어 있음). 원화 `Art/tripo_input/merchant/`.
+- 카운터 · 창구는 늘 남쪽(카메라)을 보게 바꿈.
+
+### 추억
+- 머리 위 표식(`MemoryBadge`) 1.8배. **6단계 = 표식당 +7%**(새 효과 9114, `build_tables.py` → CSV · xlsx, 총탄 기획서 md). PPT 기획서엔 아직 반영 안 함.
+
+### 2장 짐꾼
+- 정면 탄 완전 차단 → **피해 33%**(`PlayerController.ShieldDamageFrac`). 2장 기획서 PPT는 아직 '막음'.
+
+### 3장 (신기루 사막 = 거울 세계) — 구현 시작
+- **데이터**: `Chapter.csv` 3행 = 신기루 사막 · 거울 고래 7020 (손으로 고침, 생성기 없음).
+- **떠다니는 거울 조각** `Scripts/Game/MirrorShard.cs`: 보스 · 중간 보스 방 빼고 방마다 3개, 폭 2.5m · 0.8m/초 표류 · 초당 10° 회전, 콜라이더 없이 선분 교차로 판정. 고양이 탄(즉발)은 `PlayerController` 탄도를 구간으로 나눠 한 번 꺾임 + 거울 15° 회전, 궤적도 꺾여 그림. 적 탄은 `EnemyProjectile`에서 한 번 튕김. 겉모습은 `Kit/Ch3/MirrorShard` 프리팹이 있으면 그걸, 없으면 임시 판.
+- **일반 적 5종 + 강화형** `Scripts/Game/EnemyCh3.cs` (md 수치 그대로): 거울 사수(반사탄 벽 · 거울 1번 튕김, + 3갈래) · 빛가루 법사(구슬 5개 → 유도, + 죽을 때 8방향) · 거울 너머 검객(2초 잠복 무적 → 고양이 4m 안 거울 0.7초 빛남 → 튀어나와 베기, + 2연타) · 유리 기사(정면 120° 되튕김 `Health.ReflectFrom`, 4발에 깨짐 5초, + 조각 폭발) · 신기루 분신술사(8초마다 분신 2 · 자리 섞기, 분신 1발 소멸 · 보상 없음 `Enemy.noReward`, 본체 죽으면 분신 소멸, + 분신 3 · 장판). 방마다 3~4종 섞음(`EnemyFactory.RandomCh3`). `EnemyProjectile`에 `bounces` · `homing` · `Retarget` 추가.
+- **모델** (사수 · 법사 · 검객 · 기사 · 분신술사, 모두 들어옴 — Tripo 잔액 25): ChatGPT 원화 5장(`Art/tripo_input/ch3/`) → Tripo(`Art/models/ch3/`) → `Art/Characters/Ch3/` → 메뉴 `CatTang/3장 적 프리팹 만들기 (Tripo)` → `Resources/Enemies/Ch3_*`. 공격 클립은 1장 · 고양이 것 임시. 강화형 전용 모델 없음(크레딧 부족 — 기본 모델 키움 · 색 변형).
+- **이펙트** (사용자: 그림 말고 블렌더 3D로): 새 블렌더 메시 `fx_glass_0~2`(얇은 유리 파편) · `fx_diamond`(신기루 마름모) · `fx_glint`(긴 반사 빛살) — `Art/tools/blender_fx.py` → 메뉴 `CatTang/FX 메시 가져오기 (블렌더)`. 이 메시 + 기존 `fx_ring` · `fx_star` · `fx_sparkle`로 MCP에서 프리팹 `FX_Ch3_MirrorFlash`(빛살 2 · 고리 · 반짝임 · 유리 부스러기 5) · `FX_Ch3_GlassBurst`(별 심지 · 고리 · 빛살 · 유리 파편 12 · 마름모 4가 돌며 튐) · `FX_Ch3_Stardust`(반짝임 12가 소용돌이치며 오름 · 마름모 5). 툰 불꽃 재질에 색: 유리 = 옅은 하늘빛, 빛가루 = 분홍 라벤더 (`Enemy.Fx3`). 쓰는 곳: 거울 반사 · 기사 되튕김 = 반사 섬광, 기사 거울 깨짐 · 검객 튀어나옴 · 법사+ 구슬 폭발 = 유리 파열, 검객 잠복 · 분신 생김/터짐 · 구슬 생김 = 빛가루. (처음 만든 플립북 그림 버전은 지움)
+- **확인함**: 컴파일 · 반사 각도 계산 · 기사 4발 반사 후 깨짐 · 분신 3개 생김 / 본체 죽으면 분신 소멸 + 장판 · 검객 잠복(무적 · 숨김) · 상인 1 · 2장 화면 · 화면 밖 화살표 · 이펙트 3종 화면(느린 시간).
+- **안 됨 / 다음**: 3장 키트(바닥 · 엄폐물 · 기억 수정 · 분수 샘 · 거울 조각 겉모습 · 상인 선 거울) 블렌더 + Codex, 3장 전용 공격 모션, 강화형 모델(크레딧 충전 필요), 3장 바닥이 임시 단색이라 옅은 이펙트가 덜 보임, 마술사 · 거울 고래, 3장 중간 보스 방 연결(`HasMidBoss`는 아직 2장까지), 직접 조작으로 반사 손맛. Unity가 한 번 D3D12 GPU 오류로 꺼졌음(코드와 무관).
+
+## 2026-11-18 (저녁) — 3장 맵 키트 (블렌더 + Codex) · 방 조립 · 기억 수정 · 분수 샘
+
+- **명세**: 공통 `Art/tools/specs/_ch3_common.md`(재질 이름 23개 · 좌표 · 내보내기 · 미리보기 PNG) + `kit_ch3_{walls,props,landmarks}_spec.md` → Codex → `Art/tools/blender_kit_ch3_*.py` → `Art/Characters/Ch3/Kit_*.fbx`. 미리보기 `Art/tools/specs/blender_kit_ch3_*_preview.png`. 컨셉 시안 `docs/images/ch3/ch3_room.jpg` 기준.
+  - 벽면 7: 사암 기슭(Cliff, 스테이지 1) · 무너진 열주 · 아치 벽(안에 거울) · 거울 액자 벽 · 기본 벽 · 떠도는 섬 가장자리 · 구름 둑 + 거꾸로 박힌 집(스테이지 4).
+  - 소품 10: 기억 수정(폭발물) · 분수 샘 · 선 거울(엄폐물, 검객 출몰용) · 상인 선 거울 · 모래 바위 · 무너진 기둥 · 떠다니는 거울 조각 · 바닥 조각 3(조약돌 · 수정 조각 · 물결).
+  - 지형지물 7: 아치 폐허 · 큰 수정 · 깨진 모래시계 · 떠 있는 바위섬 · 거울 문 · 시계 오벨리스크 · 모래 언덕.
+- **배색** `ModelPalette.Ch3`: 기획 색(청록 · 연보라 · 분홍 노을)과 '맵 = 따뜻하게' 규칙이 부딪혀서 → 돌 · 대리석 · 금은 장미 사암 · 크림 · 금, 청록은 물에만, 흰 빛은 수정 · 거울에만(보라 X). 거울면 · 수정 속 · 빛가루는 빌더 `GlowMats`가 빛나는 단색(CatTang/Silhouette)으로 바꿔 끼움.
+- **바닥** `Art/tools/ground_texture_ch3.py` → `Art/Env/Ch3/ground_ch3.png`(노을 비친 거울 호수 판석, 2m 판 · 금빛 줄눈) · `ground_ch3_cloud.png`(스테이지 4 구름) → 빌더가 `Resources/Kit/Ch3/Ground · GroundCloud.mat`(2장 Ground.mat 복사).
+- **빌더**: 메뉴 `CatTang/3장 키트 만들기 (블렌더)` (`EnemyModelBuilder.Kit3` 표 → `Resources/Kit/Ch3/*`). 기억 수정은 `Explosives`(주황 테두리).
+- **`Scripts/Game/Ch3Kit.cs`**: `Ch3Kit.Is(ch)`(3장 + 키트 있음). 장소별 벽면(`Facades`: 스테이지 2 = 1장 건물 정면을 `@1/` 표시로 빌려 **좌우 반전** + 거울 액자 벽, 3 = 섬 가장자리 · 열주, 4 = 구름 둑, 중간 보스 · 보스 = 열주 · 아치 · 거울 액자) · 지형지물(`Landmarks`) · 바닥 재질/조각(`GroundName` · `GroundWeights`) · 소품(`Props`: 기억 수정 2~4 · 분수 샘 1~2 · 엄폐물 3~5 내구 40). `Kit.Prefab`이 `@N/이름`이면 N장 키트를 씀.
+  - **기억 수정 `MemoryCrystal`**: 맞으면(몬스터 공격 포함) 0.18초 떨림 → 반경 3m 빛가루 폭발 적 50 · 고양이 18, `PropHit.Area`로 연쇄. 이펙트 = FX_Ch3 유리 파열 · 빛가루 + 분홍 폭발.
+  - **분수 샘 `FountainWall`**: 부서지지 않음(체력 100만, 맞을 때마다 다시 채움). 맞으면 반경 1.5m 물기둥(청록 원통 + 물보라, Health 없는 캡슐 콜라이더 → 양쪽 탄이 벽처럼 멈춤) 3초, 다시 쓰려면 8초. 솟을 때 안에 있던 고양이는 밖으로 밈.
+  - 상인: 3장은 `MerchantMirror`(선 거울)이 솟고 거울 속 고양이가 그 앞 발판에 섬.
+  - 떠다니는 거울 조각은 키트 모델로 바뀜(`MirrorShard.Make`가 아랫변 0.6m로 띄움).
+- **사용자 피드백 반영 (같은 날)**
+  - "거울보단 모래사장 느낌" → **실시간 거울 반사**: `Scripts/Game/MirrorReflection.cs`(메인 카메라에 붙는 반사 카메라, 바닥 면 기준 뒤집은 시점 · 비스듬한 자르기 면 · 반 해상도 · 후처리/그림자 끔 → 전역 `_CatTangMirrorTex`) + 새 셰이더 `Shaders/CatTangMirrorFloor.shader`(바닥 그림 위에 반사를 화면 좌표로 섞음, 잔물결 일렁임, 세기 0.85). `RoomBuilder.BuildStage`가 3장 거울 바닥 스테이지(구름 바닥 제외)에서만 켬. 반사 카메라가 그릴 때는 툰 셰이더 외곽선 · 바깥 테두리 패스를 건너뜀(`_CatTangMirrorPass`, 안 그러면 검은 덩어리) + `GL.invertCulling`. 바닥 그림도 하늘 반사(하늘빛 · 연보라 · 분홍 노을 + 흰 구름, 흰 유리 이음매)로, 호수 방에서 모래 언덕 빼고 물결 · 수정 조각 늘림. **주의**: 3장 바닥에 보라 · 하늘빛이 들어가 '맵 = 따뜻하게' 규칙에서 벗어남(사용자 요청 우선, 적은 빨간 바깥 테두리로 구분).
+  - 기슭 벽이 각진 판석 = '갈색 상자' → 둥근 바위 더미로 다시(`kit_ch3_shore_v2_spec.md`). 남쪽 기슭은 0.5배 높이.
+  - "단색 객체가 많다, 화려하게 / 하이퍼 3D로" → Hyper3D(Rodin)는 이 환경에 연결 안 됨(생성기는 Tripo뿐, 잔액 25), 그래서 **Codex 2차 '화려하게'**: `_ch3_detail_v2.md`(조각마다 재질 5~8 · 한 재질 55% 넘지 않게 · 몰딩 · 세로 홈 · 부조 띠 · 모자이크 상감 · 보석 박기 · 금 덩굴) + `kit_ch3_{props,landmarks,walls}_v2_spec.md`. 새 재질 `glaze_teal · coral · ivory · bronze · rose_gold · gem_rose · gem_amber · crystal_rose · tile_cream` (`ModelPalette.Ch3`).
+  - 게임 안에서 사암이 갈색으로 칙칙 → 사암 · 바위 배색을 밝은 분홍 쪽으로(그늘 면 0.62배가 돼도 분홍이 남게).
+  - 분수 물기둥: 단색 원통 → 속 기둥 · 겉 껍질 · 위로 흐르는 물보라 띠 4 · 꼭대기 물방울 왕관. 기억 수정 폭발은 회색 그을음 빼고 분홍 · 금빛 반짝임.
+- **확인함(플레이 화면)**: 스테이지 1~4 방 생성(기슭 · 반전된 마을 · 섬 가장자리 밑면 · 구름 둑), 거울 반사(벽 · 선 거울 · 거울판 · 아치 · 고양이 · 마을 건물), 분수 물기둥 솟음, 기억 수정 폭발 + 연쇄 피해 50, 콘솔 에러 없음.
+- **확인 안 됨**: 반사 카메라 성능(화면을 두 번 그림, 프레임 시간 안 잼), 물기둥 2차 겉모습 · 수정 2차 폭발 이펙트 화면, 물기둥이 실제 탄을 막는 손맛, 상인 선 거울 + 거울 속 고양이 화면, 보스 방(지금은 오벨리스크 · 분수만, 거울 제단은 고래 구현 때), 스테이지 2 반전된 1장 건물의 외곽선 · 그림자가 이상한지 자세히.
+
+## 2026-11-18 (밤) — 상인 거울 유령 · Health 단색 버그 · 3장 두 보스 (진행 중, 커밋 안 함)
+
+- **Health 단색 버그 수정**(`Health.cs`): 매 프레임 렌더러 단위로 `_BaseColor`를 첫 재질 색으로 덮어 다재질 물체(분수 · 수정 · 엄폐물, 1 · 2장 엄폐물 포함)가 늘 단색이었음 → 재질 여러 개면 효과 있을 때만 재질별 블록, 끝나면 지움. 분수 색 정상 확인.
+- **상인**(사용자: 가면 + 반투명 + 오라): `Scripts/Game/MirrorGhost.cs` + 셰이더 `Shaders/CatTangMirrorGhost.shader`(원래 색 + 거울빛 + 금 림 + 흐르는 반짝임 띠, 반투명), 가면 `Kit/Ch3/MerchantMask`를 머리 뼈에, 발밑 빛 고리 2 · 도는 반짝임 3 · 빛가루. `RoomBuilder.MerchantFigure`가 3장 거울 속 고양이에 적용. 화면 확인함.
+- **사격 봉인 · 삼켜진 칸**: `PlayerController.fireLockUntil/FireLocked`, `Revolver.lost[13]`(쏘면 헛방).
+- **보스 모델(블렌더 + Codex, 리깅 없음, 조각을 코드로 움직임)**: `Art/tools/blender_kit_ch3_bosses.py`(명세 `kit_ch3_bosses_spec.md`) → `Kit/Ch3/Ch3_Magician`(Body · Head · ArmL · ArmR, 4m) · `Ch3_Whale`(Body · Tail · FinL · FinR · Jaw, 14m). 보스 소품 `blender_kit_ch3_bossprops.py` → MerchantMask · SwordBox · MagicSword · MirrorPanel · Dove · NumberCard · MemoryShard · Facade_Curtain · Facade_MirrorHall · Altar(제단 테두리 지름 40m). 빌더 `Kit3` 표 · `KeepOrigin` · fit 'd'(길이) · 보스 빨간 테두리 · `boss_*` 배색.
+- **`Scripts/Game/Ch3Bosses.cs`**: `Ch3MidBoss`(카드 부채 · 칼 꽂기 상자 · 비둘기 · 거울 상자 · 분신술사 호출 · 빛가루 순간이동 · 진짜 찾기 · 거울 시계) / `Ch3Boss`(반사 빛줄기 · 물결 링 · 기억 비 · 2페이즈 바닥 깨짐 + 비행 · 패턴 8 · 기믹 4종 쿨 20초) + `PuppetAnim` · `WhaleAnim` · `RippleRing` · `DoveFollow`. `EnemyFactory.MidBoss3/Boss3/AttachKit3`. `RunManager.HasMidBoss` 3장까지. 거울 극장 = `RoomBuilder.BuildSaloon` hall3(뒷벽 커튼 · 옆 거울 벽 · 장애물 없음), 보스 방 48×46 + Altar + 원형 경계 + 고정 거울 조각 8(`MirrorShard.SpawnAnchored`).
+- **확인함**: 컴파일, 극장 생성 · 마술사 등장 · 거울 상자 패턴 화면, 진짜 찾기 분신 4 생성.
+- **극장 36×32 확인함**: 남쪽에서 들어오면 중심이 북쪽으로 4m 옮겨져 남쪽 벽이 복도 끝과 맞음, 뒷문 복도 6m · 스테이지 3도 옮긴 중심 기준으로 붙어 겹침 없음.
+- **진짜 찾기 = 거울 속에 비친 시계**(사용자: 숫자 카드 X → 바닥 시계 자리, 그다음 "거울 속에 시계가 비친 느낌으로", 숫자 배치 **좌우 반전** 선택): `ReflectedClock`(Ch3Bosses.cs) + 셰이더 `Shaders/CatTangMirrorClock.shader` — 1장 로마 숫자 고리 그림(`FX/boss_floor_clock`)의 밝기만 써서 거울빛(옅은 하늘 · 흰빛 + 도는 분홍 노을)으로 칠하고, UV 물결 일렁임 · 비스듬한 반짝임 띠 · 가운데에서 번지며 떠오름(0.5초) · 가라앉아 사라짐. 판 x 크기 음수 = 좌우 반전(3시 = 서쪽, 9시 = 동쪽, 숫자도 거울 글자). 반경 7m, 방 가운데. 마술사 + 분신 4가 시각 5곳(진짜 = 발동 순간 발사 시각)의 숫자 바로 바깥(반경 8.3m)에 섬 → 숫자를 가리지 않아 시계 전체가 화면에 없어도 읽힘. 카드 · 숫자 배지 지움, 카운트다운은 고양이 머리 위 그대로.
+  - 분신 · 고래 기믹 표적(`Ch3Fx.Target`)에 `PlayerOnlyTarget` → 적 탄(소환된 분신술사 탄 등)은 통과(`EnemyProjectile`). 전엔 적 탄에 분신이 터져 반격 탄이 나갔음.
+  - `BossBrain.Own(go)`: 패턴 중 만든 물체를 보스가 사라질 때 같이 지움(시계 · 분신).
+  - **확인함(플레이, 리플렉션)**: 발사 시각 3시 → 마술사가 서쪽, 9시 → 동쪽 · 분신 4 생성, 가짜 맞힘 → 그 분신만 터짐(3 남음), 진짜 맞힘 → 분신 소멸 · 기절 · 시계 가라앉음, 콘솔 에러 없음.
+- **로마 숫자 → 아라비아 숫자 (사용자 2026-11-18: 모든 보스)**: 거울 글자로 뒤집힌 로마 숫자가 다른 숫자로 읽히던 문제도 같이 해결.
+  - 바닥 시계판 그림 `FX/boss_floor_clock.png`(1장 시각 패턴 · 3장 거울 시계 공용): Codex로 같은 고리에 숫자만 1~12로 다시 그림(프롬프트 `docs/images/ui_src/prompts/boss_floor_clock_arabic.txt`, 예전 그림 `boss_floor_clock_roman.png`) → `ui_boss_clock_cut.py`. 숫자 줄 비율 다시 잼 0.727 → `FloorClock.NumeralRing` 0.72 그대로.
+  - 1장 보스 12방향 숫자 탄(`EnemyProjectile` Numeral) 글자 1~12.
+  - 3장 블렌더 모델: `digit_geometry`(Arial Black 글꼴 → 메시, 붙여서 닫힌 메시) — 고래 등 시계 · 제단 테두리 판 12 · 마술사 카드 숫자. 두 스크립트 다시 뽑고 메뉴 `CatTang/3장 키트 만들기 (블렌더)`로 프리팹 갱신. 명세 md도 Arabic으로.
+  - 2장은 원래 숫자 없음(경기장 = 막대 눈금, 헤드라이트 시계 = '3시' 글자). 1장 녹은 시계 거인 Tripo 텍스처의 작은 시계 무늬(로마 숫자)는 화면에서 안 읽힐 만큼 작아 그대로.
+  - **확인함(플레이 화면)**: 1장 바닥 시계판 1~12, 3장 거울 시계 1~12 거울 글자 · 발사 시각 2시 → 마술사가 반전된 2시 자리(북서), 콘솔 에러 없음. 고래 · 제단 숫자는 블렌더 미리보기로만 봄.
+- **3장 일반 몬스터 탄 · 불똥 = 블렌더로 구운 3D**(사용자: 2D 말고 블렌더로 구워서, 고른 것 = 불똥 · 스파크 + 적 탄, 3장만): `Art/tools/blender_bake_fx.py`에 세트 `c3orb`(깎은 장미빛 보석 + 기울어진 빛 고리 + 반짝임, 반복 16장 · 72° 대칭으로 이어짐) · `c3shard`(+X로 뾰족한 유리 조각이 구름, 반복) · `c3spark`(4갈래 섬광 → 유리 조각 10이 돌며 튐 + 고리, 한 번) → `Resources/FX/anim/bk_c3*`. `EnemyProjectile`: 3장이면 구슬(Orb) · 산탄(Pellet)이 구운 프레임을 초당 20장 반복(구슬은 고리가 늘 같은 쪽으로 서 있게), 탄 맞음 · 벽 튕김 불똥 = `bk_c3spark`(`Spark()`), 다른 장은 예전 그대로. 3장 보스의 Orb 탄도 같이 바뀜. 화면 확인함(느린 시간).
+  - 그대로인 2D: 기사 돌진 흙먼지(Dust, 이번에 안 고름), 기억 수정 폭발의 FxBurst 3개(오브젝트라 범위 밖).
+- **분수 샘 = 한 번 터지는 물 폭발**(사용자: 물기둥 지속 말고 물이 한 번 폭발하듯): 물기둥 벽(3초 · 탄 막음) 지움. 맞으면 반경 3m 적 피해 25 + 밀쳐냄 9, 적 탄 씻김(`EnemyProjectile.WashAway`), 고양이는 피해 없이 밀려남 6, 쿨 6초. 겉모습 = **진짜 3D 물 `WaterBurst`**(사용자: 구운 3D · Codex 그림 둘 다 물 같지 않음 → 블렌더 3D로 확실히 물처럼): 블렌더 회전체 메시 `fx_water_column` · `fx_water_crown`(버섯 왕관) · `fx_water_drop`(꼬리 물방울) · `fx_water_splash`(밑동 물보라 왕관) — `Art/tools/blender_fx.py` → 메뉴 `CatTang/FX 메시 가져오기` → `Resources/FX/Meshes`. 새 셰이더 `Shaders/CatTangWater.shader`(정면 밝은 물 · 비스듬한 쪽 짙은 물 · 가는 흰 테 · 위로 흐르는 흰 물결 줄 · 반짝 하이라이트 · 꼭대기 거품 · 화면 픽셀 두께 청록 외곽선, `_Fade`). 움직임 약 1.2초: 물기둥 0.18초에 3.6m 솟음 → 출렁 → 무너짐 / 왕관이 피어 퍼지며 내려앉음 / 물방울 18개 포물선(중력, 꼬리는 날아온 쪽) → 바닥에 닿으면 작은 물보라 / 밑동 물보라 퍼짐. 그림 버전 `fx_c3water` · 구운 `bk_c3water`는 메시가 없을 때 대신 쓰는 용도로 남김 + 바닥 물결 고리 2(`RippleRing`, 피해 0이면 판정 없이 겉모습만). 레벨 디자인 md 분수 샘 줄도 고침. **수치(25 · 3m · 6초 · 밀쳐냄)는 Claude가 정함 — 사용자 확인 필요.** 화면 · 피해 100→75 · 탄 5→0 확인함.
+- **종말 맞음 = 불길 없음**(사용자: 맞을 때 불타는 효과 빼고 처형 때만): `GunkataFx.TraitHit` · `TraitHitAll`에서 종말은 진홍 일반 타격(`FX_Hit`, 종말 색)만 + 몸 진홍빛 잠깐(지직거림 없음). 진홍 불길 `FX_Trait_Doom` · 해골 · 몸 불길 `FX_Trait_DoomBurn`은 처형(`DoomExecute`)에서만. `HideSkull` 지움. 사용자 플레이 중이라 Unity 컴파일 · 화면 확인은 안 함(스크립트 검사만 오류 0).
+  - 사용자가 물은 연기 정체(종말 5 · 망각 2 빌드): 빨간 연기 = 종말 타격 프리팹의 구운 불 · 연기 플립북(진홍으로 물듦) + 몸 불길의 연기, 파란 연기 = 망각 타격 프리팹의 구운 불똥(`bk_spark`, 얼음 파랑으로 물듦). 일반 타격 `FX_Hit`에도 연기 조각(`BakedSmoke`)이 있어 탄 · 특성 색으로 물듦.
+- **치명타 = 해골 · 불꽃**(사용자): `GunkataFx.CritSkull`(예전 종말 처형 연출 `FX_Trait_Doom` 해골 · 불길 + 몸 불길)을 `PlayerController` 치명타 타격에. `GunkataFx.Init` internal.
+- **종말 처형 · 보스 추가 피해 = X자 상처 (게임에 들어가 있음)** `ExecutionFx.Rend`: 그림 + 3D (사용자: 해골처럼 Codex 그림이랑 블렌더 3D 합쳐서) — Codex 시트 `cx_rend` 8장(`docs/images/fx_src/prompts/execute_rend.txt`, 자르기 `fx_sheet_cut.py --strict` = 진홍이 안 지워지는 마젠타 키) + 블렌더 `fx_slash`(`blender_fx.py` `m_slash`) 두 획 흰 심지 빛줄기 + 핏방울 가시 + 히트스톱 0.1초(보스 0.06) + 흔들림. 크기 = 몸통 안(모델 렌더러 폭 · 높이 중 작은 쪽, 사용자: 너무 큼). 검은 블랙아웃은 뺌(사용자: 바로 죽으니 죽을 때 검은 안개랑 합쳐지면 충분). 자체 시계(deltaTime / timeScale)라 히트스톱 · 녹화 중에도 같은 빠르기.
+- **망각 새 이펙트 = 미리보기만, 게임엔 아직 연결 안 함**(사용자: GIF 보고 확정하면 넣기) `OblivionFx.cs`: 타격 = 기존 망각 타격에서 파란 불똥(BakedSpark) 뺌 / 가둠 `Encase` = 블렌더 각진 얼음 덩어리 `fx_ice_block`(몸 크기 비례, 모델 렌더러만) + Codex 얼음 우리 `cx_ice_lock`(마지막 장 유지) / 6단계 `IceBloom` = 블렌더 얼음 꽃잎 `fx_ice_petal` 16장 피어남 → 하얗게 차오름 → 번쩍 깨짐(각진 조각 `fx_ice_chunk_0~2` · 유리 조각 · 별 섬광 · 반짝임 · 서리 고리 3 · 짧은 멈춤) + Codex 얼음 꽃 `cx_ice_bloom`(스컬 나이아스 참고). 얼음 재질 = `CatTang/Water` 셰이더에 얼음 색. **연결할 곳(확정 후)**: `GunkataFx.TraitHit` 3003 → `OblivionFx.Hit`, `Health.ApplyTimeLock` 호출부(망각 가둠) → `Encase(대상, 시간, 6단계 여부)`, `PlayerController.TimeLockEnded` 폭발 겉모습 → 꽃.
+- **망각 이펙트 게임에 들어감 (사용자 2026-11-18 승인: "6단계부턴 아예 꽃으로, 얼음 감옥에서 풀릴 때도 깨지게 ㄱ")**: `PlayerController` TimeLock 효과 → `OblivionFx.Lock` (적 하나에 하나, `Health.TimeLocked` 동안 유지). 1~5단계 = 얼음 감옥 → 풀리거나 죽으면 깨짐(조각 12 · 별 섬광 · 고리 · 작은 흔들림). 6단계(`OblivionFx.Tier6` = OnTimeLockEnd 폭발 있음) = 감옥 대신 가둠 순간부터 얼음 꽃(꽃 그림 바닥에 눕힘) → 풀리면 0.1초 하얗게 차올라 크게 깨짐; 6단계 폭발 피해는 그대로(`Effects.AreaDamage`), 예전 폭발 겉모습은 얼음 연출을 못 쓸 때만. 망각 타격 파란 불똥 끔(`GunkataFx.NoSpark`). 컴파일 · GIF 확인함(오류 0). **직접 조작으로는 확인 안 함** (실제 망각 탄으로 가둠 · 연장 · 가둠 중 죽음 · 보스).
+- **미리보기 GIF** `docs/images/fx_preview/`: `execute_rend.gif` · `oblivion_hit.gif` · `oblivion_lock.gif` · `oblivion_bloom_shatter.gif`. 녹화 도구 `Scripts/Game/FxRecorder.cs`(게임 시간 고정 간격 + 메인 카메라를 렌더 텍스처로 찍음, HUD 안 찍힘) + `docs/tools/fx_frames_to_gif.py`.
+- **사고**: 플레이 중에 `CatTang/FX 메시 가져오기`를 돌렸다가(쓰이고 있는 메시를 제자리에서 덮어씀) Unity가 D3D12 오류로 꺼짐 → `FxMeshImporter`가 플레이 중엔 안 돌게 막음. MonoBehaviour 필드 초기화에서 `new MaterialPropertyBlock()` 쓰면 Unity 오류(Begin에서 만들 것).
+- **남은 것**: 거울 고래 플레이 확인 (기믹 4종 · 2페이즈 · 빛줄기). 테스트 중 플레이 모드에서 스크립트를 고치면 Unity가 다시 컴파일해 상태가 날아감 — 꼭 멈추고 고칠 것. 리플렉션으로 장을 바꿀 땐 `chapter` 필드만 말고 `Chapter` 속성(`Tables.Chapter(3)`)도 바꿔야 3장 방이 지어짐.
+
+## 2026-11-18 — 3장 레벨 디자인 확정 · 3장 기획서 Ver01 (구현 전, 기획만)
+
+사용자와 질문으로 전부 확정 (1 · 2장 때와 같은 방식). **코드는 아직 하나도 안 건드림.** 정본은 `docs/Cat_Tang_레벨_디자인.md`의 '챕터 3' · '수치 기준 (챕터 3)' · '상인 공통 규칙' · '신기루 마술사' · '거울 고래' 절.
+
+- **테마**: 3장 = **신기루 사막 = 거울 세계** (사용자: 거울 세계로 본격적으로 몽환적으로, 메이플 소멸의 여로 · 에스페라 참고). 모티브 '반사'. 원래 4장 '거울 미궁'은 빠지고 **4장 테마 미정**.
+- **흐름**: 거울 호수 기슭 → 거울 속 서부 마을(1 · 2장 장소 좌우 반전 + 빛가루) → 중간 보스 거울 극장 → 떠도는 섬 → 뒤집힌 하늘 → 보스 거울 제단(원형 지름 40m).
+- **방 기믹**: 떠다니는 거울 조각 3개(양쪽 탄 1번 반사, 몸 통과, 쏘면 15° 회전). 오브젝트: 기억 수정(폭발) · 분수 샘(물기둥 벽) · 신기루 엄폐물. 상인: 거울 속 고양이.
+- **일반 적 5종**: 거울 사수 · 빛가루 법사 · 거울 너머 검객 · 유리 기사(정면 반사, 4발에 거울 깨짐 → 5초) · 신기루 분신술사. 강화형 공격 하나씩.
+- **중간 보스 신기루 마술사**: 진짜 찾기(25초 쿨, 발동 때 1초 사격 봉인 → 발동 순간 발사 시각 숫자 카드가 진짜) + 거울 시계(체력 66 · 33%, 시계 1~6개, 홀수 = 위에 서기 · 짝수 = 피하기, 6초, 실패 30%). 패턴: 카드 부채 · 칼 꽂기 상자 · 모자 속 비둘기 · 거울 상자 · 분신술사 호출.
+- **보스 거울 고래**: 기믹 4종(거울에 비친 시각 · 고래의 노래 · 흩어진 기억 조각 · 기억 삼키기)을 **20초 쿨로 무작위 반복**, 쿨이 차면 기믹 우선, 기믹 중엔 쿨 정지 (1 · 2장의 체력 75/50/25% 확정과 다름). 2페이즈(50%) 거울이 깨지고 공중 비행 → 일반 패턴 묶음 교체(1페이즈 수면형 4 · 2페이즈 공중형 4). 상시 탄막: 반사 빛줄기(내내) + 물결 링(1페이즈) / 기억 비(2페이즈).
+- **수치**: 2장보다 피해 +25%, 중간 보스 3960 · 보스 7020, 웨이브 6~8 → 8~11.
+- **세부 수치 중 사용자가 직접 고르지 않은 값**(Claude가 2장 비율로 채움, 기획서에는 확정으로 들어감 — 사용자가 보고 고칠 수 있게): 일반 적 이속 · 사거리 · 탄속, 강화형 수치, 마술사 패턴 수치 · 진짜 찾기 쿨 25초 · 제한 6초 · 반격 탄, 고래 패턴 수치 · 기믹 제한 시간(8 · 4 · 10초) · 실패 피해(40% · 조각당 7%) · 기억 삼키기 3칸 · 12초, 기억 수정 · 분수 샘 수치.
+- **기획서**: `docs/1159_3장_기획서_20261118_정승운_Ver01.pptx` (20장, 생성기 `docs/tools/build_ch3_ppt.js`, 실행은 `NODE_PATH=<pptxgenjs@3.12 · image-size@1 있는 node_modules> node build_ch3_ppt.js`). 컨셉 시안 5장 `docs/images/ch3/` (Codex 이미지 생성, 명세 `Art/tools/specs/ch3_concept_spec.md`).
+
+### 같이 정한 공통 변경 (코드 수정 필요)
+- **상인 등장 (모든 챕터)**: 지금 코드는 스테이지 보상 뒤에만 15%(`RunManager.AfterReward`), 보장은 `stageIndex == Stages - 2`(스테이지 3 끝)이라 사용자가 한 번도 못 봄. → **방을 비울 때마다 15%**(`RoomCleared`), 스테이지 1 · 2에서 못 만났으면 **스테이지 2 마지막 방(중간 보스 직전)에 확정**, 고양이 · 카메라에서 보이는 쪽에 솟고 화면 밖이면 **가장자리 화살표** + 토스트. 지금은 사람 모델 없이 카운터만 솟음(`RoomBuilder.MerchantNpc`).
+- **2장 트렁크 짐꾼**: 정면 120° 탄 완전 차단 → **피해 33%만** 받음(사용자: 완전 차단 불쾌). `EnemyCh2.cs` 짐꾼 정면 판정. 2장 기획서 PPT(Ver03)엔 아직 '정면 탄 막음'으로 남아 있음 → 2장 Ver04 때 반영.
+
+### 3장 구현 할 일 (순서 제안)
+1. 상인 수정 · 짐꾼 33% (작고 바로 체감됨).
+2. 3장 데이터: `build_tables.py`의 챕터 · 적 · 보스 표에 3장 추가 → CSV · xlsx.
+3. 3장 키트: 거울 호수 바닥(하늘 반사) · 신기루 엄폐물 · 기억 수정 · 분수 샘 · 선 거울 · 떠다니는 거울판 → 블렌더 + Codex (`Resources/Kit/Ch3/*`), 원칙대로 MCP로 프리팹.
+4. 떠다니는 거울 조각 기믹(탄 반사: 고양이 탄은 즉발 판정이라 반사 처리 방식부터 정해야 함 — `Revolver` 사격 경로에 거울 교차 검사 추가).
+5. 일반 적 5종 · 강화형 (Tripo 모델 · 리깅, `EnemyCh3.cs` 새로), 분신술사 분신 · 검객 거울 출몰.
+6. 신기루 마술사 (`Ch3Bosses.cs`): 진짜 찾기 사격 봉인 · 숫자 카드 · 거울 시계(바닥 거울 덮기 연출 + 시계 판정).
+7. 거울 고래: 기믹 쿨 스케줄러(`BossBrain`에 '기믹 쿨 · 기믹 우선 · 기믹 중 쿨 정지' 추가 — 1 · 2장은 체력 구간 방식이라 따로), 2페이즈 거울 깨짐 연출 · 공중 이동, 상시 탄막 3종, 실린더 칸 사라짐(기억 삼키기 — `Revolver`에 칸 비활성 상태 필요).
+8. 4장 테마 정하기 (기획).
+
+## 2026-11-18 (밤) — 탄 이펙트 정리 · 사거리 · 자동 추적 · 효과 이펙트 6종 (커밋 안 함)
+- **원칙(사용자)**: 탄 이펙트는 추가 피해 · 효과가 실제로 발동할 때만. 평소 탄은 궤적 · 총구 섬광 · 작은 일반 타격만. 특성 덩어리(`TraitBolt`) · 맞을 때마다 특성 타격(`TraitHitAll`)은 안 부름 (함수는 남겨 둠).
+- **튕김 치명타**: 튕긴 탄은 치명타를 물려받지 않고 튕길 때마다 따로 굴림. 관통은 같은 탄이라 그대로 공유.
+- **사거리**: 총 연사 간격 0.3초 통일, 개성은 사거리(데린저 7 · 콜트 9 · 12 · 동경 13 · 종소리 15 · 지평선 20m) + 공격력 재조정. 조준 커서가 다음 총 사거리 밖이면 흐려지고 사거리 끝에 빨간 점(`AimCursor.RangeMark`). UI 연사 표기 → 사거리.
+- **자동 추적**: 전설 총 마지막 종소리 오른손(9317)만. 새벽여명(희귀 탄)은 1명 관통. 궤적은 조준 방향에서 표적으로 휘는 곡선(`Tracer.SpawnPath`, 판정은 곧은 선).
+- **은빛 메아리**: 오른손 = 관통할 때마다 은빛 메아리 폭발(피해 40% · 반경 1.5), 왼손 = 1명 관통. 이펙트 `FX_PierceEcho` = Codex 시트 `cx_pierce_echo`(`docs/images/fx_src/prompts/pierce_echo.txt`) + 블렌더 `fx_echo_star` · `fx_echo_blade`(`blender_fx.py`), MCP로 프리팹 조립. 미리보기 `docs/images/fx_preview/pierce_echo.gif`.
+- **DEAR[ ] 다음 탄 +20%**: 강해진 탄 궤적이 굵고 하얗게. **세월 관통 성장**: 뚫은 자리부터 덧그린 궤적이 굵어짐. **레테의 물결**: 시간에 갇힌 적 10명당 +1(최대 10), 오를 때 HUD 그 칸 번쩍 + '공격력 +1'.
+- **조건부 추가 피해 금빛 숫자**: 보스 · 표식 · 상태 이상 · 거리 · 판정 시각 · 12시 칸 등으로 늘어난 몫은 금빛 숫자로 따로(`Health.TakeDamage` condFrac, `DamageNumber.SpawnCond`). 금빛 전용 글꼴 없이 일반 숫자를 물들임.
+- **데이터**: 원본은 `docs/tools/build_tables.py` → CSV · xlsx. `build_docs.py`는 손으로 고친 기획서 내용(추억 6단계 '+7%' 등)을 덮어써서 안 돌리고 md를 직접 고침.
+
+## 2026-11-18 (밤 늦게) — 아웃게임 개편 · 메인 로비(11:59) · 저장 슬롯 · 키트 마을 · 깨어남 연출 (커밋 안 함)
+
+- **게임 이름 = 11:59** (캣탕은 작업명). 정본 기획: `docs/Cat_Tang_컨셉_기획서.md` 5.2 · 9 · 결정 기록.
+- **저장 슬롯 3개** `Core/Meta.cs`: 키 = `cattang.s{슬롯}g{세대}.*` (지우기 = 세대 +1, PlayerPrefs는 키 목록을 못 얻어서). `Meta.ActiveSlot` · `BeginSlot` · `DeleteSlot` · `SlotChapters/Shards/Runs/LastPlayed`. **예전 `cattang.*` 저장은 안 읽음** (개발 중 데이터라 옮기지 않음).
+- **시설 레벨 삭제**: `FacilityLevel` · `TryUpgradeFacility` · `GradeInPool` · `StartWithOp`(공방 3단계 시작 연산) 없앰. 시설 열림 = 기억의 방 · 탄약 공방 처음부터, 총포상 1장, 의상실 2장(`FacilityUnlockChapter`). 기억 노드 = 처음 3개, 장마다 +2(`MemoryNodesOpen`).
+- **해금 묶음** 새 표 `Data/Tables/Unlock.csv`(`Tables.UnlockGroups`, Items = `|`로 구분): 탄 10묶음(6001 낡은 탄띠 = 일반 15발 무료) · 총 4묶음. `Meta.BulletUnlocked/GunUnlocked` → `RunManager.RandomBullet/RandomGun/BossOptions`가 해금한 것만 냄 (하나도 없으면 일반으로 대체). **`docs/tools/build_tables.py`엔 아직 Unlock 표가 없음** — 표 생성기를 다시 돌려도 Unlock.csv는 따로 남지만 xlsx엔 없음.
+- **코스튬 = 조건 달성 시 구매**: `Meta.CostumeProgress/CostumeCondMet/CostumeCondText`. 카운터 `Meta.AddCount` — 처형(`PlayerController` Execute, 보스 제외) · 극한 회피(`JustDodge`) · 특성 6단계(사격 때 최고 특성이 6단계면 1). 장 클리어 · 보스는 `ChaptersCleared`로.
+- **시설 화면** `GameUI.OpenFacility`: 머리글 = 지키는 존재 이름 · 조각. 탄약 공방 = 묶음 카드 4열(`GroupContent`), 총포상 = 위 묶음 + 아래 해금한 총 시작 총 고르기, 의상실 = 조건 · 진행(예: 12/50) · 구매.
+- **메인 로비** `Scenes/Lobby.unity` + `UI/LobbyScreen.cs` (빌드 목록 Lobby 0 · Village 1 · Run 2, 메뉴 `Cat_Tang/Build Lobby Scene`): **키 일러스트(주인공 쌍권총 고양이 왼쪽 · 녹는 회중시계 11:59 · 녹아내리는 서부 마을, 하데스풍 굵은 잉크 · 해칭 · 강한 명암, 참고 그림 = 턴어라운드)** · 제목 타이포(오른쪽 위) · 슬롯 카드(오른쪽 아래) · 버튼 · 아이콘 전부 Codex 그림(`docs/images/ui_src/prompts/lobby_key.txt` · `lobby_ui.txt`, 예전 파스텔 bg/fg는 key가 없을 때만 → `docs/tools/ui_lobby_cut.py` → `Resources/UI/Lobby/`). 연출: 배경 숨쉬기 · 마우스 시차 · 흐르는 안개 · 떠오르는 모래 반짝이 · 제목이 내려와 출렁 후 1초마다 똑딱 · 카드 차례로 떠오름 · 마우스 올리면 커짐 · 슬롯 고르면 라벤더 안개로 덮이며 마을로. 그림이 없으면 글자 · 기본 스킨으로 대체.
+- **로비 3차 (사용자: 일러에 맞춘 타이포 · 버튼 · 패널, 플랫하게 뽑고 코딩으로 효과, 그려지는 연출)**: 메뉴 = 새로 시작(슬롯 고르기, 쓴 슬롯은 두 번 눌러 덮어쓰기) · 이어하기(쓴 슬롯만, 없으면 꺼짐 — 이걸 눌러야 슬롯이 나옴) · 설정(전체 · 음악 음량, 전체 화면, 게임 끝내기 — `Core/GameSettings.cs`, `Music.SetVolume`). UI 그림 = Codex 플랫(`prompts/lobby_flat.txt`, 단색 + 검은 외곽선) + 셰이더 `Resources/UI/Lobby/UIFlatFx.shader`(녹은 금 그라데이션 · 열기 일렁임 · 어두운 칠 해칭 · 아래 그늘 · 윗변 하이라이트 · 빛 훑기 · `_Hover`), 칸마다 재질 따로(`LobbyScreen.FxMat`, `HoverScale.fx`). 2차 칠한 그림(`lobby_ui2.txt`)은 사용자가 별로라 안 씀(원본은 ui_src에 남음). **등장 연출**: 양피지 → 잉크 선이 한 줄씩 그어짐(`docs/tools/ui_lobby_ink.py`: 진한 윤곽선만 골라 선마다 펜이 주인공에 가까운 순서로 출발, 선 위로만 퍼지는 거리로 순서 → `reveal_ink.png`, 해칭 · 어두운 칠은 근처 선 뒤) → 색 번짐(`reveal_color.png`, 가장자리 녹은 금빛) → 제목 쾅 → 메뉴. 셰이더 `UIReveal.shader`. 약 5초, 클릭 · 키로 건너뜀.
+- **로비 4차**: 제목 콜론 = 점 두 개(`docs/images/ui_src/flat_title_dots.png`, 시계 지움). 비네트(`LobbyScreen.BuildVignette`, 절차 텍스처: 가장자리 · 오른쪽 메뉴 자리 · 아래 땅) · 그림자(`DropShadow`: 같은 그림 검게 세 겹, 제목 · 메뉴 판 · 패널 · 카드). VFX `UI/LobbyVfx.cs`(그림 좌표에 붙음): 해 뒤 도는 햇살 두 겹 + 빛무리 숨쉬기, 녹는 시계 아래 금 방울이 맺혔다 늘어나 떨어짐, 총구 네 갈래 반짝임, 모래 바람 불똥, 제목 쾅 때 불꽃 46개, 제목 녹은 방울. `UIFlatFx`는 리니어 색공간이라 감마로 바꿔 계산(안 그러면 바래고 판이 올리브색). 화면 캡처 도구 `Dev/UiCapture.cs`(UI 포함 PNG + times.txt).
+- **로비 5차 — 그리는 과정 겹치기 + 얼굴 줌아웃** (사용자: 선이 균일하게 그어지면 그림 같지 않음 → 과정 그림 여러 장 겹치기, 옛 갱플랭크 로그인 화면처럼 얼굴부터): `LobbyScreen.BuildArt/AddStage/StepStages`. 단계 그림 `docs/tools/ui_lobby_stages.py` → `Resources/UI/Lobby/stage1~5.png`: 1 파란 연필 밑그림 · 2 연필 스케치 = Codex 이미지 편집(`prompts/lobby_stages.txt`, key를 넣어 같은 구도), 3 잉크 외곽선 · 4 잉크 + 해칭 · 5 평면 색 = key에서 계산(자리 정확). 드러나는 순서 마스크: `reveal_radial`(얼굴에서 퍼짐) · `reveal_ink`(선 따라) · `reveal_color`. 앞 단계는 다음 단계가 덮을 때 옅어졌다 사라짐. 카메라: 얼굴(key 0.255, 0.33) 2.3배 → 1.06배, 6.2초. 전체 약 7.4초, 클릭 · 키로 건너뜀.
+- **로비 6차 — 선이 한 획씩** (사용자: 색이 더해지는 느낌 말고 선이 하나씩 추가되며 완성): `docs/tools/ui_lobby_strokes.py <선 그림> <출력> <문턱>` — 선 그림을 세선화(Zhang-Suen)해 이어진 선 덩어리를 한 획으로, 펜 여러 자루(큰 선 3자루 · 작은 결 12자루)가 얼굴에서 가까운 순서 · 손에서 가까운 획을 골라 끝에서 끝으로 그음 → `reveal_pencil.png`(연필 스케치 stage2) · `reveal_lineart.png`(Codex 잉크 선화 `prompts/lobby_lineart.txt` → stage3). 명암 덩어리(key_ink)는 획으로 안 쪼개짐(조각남) — 선 그림에만 쓸 것. `reveal_*` 가면은 sRGB 끔(`ResourceTextureImport`).
+- **로비 7차**: 연필 = join 모드(이어진 선 덩어리째, `ui_lobby_strokes.py stage2.png reveal_pencil.png 0.22 join` — cut 모드는 갈림길마다 끊은 짧은 획), 잉크 선화도 join으로 얼굴부터 순차, 연필이 오른쪽 풍경을 그릴 즈음(3.3초) 잉크가 얼굴에서 시작. **로토스코핑**: `UIReveal`에 `_Boil`(px) · `_BoilFps` — 초당 12번 바뀌는 잡음으로 그림이 몇 픽셀 일렁임(선 단계 2.2px, 색 1.2px, 완성 그림 0.9px · 8fps로 계속), 단계 진행 · 카메라 줌도 12장/초로 끊음. 전체 약 7.7초. → 이후 사용자 "떨리는 작열 효과 빼기, 과함": 라인 보일(`_Boil`)만 끔(사용자: 떨림만 빼고 나머지 냅둬 — 금빛 가장자리는 되살림). 12장/초 진행 유지. **맨 종이부터 천천히**: 0~0.8초 빈 종이, 밑그림 0.8 · 연필 1.2~6.2 · 잉크 5.0~8.4 · 해칭 7.6 · 색 8.2 · 완성 9.2 · 제목 10.1, 전체 10.6초, 줌 0.8초부터 9초간.
+- **로비 8차 — trace 모드** (사용자: 맨 종이부터 시작 안 함 — 얼굴~몸이 4.5만 픽셀짜리 한 선 덩어리라 0.8초 만에 그려지던 문제): `ui_lobby_strokes.py <그림> <출력> <문턱> trace <펜 수> <속도>` — 뼈대를 갈림길 사이 조각으로 나누고, 갈림길로 이어진 조각을 이웃으로 묶어 펜이 이어진 길을 따라 한 줄씩. 연필 `stage2.png reveal_pencil.png 0.22 trace 8 1800`, 잉크 `stage3.png reveal_lineart.png 0.3 trace 5 1600`. 확인 도구: `LobbyScreen.DebugAge`(연출 시각 고정), `UiCapture.BeginLobby(count, step, folder, from)`(시각 고정 캡처 → 정확한 GIF).
+- **로비 9차 — 실제 선 긋기(마스크 없음)** (사용자: 마스크 말고 선 하나하나가 그려지게, 원으로 퍼지지 말고 여기저기서 그려지며 합쳐지게): `docs/tools/ui_lobby_vector.py <선 그림> <출력 txt> <문턱> <펜 수> <속도> <최소 길이>` — 뼈대 → 갈림길 사이 선을 점 경로로(RDP) + 굵기 → 펜이 갈림길에서 가장 자연스럽게 이어지는 선을 따라 계속 긋고, 이어진 게 없으면 그림 어딘가 무작위 자리로 건너뜀(초반엔 고양이 쪽을 조금 더) → `Resources/UI/Lobby/strokes_pencil.txt`(stage2, 펜 5) · `strokes_ink.txt`(stage3 Codex 선화, 펜 4). 게임: `UI/LobbyStrokes.cs`(MaskableGraphic, 진행도만큼 경로를 실제 선 메시로, 양 끝 가늘게 — **CanvasRenderer 꼭 같이 붙일 것**). 순서: 빈 종이 → 연필 획 0.8~6.2 → 잉크 획 4.4~8.4 → 해칭 · 평면 색 알파로 겹침 8.0~9.4 → 완성 9.3. 원형 가면 단계(파란 밑그림 · reveal_* 가면)는 안 씀(파일은 남음).
+  - 이후 사용자: 그림 단계는 좋고 타이밍만 빠르게, 흑백 디테일은 아까처럼 → 전체 8.2초(연필 0.5~4.3 · 잉크 3.0~5.8 · 흑백 해칭 `stage4` reveal_radial 5.2~6.1 · 흑백 잠깐 · 색 6.4~7.1 · 완성 7.0 · 제목 7.8). 이어서 색(`stage5`)도 흑백 디테일처럼 reveal_radial로 퍼지며 입혀짐(6.3~7.2, 가장자리 금빛), 완성 7.1.
+- **키트 마을** `Editor/VillageKitBuilder.cs` (메뉴 `Cat_Tang/Build Village (Kit)`, `Build All Scenes`도 이걸 씀): 1장 키트 프리팹으로 북 여관(기억의 방) · 서 총포상 · 동 탄약 공방 · 의상실 · 남 시간의 문(나무 문 + 녹은 시계 + 등불), 우물 광장 · 녹은 시계 4 · 랜드마크 · 바위 둑 + 보이지 않는 벽. 바닥 = 판과 같은 이어지는 흙(`Kit.GroundMesh` public으로). 시설 앞 `NpcSpot_*` · 문 옆 `NpcSpot_Gatekeeper` = **NPC 모델 자리(아직 빈 자리)**. 예전 도형 마을 `SceneBuilders.BuildVillageInternal`은 안 씀.
+- **깨어남 연출** `Game/VillageWake.cs` (`VillageManager.Start`에서): 라벤더 안개 화면이 걷히며 누운 고양이 둘레로 연기 → 몸을 일으키고 연기가 바깥으로 흩어짐 → 카메라 물러남(`CameraFollow.SnapZoom`) → 조작. 약 2.7초.
+- **확인함**: 컴파일, 로비 → 슬롯 3 새로 시작 → 마을 진입 · 연기 · 일어남 · 조작 풀림, 해금 확인(1013 잠김 · 1001 풀림), 탄약 공방 묶음 화면.
+- **안 됨 / 다음**: NPC 5 원화(ChatGPT, 사람 얼굴 X) → Tripo 모델 → `NpcSpot_*`에 배치 · 마을에서 ESC로 로비 돌아가기 · build_tables.py에 Unlock 표 · PPT 기획서 반영 · 직접 조작으로 마을 동선 확인.
+
+## 2026-11-18 (밤 2) 새 마을 — 다리로 이어진 섬 5개 · 장 해금 · NPC 5 · 첫 흐름 (커밋 안 함)
+
+사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌(분위기만) → 새벽 별밤 허공의 섬 여러 개를 다리로 잇고, 장을 넘을 때마다 섬 · 컨텐츠가 열림. 기획서 `docs/1159_마을_기획서_20261118_정승운_Ver01.pptx` (14장, 생성기 `docs/tools/build_village_ppt.js`, 그림 `docs/images/village/`).
+- **흐름**: 새 슬롯 = 마을 없이 바로 1장 전투(`Meta.FirstRunPending` → `LobbyScreen.EnterCo`가 Run 로드) → 판이 끝나면 마을에서 깨어나 뻐꾸기 첫 대화. 판은 상시 1장부터(기존 그대로). **해금** `Meta.FacilityUnlockChapter = {1,3,2,2}`: 1장 = 기억의 방(노드), 2장 = 탄약 공방 · 의상실 섬, 3장 = 총포상 섬.
+- **총탄 · 총**: 지금 있는 건 전부 기본 해금 — `Data/Tables/Unlock.csv`를 머리글만 남김(어느 묶음에도 없는 아이템 = 해금, `Meta.ItemUnlocked`). 묶음이 없으면 상점에 '새 탄/총은 아직 만드는 중' 문구. 새 총탄 · 총을 만들면 Unlock.csv에 묶음 추가. (예전 묶음 10 + 4는 git 기록에 있음)
+- **마을 씬** `Editor/VillageKitBuilder.cs` `BuildVillage` (메뉴 `Cat_Tang/Build Village (Kit)`): 섬 5(`Isle` 가운데 34×30 · 문 섬 남 · 동 탄약 공방 · 북동 의상실 · 서 총포상), 섬 윗면 = 타원 메시(`Art/Env/Village/Island_*.asset`) + 마을 흙 텍스처, 가장자리 = 바스러지는 절벽 조각 둘레 배치 + 안쪽 보이지 않는 벽(다리 입구는 비움), 다리 4(`IslandBridge`: 잠김 = 끊긴 다리 + 양 끝 막음 + 건너편 NPC 숨김, 처음 열린 귀환 때 `Reconnect` 연출), 허공 판(`void_village.png`, 새벽 별밤 · 은하수), 떠 있는 조각 섬 · 부스러기, 새벽 조명(복숭아빛 해 + 3색 환경광). 텍스처 `Art/tools/ground_texture_village.py`.
+- **마을 키트(블렌더 + Codex)**: 명세 `Art/tools/specs/_village_common.md` + `kit_village_{buildings,island,props,bridge}_spec.md` → `Art/tools/blender_kit_village_*.py` → `Art/Characters/Village/Kit_V_*.fbx` → 메뉴 `CatTang/마을 키트 만들기 (블렌더)` (`EnemyModelBuilder.KitVillage`, 배색 `ModelPalette.Village`, 창 · 등불 · 모래 빛 · 빛가루 = 발광 단색 `VillageGlowMats`, 가장자리 · 섬 · 다리 · 광장은 `KeepOrigin`). 건물 5 · 섬 9 · 다리 2 · 소품 15.
+- **건물 위 떠오르는 조각**(사용자: 건물 위 벽돌은 파티클로 천천히 계속 올라가게): 모델의 떠 있던 조각은 지움(`kit_village_buildings_nofloat_spec.md`), `VillageKitBuilder.RisingBits`가 건물마다 파티클 2개(벽돌 · 판자 메시 조각 7~11초 천천히 돌며 상승 → 작아져 사라짐 + 빛나는 모래 알갱이). 재질 `Art/Env/Village/RisingBits.mat`.
+- **NPC 5**: ChatGPT 원화(`Art/tripo_input/npc/`, 프롬프트 `prompts.md`) → Tripo 웹 H3.1 생성 → 리토포 1만 면 → 오토 리그(Mixamo; 문지기 · 재봉사는 '휴머노이드 안 맞을 수 있음' 경고 무시하고 진행, 아바타 정상) → FBX → `tripo_import.py` → `Art/Characters/Npc/Npc_*.fbx` → 메뉴 `CatTang/마을 NPC 프리팹 만들기 (Tripo)` (`EnemyModelBuilder.BuildNpcs`, 상인과 같은 `BuildIdleFigure` · 고양이 idle) → `Resources/Npcs/Npc_*.prefab` → `NpcSpot_*`(`PlaceNpc`, 메뉴 `Cat_Tang/Place Village NPCs`). 키 뻐꾸기 2.1 · 대장장이 2.7 · 보안관 2.9 · 재봉사 2.7 · 문지기 3.8m. Tripo 작업 id: 뻐꾸기 cb09bf7a · 대장장이 05ad56c8 · 보안관 71261fdc · 재봉사 c3e13c1d · 문지기 fb999f09 (studio.tripo3d.ai/workspace/rigging/<id>). 크레딧 1375 남음.
+- **이야기** `Game/VillageStory.cs` (깨어남 뒤, 안 본 장면만, `Meta.StorySeen/MarkStory`): intro(뻐꾸기) · ch1(뻐꾸기, 기억의 방) · ch2(다리 연결 → 대장장이 · 재봉사) · ch3(다리 → 보안관). 말하는 NPC를 카메라가 비춤(`CameraFollow.FocusOn`). 대화 창 `GameUI.Talk`(E · 스페이스 · 엔터 · 클릭). 대사 문구는 초안.
+- **새벽 조명 · 색보정**(사용자: 조명에 파란빛으로 새벽 느낌): `VillageKitBuilder.DawnLighting` — 해 = 옅은 푸른빛(0.84, 0.87, 1), 환경광 3색(남색)을 SH에 직접 구움(`RenderSettings.ambientProbe`, 툰 셰이더가 SampleSH로 읽음). 전역 볼륨 `Art/Env/Village/DawnVolume.asset`(없을 때만 빌더가 만듦 — 에디터에서 고친 값 유지): 화이트 밸런스 −6 · 그늘 파랗게/밝은 곳 따뜻하게(ShadowsMidtonesHighlights) · 채도 +16 · 옅은 푸른 필터 · 블룸 · 남색 비네트. 스플릿 토닝은 화면이 보랏빛 회색으로 죽어서 뺌. 카메라 후처리 켬. 가로등 = 바닥 가산 빛 웅덩이(`lamp_pool.png`, `LampPool.mat`) — URP 추가 조명이 정점 단위라 툰 셰이더(픽셀 추가 조명만 읽음)에 점광원이 안 먹어서. **주의**: 위치 지정 캡처(manage_camera view_position)는 임시 카메라라 색보정이 안 보임, 게임 카메라로 확인할 것. 비교 그림 `docs/images/village/dawn_light.png`.
+- **(밤 3) 몽환 강화 — 완료, 커밋 안 함** (사용자: 새벽 더 세게 · 부서진 시간 / 신비한 나무 · 오브젝트 · 바깥은 뒤집힌 밤하늘 · 보이는 초승달 · 섬 불규칙 도형 · 건물 휘고 비틀린 불규칙 도형(레퍼런스: 크쥐비 도멕 · 꼬인 굴뚝 · 해비타트 67) + 몇 군데서 파티클이 하늘로):
+  - 바닥: 한때 푸른 흙으로 바꿨다가 사용자가 "서부 느낌이 빠짐" → **원래 서부 흙색**으로 되돌림(깨진 시계 고리 무늬만 크림색으로 남김, `ground_texture_village.py`). 섬 흙 · 바위 배색도 원래 따뜻한 색(`ModelPalette.Village`).
+  - 밤하늘 = Codex 그림 `docs/images/village_src/night_sky.png` → `void_village.png`(위 새벽 띠 잘라 4×4 거울 반복). 초승달 `crescent_moon.png` → `moon.png`(마젠타 → 투명), 섬 사이 틈 2곳에 카메라를 향한 판(`CrescentMoon`). 구름층 2겹(크게 · 옅게, `CloudScroll`) · 별빛 반짝임 · 섬 빛가루(`SkyLayers` · `IslandMotes`, `spark.png`). 절차 생성 밤하늘은 `docs/images/village_src/void_village_procedural.png`로만 남김(안 씀).
+  - 섬 윤곽: `Shape` = 타원 × 큰 물결 4겹 + 곶 3 + 파인 만 1(최소 0.78), 가장자리 조각은 둘레 길이 기준 배치.
+  - 키트: 부서진 시간 12(`kit_village_dream_spec.md`, `DreamDecor` 배치) · 신비한 나무 · 오브젝트 8(`kit_village_mystic_spec.md`, `MysticDecor` + `FreeSpot` 빈자리, 나무엔 `PetalRise`) · 건물 = 휘고 비틀린 형태(`kit_village_buildings_crooked_spec.md`, 그 전 단계 `_ruin_` · `_nofloat_` 명세는 기록용). 떠 있는 것 `Game/DreamFloat.cs`.
+  - 건물 파티클: 위쪽 절반에서 조각 · 빛 모래(`RisingBits`) + 가장 높은 곳 2~3곳(꼬인 굴뚝 꼭대기 등)에서 기둥처럼 솟음(`RiseSpots`, 메시 정점에서 자동으로 고름).
+  - 새벽 색보정 최종값(`DawnProfile`, 에셋 `Art/Env/Village/DawnVolume.asset` — 없을 때만 만들어짐): 해 (0.92, 0.9, 0.98) · 화이트 밸런스 −3 · 그늘 파랗게(0.7, 0.83, 1.26) · 밝은 곳 따뜻하게 · 채도 +20 · 필터 거의 흰색. 바닥이 따뜻해서 푸른빛은 그늘 · 바위 · 환경광으로만.
+  - 확인함(게임 카메라): 광장 주변 몽환 오브젝트, 여관 · 의상실 굴뚝에서 솟는 파티클, 섬 불규칙 윤곽, 초승달. 참고 그림 `docs/images/village/dream_plaza.png` · `dream_overview.png`.
+  - **(마지막, 다른 세션에서 이어서) 오브젝트 정리 + 색감 되돌림 — 코드만 고침, 씬은 아직 다시 안 지음**: 사용자가 고른 화면(`docs/images/village/dream_plaza.png` 직전 단계, 서부 흙 + 푸른 새벽)의 색감 = 해 (0.8, 0.85, 1) · 화이트 밸런스 −8 · 중간톤 (0.95, 0.97, 1.04) · 밝은 곳 (1.08, 1, 0.92) · 채도 +16 · 필터 (0.9, 0.94, 1)로 `DawnProfile`/`DawnSunColor`를 되돌렸고, "불필요하게 오브젝트가 너무 많음" → `DreamDecor`(섬마다 1~3개 + 허공 3개) · `MysticDecor`(가운데 4 · 나머지 섬 1~2, 뜬 바위 3) · 풀 흩뿌림 0.08 → 0.03 · 가운데 섬 벤치 1 · 상자 · 선인장 1 줄임. `Art/Env/Village/DawnVolume.asset`은 지워 둠(빌드 때 새 값으로 생김).
+    **씬 다시 지음 · 확인함 (2026-11-18 밤, 이어서)**: `BuildVillage()` 실행 → 씬 저장, `DawnVolume.asset` 새 값으로 생김. 게임 카메라(3번 슬롯 임시 세대 97 · 3장 클리어 상태, 끝나고 세대 1로 되돌림)로 가운데 섬 · 총포상 · 탄약 공방 · 의상실 · 문 섬을 봄 → 오브젝트 양 적당, NPC 5 모두 자리에 있고 길을 막지 않음, 플레이 중 콘솔 에러 없음. 전체 그림 `docs/images/village/decor_trim_overview.png`. 더 덜어 내진 않음. 작은 점: 대장장이 옆에 통 더미가 붙어 있음, 문 섬은 건물 위 조각 파티클이 문 앞을 꽤 덮음(줌을 당기면 화면 가까이 와서 크게 보임) — 사용자가 보고 거슬리면 `RisingBits` 양 · 문 건물 제외 검토.
+    - **이어서 (사용자)**: ① 꽃 · 버섯 · 정령 등불 · 수정 나무의 흙 받침 + 둘레 돌(`moss_rock`, 재질 earth)이 땅과 따로 놀아서 → 모델은 그대로, 프리팹 만들 때 받침 윗면 높이만큼 땅에 묻음(`EnemyModelBuilder.SinkBed` · `SubmeshTop`, 0.18~0.26m) → 식물이 땅에서 바로 자람. ② 대장장이 옆 통 더미 섬 로컬 (−3.5, 5.8) → (−4.6, 6.4) (대장장이와 1.6 → 2.7m). 마을 키트 · 씬 다시 만듦, 게임 화면 확인함, 에러 없음.
+    - **이어서 2 (사용자)**: ③ 뻐꾸기 자리(`NpcSpot_MemoryRoom`)가 문 옆 가로등에 붙어 있어 월드 (−3.4, 3.2) → (−5.2, 3.6). ④ **흙먼지(`FxBurst.Kind.Dust`) = 적이 사라질 때 검은 안개(`bk_mist`)와 같은 회보라 · 보라 테두리**: 셰이더 `CatTangFX` `dust()`에 색을 넣고(bk_mist 그림 색을 리니어로), 흙색을 주던 곳(적 돌진 · 착지 · 내려찍기 · 2장 적 · 하트 · 문 · 석상 · 신호등 · 탄자국)은 `FxBurst.MistDust`(흰색 = 물들이지 않음)로. 따로 색을 준 먼지(3장 빛가루 · 분홍 · 하늘빛, 2장 보스 증기 `Ch2Fx.Smoke`)는 예전처럼 밝은 연기에 물듦. 화면에서 안개와 나란히 비교함. ⑤ **땅에 박힌 시곗바늘 → 시계탑 둘레를 떠서 도는 시곗바늘**: 블렌더 `blender_kit_village_dream.py`에 `ClockHand_Float`(돌판 · 튄 돌 없이 바늘만 눕힘 + 추 안 시계판 · 축 시간 수정, 크기 None = 만든 치수 그대로 — 맨 뒤에 붙여 다른 12개 시드 그대로) → `Kit_V_ClockHand_Float`(길이 5.6m, KeepOrigin). `VillageKitBuilder.OrbitHand`: 시계탑 위 4.6m 축(`ClockHand_Orbit`, `DreamFloat` 초당 4도 = 90초 한 바퀴 · 느린 오르내림)에 바늘 가운데 반경 5.4m, 끝이 바깥(끝 ≈ 8m, 시계탑 1.4m · 여관 벽 10m와 안 닿음). **바늘 끝 황금빛 모래선** = TrailRenderer 13초(반투명 금빛 단색 — 가산 · 반짝이 그림 바둑판 재질은 밝은 흙바닥에서 안 보였음) + 끝에서 흩날려 가라앉는 반투명 반짝이 모래알 파티클. 예전 `ClockHand_Giant`는 마을에서 안 씀(키트엔 남음). 화면 확인함, 에러 없음.
+  - 남은 것: 기획서(`build_village_ppt.js`)에 이번 변화(불규칙 섬 · 비틀린 건물 · 몽환 오브젝트 · 밤하늘) 반영 안 함, 직접 조작으로 걸어 다니며 오브젝트에 막히는 곳 확인, 섬 모양이 바뀐 뒤 다리 · 경계 벽 손맛.
+- **마을 ESC 메뉴** `GameUI.OpenVillageMenu`: 계속하기 · 메인 로비로(라벤더 안개 → Lobby).
+- **확인함(플레이)**: 컴파일, ESC → 로비, 첫 방문 뻐꾸기 대화, 2장 클리어 상태에서 다리 이어짐 → 대장장이 대화, 잠긴 다리 끊김 · 문 섬 다리 열림, 건물 위 조각 상승. 테스트는 3번 슬롯 임시 세대(97~99)로 하고 원래 세대 1로 되돌림(3번 슬롯은 원래 빈 슬롯).
+- **안 됨 / 다음**: 직접 조작으로 다리 건너기 · 섬 경계 벽 손맛, 새 슬롯 → 바로 1장 → 귀환 전체 흐름을 로비부터 이어서(코드만), NPC 크기 · 위치 측정 후 조정, 대사 다듬기, PPT 손보기(14쪽 그림 위쪽 회색 띠), 새 총탄 · 총 묶음(Unlock.csv), `build_tables.py`에 Unlock 표 반영.
+
+## 2026-11-19 — 효과음 · 배경음악 (audio-studio-mcp = Stable Audio 3 로컬) · 관통 치명타 개별 (커밋 안 함)
+
+- **도구**: `C:/Project/audio-studio-mcp` (MIT 코드 + Stable Audio 3 medium 가중치, Stability AI Community License — 사용자가 상업 등록 제출함, 연 매출 100만 달러 미만 무료, 생성물로 다른 생성 AI 학습 금지). RTX 5060(sm_120) 때문에 PyTorch를 **2.7.1+cu128**로 바꿈 (`install.ps1`을 다시 돌리면 cu126으로 돌아가 생성 실패 → `uv pip install --python .venv\Scripts\python.exe torch==2.7.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu128 --reinstall-package torch --reinstall-package torchaudio`). Claude Code 등록 = `~/.claude.json` mcpServers `audio-studio` (새 세션부터 도구 보임).
+- **생성기** `Art/tools/gen_audio.py [sfx|bgm|all] [이름…]`: 원본 WAV → `Art/audio_src/{sfx,bgm}/`, 다듬은 OGG → `Resources/Audio/Sfx/<이름>[_n].ogg`(무음 자르기 · 모노 · 피크 −1dB) · `Resources/Audio/<bgm>.ogg`(−16 LUFS · 1.5초 겹쳐 끊김 없는 반복). 시드 고정(1159), 마음에 안 들면 `SEED`에 이름별 시드를 넣고 그 이름만 다시.
+  - 효과음 14종(23파일): shot×3 · reload · reload_end · dash×2 · justdodge · hit×3 · crit×2 · enemy_die×2 · player_hurt×2 · explosion×2 · heart · levelup · door · merchant.
+  - 배경음악 10곡(각 2분): bgm_village · bgm_stage_1~3 · bgm_midboss_1~3 · bgm_boss_1~3. 예전 Gemini 곡 `bgm_stage/boss.mp3`는 `Art/audio_src/old_gemini/`로 옮김.
+- **코드**: `Core/Sfx.cs`(2D 16성부, 여러 파일이면 무작위, 0.06초 안 같은 소리 겹침 제한, `Sfx.Volume`) — 연결: 사격 · 장전 시작/끝 · 대시 · 극한 회피(`PlayerController`), 타격 · 치명타(`ApplyHit`), 적 사망(`Enemy.Die`), 고양이 피격(`Health`), 폭발(`GunkataFx.Explosion`), 하트 · 레벨 업 · 문(`RunManager.EnterDoor`) · 상인 등장. `Music.PlayFor(kind, 장)` = bgm_{stage|midboss|boss}_{장} → 없으면 1장 곡(4 · 5장). 중간 보스 뒤 스테이지 3에서 맵 곡으로 돌아옴. `Editor/ResourceAudioImport.cs`: 배경음악 스트리밍 · 효과음 풀어 두기.
+- **관통 치명타**: 관통한 적마다 치명타를 따로 굴림(`PlayerController.Shoot`의 `RollCrit`), 확정 치명타(critShots)는 첫 적만. `dmg`는 치명타 전 피해. 공명 · 은빛 메아리 범위 피해는 예전처럼 첫 적이 치명타면 배율이 붙음(`shotCrit`, 사용자: 유지).
+- **UI · 시설 소리 (2026-11-19 완료, 파일 16개)**: `UIKit.MakeButton` 클릭 `ui_click` + 마우스 올림 `ui_hover`(`UiSound`, 못 누르는 버튼은 조용), `CloseButton` `ui_close`, 로비 버튼 · `HoverScale`도 같은 소리. 시설 열림 `fac_memory/fac_gun/fac_ammo/fac_wardrobe`(`GameUI.OpenFacility`), 시간의 문 `fac_gate` · 출발 `gate_depart`, 구매 `ui_buy` / 실패 · 잠긴 시설 `ui_deny`, 대화 글자 3개마다 `talk`, 다리 이어짐 `bridge`. 생성 주의: MCP 서버(작업 스레드)나 비동기 루프 안에서 모델을 올리면 safetensors를 읽다 access violation으로 죽음 → `gen_audio.py`는 기본으로 같은 프로세스 메인 스레드에서 모델을 먼저 올리고 도구 함수를 바로 부름(`--mcp`면 예전 방식). Unity가 켜져 있으면 가상 메모리 부족(os error 1455)이 날 수 있음(페이징 파일 12GB). 클릭 · 마우스 올림은 0.03초짜리 째깍.
+- **배경음악 = Gemini로 교체 (사용자: Stable Audio 곡은 아쉬움, 효과음은 괜찮음)**: Gemini(자동 모드) '음악 만들기'로 10곡(각 2분 40초~3분) → 원본 MP3 `Art/audio_src/gemini/` → 끝 무음 자르기 · −16 LUFS · 48kHz OGG → `Resources/Audio/bgm_*.ogg` 덮어씀(이름 같아 코드 그대로). Stable Audio 곡은 `Art/audio_src/bgm/*_loop.ogg`에 남음. Gemini 'Hydrogen' 모드는 음악을 안 만들고 글로 답함 → 자동 모드에서. 내장 브라우저 다운로드는 `~/Downloads`에 .tmp로 잠깐 생겼다 사라져서 바로 복사함. 반복 이음새(끝 → 처음)는 곡을 통째로 반복 — 이음새가 어색하면 끝부분 페이드 · 크로스페이드 필요.
+- **건카타(불릿 파티) 소리**: 한 타마다 총소리(`BodyBlast`에서 `shot`), 도는 동안 반복 회전음 `Sfx.Loop("gunkata_spin")` → 끝에서 `StopLoop`(판이 도중에 끝나면 `OnDestroy`). 회전음 `gunkata_spin.ogg`(2.75초, 반복용으로 다듬음) 만듦. **메모리**: 공식 로더는 fp32 모델 + 체크포인트 전체를 한꺼번에 올려(18GB+) 페이징 파일 12GB에서 access violation → `gen_audio.py`의 `low_memory_loader()`가 모델을 먼저 fp16으로 줄이고 텐서 하나씩 채움(약 9GB, vendor 코드는 그대로). 그래도 가끔 첫 시도에 죽으면 한 번 더 돌릴 것. 가상 메모리 설정은 시스템 설정이라 Claude가 바꾸지 않음.
+- **확인함 (Unity)**: 컴파일 에러 없음, 마을에서 새 `bgm_village` 재생 · 효과음 재생, 배경음악 스트리밍 가져오기.
+- **확인 안 됨**: 판 안에서 직접 들어 보기. 소리는 길이 · 음량만 쟀고 들어 보지 않음 — 사용자가 듣고 바꿀 것 고르기(대시 0.19초로 짧음, 장전 소리 작음). 마을 시설 · UI 클릭 소리 없음.
+
+## 2026-11-19 — 윈도우 빌드 · 빌드 표 복사 · 시설 화면 스크롤 · 깨어남 안개 (커밋 안 함)
+
+- **윈도우 빌드**: `Game/Builds/Windows/1159.exe`(Git 제외). 제품 이름은 아직 "Game"(창 제목) — "11:59"로 바꾸면 저장 위치가 바뀌니 사용자 결정 필요.
+- **빌드에서 표가 비던 문제**: `Tables.Read`가 `Application.dataPath/Data/Tables`에서 CSV를 읽음 → `Editor/TablesBuildCopy.cs`(빌드 후처리)가 CSV를 `<게임>_Data/Data/Tables`로 복사. 빌드에서 챕터 5 · 탄 47 · 총 8 읽힘 확인.
+- **시설 화면 내용 = 스크롤** (사용자: 기억의 방 세 번째 줄이 잘림 → 카드 크기 그대로, 스크롤바로): `GameUI.ScrollArea`(가림 + ScrollRect, 휠 45) · `FitScroll`(가운데 기준 카드를 위쪽 정렬 + 넘친 만큼 내용 늘림), 다시 그려도 보던 자리 유지. 네 시설 공용.
+- **스크롤바 그림** = Codex(`docs/images/ui_src/prompts/scrollbar.txt` → `scrollbar.png` → `python docs/tools/ui_scroll_cut.py docs/images/ui_src`) → `Resources/UI/scroll_track`(놋쇠 마개 홈) · `scroll_handle`(금빛 손잡이, 줄무늬 지움) · `scroll_grip`(줄무늬 조각, 손잡이 가운데에 얹음). 9분할 테두리는 `UIKit.Spr`의 이름 표(홈 위아래 26 · 손잡이 18), 반 크기로 그림(ppu 배율 2, 폭 24px), 손잡이는 마개를 안 덮게 위아래 14px 안쪽. 그림이 없으면 예전 단색. 넘칠 때만 보임(AutoHide).
+- **깨어남 연기** = 적 사망 안개 `bk_mist`(회보라)로 (`VillageWake`).
+- **확인함 (Unity 플레이)**: 컴파일 에러 없음, 기억의 방 열어 스크롤바 그림 · 맨 위 / 맨 아래(세 번째 줄 다 보임) 화면 확인. 직접 휠 · 끌기 손맛은 사용자 확인 필요.
 
 ## 남은 다음 작업 (2026-11-17 밤 정리 — 사용자: 브롤풍 기본 적용까지만 하고 나머지는 여기 남기고 대기)
 

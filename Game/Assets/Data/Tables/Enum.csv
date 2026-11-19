@@ -12,8 +12,8 @@ PlaceCond,Zero,0시
 PlaceCond,Exact,CondValue와 같음
 PlaceCond,GreaterThan,CondValue 초과
 PlaceCond,LessThan,CondValue 미만
-PlaceCond,None,조건 없음 (깨어나지 않는 기본 탄)
-Trigger,Passive,깨어나 있는 동안 항상
+PlaceCond,None,조건 없음 (활성화되지 않는 기본 탄)
+Trigger,Passive,활성화되어 있는 동안 항상
 Trigger,RunStart,런 시작 때 1번
 Trigger,OnFire,이 탄을 쏠 때
 Trigger,OnHit,이 탄이 맞았을 때
@@ -32,6 +32,7 @@ EffectCond,None,조건 없음
 EffectCond,Slot12,12시 칸에 있을 때
 EffectCond,TargetMarked,대상에 추억 표식이 있음
 EffectCond,MarkStacksAtLeast,대상의 추억 표식이 CondValue개 이상
+EffectCond,MarkFullHitsAtLeast,추억 표식이 다 쌓인 대상을 그 뒤로 CondValue번 이상 맞힘
 EffectCond,TargetSlowed,대상이 둔화 상태
 EffectCond,TargetTimeLocked,대상이 시간에 갇힘
 EffectCond,TargetBoss,대상이 보스
@@ -87,9 +88,9 @@ EffectType,AreaDamageAdd,폭발 · 범위 피해 +Value
 EffectType,StatusDamageAdd,상태 이상(정지 · 둔화 · 가둠 · 화상 · 표식) 적에게 주는 피해 +Value
 EffectType,ControlDurationAdd,정지 · 둔화 지속 +Value
 EffectType,DamageVsStoppedAdd,정지된 적에게 피해 +Value
-EffectType,UnawakenedDamageAdd,깨어나지 못한 탄 공격력 +Value
-EffectType,AwakenedDamageAdd,깨어난 탄 공격력 +Value
-EffectType,UnawakenedTraitCount,깨어나지 못한 탄도 특성 Value개 켜짐
+EffectType,UnawakenedDamageAdd,비활성화 공격력 +Value
+EffectType,AwakenedDamageAdd,활성화 공격력 +Value
+EffectType,UnawakenedTraitCount,비활성화도 특성 Value개 켜짐
 EffectType,NextBulletAttackSpeedAdd,다음 탄 연사 속도 +Value
 EffectType,TrailSilhouetteShot,맞은 자리에 궤적이 남고 Duration초 뒤 실루엣이 그 궤적으로 1발 (피해 Value)
 EffectType,TraitCountBonus,특성 Value2를 Value개 더 셈
@@ -99,9 +100,9 @@ EffectType,TimeSlowField,"주변 시간 감속 Value (반경 Value2, 지속 Dura
 EffectType,GlobalTimeStop,모든 적 정지 Duration초 (재사용 대기 Value2초)
 EffectType,ClockBurst,"시계 12방향으로 1발씩, 각 방향은 그 시각 칸의 탄 (피해 Value)"
 EffectType,DamageByNegativeJudge,판정 시각이 0보다 1 낮을 때마다 피해 +Value
-EffectType,DamagePerUnawakened,깨어나지 못한 탄 1개당 피해 +Value
+EffectType,DamagePerUnawakened,비활성화 1개당 피해 +Value
 EffectType,ReverseCylinder,다음 장전은 12 → 1 역순 발사
-EffectType,PermanentDamageGrowth,런 동안 이 탄 공격력 +Value (최대 Value2)
+EffectType,PermanentDamageGrowth,"런 동안 이 탄 공격력 +Value (최대 Value2), 소수는 쌓아 두고 정수만 반영"
 EffectType,DamageByDistance,거리 1m당 피해 +Value (최대 Value2)
 EffectType,DamageAddStack,누적될 때마다 피해 +Value
 EffectType,DamageTakenAdd,받는 피해 +Value

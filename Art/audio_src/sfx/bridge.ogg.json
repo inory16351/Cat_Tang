@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\bridge.wav",
+  "source": {
+    "kind": "generate",
+    "title": "bridge",
+    "original_idea": "11:59 game SFX: bridge",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, broken floating stone bridge, pieces float back together: rumbling stones clack into place with a magical shimmer, stone, wood, magic, outdoor, open air.",
+    "sound_fields": {
+      "source": "broken floating stone bridge",
+      "action": "pieces float back together: rumbling stones clack into place with a magical shimmer",
+      "material": "stone, wood, magic",
+      "space": "outdoor, open air"
+    },
+    "bpm": null,
+    "seconds": 2.5,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "bridge.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:38:24",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -2.05,
+    "raw_peak_dbfs": -2.05,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:38:24",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 2.5,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+3.71 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0436,
+  "file": "bridge.ogg"
+}

@@ -95,6 +95,102 @@ namespace CatTang.EditorTools
             { "crack", Color.white },
         };
 
+        // 3장 (신기루 사막 = 거울 세계, 2026-11-18). 기획 색은 청록 · 연보라 · 분홍 노을 · 흰 빛 + 금이지만
+        // 몬스터가 차가운 보라 · 청회색이라 맵 고체(돌 · 대리석 · 금)는 장미 사암 · 크림 · 금으로 따뜻하게, 청록은 물에만, 흰 빛은 수정 · 거울에만
+        public static readonly Dictionary<string, Color> Ch3 = new()
+        {
+            { "sandstone", new Color(0.97f, 0.76f, 0.76f) },
+            { "sandstone_light", new Color(1f, 0.88f, 0.86f) },
+            { "sandstone_dark", new Color(0.86f, 0.6f, 0.64f) },
+            { "rock", new Color(0.92f, 0.7f, 0.72f) },
+            { "rock_dark", new Color(0.72f, 0.5f, 0.56f) },
+            { "sand", new Color(1f, 0.88f, 0.78f) },
+            { "marble", new Color(0.97f, 0.93f, 0.88f) },
+            { "marble_dark", new Color(0.8f, 0.73f, 0.68f) },
+            { "gold", new Color(1f, 0.8f, 0.32f) },
+            { "gold_dark", new Color(0.78f, 0.55f, 0.22f) },
+            { "mirror", new Color(0.88f, 0.96f, 0.97f) },         // 거울면: 빌더가 반짝이는 거울 재질로 바꿔 끼움 (MirrorMats)
+            { "mirror_back", new Color(0.78f, 0.56f, 0.5f) },
+            { "crystal", new Color(0.93f, 0.96f, 1f) },
+            { "crystal_core", new Color(1f, 0.86f, 0.95f) },       // 빛가루 분홍 (Enemy.Fx3 빛가루와 같은 계열)
+            { "stardust", new Color(1f, 0.93f, 0.7f) },
+            { "water", new Color(0.42f, 0.8f, 0.78f) },
+            { "water_foam", new Color(0.92f, 1f, 0.98f) },
+            { "cloud", new Color(1f, 0.95f, 0.92f) },
+            { "cloud_shade", new Color(0.94f, 0.8f, 0.8f) },
+            { "cloth_rose", new Color(0.82f, 0.36f, 0.42f) },
+            { "wood", new Color(0.55f, 0.36f, 0.22f) },
+            { "roof_tile", new Color(0.72f, 0.36f, 0.3f) },
+            { "window_lit", new Color(1f, 0.78f, 0.42f) },
+            // 2차 '화려하게' (2026-11-18 사용자: 단색 객체가 너무 많음) — 상감 · 보석 · 장식
+            { "glaze_teal", new Color(0.2f, 0.66f, 0.64f) },
+            { "coral", new Color(0.94f, 0.47f, 0.4f) },
+            { "ivory", new Color(1f, 0.96f, 0.86f) },
+            { "bronze", new Color(0.66f, 0.42f, 0.22f) },
+            { "rose_gold", new Color(0.96f, 0.66f, 0.5f) },
+            { "gem_rose", new Color(1f, 0.35f, 0.55f) },
+            { "gem_amber", new Color(1f, 0.62f, 0.12f) },
+            { "crystal_rose", new Color(1f, 0.78f, 0.86f) },
+            { "tile_cream", new Color(0.98f, 0.9f, 0.76f) },
+            // 3장 블렌더 보스 전용 (몬스터 공통 차가운 색 + 진홍 포인트)
+            { "boss_lavender", new Color(0.6f, 0.56f, 0.82f) },
+            { "boss_slate", new Color(0.3f, 0.32f, 0.46f) },
+            { "boss_crimson", new Color(0.8f, 0.12f, 0.22f) },
+            { "boss_cream", new Color(0.95f, 0.92f, 0.9f) },
+        };
+
+        // 메인 마을 (2026-11-18 사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌 — 새벽에 사라져 가는 서부 마을, 허공에 뜬 큰 섬)
+        // 물체는 따뜻하게(바랜 나무 · 놋쇠 · 금 · 크림 · 녹 · 새벽 장밋빛 칠), 차가운 색은 하늘 · 허공에만. 새벽 남색 조명 아래서도 칙칙하지 않게 밝게
+        public static readonly Dictionary<string, Color> Village = new()
+        {
+            { "wood", new Color(0.66f, 0.42f, 0.26f) },
+            { "wood_dark", new Color(0.4f, 0.24f, 0.16f) },
+            { "wood_light", new Color(0.86f, 0.64f, 0.42f) },
+            { "wood_weathered", new Color(0.72f, 0.6f, 0.5f) },
+            { "plank", new Color(0.78f, 0.55f, 0.34f) },
+            { "roof_shingle", new Color(0.66f, 0.34f, 0.3f) },
+            { "roof_tin", new Color(0.7f, 0.62f, 0.56f) },
+            { "adobe", new Color(0.93f, 0.7f, 0.54f) },
+            { "adobe_light", new Color(1f, 0.86f, 0.72f) },
+            // 땅 · 바위 · 돌 = 서부 흙빛 (2026-11-18 푸른 바닥을 써 봤다가 서부 느낌이 빠져서 되돌림)
+            { "stone", new Color(0.8f, 0.7f, 0.62f) },
+            { "stone_dark", new Color(0.58f, 0.48f, 0.44f) },
+            { "rock", new Color(0.7f, 0.56f, 0.48f) },
+            { "rock_dark", new Color(0.46f, 0.34f, 0.32f) },
+            { "earth", new Color(0.56f, 0.38f, 0.3f) },
+            { "root", new Color(0.44f, 0.3f, 0.22f) },
+            { "sand", new Color(0.95f, 0.8f, 0.6f) },
+            { "sand_glow", new Color(1f, 0.86f, 0.52f) },          // 흩어지는 모래 빛 (빌더가 발광으로)
+            { "brass", new Color(0.86f, 0.64f, 0.3f) },
+            { "gold", new Color(1f, 0.8f, 0.32f) },
+            { "gold_drip", new Color(1f, 0.7f, 0.22f) },
+            { "iron", new Color(0.32f, 0.29f, 0.3f) },
+            { "rust", new Color(0.7f, 0.36f, 0.2f) },
+            { "canvas", new Color(0.94f, 0.88f, 0.74f) },
+            { "cloth_red", new Color(0.78f, 0.24f, 0.22f) },
+            { "cloth_cream", new Color(1f, 0.94f, 0.82f) },
+            { "paint_rose", new Color(0.88f, 0.5f, 0.5f) },
+            { "paint_sage", new Color(0.62f, 0.7f, 0.5f) },
+            { "glass", new Color(0.86f, 0.9f, 0.84f) },
+            { "window_lit", new Color(1f, 0.8f, 0.42f) },
+            { "lantern_glow", new Color(1f, 0.74f, 0.32f) },
+            { "clock_face", new Color(1f, 0.95f, 0.84f) },
+            { "cactus", new Color(0.46f, 0.62f, 0.38f) },
+            { "cactus_dark", new Color(0.32f, 0.46f, 0.28f) },
+            { "stardust", new Color(1f, 0.95f, 0.78f) },
+            // 부서진 시간 · 몽환 오브젝트 (blender_kit_village_dream.py)
+            { "crystal_blue", new Color(0.62f, 0.8f, 1f) },
+            { "crystal_core", new Color(0.86f, 0.96f, 1f) },
+            { "rift_glow", new Color(0.8f, 0.96f, 1f) },
+            { "moon", new Color(0.94f, 0.94f, 1f) },
+            { "glass_blue", new Color(0.6f, 0.74f, 0.96f) },
+            // 신비한 나무 · 오브젝트 (blender_kit_village_mystic.py)
+            { "bark_pale", new Color(0.82f, 0.82f, 0.9f) },
+            { "bark_dark", new Color(0.4f, 0.36f, 0.5f) },
+            { "leaf_crystal", new Color(0.6f, 0.82f, 0.96f) },
+            { "petal_glow", new Color(1f, 0.8f, 0.94f) },
+        };
+
         /// <summary>지금 빌드하는 챕터의 배색표 (빌더가 챕터마다 바꿔 끼움)</summary>
         public static Dictionary<string, Color> Active = Ch1;
 

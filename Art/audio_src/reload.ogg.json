@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\reload.wav",
+  "source": {
+    "kind": "generate",
+    "title": "reload",
+    "original_idea": "11:59 game SFX: reload",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, revolver cylinder, cylinder swings out, spins with fast ratcheting clicks like a clockwork gear, oiled steel, tiny brass clock gears, close mic, dry.",
+    "sound_fields": {
+      "source": "revolver cylinder",
+      "action": "cylinder swings out, spins with fast ratcheting clicks like a clockwork gear",
+      "material": "oiled steel, tiny brass clock gears",
+      "space": "close mic, dry"
+    },
+    "bpm": null,
+    "seconds": 1.4,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "reload.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:08:36",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-19T10:08:36",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.993,
+  "steps": [
+    "trim_silence -45.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30.0 ms",
+    "peak normalize -1.0 dBFS (+1.04 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0313,
+  "file": "reload.ogg"
+}

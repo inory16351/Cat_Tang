@@ -1,0 +1,16 @@
+Create FIVE image files in the current directory using your image generation tool and save them here. These are FLAT base shapes for a game UI; all lighting, hatching, glow and texture will be added later by shaders in-game, so the images must be CLEAN and FLAT:
+- flat solid color fills only, NO gradients, NO texture, NO hatching, NO highlights, NO glow, NO painterly detail
+- thick uniform black outline (about 6-10 px) around every shape
+- palette: gold #F2B23A, dark gold #B9741E, crimson #A3172B, near-black violet #1E1018, cream #F3E2C0
+- perfectly flat solid magenta #FF00FF background, objects centered with generous margin
+- no text except the title digits in file 1
+
+1) flat_title.png - 1536x1024. Title logo reading exactly "11:59". Big bold western wood-type / wanted-poster numerals, slightly slanted forward. Digits filled flat gold #F2B23A with a flat crimson #A3172B extruded block shadow down-right, thick black outline. The bottoms of the digits melt into a few rounded drips (flat gold). The colon is two small flat cream pocket-watch faces with black hands. Nothing else (no rays, no background shape).
+
+2) flat_button.png - 1536x512. One long horizontal menu plate about 1400x220: a banner/ticket shape with clipped (notched) corners and slightly pointed ends, filled flat near-black violet #1E1018, with a thin flat gold inner border line (inset ~14 px), thick black outer outline. Small flat gold rivet circles at the four corners. Plain center.
+
+3) flat_panel.png - 1536x1024. A large dialog panel: wide rounded rectangle with clipped corners filled flat near-black violet #1E1018, a flat gold border band (~22 px) with a thick black outline on both sides, a flat cream pocket-watch medallion at the top center (black hands at 11:59) sitting on the border, and 5-6 flat gold drips hanging from the bottom border. Plain interior.
+
+4) flat_card.png - 1024x1536. A tall save-slot card: wanted-poster / tarot shape with clipped corners, filled flat near-black violet #1E1018, flat gold border band (~18 px) with thick black outline, a flat cream pocket-watch medallion at the top center (hands 11:59), two flat gold drips at the bottom edge. Plain interior.
+
+5) flat_parts.png - 1536x256, 6 equal cells (256x256), same flat style: (1) slider track: a long thin rounded bar, violet fill, gold border, filling most of the cell width (2) slider knob: a round flat cream pocket-watch knob with gold rim (3) checkbox off: square, violet fill, gold border (4) checkbox on: same square with a flat gold check mark (5) back arrow: a flat gold arrow pointing left (6) delete: a flat cream hourglass with a crack and gold frame.

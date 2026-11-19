@@ -14,6 +14,7 @@ namespace CatTang
         {
             if (!Meta.FacilityUnlocked(facility))
             {
+                Sfx.Play("ui_deny", 0.7f, 0f);
                 FindFirstObjectByType<GameUI>()?.Toast($"챕터 {Meta.FacilityUnlockChapter[(int)facility]} 보스를 넘으면 열림");
                 return;
             }

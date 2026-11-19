@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CatTang
@@ -50,7 +51,9 @@ namespace CatTang
             int[] b = name switch
             {
                 "panel_plain" => skin.panel_plain, "tooltip" => skin.tooltip, "button" => skin.button, "button_hover" => skin.button_hover,
-                "slot" => skin.slot, "banner" => skin.banner, "hp_fill" => skin.hp_fill, _ => null
+                "slot" => skin.slot, "banner" => skin.banner, "hp_fill" => skin.hp_fill,
+                "scroll_track" => new[] { 0, 26, 0, 26 }, "scroll_handle" => new[] { 0, 18, 0, 18 },   // 위아래 마개 · 둥근 끝만 고정, 가운데 늘림
+                _ => null
             };
             var border = b != null && b.Length == 4 ? new Vector4(b[0], b[1], b[2], b[3]) : Vector4.zero;
             s = UnityEngine.Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect, border);
@@ -169,6 +172,7 @@ namespace CatTang
             var sh = rt.gameObject.AddComponent<Shadow>();
             sh.effectColor = new Color(0, 0, 0, 0.75f);
             sh.effectDistance = new Vector2(2, -2);
+            rt.gameObject.AddComponent<TermText>();                     // 고유명사 링크 색 + 마우스 올림 뜻 (Terms.cs)
             return t;
         }
 
@@ -201,8 +205,8 @@ namespace CatTang
                     if (traits.Count > 0) { lines.Add(""); lines.Add($"<color=#FFD54A>특성</color>"); lines.AddRange(traits); }
                     var effects = new List<string>();
                     foreach (var id in new[] { b.Effect1, b.Effect2 })
-                        if (id != 0 && Tables.Effects.TryGetValue(id, out var e)) effects.Add("· " + e.Desc);
-                    if (effects.Count > 0) { lines.Add(""); lines.Add($"<color=#FFD54A>고유 효과</color>  <size=16><color={Dim}>(활성화되었을 때)</color></size>"); lines.AddRange(effects); }
+                        if (id != 0 && Tables.Effects.TryGetValue(id, out var e)) effects.Add("· " + Effects.BulletEffectDesc(e, b.Grade));
+                    if (effects.Count > 0) { lines.Add(""); lines.Add($"<color=#FFD54A>고유 효과</color>  <size=16><color={Dim}>(활성화된 이 탄을 쏠 때)</color></size>"); lines.AddRange(effects); }
                     if (!string.IsNullOrEmpty(b.Desc)) { lines.Add(""); lines.Add($"<i><color={Dim}>{b.Desc}</color></i>"); }
                     return new TipContent { icon = BulletIcon(b), title = b.Name, titleColor = GradeColor(b.Grade), body = string.Join("\n", lines) };
                 }
@@ -210,7 +214,7 @@ namespace CatTang
                 {
                     var g = it.gun;
                     lines.Add($"<color=#{Hex(GradeColor(g.Grade))}>{GradeKo(g.Grade)} 총</color>  ·  공격 ×<b>{g.DamageMul:0.00}</b>");
-                    lines.Add($"<color={Sub}>연사</color> {g.FireInterval:0.00}초   <color={Sub}>장전</color> {g.ReloadTime:0.0}초");
+                    lines.Add($"<color={Sub}>사거리</color> {g.Range:0}m   <color={Sub}>장전</color> {g.ReloadTime:0.0}초");
                     var crit = new List<string>();
                     if (g.CritChance > 0) crit.Add($"치명타 확률 +{g.CritChance * 100:0}%");
                     if (g.CritDamage > 0) crit.Add($"치명타 피해 +{g.CritDamage * 100:0}%");
@@ -257,6 +261,8 @@ namespace CatTang
             st.selectedSprite = Spr("button");
             b.spriteState = st;
             b.targetGraphic = im;
+            b.onClick.AddListener(() => Sfx.Play("ui_click", 0.6f, 0.03f, 1));    // 효과음 (2026-11-19)
+            im.gameObject.AddComponent<UiSound>();
             if (onClick != null) b.onClick.AddListener(onClick);
             var t = Label("Text", im.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 2), size - new Vector2(60, 16), fontSize, TextAnchor.MiddleCenter, true);
             t.text = label;
@@ -274,10 +280,12 @@ namespace CatTang
 
         public static Button CloseButton(Transform parent, UnityAction onClick)
         {
-            var im = Img("Close", parent, "close", new Vector2(1, 1), new Vector2(18, 18), new Vector2(76, 76));
+            var im = Img("Close", parent, "close", new Vector2(1, 1), new Vector2(-52, -52), new Vector2(76, 76));   // 패널 모서리 안쪽 (밖으로 나가 HUD 골드와 겹쳤음, 2026-11-19)
             im.rectTransform.pivot = new Vector2(0.5f, 0.5f);
             im.raycastTarget = true;
             var b = im.gameObject.AddComponent<Button>();
+            b.onClick.AddListener(() => Sfx.Play("ui_close", 0.7f, 0.03f, 1));
+            im.gameObject.AddComponent<UiSound>();
             b.onClick.AddListener(onClick);
             return b;
         }
@@ -319,5 +327,16 @@ namespace CatTang
             "LessThan" => $"{b.CondValue}시 미만", "MultipleOf" => $"{b.CondValue}의 배수", "Negative" => "음수 시각",
             "Zero" => "0시", "Prime" => "소수 시각", _ => b.CondType
         };
+    }
+
+    /// <summary>버튼에 마우스를 올리면 작은 째깍 소리 (누를 수 없는 버튼은 조용히)</summary>
+    public class UiSound : MonoBehaviour, IPointerEnterHandler
+    {
+        public void OnPointerEnter(PointerEventData e)
+        {
+            var sel = GetComponent<Selectable>();
+            if (sel && !sel.interactable) return;
+            Sfx.Play("ui_hover", 0.35f, 0.04f, 1);
+        }
     }
 }

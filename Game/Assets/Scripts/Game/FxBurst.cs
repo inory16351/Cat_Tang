@@ -6,6 +6,8 @@ namespace CatTang
     public class FxBurst : MonoBehaviour
     {
         public enum Kind { Muzzle, Hit, Explosion, Gold, Crit, Slash, Spark, Dust, Shield, Converge }
+        /// <summary>흙먼지(Kind.Dust) 색 없음 = 적이 사라질 때 검은 안개와 같은 회보라 (색은 CatTangFX 셰이더 dust()에 있음). 다른 색을 주면 예전처럼 밝은 연기에 물듦</summary>
+        public static readonly Color MistDust = Color.white;
         public static float ModeOf(Kind k) => k switch { Kind.Gold => 2, Kind.Crit => 11, Kind.Slash => 9, Kind.Spark => 14, Kind.Dust => 13, Kind.Shield => 12, Kind.Converge => 10, _ => 0 };
         static Material baseMat;
         static readonly int ProgressId = Shader.PropertyToID("_Progress");

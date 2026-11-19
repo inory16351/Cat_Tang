@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\dash_v2.wav",
+  "source": {
+    "kind": "generate",
+    "title": "dash",
+    "original_idea": "11:59 game SFX: dash",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, cat gunslinger with a long coat, very fast whoosh swish of a quick dash, cloth and air, close, dry, cartoon game sound.",
+    "sound_fields": {
+      "source": "cat gunslinger with a long coat",
+      "action": "very fast whoosh swish of a quick dash",
+      "material": "cloth and air",
+      "space": "close, dry, cartoon game sound"
+    },
+    "bpm": null,
+    "seconds": 0.8,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 2,
+    "seed": 1160,
+    "candidate": 2,
+    "file": "dash_v2.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:09:02",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -6.15,
+    "raw_peak_dbfs": -6.15,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:09:02",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.18,
+  "steps": [
+    "trim_silence -45.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30.0 ms",
+    "peak normalize -1.0 dBFS (+5.13 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.2001,
+  "file": "dash_2.ogg"
+}

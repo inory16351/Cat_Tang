@@ -5,7 +5,7 @@
 //   ① 승차권 3갈래(부채 30°, 예고 0.6초, 탄속 9, 피해 10)  ② 연속 검표: 따라오는 조준선 0.5초 → 움직임을 앞질러 3연발
 //   ③ 승차권 흩뿌리기(가까울 때): 5장 60° 느린 탄(7.5), 피해 80%
 //   강화형 검표 펀치: 6초 쿨, 예고 0.6초 → 엄폐물을 뚫는 큰 승차권, 맞으면 2초간 대시 충전 멈춤
-// - 트렁크 짐꾼(Porter): 트렁크를 든 채 무겁게 걸어옴(정면 120° 탄 막음). 몸 돌리는 속도가 느리고, 몸 방향과 걷는 방향이 크게 어긋나면
+// - 트렁크 짐꾼(Porter): 트렁크를 든 채 무겁게 걸어옴(정면 120° 탄은 피해 33%만). 몸 돌리는 속도가 느리고, 몸 방향과 걷는 방향이 크게 어긋나면
 //   제자리에서 돌아섬(뒷걸음 미끄러짐 X). 등 뒤를 잡히면 가끔 발을 굴러 빠르게 돌아섬
 //   ① 내리찍기(가까움): 예고 0.7초 부채꼴 90° · 2.5m · 피해 15 → 1.2초 빈틈(숙인 채, 방패 없음)
 //   ② 방패 돌진(중간 거리): 예고 0.5초 직선 → 트렁크를 앞세우고 5m 돌진, 피해 12 + 크게 밀림, 끝나고 0.5초 빈틈
@@ -38,7 +38,7 @@ namespace CatTang
         bool PorterOpen => kind == Kind.Porter && Time.time < porterOpenUntil;
         public bool ShieldUp => kind == Kind.Porter && Time.time >= shieldDownUntil && !trunkHidden;
 
-        /// <summary>Health.BlockFrom: 탄 진행 방향 d가 짐꾼 정면 ±60° 안에서 날아오면 막음</summary>
+        /// <summary>Health.BlockFrom: 탄 진행 방향 d가 짐꾼 정면 ±60° 안에서 날아오면 방패에 걸림 (피해 33%만, PlayerController.ShieldDamageFrac)</summary>
         public bool PorterBlocks(Vector3 d)
         {
             if (!ShieldUp || !health.Alive) return false;
@@ -176,7 +176,7 @@ namespace CatTang
             var from = transform.position;
             var to = from + away * ConductorHopDist;
             var rm = RunManager.Instance; if (rm) to = rm.ClampToRoom(to, 1.2f);
-            FxBurst.Spawn(from + Vector3.up * 0.15f, 1f, FxBurst.Kind.Dust, new Color(0.75f, 0.7f, 0.65f));
+            FxBurst.Spawn(from + Vector3.up * 0.15f, 1f, FxBurst.Kind.Dust, FxBurst.MistDust);
             for (float t = 0; t < 1f; t += Time.deltaTime / 0.25f)
             {
                 float k = 1 - (1 - t) * (1 - t);
@@ -187,7 +187,7 @@ namespace CatTang
             }
             if (model) model.localPosition = Vector3.zero;
             Dashing = false;
-            FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 0.8f, FxBurst.Kind.Dust, new Color(0.75f, 0.7f, 0.65f));
+            FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 0.8f, FxBurst.Kind.Dust, FxBurst.MistDust);
             busy = false;
             if (health.Alive && !health.Stunned) StartCoroutine(ConductorScatter(p, ToP(p), 0.35f));
         }
@@ -276,7 +276,7 @@ namespace CatTang
             trunkHidden = false;
             if (!t || !trunkSkin) yield break;
             trunkSkin.enabled = true;
-            FxBurst.Spawn(t.position, 1.1f, FxBurst.Kind.Dust, new Color(0.75f, 0.65f, 0.55f));
+            FxBurst.Spawn(t.position, 1.1f, FxBurst.Kind.Dust, FxBurst.MistDust);
             for (float k = 0; k < 1f && t; k += Time.deltaTime / 0.25f)
             {
                 float e = 1 + 2.2f * Mathf.Pow(k - 1, 3) + 1.2f * Mathf.Pow(k - 1, 2);       // 살짝 튀며 커짐
@@ -305,7 +305,7 @@ namespace CatTang
             {
                 nextShuffle = Time.time + Random.Range(2.5f, 4f);
                 shuffleUntil = Time.time + 0.45f;
-                FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 1.2f, FxBurst.Kind.Dust, new Color(0.75f, 0.7f, 0.65f));
+                FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 1.2f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 CameraFollow.Shake(0.03f);
             }
             float turn = Time.time < shuffleUntil ? 340f : PorterTurn;
@@ -355,7 +355,7 @@ namespace CatTang
                         p.health.Knockback((d.sqrMagnitude > 1e-4f ? d.normalized : fwd) * 6f);
                     }
                 }
-                FxBurst.Spawn(hitAt + Vector3.up * 0.15f, SlamRange * 1.3f, FxBurst.Kind.Dust, new Color(0.75f, 0.68f, 0.6f));
+                FxBurst.Spawn(hitAt + Vector3.up * 0.15f, SlamRange * 1.3f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 PropHit.Area(hitAt, SlamRange * 0.8f, contactDamage);
                 GunkataFx.HitImpact(hitAt + Vector3.up * 0.2f, Vector3.down, new Color(1f, 0.7f, 0.35f), false, 1.2f);
                 CameraFollow.Shake(0.16f);
@@ -390,7 +390,7 @@ namespace CatTang
                 float run = 0, ghost = 0;
                 var bashProps = new HashSet<Health>();
                 var rm = RunManager.Instance;
-                FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 1.4f, FxBurst.Kind.Dust, new Color(0.75f, 0.7f, 0.65f));
+                FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 1.4f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 Dashing = true;
                 while (run < BashDist && health.Alive && !health.Stunned)
                 {
@@ -415,7 +415,7 @@ namespace CatTang
                     yield return null;
                 }
                 Dashing = false;
-                FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 1.6f, FxBurst.Kind.Dust, new Color(0.75f, 0.7f, 0.65f));
+                FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 1.6f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 shieldDownUntil = porterOpenUntil = Time.time + BashOpen;
                 yield return Hold(BashOpen, _ => { });
             }
@@ -513,7 +513,7 @@ namespace CatTang
             if (go) Destroy(go);
             var at = new Vector3(pos.x, 0, pos.z);
             PropHit.Area(at, 1.3f, dmg);
-            FxBurst.Spawn(at + Vector3.up * 0.4f, 1.6f, FxBurst.Kind.Dust, new Color(0.7f, 0.55f, 0.4f));
+            FxBurst.Spawn(at + Vector3.up * 0.4f, 1.6f, FxBurst.Kind.Dust, FxBurst.MistDust);
             FxBurst.Spawn(at + Vector3.up * 0.6f, 1.0f, FxBurst.Kind.Spark, new Color(1f, 0.8f, 0.5f));
         }
 

@@ -73,9 +73,10 @@ namespace CatTang
 
         public void Bind(PlayerController p)
         {
-            if (player != null) { player.OnFired -= Fired; player.OnReloadStart -= ReloadStart; player.OnReloadEnd -= ReloadEnd; }
+            if (player != null) { player.OnFired -= Fired; player.OnReloadStart -= ReloadStart; player.OnReloadEnd -= ReloadEnd; player.OnSlotPowerUp -= PowerUp; }
             player = p;
             p.OnFired += Fired;
+            p.OnSlotPowerUp += PowerUp;
             p.OnReloadStart += ReloadStart;
             p.OnReloadEnd += ReloadEnd;
             ShowLoaded();
@@ -204,6 +205,35 @@ namespace CatTang
             var si = SlotInfo(slot);
             Fx(new Vector2(si.x, si.y), si.r * 2 * 3.6f, 0, 0.32f);
             SetHand(Mathf.Clamp(player.rev.reversed ? slot - 1 : slot + 1, 1, 12), false);
+        }
+
+        /// <summary>칸 탄의 공격력이 영구로 오름 (레테의 물결, 2026-11-18 사용자): 그 칸이 금빛으로 번쩍 + '공격력 +n' 글자가 떠오름</summary>
+        void PowerUp(int slot, int amount)
+        {
+            var si = SlotInfo(slot);
+            if (si == null) return;
+            Fx(new Vector2(si.x, si.y), si.r * 2 * 5f, 0, 0.5f);
+            StartCoroutine(PowerText(ToUi(si.x, si.y), amount));
+        }
+
+        IEnumerator PowerText(Vector2 at, int amount)
+        {
+            float k = 1f / Mathf.Max(0.01f, root.localScale.x);                 // HUD는 화면 높이에 맞춰 줄여 둬서, 글자는 그만큼 키움
+            var t = UIKit.Label("PowerUp", root, new Vector2(0.5f, 0.5f), at, new Vector2(260, 40) * k, Mathf.RoundToInt(24 * k), TextAnchor.MiddleCenter, true, new Color(1f, 0.85f, 0.35f));
+            t.text = $"공격력 +{amount}";
+            var ol = t.gameObject.AddComponent<Outline>(); ol.effectColor = new Color(0.15f, 0.08f, 0.02f, 0.9f); ol.effectDistance = new Vector2(2, -2) * k;
+            var rt = t.rectTransform;
+            float life = 0, dur = 1.1f;
+            while (life < dur)
+            {
+                life += Time.unscaledDeltaTime;
+                float u = life / dur;
+                rt.anchoredPosition = at + new Vector2(0, (40 + 50 * u) * k);
+                rt.localScale = Vector3.one * (u < 0.12f ? Mathf.Lerp(0.5f, 1.15f, u / 0.12f) : Mathf.Lerp(1.15f, 1f, Mathf.Clamp01((u - 0.12f) / 0.2f)));
+                var c = t.color; c.a = u < 0.7f ? 1 : 1 - (u - 0.7f) / 0.3f; t.color = c;
+                yield return null;
+            }
+            Destroy(t.gameObject);
         }
 
         void ReloadStart(float dur)

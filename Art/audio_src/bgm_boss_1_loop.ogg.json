@@ -1,0 +1,53 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\bgm_boss_1.wav",
+  "source": {
+    "kind": "generate",
+    "title": "bgm_boss_1",
+    "original_idea": "11:59 game BGM: bgm_boss_1",
+    "audio_type": "music",
+    "prompt": "Intense spaghetti western boss battle instrumental: aggressive twangy guitar riffs, dramatic trumpet mariachi melody, pounding toms, heavy ticking clock and bell hits, epic and tense video game boss music",
+    "prompt_used": "TrackType: Music, VocalType: Instrumental, Intense spaghetti western boss battle instrumental: aggressive twangy guitar riffs, dramatic trumpet mariachi melody, pounding toms, heavy ticking clock and bell hits, epic and tense video game boss music. BPM: 140.",
+    "sound_fields": {
+      "source": "",
+      "action": "",
+      "material": "",
+      "space": ""
+    },
+    "bpm": 140,
+    "seconds": 120.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "bgm_boss_1.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:13:37",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-19T10:13:41",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 2,
+  "seconds": 118.5,
+  "steps": [
+    "resample 44100→48000",
+    "loudnorm -16.0 LUFS",
+    "loop xfade 1500.0 ms"
+  ],
+  "peak": 0.608,
+  "peak_dbfs": -4.32,
+  "rms": 0.1075,
+  "input_lufs": -12.41,
+  "input_true_peak_db": -0.36,
+  "output_lufs": -15.96,
+  "loudnorm_mode": "linear",
+  "file": "bgm_boss_1_loop.ogg"
+}

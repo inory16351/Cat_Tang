@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\fac_memory.wav",
+  "source": {
+    "kind": "generate",
+    "title": "fac_memory",
+    "original_idea": "11:59 game SFX: fac_memory",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, dreamy memory room, opens with a soft magical music box chime and a gentle whoosh of sparkles, music box, glass, airy, soft reverb.",
+    "sound_fields": {
+      "source": "dreamy memory room",
+      "action": "opens with a soft magical music box chime and a gentle whoosh of sparkles",
+      "material": "music box, glass",
+      "space": "airy, soft reverb"
+    },
+    "bpm": null,
+    "seconds": 1.5,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "fac_memory.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:39:06",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -9.28,
+    "raw_peak_dbfs": -9.28,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:39:06",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 1.217,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+10.58 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1609,
+  "file": "fac_memory.ogg"
+}

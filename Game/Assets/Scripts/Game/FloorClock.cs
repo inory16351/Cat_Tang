@@ -9,7 +9,7 @@ namespace CatTang
 {
     public class FloorClock : MonoBehaviour
     {
-        public const float NumeralRing = 0.72f;          // 숫자 줄이 시계판 반지름의 몇 배 자리인지 (그림에서 잼: XII 가운데 362px / 바깥 반지름 502px)
+        public const float NumeralRing = 0.72f;          // 숫자 줄이 시계판 반지름의 몇 배 자리인지 (그림에서 잼: 아라비아 숫자판 2026-11-18, 12 · 3 · 6 · 9 가운데 평균 0.727)
         const float HubX = 0.145f, TipX = 0.96f;         // 바늘 그림: 축 고리 가운데 · 끝 (가로 비율)
         static Texture2D dialTex, handTex;
         static readonly int ColorId = Shader.PropertyToID("_Color");

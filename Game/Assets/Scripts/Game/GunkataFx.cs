@@ -17,7 +17,7 @@ namespace CatTang
         static readonly Color SwirlCol = new Color(0.22f, 0.13f, 0.11f, 0.85f);
 
         static bool inited;
-        static bool Init()
+        internal static bool Init()
         {
             // 플레이 진입 시 도메인 리로드를 끈 프로젝트라(DisableDomainReload) 정적 필드가 판을 넘어 남음.
             // 런타임에 만든 재질 · 메시는 플레이 종료 때 파괴되므로, 하나라도 죽었으면 다시 만듦
@@ -157,6 +157,7 @@ namespace CatTang
         /// <summary>tint가 있으면 불덩이 · 섬광을 그 색으로 (탄 폭발 효과: 탄 색 폭발)</summary>
         public static void Explosion(Vector3 p, float radius, bool sand, Color? tint)
         {
+            Sfx.Play("explosion", Mathf.Clamp(0.55f + radius * 0.1f, 0.6f, 1f), 0.08f, 2);
             if (!Init()) return;
             System.Func<FxMesh, FxMesh> T = f => f && tint.HasValue ? f.Tint(tint.Value) : f;
             // 블렌더로 구운 불꽃 · 연기 · 불똥 플립북 프리팹 (반경 2m 기준으로 맞춤)
@@ -320,12 +321,29 @@ namespace CatTang
             }
         }
 
+        /// <summary>작고 짧은 섬광 (공명 범위 피해, 2026-11-18 사용자 확정): 다른 특수 이펙트를 안 가리게 작은 탄 색 덩어리 + 짧은 가시 몇 개, 연기 · 고리 없음</summary>
+        public static void SmallFlash(Vector3 at, float size, Color col)
+        {
+            if (!Init()) return;
+            float s = size * 0.5f;
+            var c = Color.Lerp(col, Color.white, 0.35f);
+            FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), spikeMat, at, Random.rotation, Vector3.one * 0.7f * s, 0.12f, 0, Vector3.zero, FxMesh.Kind.Core)?.Tint(c);
+            int n = 4 + Random.Range(0, 2);
+            for (int k = 0; k < n; k++)
+            {
+                var d = Random.onUnitSphere; d.y = Mathf.Abs(d.y) * 0.6f; d.Normalize();
+                float w = Random.Range(0.08f, 0.14f) * s;
+                FxMesh.Spawn(FxMeshes.Spike(Random.Range(0, 3)), spikeMat, at + d * 0.15f * s, Quaternion.LookRotation(d, Vector3.up),
+                    new Vector3(w, w, Random.Range(0.5f, 0.9f) * s), Random.Range(0.1f, 0.16f), 0f, d * Random.Range(2f, 3.5f) * s, FxMesh.Kind.Spike)?.Tint(c);
+            }
+        }
+
         /// <summary>탄 특성별 타격 (FX_Trait_*, 2026-11-17 사용자 확정 — 충격 고리 없이 모양 · 움직임으로 개성):
         /// 회상 = 첫 타 + 메아리 두 번 · 추억 = 꽃잎 8장 · 망각 = 얼음 가시 박혔다 깨짐 ·
         /// 되감기 = 맞은 적의 보라 잔상이 뒤에서 미끄러져 되돌아오고 시곗바늘이 거꾸로 휙 (타임 락 느낌) + 박혔다 깨지는 보라 결정 ·
         /// 종말 = 진홍 불꽃에서 해골이 솟아 타 사라짐 · 지연 = 충전 폭탄이 적에 붙어 깜빡이다 0.45초 뒤 날카로운 호박색 폭발 ·
         /// 예지 = 금빛 눈 문양이 번쩍 뜨고 탄도 쪽으로 금빛 선 · 영원 = 별도 이펙트 없음(청록 일반 타격, 정지 추가 피해는 초록 숫자) ·
-        /// 미련 = 잿빛 주황 불씨가 적에 붙어 0.8초 타다 재로 흩날림. 맞은 적 몸도 특성 색으로 물들고(Health.TraitTint), 종말은 몸에 불길(FX_Trait_DoomBurn). 깨어난 탄은 크게. target = 맞은 적(따라붙는 조각 · 잔상). 그렸으면 true</summary>
+        /// 미련 = 잿빛 주황 불씨가 적에 붙어 0.8초 타다 재로 흩날림. 맞은 적 몸도 특성 색으로 물들고(Health.TraitTint). 종말은 맞을 땐 진홍 일반 타격만 (해골 · 불길은 치명타 CritSkull, 처형은 ExecutionFx.Rend). 활성화된 탄은 크게. target = 맞은 적(따라붙는 조각 · 잔상). 그렸으면 true</summary>
         /// <summary>여러 특성 동시 (2026-11-17 사용자: 맞은 자리엔 켜진 특성 전부): traits[0] = 대표(가장 많이 모은 특성) 타격 그대로 + 몸 반응,
         /// 나머지는 0.75배로 조금씩 비껴 같이 터짐 (몸 반응 · 따라붙기는 대표만). 하나라도 그렸으면 true</summary>
         public static bool TraitHitAll(System.Collections.Generic.IList<int> traits, Vector3 p, Vector3 dir, Color col, bool awake, Transform target)
@@ -338,20 +356,49 @@ namespace CatTang
             var side = cam ? cam.transform.right : Vector3.right;
             for (int i = 1; i < traits.Count; i++)
             {
+                if (traits[i] == 3002) continue;   // 추억: 표식이 다 찼을 때만 시계 (PlayerController)
                 string n = TraitPrefab(traits[i]);
                 if (n == null) continue;                                       // 영원은 따로 그림 없음 (정지 추가 피해 초록 숫자)
                 float a = (i - 0.5f) * 2.4f;                                    // 대표 둘레로 고르게 비껴 놓음
                 var off = (side * Mathf.Cos(a) + Vector3.up * Mathf.Sin(a)) * 0.35f;
-                FxEffect.Spawn("FX_Trait_" + n, q + off, Quaternion.LookRotation(fwd, Vector3.up), (awake ? 1.1f : 0.8f) * 0.75f, TraitColor(traits[i], col));
+                if (traits[i] == 3005)                                          // 종말: 맞을 땐 불길 없이 진홍 일반 타격만 (불 · 해골은 처형 때만, 2026-11-18 사용자)
+                {
+                    FxEffect.Spawn("FX_Hit", q + off, Quaternion.LookRotation(fwd, Vector3.up), HitScale * 0.75f, TraitColor(3005, col));
+                    any = true;
+                    continue;
+                }
+                var sub = FxEffect.Spawn("FX_Trait_" + n, q + off, Quaternion.LookRotation(fwd, Vector3.up), (awake ? 1.1f : 0.8f) * 0.75f, TraitColor(traits[i], col));
+                if (sub && traits[i] == 3003) NoSpark(sub);
                 any = true;
             }
             return any;
         }
 
+        /// <summary>치명타 (2026-11-18 사용자: 종말 처형 때 나오던 해골 · 불꽃을 이제 치명타 때): 진홍 불길에서 해골이 크게 솟아 타 사라짐 + 몸에 불길.
+        /// 종말 처형 · 보스 추가 피해는 ExecutionFx.Rend (X자 상처 + 블랙아웃)</summary>
+        public static void CritSkull(Transform target, Vector3 hit, float scale = 1f)
+        {
+            var cam = Camera.main;
+            var p = target ? target.position + Vector3.up * 1.1f : hit;
+            if (cam) p += (cam.transform.position - p).normalized * 0.8f;
+            var tc = TraitColor(3005, Color.white);
+            if (!FxEffect.Spawn("FX_Trait_Doom", p, Quaternion.identity, 1.6f * scale, tc)) { CritImpact(hit, Vector3.forward, scale); return; }
+            if (!target) return;
+            var burn = FxEffect.Spawn("FX_Trait_DoomBurn", target.position + (cam ? (cam.transform.position - target.position).normalized * 0.5f : Vector3.zero), Quaternion.identity, 1.2f * scale, tc);
+            if (burn) burn.Follow(target);
+        }
+
+        /// <summary>망각 타격: 파란 불똥(구운 불똥 플립북) 끔 — 얼음 가시만 (2026-11-18 사용자: 불똥 빼고 얼음 느낌만)</summary>
+        static void NoSpark(FxEffect fx)
+        {
+            var sp = fx.transform.Find("BakedSpark");
+            if (sp) sp.gameObject.SetActive(false);
+        }
+
         static string TraitPrefab(int trait) => trait switch
         {
-            3001 => "Recall", 3002 => "Memory", 3003 => "Oblivion", 3004 => "Rewind", 3005 => "Doom",
-            3006 => "Delay", 3007 => "Foresight", 3009 => "Lingering", _ => null
+            3001 => "Recall", 3003 => "Oblivion", 3004 => "Rewind", 3005 => "Doom",
+            3006 => "Delay", 3007 => "Foresight", _ => null   // 미련(3009)은 타격 이펙트 없음, 추억(3002)은 MemoryClock (2026-11-18 사용자)
         };
 
         public static bool TraitHit(int trait, Vector3 p, Vector3 dir, Color col, bool awake, Transform target = null)
@@ -359,7 +406,7 @@ namespace CatTang
             string n = trait switch
             {
                 3001 => "Recall", 3002 => "Memory", 3003 => "Oblivion", 3004 => "Rewind", 3005 => "Doom",
-                3006 => "Delay", 3007 => "Foresight", 3008 => "Hit", 3009 => "Lingering", _ => null
+                3006 => "Delay", 3007 => "Foresight", 3008 => "Hit", _ => null   // 미련(3009)은 따로 그림 없음 → 일반 타격 (2026-11-18 사용자)
             };
             if (n == null) return false;
             var fwd = dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward;
@@ -368,11 +415,21 @@ namespace CatTang
             float sc = awake ? 1.1f : 0.8f;
             // 2026-11-17 사용자: 특성마다 고유 색 (예전엔 탄 색이라 9종이 다 주황으로 비슷해 보임). 탄 색은 궤적 선에만 남음
             // 맞은 자리에서 카메라 쪽으로 당겨 그림: 큰 몬스터 몸 안에 묻혀 가려지지 않게 (붙는 폭탄 · 불씨 · 눈 문양이 몸 앞에 보이게)
+            if (trait == 3002) return false;   // 추억: 맞을 때마다는 그림 없음 → 표식이 다 찼을 때 시계 (PlayerController MemoryMark, 2026-11-18 사용자)
             var cam = Camera.main;
             if (cam) p += (cam.transform.position - p).normalized * 0.7f;
             if (trait == 3008) return FxEffect.Spawn("FX_Hit", p, look, HitScale, tc);
+            // 종말 (2026-11-18 사용자: 맞을 때 불타는 효과 빼고 처형 때만): 맞으면 진홍 일반 타격 + 몸이 잠깐 진홍빛 (지직거림 · 불길 없음).
+            // 진홍 불길 · 해골 · 몸 불길(FX_Trait_Doom · FX_Trait_DoomBurn)은 치명타(CritSkull), 처형은 X자 상처(ExecutionFx.Rend)
+            if (trait == 3005)
+            {
+                var dhp = target ? target.GetComponent<Health>() : null;
+                if (dhp) dhp.TraitTint(tc, 0.45f, 0.5f);
+                return FxEffect.Spawn("FX_Hit", p, look, HitScale, tc);
+            }
             var fx = FxEffect.Spawn("FX_Trait_" + n, p, look, sc, tc);
             if (!fx) return false;
+            if (trait == 3003) NoSpark(fx);
             // 맞은 적 몸 자체의 반응 (2026-11-17 사용자): 특성 색으로 물들고, 종말은 몸에 진홍 불길이 붙어 타오름
             var hp = target ? target.GetComponent<Health>() : null;
             if (hp)
@@ -383,18 +440,12 @@ namespace CatTang
                     case 3002: hp.TraitTint(tc, 0.5f, 0.5f); break;                               // 추억: 분홍빛
                     case 3003: hp.TraitTint(tc, 0.6f, 0.7f); break;                               // 망각: 얼어붙은 청백
                     case 3004: hp.TraitTint(tc, 0.4f, 0.75f, 9f); break;                          // 되감기: 보라로 지직거림
-                    case 3005:                                                                     // 종말: 진홍으로 타오름 + 몸에 불길
-                        hp.TraitTint(tc, 0.8f, 0.8f, 4f);
-                        var burn = FxEffect.Spawn("FX_Trait_DoomBurn", target.position + (cam ? (cam.transform.position - target.position).normalized * 0.5f : Vector3.zero), Quaternion.identity, sc / 0.8f, tc);
-                        if (burn) burn.Follow(target);
-                        break;
                     case 3006: hp.TraitTint(tc, 0.45f, 0.6f, 5f); hp.FlashLater(0.45f); break;   // 지연: 호박빛 깜빡이다 폭발 순간 하얗게
                     case 3007: hp.TraitTint(tc, 0.45f, 0.65f); break;                             // 예지: 금빛
-                    case 3009: hp.TraitTint(tc, 1.0f, 0.5f, 3f); break;                           // 미련: 잿빛 주황으로 그을림 (깜빡이는 불씨)
                 }
             }
-            // 지연 · 미련: 적에 붙어 따라다님
-            if (target && (trait == 3006 || trait == 3009)) fx.Follow(target);
+            // 지연: 적에 붙어 따라다님
+            if (target && trait == 3006) fx.Follow(target);
             // 되감기: 맞은 적의 보라 잔상이 탄도 뒤쪽(0.2초 전 자리)에서 미끄러져 제자리로 되돌아옴
             if (trait == 3004 && target)
             {

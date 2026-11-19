@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\justdodge.wav",
+  "source": {
+    "kind": "generate",
+    "title": "justdodge",
+    "original_idea": "11:59 game SFX: justdodge",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, magical pocket watch, time freezes: a bright glassy chime with a reversed swell and a deep tick, crystal and brass, airy, slight reverb.",
+    "sound_fields": {
+      "source": "magical pocket watch",
+      "action": "time freezes: a bright glassy chime with a reversed swell and a deep tick",
+      "material": "crystal and brass",
+      "space": "airy, slight reverb"
+    },
+    "bpm": null,
+    "seconds": 1.6,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "justdodge.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:09:12",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -17.16,
+    "raw_peak_dbfs": -17.16,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:09:12",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 1.427,
+  "steps": [
+    "trim_silence -45.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30.0 ms",
+    "peak normalize -1.0 dBFS (+16.78 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.142,
+  "file": "justdodge.ogg"
+}

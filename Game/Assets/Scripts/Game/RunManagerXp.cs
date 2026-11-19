@@ -64,15 +64,16 @@ namespace CatTang
             });
         }
 
-        enum LvReward { Heal, Gold, Shard, Bullet, Gun, Armor }
+        enum LvReward { Heal, Gold, Shard, Bullet, Gun, Armor, Op }
 
         List<RewardOption> LevelUpOptions()
         {
-            bool hurt = player.health.hp < player.health.maxHp * 0.95f;
+            // 가중치 (2026-11-18 사용자: 방어구 강화 줄이고 총탄 · 연산 · 총 올림, 체력 회복은 잃은 체력에 비례)
+            float missing = 1f - player.health.hp / Mathf.Max(1f, player.health.maxHp);
             var pool = new List<(LvReward k, float w)>
             {
-                (LvReward.Heal, hurt ? 2.2f : 0.4f), (LvReward.Gold, 2f), (LvReward.Shard, 1.5f),
-                (LvReward.Bullet, 2.4f), (LvReward.Gun, 1.1f), (LvReward.Armor, 1.4f),
+                (LvReward.Heal, Mathf.Min(2.5f, 0.2f + 4f * missing)), (LvReward.Gold, 1.4f), (LvReward.Shard, 1.2f),
+                (LvReward.Bullet, 2.8f), (LvReward.Gun, 1.8f), (LvReward.Armor, 0.9f), (LvReward.Op, 2.6f),
             };
             var picks = new List<LvReward>();
             while (picks.Count < 3 && pool.Count > 0)
@@ -119,6 +120,9 @@ namespace CatTang
                         break;
                     case LvReward.Gun:
                         list.Add(ItemOption(Item.Of(RandomGun())));
+                        break;
+                    case LvReward.Op:
+                        list.Add(ItemOption(Item.Of(PlayerController.RandomOp())));
                         break;
                     case LvReward.Armor:
                         list.Add(new RewardOption

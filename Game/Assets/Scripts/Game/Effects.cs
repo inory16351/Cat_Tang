@@ -1,5 +1,5 @@
 // 효과 시스템: 효과(Effect 테이블)를 출처별로 모아 발동 시점(Trigger)에 실행.
-// 출처: 깨어난 탄 · 그 칸을 쏜 총의 그 손 효과(OwnBullets/자기) · 다른 손 총의 그 손 전역 효과 · 특성 단계 효과(모든 탄) · 코스튬
+// 출처: 활성화된 탄 · 그 칸을 쏜 총의 그 손 효과(OwnBullets/자기) · 다른 손 총의 그 손 전역 효과 · 특성 단계 효과(모든 탄) · 코스튬
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,37 +24,30 @@ namespace CatTang
             return c;
         }
 
-        // ---------- 빌린 효과 (밸런스) ----------
-        // 깨어난 다른 탄의 효과는 확률로만 발동 (강한 탄일수록 낮게). 그 탄을 직접 쏠 때는 100% + 한 번 더.
-        public static float BorrowChance(string grade) => grade switch { "Common" => 0.45f, "Rare" => 0.38f, "Epic" => 0.32f, _ => 0.25f };
-        static readonly Dictionary<(int, string), EffectDef> borrowed = new();
-        static EffectDef Borrow(EffectDef e, string grade)
+        /// <summary>탄 고유 효과 설명 + 발동 확률 (2026-11-18 사용자: 확률 발동이면 UI에 표기). 탄 효과는 그 탄을 쏠 때만 (For 참고)</summary>
+        public static string BulletEffectDesc(EffectDef e, string grade)
         {
-            if (borrowed.TryGetValue((e.Id, grade), out var c)) return c;
-            c = new EffectDef { Id = e.Id, Trigger = e.Trigger, Cond = e.Cond, CondValue = e.CondValue, Chance = Mathf.Min(1f, e.Chance) * BorrowChance(grade),
-                                Target = e.Target, Type = e.Type, Value = e.Value, Value2 = e.Value2, Duration = e.Duration, Desc = e.Desc, Borrowed = true };
-            borrowed[(e.Id, grade)] = c;
-            return c;
+            bool perShot = e.Trigger == "OnFire" || e.Trigger == "OnHit" || e.Trigger == "OnPierce" || e.Trigger == "OnRicochet" || e.Trigger == "OnKill";
+            if (!perShot || e.Target == "Neighbors" || e.Cond == "Slot12" || e.Chance >= 1f) return e.Desc;
+            return $"{e.Desc} <size=15><color=#9FB3C8>(확률 {Mathf.RoundToInt(e.Chance * 100f)}%)</color></size>";
         }
 
         /// <summary>칸 s를 쏠 때 적용되는 효과 (trigger가 같은 것).
-        /// 깨어난 탄의 효과는 모든 사격에 적용(같은 효과는 탄 수만큼 겹침), 지금 쏘는 탄의 효과는 한 번 더(= 2배).</summary>
+        /// 탄 고유 효과는 그 탄(칸 s)이 활성화되어 있고 그 탄을 쏠 때만 한 번 (2026-11-18 사용자: 예전 '활성화된 탄 효과를 모든 사격에 겹쳐 적용
+        /// + 직접 쏠 때 2배' 규칙은 없앰). 총 · 특성 단계 · 코스튬 효과는 그대로 모든 사격에</summary>
         public static IEnumerable<EffectDef> For(PlayerController p, int s, string trigger)
         {
             var rev = p.rev;
-            for (int k = 1; k <= 12; k++)
+            if (s >= 1 && s <= 12)
             {
-                var b = rev.slots[k].bullet;
-                if (b == null || !rev.Awakened(k)) continue;
-                foreach (var e in Ids(b.Effect1, b.Effect2))
-                {
-                    if (e.Trigger != trigger || e.Target == "Neighbors") continue;
-                    var ee = e;
-                    if (e.Cond == "Slot12") { if (k != 12) continue; ee = NoCond(e); }
-                    if (k == s) { yield return ee; yield return ee; }        // 그 탄을 직접 쏠 때: 100% + 한 번 더
-                    else if (trigger == "Passive") yield return Borrow(ee, b.Grade);   // 수치형: 기대값으로 (Passive()에서 Chance 곱)
-                    else if (Random.value < BorrowChance(b.Grade) * ProcMul(p)) yield return ee;   // 발동형: 확률로
-                }
+                var b = rev.slots[s].bullet;
+                if (b != null && rev.Awakened(s))
+                    foreach (var e in Ids(b.Effect1, b.Effect2))
+                    {
+                        if (e.Trigger != trigger || e.Target == "Neighbors") continue;
+                        if (e.Cond == "Slot12") { if (s != 12) continue; yield return NoCond(e); continue; }
+                        yield return e;
+                    }
             }
             bool rightSide = s % 2 == 1;
             var own = rightSide ? rev.rightGun : rev.leftGun;
@@ -65,7 +58,7 @@ namespace CatTang
             foreach (var e in Costume()) if (e.Trigger == trigger) yield return e;
         }
 
-        /// <summary>칸과 무관한 시점(장전 · 회피 · 스킬)의 효과: 깨어난 탄 전부 + 양손 총 + 특성 + 코스튬</summary>
+        /// <summary>칸과 무관한 시점(장전 · 회피 · 스킬)의 효과: 활성화된 탄 전부 + 양손 총 + 특성 + 코스튬</summary>
         public static IEnumerable<EffectDef> Global(PlayerController p, string trigger)
         {
             var rev = p.rev;
@@ -96,6 +89,7 @@ namespace CatTang
                 case "Slot12": return s == 12;
                 case "TargetMarked": return target && target.MarkStacks > 0;
                 case "MarkStacksAtLeast": return target && target.MarkStacks >= e.CondValue;
+                case "MarkFullHitsAtLeast": return target && target.MarkFullHits >= e.CondValue;
                 case "TargetSlowed": return target && target.Slowed;
                 case "TargetTimeLocked": return target && target.TimeLocked;
                 case "TargetBoss": return target && target.IsBoss;
@@ -119,7 +113,16 @@ namespace CatTang
             return v;
         }
 
-        /// <summary>칸과 무관한 전역 패시브 합 (특성 · 코스튬 · 총 · 깨어난 탄 전부)</summary>
+        /// <summary>Passive 중 조건이 붙은 것만 (판정 시각 짝수 · 음수 · 12 초과 등) — 조건부 추가 피해 금빛 숫자용</summary>
+        public static float PassiveConditional(PlayerController p, int s, string type)
+        {
+            float v = 0;
+            foreach (var e in For(p, s, "Passive"))
+                if (e.Type == type && e.Cond != "None" && e.Cond != "" && CondOk(e, p, s, null)) v += e.Borrowed ? e.Value * e.Chance : e.Value;
+            return v;
+        }
+
+        /// <summary>칸과 무관한 전역 패시브 합 (특성 · 코스튬 · 총 · 활성화된 탄 전부)</summary>
         public static float GlobalPassive(PlayerController p, string type)
         {
             float v = 0;
@@ -128,6 +131,15 @@ namespace CatTang
         }
 
         // ---------- 범위 효과 ----------
+        /// <summary>범위 피해만 (그림은 부른 쪽이 따로 — 추억 시계 깨짐)</summary>
+        public static void AreaDamage(Vector3 at, float radius, float dmg)
+        {
+            var pl = PlayerController.Instance;
+            if (pl) dmg *= 1 + GlobalPassive(pl, "AreaDamageAdd");
+            foreach (var en in Enemy.All.ToArray())
+                if (en && en.health.Alive && Flat(en.transform.position - at).magnitude < radius) en.health.TakeDamage(dmg);
+        }
+
         public static void Explosion(Vector3 at, float radius, float dmg, Color tint)
         {
             var pl = PlayerController.Instance;
@@ -172,7 +184,7 @@ namespace CatTang
         }
     }
 
-    /// <summary>탄마다 다른 색 (첫 특성 기준, 기본 탄은 크림색). 잠든 탄은 흐리게.</summary>
+    /// <summary>탄마다 다른 색 (첫 특성 기준, 기본 탄은 크림색). 비활성화된 탄은 흐리게.</summary>
     public static class BulletLook
     {
         public static Color Of(BulletDef b)

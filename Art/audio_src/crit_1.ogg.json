@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\crit_v1.wav",
+  "source": {
+    "kind": "generate",
+    "title": "crit",
+    "original_idea": "11:59 game SFX: crit",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, critical bullet hit, heavy punchy impact with a bright metallic ring and crunchy bass, steel and bone, cartoon, close mic, dry, game critical hit.",
+    "sound_fields": {
+      "source": "critical bullet hit",
+      "action": "heavy punchy impact with a bright metallic ring and crunchy bass",
+      "material": "steel and bone, cartoon",
+      "space": "close mic, dry, game critical hit"
+    },
+    "bpm": null,
+    "seconds": 0.8,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 2,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "crit_v1.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:09:57",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": -0.8,
+    "ceiling_gain_db": -0.2
+  },
+  "created": "2026-11-19T10:09:57",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.639,
+  "steps": [
+    "trim_silence -45.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30.0 ms",
+    "peak normalize -1.0 dBFS (-0.00 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1432,
+  "file": "crit_1.ogg"
+}

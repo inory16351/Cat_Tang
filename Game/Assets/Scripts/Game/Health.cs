@@ -20,6 +20,8 @@ namespace CatTang
         public event Action OnChanceDodge;            // 확률 회피 성공
         /// <summary>탄이 날아온 방향(탄 진행 방향)을 받아 막으면 true (2장 짐꾼 트렁크 방패). 고양이 사격이 맞기 전에 물어봄</summary>
         public Func<Vector3, bool> BlockFrom;
+        /// <summary>탄 진행 방향 d로 맞았을 때 고양이 쪽으로 되튕기는지 (3장 유리 기사 거울 방패). true면 피해 없이 반사</summary>
+        public Func<Vector3, bool> ReflectFrom;
         /// <summary>마지막으로 맞은 방향(맞힌 쪽 → 이 물체, 수평)과 시각. 공중 짐이 이 방향으로 날아감</summary>
         public Vector3 lastHitDir;
         public float lastHitAt = -99f;
@@ -32,6 +34,8 @@ namespace CatTang
         public bool Slowed => Time.time < slowUntil;
         public float AttackSpeedMul => Time.time < atkDownUntil ? 1f - atkDown : 1f;
         public int MarkStacks => Time.time < markUntil ? marks : 0;
+        /// <summary>추억 표식이 다 쌓인 뒤 더 맞은 횟수 (6단계: 5번이면 터뜨림, 2026-11-18 사용자)</summary>
+        public int MarkFullHits => Time.time < markUntil ? markFullHits : 0;
         public bool Burning => Time.time < burnUntil;
         public bool DefDowned => Time.time < defDownUntil;
         public bool AtkDowned => Time.time < atkDownUntil;
@@ -43,7 +47,7 @@ namespace CatTang
         public float lastDamageWasDelayed;            // 마지막 피해가 지연 피해였던 시각
 
         float slowUntil, slowAmount, stunUntil, lockUntil, burnUntil, burnDps, defDownUntil, defDown, flashUntil, atkDownUntil, atkDown, markUntil, markAmp;
-        int marks, markMax = 10;
+        int marks, markMax = 5, markFullHits;
         bool wasLocked;
         Vector3 knock;
         CharacterController cc;
@@ -52,6 +56,10 @@ namespace CatTang
         MaterialPropertyBlock mpb;
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         Color[] baseColors;
+        Color[][] matColors;                          // 재질이 여러 개인 렌더러: 재질마다 원래 색 (키트 모델 = 메시 하나에 재질 5~10개)
+        bool matTinted;                               // 재질별 블록을 씌워 둔 상태 (효과가 끝나면 지움)
+        static MaterialPropertyBlock matMpb, emptyMpb;
+        static readonly int BrawlActorId = Shader.PropertyToID("_BrawlActor");
 
         void Awake()
         {
@@ -64,16 +72,26 @@ namespace CatTang
             rends = GetComponentsInChildren<Renderer>();
             mpb = new MaterialPropertyBlock();
             baseColors = new Color[rends.Length];
+            matColors = new Color[rends.Length][];
             for (int i = 0; i < rends.Length; i++)
+            {
                 baseColors[i] = rends[i].sharedMaterial && rends[i].sharedMaterial.HasProperty(BaseColorId)
                     ? rends[i].sharedMaterial.GetColor(BaseColorId) : Color.white;
+                var mats = rends[i].sharedMaterials;
+                if (mats.Length <= 1) continue;
+                matColors[i] = new Color[mats.Length];
+                for (int k = 0; k < mats.Length; k++)
+                    matColors[i][k] = mats[k] && mats[k].HasProperty(BaseColorId) ? mats[k].GetColor(BaseColorId) : Color.white;
+            }
+            matTinted = false;
         }
 
         public void ResetHp(float max) { maxHp = max; hp = max; }
 
         /// <summary>피해 받기. 플레이어는 대시 중이면 저스트 회피, 확률 회피 판정. crit = 치명타 전용 숫자로 띄움.
         /// bonusFrac = 피해 중 정지된 적 추가 피해 몫 (0~1) → 그만큼은 초록 숫자로 따로 띄움</summary>
-        public void TakeDamage(float dmg, bool fromDelayed = false, bool crit = false, float bonusFrac = 0)
+        /// <remarks>condFrac = 조건부 추가 피해 몫 (보스 · 표식 · 상태 이상 · 거리 · 판정 시각 등, 0~1) → 그만큼은 금빛 숫자로 따로 (2026-11-18 사용자)</remarks>
+        public void TakeDamage(float dmg, bool fromDelayed = false, bool crit = false, float bonusFrac = 0, float condFrac = 0)
         {
             if (!Alive) return;
             if (isPlayer && dashing) { OnJustDodge?.Invoke(); return; }
@@ -90,13 +108,14 @@ namespace CatTang
             hp -= dmg;
             if (fromDelayed) lastDamageWasDelayed = Time.time;
             flashUntil = Time.time + 0.08f;
-            if (isPlayer) hurtUntil = Time.unscaledTime + HurtBlinkTime;
+            if (isPlayer) { hurtUntil = Time.unscaledTime + HurtBlinkTime; Sfx.Play("player_hurt", 0.85f, 0.05f, 1); }
             OnDamaged?.Invoke(dmg);
             if (!isPlayer)
             {
                 var at = transform.position + Vector3.up * 1.6f;
-                DamageNumber.Spawn(at, dmg * (1 - bonusFrac), crit);
+                DamageNumber.Spawn(at, dmg * (1 - bonusFrac - condFrac), crit);
                 if (bonusFrac > 0) DamageNumber.SpawnBonus(at + Vector3.up * 0.8f, dmg * bonusFrac);
+                if (condFrac > 0) DamageNumber.SpawnCond(at + Vector3.up * (bonusFrac > 0 ? 1.5f : 0.8f), dmg * condFrac);
             }
             if (hp <= 0) { hp = 0; OnDeath?.Invoke(this); }
         }
@@ -120,8 +139,17 @@ namespace CatTang
         public void ApplyBurn(float dps, float dur) { burnDps = Mathf.Max(burnDps, dps); burnUntil = Time.time + dur; }
         public void ApplyDefenseDown(float v, float dur) { defDown = Mathf.Max(defDown, v); defDownUntil = Time.time + dur; }
         public void ApplyAttackSpeedDown(float v, float dur) { atkDown = Mathf.Max(atkDown, v); atkDownUntil = Time.time + dur; }
-        public void AddMark(float amp, int max) { if (Time.time >= markUntil) marks = 0; markAmp = amp; markMax = Mathf.Max(1, max); marks = Mathf.Min(markMax, marks + 1); markUntil = Time.time + 6f; }
-        public void ClearMarks() => marks = 0;
+        /// <summary>추억 표식 1개 (최대 max). 반환 = 이번에 막 다 찼는지 (그때만 시계 이펙트, 2026-11-18 사용자: 매번 뜨면 정신없음)</summary>
+        public bool AddMark(float amp, int max)
+        {
+            if (Time.time >= markUntil) { marks = 0; markFullHits = 0; }
+            markAmp = amp; markMax = Mathf.Max(1, max);
+            markUntil = Time.time + 6f;
+            if (marks >= markMax) { markFullHits++; return false; }
+            marks++;
+            return marks >= markMax;
+        }
+        public void ClearMarks() { marks = 0; markFullHits = 0; }
         public void AddDelayed(float dmg, float after) => delayed.Add((Time.time + after, dmg));
         /// <summary>넉백. 보스는 거의 밀리지 않음 (방 밖으로 밀려 나가지 않게)</summary>
         public void Knockback(Vector3 v) => knock += IsBoss ? v * 0.1f : v;
@@ -171,20 +199,44 @@ namespace CatTang
                 bool on = Mathf.Repeat(Time.unscaledTime * 14f, 1f) < 0.55f;
                 hurtK = on ? Mathf.Lerp(0.45f, 0.85f, left) : 0.1f * left;
             }
-            if (mpb == null || rends == null) RefreshRenderers();       // Awake 전에 불린 경우 (비활성으로 만들어진 오브젝트 등)
+            if (mpb == null || rends == null || matColors == null) RefreshRenderers();       // Awake 전에 불린 경우 (비활성으로 만들어진 오브젝트 등)
+            bool locked = TimeLocked || GlobalStop, stunned = Time.time < stunUntil;
+            bool active = flash || locked || stunned || tintK > 0 || hurtK > 0;
+            Color Fx(Color c)
+            {
+                if (locked) c = Color.Lerp(c, new Color(0.55f, 0.75f, 1f), 0.65f);
+                else if (stunned) c = Color.Lerp(c, new Color(1f, 0.95f, 0.5f), 0.5f);
+                if (tintK > 0) c = Color.Lerp(c, hitTint, tintK);
+                if (hurtK > 0) c = Color.Lerp(c, HurtRed, hurtK);
+                return flash ? Color.white : c;
+            }
             for (int i = 0; i < rends.Length; i++)
             {
                 if (!rends[i]) continue;
+                if (matColors[i] != null)
+                {
+                    // 재질이 여러 개: 렌더러 단위로 _BaseColor를 덮으면 첫 재질 색 하나로 통째 칠해짐 (2026-11-18 분수 · 수정이 단색으로 보이던 원인)
+                    // → 효과가 있을 때만 재질마다 블록을 씌우고, 끝나면 지워서 원래 재질 색으로
+                    if (!active && !matTinted) continue;
+                    matMpb ??= new MaterialPropertyBlock();
+                    emptyMpb ??= new MaterialPropertyBlock();
+                    rends[i].GetPropertyBlock(mpb);
+                    float actor = mpb.GetFloat(BrawlActorId);
+                    for (int k = 0; k < matColors[i].Length; k++)
+                    {
+                        if (!active) { rends[i].SetPropertyBlock(emptyMpb, k); continue; }
+                        matMpb.Clear();
+                        matMpb.SetColor(BaseColorId, Fx(matColors[i][k]));
+                        if (actor > 0.5f) matMpb.SetFloat(BrawlActorId, actor);
+                        rends[i].SetPropertyBlock(matMpb, k);
+                    }
+                    continue;
+                }
                 rends[i].GetPropertyBlock(mpb);
-                Color c = baseColors[i];
-                if (TimeLocked || GlobalStop) c = Color.Lerp(c, new Color(0.55f, 0.75f, 1f), 0.65f);
-                else if (Time.time < stunUntil) c = Color.Lerp(c, new Color(1f, 0.95f, 0.5f), 0.5f);
-                else if (MarkStacks > 0) c = Color.Lerp(c, new Color(1f, 0.5f, 0.85f), 0.15f + 0.04f * MarkStacks);
-                if (tintK > 0) c = Color.Lerp(c, hitTint, tintK);
-                if (hurtK > 0) c = Color.Lerp(c, HurtRed, hurtK);
-                mpb.SetColor(BaseColorId, flash ? Color.white : c);
+                mpb.SetColor(BaseColorId, Fx(baseColors[i]));
                 rends[i].SetPropertyBlock(mpb);
             }
+            matTinted = active;
         }
     }
 }

@@ -11,10 +11,10 @@ TRAIT = {t[0]: t[1] for t in T.TRAIT}
 SKILL = {s[0]: s for s in T.SKILL}
 COND_KO = {"Odd": "홀수", "Even": "짝수", "Prime": "소수", "Negative": "음수", "Zero": "0시"}
 TRIG_KO = {"Passive": "상시", "RunStart": "런 시작", "OnFire": "발사", "OnHit": "명중", "OnKill": "처치", "OnReload": "장전",
-           "OnPerfectReload": "완벽 장전", "OnChanceDodge": "확률 회피", "OnJustDodge": "저스트 회피", "OnSkill": "스킬",
+           "OnPerfectReload": "완벽 장전", "OnReloadEnd": "장전 끝", "OnChanceDodge": "확률 회피", "OnJustDodge": "저스트 회피", "OnSkill": "스킬",
            "OnSilhouette": "실루엣 등장", "OnTimeLockEnd": "가둠 해제", "OnExecute": "처형", "OnRicochet": "튕김", "OnPierce": "관통"}
 UNLOCK_KO = {"Default": "처음부터", "ClearZone": "구역 {v} 첫 클리어", "ExecuteCount": "누적 처형 {v}회",
-             "PerfectReloadCount": "누적 완벽 장전 {v}회", "KillBoss": "구역 {v} 보스 처치", "TraitTier6": "특성 6단계 {v}회 달성"}
+             "PerfectReloadCount": "누적 완벽 장전 {v}회", "JustDodgeCount": "누적 극한 회피 {v}회", "KillBoss": "구역 {v} 보스 처치", "TraitTier6": "특성 6단계 {v}회 달성"}
 
 def cond_text(ct, cv):
     if ct in COND_KO: return COND_KO[ct]
@@ -52,14 +52,14 @@ def bullet_doc():
     s.append("""## 1. 개요 [확정]
 - 탄 = 아이템, 실린더 12칸 = 인벤토리. 놓는 자리가 곧 빌드.
 - 탄 하나 = **자리 조건 1개 + 특성 2개 + 고유 효과 + 공격력 + 연산 슬롯 0~2칸.**
-- 판정 시각(놓인 시각에 연산 적용)이 자리 조건에 맞으면 **깨어남.**
-  - 깨어난 탄: 특성 + 고유 효과 + 공격력
-  - 못 깨어난 탄: 공격력만
+- 판정 시각(놓인 시각에 연산 적용)이 자리 조건에 맞으면 **활성화.**
+  - 활성화된 탄: 특성 + 고유 효과 + 공격력
+  - 못 활성화된 탄: 공격력만
 - **적용 범위**
-  - 탄 고유 효과 [확정]: 깨어나 있으면 **모든 사격에 적용** (발사 · 명중 · 처치 · 장전 · 상시). 같은 효과는 깨어난 탄 수만큼 겹친다.
+  - 탄 고유 효과 [확정]: 활성화되어 있으면 **모든 사격에 적용** (발사 · 명중 · 처치 · 장전 · 상시). 같은 효과는 활성화된 탄 수만큼 겹친다.
   - **그 탄을 직접 쏠 때는 강화**: 효과가 한 번 더 걸리고(확률 · 위력 2배) **공명 사격**(굵은 두 겹 궤적 · 금빛 섬광 · 맞은 자리 탄 색 폭발 피해 30% · 화면 흔들림)이 나간다.
-  - 특성: 단계는 **깨어난 탄**의 특성으로 세고, 켜진 효과는 **모든 탄**(깨어나지 못한 탄 포함)에 적용.
-  - 총 고유 효과: 그 총이 담당하는 칸(오른손 홀수 · 왼손 짝수)의 탄에만. 스킬 · 완벽 장전처럼 탄과 무관한 효과만 전역 (총 기획서).
+  - 특성: 단계는 **활성화된 탄**의 특성으로 세고, 켜진 효과는 **모든 탄**(비활성화된 탄 포함)에 적용.
+  - 총 고유 효과: 그 총이 담당하는 칸(오른손 홀수 · 왼손 짝수)의 탄에만. 스킬 · 장전 끝처럼 탄과 무관한 효과만 전역 (총 기획서).
 - 이름은 시간과 관련된 몽환적 · 시적 표현. "~탄"으로 통일하지 않고, 등급이 높을수록 고유한 이름.
 - 아이콘도 같은 방향: 꿈속 같은 시적 분위기, 탄마다 색 · 재질 · 실루엣이 확실히 다름.
 """)
@@ -70,7 +70,7 @@ def bullet_doc():
     s.append("\n## 3. 자리 조건 [확정]\n")
     s.append(table(["CondType", "뜻"], [(k, d) for k, d in T.ENUMS["PlaceCond"]]))
     s.append("\n\n- 판정 규칙(12 초과 · 0 이하 값 유지, 반올림, 0시 만능 등)은 컨셉 기획서 8.2.\n")
-    s.append("\n## 4. 특성 (9종) [확정 · 수치는 1차안]\n- 같은 특성의 깨어난 탄이 2 · 4 · 6개면 단계 상승. 2 · 4는 수치, 6은 새 효과.\n\n")
+    s.append("\n## 4. 특성 (9종) [확정 · 수치는 1차안]\n- 같은 특성의 활성화된 탄이 2 · 4 · 6개면 단계 상승. 2 · 4는 수치, 6은 새 효과.\n\n")
     rows = []
     for t in T.TRAIT:
         tiers = {2: [], 4: [], 6: []}
@@ -106,7 +106,7 @@ def gun_doc():
 - 총도 드랍 아이템. 아무 손에나 장착 (오른손 = 홀수 칸, 왼손 = 짝수 칸 담당).
 - 총마다 다른 것: **기본 수치 · 고유 효과 · 스킬 1개** (스컬의 머리처럼). 양손 합쳐 스킬 2개.
 - **손별 효과 [확정]:** 같은 총도 오른손 효과와 왼손 효과가 다르다 (오른손 = 공격, 왼손 = 보조 쪽). 기본 총(보안관의 리볼버)은 양손 모두 효과 없음.
-- **효과 적용 범위 [확정]:** 그 손이 담당하는 칸의 탄에만 (오른손 = 홀수 칸, 왼손 = 짝수 칸). 스킬 · 완벽 장전처럼 탄과 무관한 효과만 전역 (`[전역]` 표시).
+- **효과 적용 범위 [확정]:** 그 손이 담당하는 칸의 탄에만 (오른손 = 홀수 칸, 왼손 = 짝수 칸). 스킬 · 장전 끝처럼 탄과 무관한 효과만 전역 (`[전역]` 표시).
 - **양손 2자루만 [확정]:** 보관함에 넣거나 팔 수 없다. 주우면 교체 창에서 왼손에 쥐기 · 오른손에 쥐기 · 버리기. 빠진 총 · 버린 총은 바닥에 떨어져 다시 주울 수 있다. 시작은 양손 기본 총.
 - 총에는 연산 슬롯이 없다 (연산은 탄에).
 - 등급 4단계 (일반 · 희귀 · 영웅 · 전설). 높을수록 고유 효과가 복잡.
@@ -116,9 +116,9 @@ def gun_doc():
 | 열 | 뜻 |
 |---|---|
 | DamageMul | 탄 공격력 배율 |
-| FireInterval | 발사 간격 (초) |
+| FireInterval | 발사 간격 (초) — 모든 총 0.3초로 통일 (2026-11-18), 총 개성은 사거리로 |
 | ReloadTime | 장전 시간 (초) |
-| Range | 사거리 (m) |
+| Range | 사거리 (m) — 이보다 먼 적은 안 맞음. 조준 커서가 사거리 밖이면 흐려지고 사거리 끝에 빨간 점 |
 
 ## 3. 스킬 [확정: 쿨타임 방식]
 """)
@@ -128,8 +128,8 @@ def gun_doc():
     for g in T.GUN:
         effs = hand_text(g)
         icon = f'<img src="images/icons/guns_toon/gun_{g[0]}.png" width="64">'
-        rows.append((icon, g[0], f"**{g[1]}**", GRADE_KO[g[2]], f"×{g[3]}", f"{g[4]}초", f"{g[5]}초", f"{g[6]}m", SKILL[g[7]][1], effs))
-    s.append(table(["", "Id", "이름", "등급", "공격력", "발사 간격", "장전", "사거리", "스킬", "고유 효과"], rows))
+        rows.append((icon, g[0], f"**{g[1]}**", GRADE_KO[g[2]], f"×{g[3]}", f"{g[6]:g}m", f"{g[5]}초", SKILL[g[7]][1], effs))
+    s.append(table(["", "Id", "이름", "등급", "공격력", "사거리", "장전", "스킬", "고유 효과"], rows))
     s.append("\n\n## 5. 데이터 테이블\n")
     for sh in ("Gun", "Skill"):
         s.append(f"\n### {sh}\n\n{schema(sh)}\n")
@@ -179,7 +179,8 @@ def ppt_json():
 if __name__ == "__main__":
     for name, fn in (("Cat_Tang_총탄_기획서.md", bullet_doc), ("Cat_Tang_총_기획서.md", gun_doc), ("Cat_Tang_코스튬_기획서.md", costume_doc)):
         p = os.path.join(DOCS, name)
-        open(p, "w", encoding="utf-8").write(fn())
+        text = fn()   # 먼저 만들고 씀 (2026-11-18: 만들다 오류가 나면 파일이 비던 문제)
+        open(p, "w", encoding="utf-8").write(text)
         print("wrote", p)
     jp = os.path.join(DOCS, "data", "items_for_ppt.json")
     json.dump(ppt_json(), open(jp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\ui_click_v2.wav",
+  "source": {
+    "kind": "generate",
+    "title": "ui_click",
+    "original_idea": "11:59 game SFX: ui_click",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, small brass clock button, one short crisp tick click, brass, wood, close mic, dry, UI sound.",
+    "sound_fields": {
+      "source": "small brass clock button",
+      "action": "one short crisp tick click",
+      "material": "brass, wood",
+      "space": "close mic, dry, UI sound"
+    },
+    "bpm": null,
+    "seconds": 0.5,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 2,
+    "seed": 1160,
+    "candidate": 2,
+    "file": "ui_click_v2.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:39:01",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -8.43,
+    "raw_peak_dbfs": -8.43,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:39:01",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.03,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+7.49 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1279,
+  "file": "ui_click_2.ogg"
+}

@@ -75,13 +75,13 @@ namespace CatTang
             player.health.OnDeath -= OnPlayerDeath;
             player.health.OnDeath += OnPlayerDeath;
             ui?.OnRunStart(player);
-            Music.Play("bgm_stage");
+            Music.PlayFor("stage", chapter);
             BuildStage(0, RewardKind.Gold);
         }
 
         // ---------- 스테이지 ----------
-        bool HasMidBoss => chapter <= 2;                 // 1장 술집 · 2장 대합실 (3장부터는 아직 없음)
-        string MidBossName => chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
+        bool HasMidBoss => chapter <= 3;                 // 1장 술집 · 2장 대합실 · 3장 거울 극장
+        string MidBossName => chapter == 3 ? "신기루 마술사" : chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
 
         void BuildMidBoss()
         {
@@ -96,7 +96,7 @@ namespace CatTang
             roomIndex = 0;
             var r0 = layout.rooms[0];
             player.Teleport(r0.center - r0.farSide * (r0.size.y / 2 - 2.5f) + Vector3.up * 0.3f);
-            Music.Play("bgm_boss");
+            Music.PlayFor("midboss", chapter);
             ui?.Toast("중간 보스 — " + MidBossName);
         }
 
@@ -126,8 +126,9 @@ namespace CatTang
             current = null;
             roomIndex = 0;
             var r0 = layout.rooms[0];
-            if (!attachOrigin.HasValue) player.Teleport(r0.center - r0.farSide * (r0.size.y / 2 - 3) + Vector3.up * 0.3f);
-            if (IsBossRoom) Music.Play("bgm_boss");
+            float back = IsBossRoom && Ch2Kit.Is(Chapter) ? Ch2Kit.BossArenaDiameter / 2 - 3 : IsBossRoom && Ch3Kit.Is(Chapter) ? Ch3Boss.ArenaR - 4 : r0.size.y / 2 - 3;   // 2장 보스: 원형 경계 안에서 시작
+            if (!attachOrigin.HasValue) player.Teleport(r0.center - r0.farSide * back + Vector3.up * 0.3f);
+            Music.PlayFor(IsBossRoom ? "boss" : "stage", chapter);   // 중간 보스 뒤 스테이지 3에서 맵 곡으로 돌아옴
             ui?.Toast(IsBossRoom ? Chapter.BossName : $"{chapter}장 · 스테이지 {index + 1}/{Stages} — 방 {rooms}개");
         }
 
@@ -155,7 +156,7 @@ namespace CatTang
             if (current.midBoss)
             {
                 IsMidBossRoom = true;                     // 술집 홀: 들어서면 문이 닫히고 중간 보스
-                Music.Play("bgm_boss");
+                Music.PlayFor("midboss", chapter);
                 ui?.Toast("중간 보스 — " + MidBossName);
             }
             wavesLeft = IsBossRoom || IsMidBossRoom ? 1 : (stageIndex >= 2 ? 3 : Random.value < 0.5f ? 2 : 3);   // 방마다 웨이브 2~3번 (1장 기획서)
@@ -273,7 +274,9 @@ namespace CatTang
                 SpawnDoors();
                 return;
             }
-            if (layout.rooms.Any(r => !r.cleared && !r.midBoss)) { ui?.Toast("다음 방으로"); return; }
+            bool lastRoom = !layout.rooms.Any(r => !r.cleared && !r.midBoss);
+            if (!IsMidBossRoom && !IsBossRoom) TryMerchant(current, lastRoom);
+            if (!lastRoom) { if (!merchantHere) ui?.Toast("다음 방으로"); return; }
             stageDone = true;
             if (IsMidBossRoom)
             {
@@ -316,8 +319,6 @@ namespace CatTang
 
         void AfterReward()
         {
-            bool merchant = Random.value < 0.15f || (!merchantSeen && stageIndex == Stages - 2);   // 상인 15% · 챕터당 최소 1번 (1장 기획서)
-            if (merchant) SpawnMerchant();
             // 스테이지 2: 문 고르기 대신 술집 문이 열림 (걸어 들어가면 중간 보스)
             var hall = layout?.rooms.Find(r => r.midBoss && !r.cleared);
             if (hall != null)
@@ -352,12 +353,13 @@ namespace CatTang
         List<RewardOption> BossOptions()
         {
             var list = new List<RewardOption>();
-            var strong = Tables.Bullets.Values.Where(b => (b.Grade == "Epic" || b.Grade == "Legendary") && Meta.GradeInPool(b.Grade)).ToList();
-            if (strong.Count == 0) strong = Tables.Bullets.Values.Where(b => b.Grade == "Rare").ToList();
+            var strong = Tables.Bullets.Values.Where(b => (b.Grade == "Epic" || b.Grade == "Legendary") && Meta.BulletUnlocked(b.Id)).ToList();
+            if (strong.Count == 0) strong = Tables.Bullets.Values.Where(b => b.Grade == "Rare" && Meta.BulletUnlocked(b.Id)).ToList();
+            if (strong.Count == 0) strong = new List<BulletDef> { RandomBullet() };
             var bulletPick = strong[Random.Range(0, strong.Count)];
             list.Add(ItemOption(Item.Of(bulletPick)));
-            var guns = Tables.Guns.Values.Where(g => g.Grade != "Common").ToList();
-            list.Add(ItemOption(Item.Of(guns[Random.Range(0, guns.Count)])));
+            var guns = Tables.Guns.Values.Where(g => g.Grade != "Common" && Meta.GunUnlocked(g.Id)).ToList();   // 해금한 총만 (총포상 묶음)
+            list.Add(ItemOption(Item.Of(guns.Count > 0 ? guns[Random.Range(0, guns.Count)] : RandomGun())));
             int s = 20 + 10 * chapter;
             list.Add(new RewardOption { label = $"시간의 조각 +{s}", desc = "마을에서 영구 강화에 쓴다", icon = UIKit.Spr("shard"), apply = () => shardsThisRun += s });
             // 고른 보상 이름을 기억해 다음 장 안내 · 결과 화면에 띄움
@@ -380,7 +382,7 @@ namespace CatTang
                 ItemKind.Bullet => $"{UIKit.GradeKo(it.bullet.Grade)} · 공격 {it.bullet.Damage} · 조건 {UIKit.CondKo(it.bullet)}\n" +
                                    string.Join("\n", new[] { it.bullet.Effect1, it.bullet.Effect2 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? e.Desc : "")),
                 // 총의 손별 효과는 길어서 카드엔 요약만, 자세한 건 마우스 올림 툴팁으로
-                ItemKind.Gun => $"{UIKit.GradeKo(it.gun.Grade)} · 공격 ×{it.gun.DamageMul:0.00} · 연사 {it.gun.FireInterval:0.00}초\n<i>{it.gun.Desc}</i>",
+                ItemKind.Gun => $"{UIKit.GradeKo(it.gun.Grade)} · 공격 ×{it.gun.DamageMul:0.00} · 사거리 {it.gun.Range:0}m\n<i>{it.gun.Desc}</i>",
                 _ => "탄에 끼워 판정 시각을 바꾼다"
             } + "\n<size=15><color=#8A6A4A>마우스를 올리면 자세히</color></size>";
             var icon = it.kind switch { ItemKind.Bullet => UIKit.BulletIcon(it.bullet), ItemKind.Gun => UIKit.GunIcon(it.gun), _ => UIKit.Spr("op_token") };
@@ -409,17 +411,60 @@ namespace CatTang
             ui?.Toast(ok ? $"{it.Name} — 보관함에 넣음 (Tab으로 배치)" : $"보관함이 가득 차 {it.Name}을(를) 골드로 바꿈");
         }
 
-        void SpawnMerchant()
+        // ---------- 상인 (상인 공통 규칙, 2026-11-18) ----------
+        // 방을 비울 때마다 15%. 스테이지 1 · 2에서 한 번도 못 만났으면 스테이지 2 마지막 방(중간 보스 직전)에 확정.
+        bool merchantHere;                               // 이번에 비운 방에 상인이 나왔는지 (토스트 겹침 방지)
+
+        void TryMerchant(RoomBuilder.RoomInfo r, bool lastRoom)
         {
-            merchantSeen = true;
-            var r = current;
-            var side = Vector3.Cross(Vector3.up, r.farSide).normalized;
-            var go = RoomBuilder.MerchantNpc(r.root, side * (r.size.x / 2 - 4f) - r.farSide * 3f);
+            merchantHere = false;
+            if (r == null || !r.root) return;
+            bool guarantee = !merchantSeen && stageIndex == 1 && lastRoom;
+            if (!guarantee && Random.value >= 0.15f) return;
+            SpawnMerchant(r);
+        }
+
+        void SpawnMerchant(RoomBuilder.RoomInfo r)
+        {
+            merchantSeen = merchantHere = true;
+            Sfx.Play("merchant", 0.8f, 0f);
+            var go = RoomBuilder.MerchantNpc(r.root, MerchantSpot(r));
             var m = go.AddComponent<Merchant>();
             m.prompt = "상인";
-            m.radius = 2.6f;
+            m.radius = 2.8f;
             m.Restock(player);
-            ui?.Toast("떠돌이 상인이 있다 (E)");
+            go.AddComponent<EdgeMarker>().Init("UI/coin");                 // 화면 밖이면 가장자리 화살표
+            ui?.Toast(chapter >= 3 ? "거울 너머에 상인이 나타났다 (E)" : "상인이 나타났다 (E)");
+        }
+
+        /// <summary>상인 자리: 방 벽을 따라 3.5m 안쪽 후보 중 화면 안 · 고양이와 4~10m · 막힌 곳 · 소품과 안 겹치는 곳 (없으면 조건을 풀어 가장 가까운 곳). 반환 = 방 기준 위치</summary>
+        Vector3 MerchantSpot(RoomBuilder.RoomInfo r)
+        {
+            var cam = Camera.main;
+            var pp = player ? player.transform.position : r.center;
+            float hx = r.size.x / 2 - 3.5f, hz = r.size.y / 2 - 3.5f;
+            var cands = new List<Vector3>();
+            for (float x = -hx; x <= hx + 0.01f; x += 2f) { cands.Add(new Vector3(x, 0, -hz)); cands.Add(new Vector3(x, 0, hz)); }
+            for (float z = -hz + 2f; z <= hz - 1.99f; z += 2f) { cands.Add(new Vector3(-hx, 0, z)); cands.Add(new Vector3(hx, 0, z)); }
+            Vector3 best = -r.farSide * hz; float bestScore = float.MaxValue;
+            foreach (var c in cands)
+            {
+                var w = r.center + c;
+                if (r.Blocked(w, 1.8f)) continue;
+                float score = 0;
+                if (Physics.CheckSphere(w + Vector3.up * 1.4f, 1.3f, ~0, QueryTriggerInteraction.Ignore)) score += 1000;   // 소품 · 벽과 겹침
+                if (cam)
+                {
+                    var v = cam.WorldToViewportPoint(w + Vector3.up * 1.5f);
+                    bool seen = v.z > 0 && v.x > 0.12f && v.x < 0.88f && v.y > 0.32f && v.y < 0.85f;   // 아래 30%는 실린더 HUD가 가림
+                    if (!seen) score += 200;
+                }
+                float d = Vector3.Distance(Effects.Flat(w), Effects.Flat(pp));
+                if (d < 4f) score += 300;                                    // 고양이 바로 옆에서 솟지 않게
+                score += Mathf.Abs(d - 7f);                                  // 7m 쯤이 가장 좋음
+                if (score < bestScore) { bestScore = score; best = c; }
+            }
+            return best;
         }
 
         void SpawnDoors()
@@ -454,6 +499,7 @@ namespace CatTang
         public void EnterDoor(RoomDoor d)
         {
             if (inCombat || runOver) return;
+            Sfx.Play("door", 0.8f);
             ui?.CloseAll();
             // 스테이지 2를 끝내고 문을 고르면 먼저 중간 보스 방 (고른 문의 보상은 스테이지 3으로 넘김)
             if (stageIndex == 1 && !midBossDone && HasMidBoss)
@@ -485,10 +531,11 @@ namespace CatTang
             ui?.CloseAll();
             chapter++;
             Chapter = Tables.Chapter(chapter);
+            merchantSeen = false;                        // 상인 보장은 챕터마다
             player.health.Heal(player.health.maxHp * 0.3f);
             ui?.Toast((string.IsNullOrEmpty(bossPick) ? "" : $"{bossPick} 획득 · ") + $"{chapter - 1}장 돌파 — {chapter}장 · {Chapter?.Name}");
             bossPick = null;
-            Music.Play("bgm_stage");
+            Music.PlayFor("stage", chapter);
             BuildStage(0, RewardKind.Gold);
         }
 
@@ -501,6 +548,7 @@ namespace CatTang
             int gain = Mathf.RoundToInt(shardsThisRun * (1 + Meta.Stat("ShardGain") + PlayerController.CostumeStat("MemoryShardGainAdd")));
             shardsThisRun = gain;
             Meta.Shards += gain;
+            Meta.RunEnded();
             ui?.ShowResults(win, gain, chapter);
         }
 
@@ -514,7 +562,7 @@ namespace CatTang
         public static BulletDef RandomBullet()
         {
             var weights = new Dictionary<string, float> { { "Common", 60 }, { "Rare", 28 }, { "Epic", 9 }, { "Legendary", 3 } };
-            var pool = Tables.Bullets.Values.Where(b => b.Id != 1000 && Meta.GradeInPool(b.Grade)).ToList();
+            var pool = Tables.Bullets.Values.Where(b => b.Id != 1000 && Meta.BulletUnlocked(b.Id)).ToList();   // 탄약 공방에서 해금한 묶음만
             float total = pool.Sum(b => weights[b.Grade]), r = Random.value * total;
             foreach (var b in pool) { r -= weights[b.Grade]; if (r <= 0) return b; }
             return pool[0];
@@ -523,7 +571,8 @@ namespace CatTang
         public static GunDef RandomGun()
         {
             var weights = new Dictionary<string, float> { { "Common", 55 }, { "Rare", 30 }, { "Epic", 12 }, { "Legendary", 3 } };
-            var pool = Tables.Guns.Values.Where(g => g.Id != 2001).ToList();      // 기본 총(효과 없음)은 드랍 안 함
+            var pool = Tables.Guns.Values.Where(g => g.Id != 2001 && Meta.GunUnlocked(g.Id)).ToList();      // 기본 총(효과 없음)은 드랍 안 함, 총포상에서 해금한 총만
+            if (pool.Count == 0) pool = Tables.Guns.Values.Where(g => g.Id != 2001 && g.Grade == "Common").ToList();   // 아직 하나도 없으면 일반 총
             float total = pool.Sum(g => weights[g.Grade]), r = Random.value * total;
             foreach (var g in pool) { r -= weights[g.Grade]; if (r <= 0) return g; }
             return pool[0];

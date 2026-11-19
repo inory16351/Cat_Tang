@@ -113,6 +113,12 @@ namespace CatTang.EditorTools
             { "Ch1_Bomber_Plus", ("shakes", 0.7f, "bomberjump", 1.0f, true) },
             { "Ch1_MidBoss", ("shotgun", 1.0f, "revolver", 1.2f, false) },
             { "Ch1_Boss", ("swings", 1.1f, "swings", 0.9f, false) },
+            // 3장 (2026-11-18): 우선 1장 · 고양이 클립을 돌려 씀 — 전용 모션은 뒤에
+            { "Ch3_Shooter", ("revolver", 0.9f, null, 0, false) },
+            { "Ch3_Mage", ("shakes", 0.9f, null, 0, true) },
+            { "Ch3_Blade", ("swings", 0.8f, null, 0, false) },
+            { "Ch3_Knight", ("swings", 0.9f, null, 0, false) },
+            { "Ch3_Trickster", ("revolver", 0.9f, null, 0, false) },
             // 2장: 전용 클립 (Ch2Motion — 근육 커브로 만든 코드 클립, 짐꾼은 PorterRig)
             { "Ch2_Conductor", ("ch2m_conductorflick", 0.9f, null, 0, false) },
             { "Ch2_Conductor_Plus", ("ch2m_conductorflick", 0.8f, null, 0, false) },
@@ -169,6 +175,7 @@ namespace CatTang.EditorTools
             ("Kit_LM_LuggageCart", 4f, 180f, 'w', Kit2Dir, "LM_LuggageCart"),
             ("Kit_LM_SignalGantry", 5f, 180f, 'w', Kit2Dir, "LM_SignalGantry"),
             ("Kit_Turntable", 24f, 0f, 'w', Kit2Dir, "Turntable"),
+            ("Kit_Arena", 32f, 180f, 'w', Kit2Dir, "Arena"),               // 2026-11-18: 보스 경기장 거대한 시계 지름 32m (blender_kit_ch2_arena.py), 12시가 먼 쪽(북)
             // 보스 객차 (크롬 ChatGPT 원화 → Tripo H3.1, 2026-11-17): 앞(+Z) = 빨간 그릴 끝, 런타임 Ch2Boss가 길이 4.2m로 다시 맞춤
             ("Ch2_BossCoach", 3.6f, 0f, 'h', Kit2Dir, "BossCoach"),
             // 지나가는 열차 (blender_kit_ch2_train.py): 앞 = +Z, 기관차 9m · 객차 8m (ToyTrain이 이어 붙임)
@@ -256,6 +263,413 @@ namespace CatTang.EditorTools
                 SrcDir = Ch1Src;
                 ModelPalette.Active = ModelPalette.Ch1;
             }
+        }
+
+        // ---------- 3장 (신기루 사막 = 거울 세계, 2026-11-18) ----------
+        // 원본: Art/Characters/Ch3 (ChatGPT 원화 → Tripo H3.1 + 리깅), 키는 1 · 2장 같은 역할 비율 (사수 ≈ 무법자, 기사 ≈ 짐꾼)
+        const string Ch3Src = "Assets/Art/Characters/Ch3/";
+        static readonly (string name, float size)[] Models3 =
+        {
+            ("Ch3_Shooter", 2.6f), ("Ch3_Mage", 2.5f), ("Ch3_Blade", 2.7f), ("Ch3_Knight", 2.95f), ("Ch3_Trickster", 2.5f),
+        };
+
+        [MenuItem("CatTang/3장 적 프리팹 만들기 (Tripo)")]
+        public static void BuildCh3()
+        {
+            Directory.CreateDirectory(OutDir);
+            SrcDir = Ch3Src;
+            try
+            {
+                foreach (var (n, h) in Models3)
+                {
+                    var imp = AssetImporter.GetAtPath(Ch3Src + n + ".fbx") as ModelImporter;
+                    if (!imp) { Debug.Log($"[EnemyModelBuilder] {n} 원본 없음 — 건너뜀"); continue; }
+                    if (imp.animationType != ModelImporterAnimationType.Human || imp.materialImportMode != ModelImporterMaterialImportMode.None)
+                    {
+                        imp.animationType = ModelImporterAnimationType.Human;
+                        imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                        imp.materialImportMode = ModelImporterMaterialImportMode.None;
+                        imp.SaveAndReimport();
+                    }
+                    // 자동 매핑이 깨지면(손가락 뼈 겹침) 같은 mixamo 뼈대인 1장 상인 매핑을 빌림
+                    var srcGo = FindSource(n);
+                    if (srcGo && !HumanAvatar(srcGo) && AssetImporter.GetAtPath(MerchantSrc + "Ch1_Merchant.fbx") is ModelImporter refImp)
+                    {
+                        var names = new HashSet<string>();
+                        foreach (var t in srcGo.GetComponentsInChildren<Transform>(true)) names.Add(t.name);
+                        var hd = imp.humanDescription;
+                        hd.human = System.Array.FindAll(refImp.humanDescription.human, hb => names.Contains(hb.boneName));
+                        imp.humanDescription = hd;
+                        imp.SaveAndReimport();
+                    }
+                    Build(n, h, 0f, 'h', OutDir, n);
+                }
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                foreach (var (n, _) in Models3)
+                {
+                    AssetDatabase.ImportAsset(Ch3Src + n + ".controller", ImportAssetOptions.ForceUpdate);
+                    AssetDatabase.ImportAsset(OutDir + n + ".prefab", ImportAssetOptions.ForceUpdate);
+                }
+                Debug.Log("[EnemyModelBuilder] 3장 적 프리팹");
+            }
+            finally { SrcDir = Ch1Src; }
+        }
+
+        // 3장 맵 키트 (블렌더 + Codex, 회색 + 역할 재질 → ModelPalette.Ch3). 명세 Art/tools/specs/kit_ch3_{walls,props,landmarks}_spec.md + _ch3_common.md
+        const string Kit3Dir = "Assets/Resources/Kit/Ch3/";
+        static readonly (string name, float size, char fit, string outName)[] Kit3 =
+        {
+            // 벽면 (blender_kit_ch3_walls.py) — 폭이 정확해야 줄이 맞음
+            ("Kit_Cliff_Shore", 6f, 'w', "Cliff"),
+            ("Kit_Wall_Colonnade", 8f, 'w', "Facade_Colonnade"),
+            ("Kit_Wall_Arch", 6f, 'w', "Facade_Arch"),
+            ("Kit_Wall_MirrorFrame", 4f, 'w', "Facade_MirrorFrame"),
+            ("Kit_Wall", 4f, 'w', "Wall"),
+            ("Kit_Cliff_Island", 6f, 'w', "Facade_Island"),
+            ("Kit_Wall_Cloud", 6f, 'w', "Facade_Cloud"),
+            // 소품 · 폭발물 (blender_kit_ch3_props.py)
+            ("Kit_MemoryCrystal", 1.7f, 'h', "MemoryCrystal"),
+            ("Kit_Fountain", 2.2f, 'w', "Fountain"),
+            ("Kit_StandMirror", 2.6f, 'h', "StandMirror"),
+            ("Kit_MerchantMirror", 3.6f, 'h', "MerchantMirror"),
+            ("Kit_SandRock", 1.8f, 'w', "SandRock"),
+            ("Kit_FallenPillar", 2.6f, 'w', "FallenPillar"),
+            ("Kit_MirrorShard", 2.5f, 'w', "MirrorShard"),
+            ("Kit_Pebbles3", 1.2f, 'w', "Pebbles3"),
+            ("Kit_CrystalBits", 1.0f, 'w', "CrystalBits"),
+            ("Kit_Ripple", 1.6f, 'w', "Ripple"),
+            // 큰 지형지물 (blender_kit_ch3_landmarks.py)
+            ("Kit_LM_ArchRuin", 5f, 'w', "LM_ArchRuin"),
+            ("Kit_LM_CrystalSpire", 3.6f, 'w', "LM_CrystalSpire"),
+            ("Kit_LM_Hourglass", 3.6f, 'w', "LM_Hourglass"),
+            ("Kit_LM_FloatRock", 4.0f, 'w', "LM_FloatRock"),
+            ("Kit_LM_MirrorGate", 5f, 'w', "LM_MirrorGate"),
+            ("Kit_LM_Obelisk", 2.4f, 'w', "LM_Obelisk"),
+            ("Kit_LM_Dune", 5.6f, 'w', "LM_Dune"),
+            // 보스 소품 (blender_kit_ch3_bossprops.py): 상인 가면 · 마술사 소품 · 거울 극장 벽 · 거울 제단
+            ("Kit_MerchantMask", 0.62f, 'w', "MerchantMask"),
+            ("Kit_SwordBox", 1.6f, 'w', "SwordBox"),
+            ("Kit_MagicSword", 1.8f, 'd', "MagicSword"),
+            ("Kit_MirrorPanel", 6f, 'w', "MirrorPanel"),
+            ("Kit_Dove", 0.9f, 'w', "Dove"),
+            ("Kit_NumberCard", 1.3f, 'h', "NumberCard"),
+            ("Kit_MemoryShard", 2.2f, 'h', "MemoryShard"),
+            ("Kit_Facade_Curtain", 8f, 'w', "Facade_Curtain"),
+            ("Kit_Facade_MirrorHall", 6f, 'w', "Facade_MirrorHall"),
+            ("Kit_Altar", 40f, 'w', "Altar"),
+            // 보스 (blender_kit_ch3_bosses.py, 리깅 없음 — 이름 붙은 조각을 코드가 돌림): 신기루 마술사 4m · 거울 고래 길이 14m
+            ("Kit_Ch3_Magician", 4.0f, 'h', "Ch3_Magician"),
+            ("Kit_Ch3_Whale", 14f, 'd', "Ch3_Whale"),
+        };
+
+        [MenuItem("CatTang/3장 키트 만들기 (블렌더)")]
+        public static void BuildCh3Kit()
+        {
+            Directory.CreateDirectory(Kit3Dir);
+            SrcDir = Ch3Src;
+            ModelPalette.Active = ModelPalette.Ch3;
+            try
+            {
+                int made = 0;
+                foreach (var k in Kit3)
+                    if (Build(k.name, k.size, 180f, k.fit, Kit3Dir, k.outName)) made++;
+                GroundMat("Ground", "Assets/Art/Env/Ch3/ground_ch3.png");
+                GroundMat("GroundCloud", "Assets/Art/Env/Ch3/ground_ch3_cloud.png");
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log($"[EnemyModelBuilder] 3장 키트 {made}개");
+            }
+            finally
+            {
+                SrcDir = Ch1Src;
+                ModelPalette.Active = ModelPalette.Ch1;
+            }
+        }
+
+        // ---------- 메인 마을 키트 (2026-11-18 사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌 — 새벽에 사라져 가는 서부 마을, 허공의 큰 섬) ----------
+        // 블렌더 + Codex, 회색 + 역할 재질 → ModelPalette.Village. 명세 Art/tools/specs/kit_village_{buildings,island,props}_spec.md + _village_common.md
+        public const string VillageSrc = "Assets/Art/Characters/Village/";
+        public const string VillageKitDir = "Assets/Resources/Kit/Village/";
+        static readonly (string name, float size, char fit, string outName)[] KitVillage =
+        {
+            // 시설 건물 (blender_kit_village_buildings.py) — 위쪽이 조각으로 흩어져 떠오름
+            ("Kit_V_Inn", 11f, 'w', "Inn"),
+            ("Kit_V_GunShop", 9f, 'w', "GunShop"),
+            ("Kit_V_AmmoWorkshop", 9f, 'w', "AmmoWorkshop"),
+            ("Kit_V_Wardrobe", 8f, 'w', "Wardrobe"),
+            ("Kit_V_TimeGate", 9f, 'w', "TimeGate"),
+            // 섬 가장자리 · 떠 있는 조각 · 광장 · 길 (blender_kit_village_island.py)
+            ("Kit_V_Edge_A", 6f, 'w', "Edge_A"),
+            ("Kit_V_Edge_B", 6f, 'w', "Edge_B"),
+            ("Kit_V_Edge_C", 6f, 'w', "Edge_C"),
+            ("Kit_V_FloatIsle_S", 2.5f, 'w', "FloatIsle_S"),
+            ("Kit_V_FloatIsle_M", 5f, 'w', "FloatIsle_M"),
+            ("Kit_V_FloatIsle_L", 8f, 'w', "FloatIsle_L"),
+            ("Kit_V_Debris", 3f, 'w', "Debris"),
+            ("Kit_V_Plaza", 14.155f, 'w', "Plaza"),
+            ("Kit_V_Path", 2.4f, 'w', "Path"),
+            // 섬 사이 다리 (blender_kit_village_bridge.py) — 성한 다리 · 끊긴 다리 (잠긴 섬)
+            ("Kit_V_Bridge", 3.2f, 'w', "Bridge"),
+            ("Kit_V_BridgeBroken", 3.2f, 'w', "BridgeBroken"),
+            // 소품 · 지형지물 (blender_kit_village_props.py)
+            ("Kit_V_Centerpiece", 7f, 'h', "Centerpiece"),
+            ("Kit_V_Windpump", 9f, 'h', "Windpump"),
+            ("Kit_V_WaterTower", 9f, 'h', "WaterTower"),
+            ("Kit_V_Wagon", 5f, 'w', "Wagon"),
+            ("Kit_V_Well", 4f, 'h', "Well"),
+            ("Kit_V_Lamp", 3.4f, 'h', "Lamp"),
+            ("Kit_V_Cactus", 3.2f, 'h', "Cactus"),
+            ("Kit_V_Fence", 4f, 'w', "Fence"),
+            ("Kit_V_Barrels", 2.2f, 'h', "Barrels"),
+            ("Kit_V_Crates", 2.2f, 'h', "Crates"),
+            ("Kit_V_Bench", 2.2f, 'w', "Bench"),
+            ("Kit_V_Signpost", 3.4f, 'h', "Signpost"),
+            ("Kit_V_HitchPost", 2.4f, 'w', "HitchPost"),
+            ("Kit_V_Tumbleweed", 1f, 'w', "Tumbleweed"),
+            ("Kit_V_GrassTuft", 0.8f, 'w', "GrassTuft"),
+            // 부서진 시간 · 몽환 오브젝트 (blender_kit_village_dream.py, 2026-11-18 사용자: 곳곳에 몽환적 · 부서진 시간 느낌 오브젝트)
+            ("Kit_V_ClockHand_Giant", 7f, 'd', "ClockHand_Giant"),
+            ("Kit_V_ClockHand_Float", 5.6f, 'd', "ClockHand_Float"),    // 받침 없이 시계탑 둘레를 떠서 도는 시곗바늘 (가운데 원점)
+            ("Kit_V_Gear_Half", 4f, 'w', "Gear_Half"),
+            ("Kit_V_GearStack_Float", 2.4f, 'w', "GearStack_Float"),
+            ("Kit_V_ClockShards", 3f, 'w', "ClockShards"),
+            ("Kit_V_Hourglass_Broken", 4f, 'h', "Hourglass_Broken"),
+            ("Kit_V_TimeRift", 3.2f, 'h', "TimeRift"),
+            ("Kit_V_Pendulum_Frozen", 4.5f, 'h', "Pendulum_Frozen"),
+            ("Kit_V_MeltWatch_Rock", 1.8f, 'w', "MeltWatch_Rock"),
+            ("Kit_V_StairsFloat", 3f, 'w', "StairsFloat"),
+            ("Kit_V_TimeCrystal", 2.2f, 'h', "TimeCrystal"),
+            ("Kit_V_NumeralStones", 2.5f, 'w', "NumeralStones"),
+            ("Kit_V_MoonDial", 3.6f, 'h', "MoonDial"),
+            // 신비한 나무 · 오브젝트 (blender_kit_village_mystic.py, 2026-11-18 사용자: 몽환적인 신비한 나무 · 오브젝트, 여로 느낌)
+            ("Kit_V_DreamTree_Crystal", 7f, 'h', "DreamTree_Crystal"),
+            ("Kit_V_DreamTree_Willow", 6.5f, 'h', "DreamTree_Willow"),
+            ("Kit_V_DreamTree_Small", 3f, 'h', "DreamTree_Small"),
+            ("Kit_V_SpiritLanterns", 4f, 'h', "SpiritLanterns"),
+            ("Kit_V_BellFlowers", 2.4f, 'w', "BellFlowers"),
+            ("Kit_V_RuneArch", 4.5f, 'h', "RuneArch"),
+            ("Kit_V_FloatRock_Crystal", 3.5f, 'h', "FloatRock_Crystal"),
+            ("Kit_V_GlowMushrooms", 1.6f, 'w', "GlowMushrooms"),
+        };
+
+        [MenuItem("CatTang/마을 키트 만들기 (블렌더)")]
+        public static void BuildVillageKit()
+        {
+            Directory.CreateDirectory(VillageKitDir);
+            SrcDir = VillageSrc;
+            ModelPalette.Active = ModelPalette.Village;
+            try
+            {
+                int made = 0;
+                foreach (var k in KitVillage)
+                    if (Build(k.name, k.size, 180f, k.fit, VillageKitDir, k.outName)) made++;
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log($"[EnemyModelBuilder] 마을 키트 {made}개");
+            }
+            finally
+            {
+                SrcDir = Ch1Src;
+                ModelPalette.Active = ModelPalette.Ch1;
+            }
+        }
+
+        /// <summary>마을 키트의 불 켜진 창 · 등불 · 흩어지는 모래 빛 · 빛가루: 툰 대신 빛나는 단색 (새벽 어둠 속에서 따뜻하게 빛남)</summary>
+        static void VillageGlowMats(GameObject inst)
+        {
+            Material Get(string file, Color c, float rim)
+            {
+                string p = VillageSrc + file + ".mat";
+                var m = AssetDatabase.LoadAssetAtPath<Material>(p);
+                if (!m) { m = new Material(Shader.Find("CatTang/Silhouette")); AssetDatabase.CreateAsset(m, p); }
+                m.SetColor("_Color", c);
+                if (m.HasProperty("_RimBoost")) m.SetFloat("_RimBoost", rim);
+                EditorUtility.SetDirty(m);
+                return m;
+            }
+            var win = Get("Glow_Window", new Color(1f, 0.8f, 0.42f, 1f), 0.3f);
+            var lantern = Get("Glow_Lantern", new Color(1f, 0.78f, 0.36f, 1f), 0.5f);
+            var sand = Get("Glow_Sand", new Color(1f, 0.88f, 0.56f, 1f), 0.4f);
+            var dust = Get("Glow_Stardust", new Color(1f, 0.96f, 0.82f, 1f), 0.3f);
+            var core = Get("Glow_CrystalCore", new Color(0.82f, 0.95f, 1f, 1f), 0.5f);      // 시간 수정 속 · 시간의 균열 (차가운 빛)
+            var rift = Get("Glow_Rift", new Color(0.86f, 0.98f, 1f, 1f), 0.7f);
+            var petal = Get("Glow_Petal", new Color(1f, 0.82f, 0.95f, 1f), 0.5f);         // 신비한 나무 꽃 · 빛 구슬
+            foreach (var r in inst.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var pick = SrcMatName(r, i) switch { "window_lit" => win, "lantern_glow" => lantern, "sand_glow" => sand, "stardust" => dust, "crystal_core" => core, "rift_glow" => rift, "petal_glow" => petal, _ => null };
+                    if (pick) { mats[i] = pick; changed = true; }
+                }
+                if (changed) r.sharedMaterials = mats;
+            }
+        }
+
+        /// <summary>3장 바닥 재질: 2장 Ground.mat(같은 셰이더 · 설정)을 복사해 텍스처만 바꿈 (Art/tools/ground_texture_ch3.py)</summary>
+        static void GroundMat(string matName, string texPath)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            if (!tex) { Debug.LogWarning($"[EnemyModelBuilder] 바닥 텍스처 없음 {texPath}"); return; }
+            string p = Kit3Dir + matName + ".mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(p);
+            if (!m)
+            {
+                var src = AssetDatabase.LoadAssetAtPath<Material>(Kit2Dir + "Ground.mat");
+                m = src ? new Material(src) : new Material(Shader.Find("CatTang/Toon"));
+                AssetDatabase.CreateAsset(m, p);
+            }
+            // 거울 호수(Ground)는 실시간 반사를 섞는 거울 바닥 셰이더, 구름 바닥은 그대로
+            if (matName == "Ground") { var sh = Shader.Find("CatTang/MirrorFloor"); if (sh) { m.shader = sh; m.SetFloat("_ReflStrength", 0.85f); m.SetColor("_ReflTint", new Color(1f, 1f, 1.05f, 1f)); } }
+            m.SetTexture("_BaseMap", tex);
+            if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
+            EditorUtility.SetDirty(m);
+        }
+
+        /// <summary>3장 거울면 · 빛나는 수정 · 빛가루: 툰 대신 빛나는 단색(CatTang/Silhouette 불투명, 그림자 없음) — 거울은 옅은 하늘빛, 수정 속은 분홍 흰빛</summary>
+        static void GlowMats(GameObject inst)
+        {
+            Material Get(string file, Color c, float rim)
+            {
+                string p = Ch3Src + file + ".mat";
+                var m = AssetDatabase.LoadAssetAtPath<Material>(p);
+                if (!m) { m = new Material(Shader.Find("CatTang/Silhouette")); AssetDatabase.CreateAsset(m, p); }
+                m.SetColor("_Color", c);
+                if (m.HasProperty("_RimBoost")) m.SetFloat("_RimBoost", rim);
+                EditorUtility.SetDirty(m);
+                return m;
+            }
+            var mirror = Get("Glow_Mirror", new Color(0.86f, 0.95f, 1f, 1f), 0.6f);
+            var core = Get("Glow_CrystalCore", new Color(1f, 0.82f, 0.94f, 1f), 0.4f);
+            var dust = Get("Glow_Stardust", new Color(1f, 0.93f, 0.66f, 1f), 0.3f);
+            foreach (var r in inst.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var src = SrcMatName(r, i);
+                    var pick = src == "mirror" ? mirror : src == "crystal_core" ? core : src == "stardust" ? dust : null;
+                    if (pick) { mats[i] = pick; changed = true; }
+                }
+                if (changed) r.sharedMaterials = mats;
+            }
+        }
+
+        /// <summary>FBX 원본 렌더러의 i번째 재질 이름 (툰으로 바꾸기 전 이름, 블렌더 .001 접미사 뗌)</summary>
+        static string SrcMatName(Renderer r, int i)
+        {
+            var mf = r.GetComponent<MeshFilter>();
+            var mesh = mf ? mf.sharedMesh : (r as SkinnedMeshRenderer)?.sharedMesh;
+            if (!mesh) return "";
+            var path = AssetDatabase.GetAssetPath(mesh);
+            var src = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (!src) return "";
+            foreach (var sr in src.GetComponentsInChildren<Renderer>(true))
+            {
+                var sm = sr.GetComponent<MeshFilter>();
+                if (sm && sm.sharedMesh == mesh && i < sr.sharedMaterials.Length && sr.sharedMaterials[i])
+                    return System.Text.RegularExpressions.Regex.Replace(sr.sharedMaterials[i].name.ToLowerInvariant(), @"\.\d+$", "");
+            }
+            return "";
+        }
+
+        // ---------- 상인 (2026-11-18 사용자: 사람 말고 시간에 잠식된 몽환적 존재) ----------
+        // 원본: Art/Characters/Merchant (ChatGPT 원화 → Tripo H3.1 + 리깅), 1장 = 녹아내리는 회중시계 머리 바텐더 · 2장 = 얼어붙은 불꽃 랜턴 머리 매표원
+        // → Resources/Merchants/Ch{장}_Merchant.prefab (RoomBuilder.MerchantFigure가 씀). 움직임 = 고양이 idle 클립을 휴머노이드로 돌려 씀
+        const string MerchantSrc = "Assets/Art/Characters/Merchant/";
+        const string MerchantOut = "Assets/Resources/Merchants/";
+        static readonly (string name, float height)[] Merchants = { ("Ch1_Merchant", 2.9f), ("Ch2_Merchant", 3.0f) };   // 고양이 2.27m의 약 1.3배: 카운터(1.3m) 너머로 상체가 보이게
+
+        [MenuItem("CatTang/상인 프리팹 만들기 (Tripo)")]
+        public static void BuildMerchants()
+        {
+            foreach (var (n, h) in Merchants) BuildIdleFigure(MerchantSrc, MerchantOut, n, h);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("[EnemyModelBuilder] 상인 프리팹");
+        }
+
+        // ---------- 마을 NPC 5 = 시계공이 잊어버린 존재 (2026-11-18, 컨셉 기획서 5.2) ----------
+        // 원본: Art/Characters/Npc (ChatGPT 원화 Art/tripo_input/npc → Tripo H3.1 + 리깅) → Resources/Npcs/Npc_*.prefab
+        // VillageKitBuilder가 마을 NpcSpot_*에 프리팹으로 세움. 움직임 = 상인과 같이 고양이 idle
+        public const string NpcSrc = "Assets/Art/Characters/Npc/";
+        public const string NpcOut = "Assets/Resources/Npcs/";
+        public static readonly (string name, float height)[] Npcs =
+        {
+            ("Npc_Cuckoo", 2.1f),       // 태엽 풀린 뻐꾸기 — 기억의 방 (고양이 2.27m보다 조금 작게)
+            ("Npc_Hourglass", 2.7f),    // 모래시계 대장장이 — 탄약 공방
+            ("Npc_Sheriff", 2.9f),      // 빈 외투 보안관 — 총포상
+            ("Npc_Seamstress", 2.7f),   // 실타래 재봉사 — 의상실
+            ("Npc_Gatekeeper", 3.8f),   // 괘종시계 문지기 — 시간의 문 (가장 큼)
+        };
+
+        [MenuItem("CatTang/마을 NPC 프리팹 만들기 (Tripo)")]
+        public static void BuildNpcs()
+        {
+            foreach (var (n, h) in Npcs) BuildIdleFigure(NpcSrc, NpcOut, n, h);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("[EnemyModelBuilder] 마을 NPC 프리팹");
+        }
+
+        /// <summary>Tripo 리깅 FBX → 툰 프리팹 + 고양이 idle 애니메이터 (상인 · 마을 NPC 공용)</summary>
+        static void BuildIdleFigure(string srcDir, string outDir, string n, float h)
+        {
+            Directory.CreateDirectory(outDir);
+            SrcDir = srcDir;
+            try
+            {
+                // FBX를 휴머노이드로 (아바타 생성, 재질 가져오기 끔)
+                var imp = AssetImporter.GetAtPath(srcDir + n + ".fbx") as ModelImporter;
+                if (!imp) { Debug.Log($"[EnemyModelBuilder] {n} 원본 없음 — 건너뜀"); return; }
+                if (imp.animationType != ModelImporterAnimationType.Human || imp.materialImportMode != ModelImporterMaterialImportMode.None)
+                {
+                    imp.animationType = ModelImporterAnimationType.Human;
+                    imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                    imp.materialImportMode = ModelImporterMaterialImportMode.None;
+                    imp.SaveAndReimport();
+                }
+                // 자동 매핑이 손가락 뼈를 겹쳐 잡아 아바타가 깨지면(2장 매표원) 같은 mixamo 뼈대인 1장 바텐더의 매핑을 빌려 씀
+                var srcGo = FindSource(n);
+                if (srcGo && !HumanAvatar(srcGo) && n != "Ch1_Merchant" && AssetImporter.GetAtPath(MerchantSrc + "Ch1_Merchant.fbx") is ModelImporter refImp)
+                {
+                    var names = new HashSet<string>();
+                    foreach (var t in srcGo.GetComponentsInChildren<Transform>(true)) names.Add(t.name);
+                    var hd = imp.humanDescription;
+                    hd.human = System.Array.FindAll(refImp.humanDescription.human, hb => names.Contains(hb.boneName));
+                    imp.humanDescription = hd;
+                    imp.SaveAndReimport();
+                }
+                if (!Build(n, h, 0f, 'h', outDir, n)) return;
+                // 대기 동작: 고양이 idle
+                var src = FindSource(n);
+                var avatar = src ? HumanAvatar(src) : null;
+                AnimationClip idle = null;
+                foreach (var o in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Characters/CatHero/CatHero.fbx"))
+                    if (o is AnimationClip c && c.name == "idle") idle = c;
+                string pp = outDir + n + ".prefab";
+                var contents = PrefabUtility.LoadPrefabContents(pp);
+                var mesh = contents.transform.Find("Mesh");
+                if (avatar && idle && mesh)
+                {
+                    string cp = srcDir + n + ".controller";
+                    AssetDatabase.DeleteAsset(cp);
+                    var ctrl = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPathWithClip(cp, idle);
+                    var an = mesh.GetComponent<Animator>();
+                    if (!an) an = mesh.gameObject.AddComponent<Animator>();
+                    an.avatar = avatar;
+                    an.applyRootMotion = false;
+                    an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    an.runtimeAnimatorController = ctrl;
+                }
+                else Debug.LogWarning($"[EnemyModelBuilder] {n}: 아바타 {(bool)avatar} · idle {(bool)idle} — 움직임 없이 저장");
+                PrefabUtility.SaveAsPrefabAsset(contents, pp);
+                PrefabUtility.UnloadPrefabContents(contents);
+            }
+            finally { SrcDir = Ch1Src; }
         }
 
         [MenuItem("CatTang/1장 적 프리팹 만들기 (Tripo)")]
@@ -366,21 +780,27 @@ namespace CatTang.EditorTools
 
             // 크기 · 위치 맞춤
             var b = Bounds(inst);
-            float basis = fit == 'w' ? b.size.x : b.size.y;
+            float basis = fit == 'w' ? b.size.x : fit == 'd' ? b.size.z : b.size.y;
             if (basis > 0.0001f)
             {
                 float s = height / basis;
                 inst.transform.localScale *= s;
                 b = Bounds(inst);
                 // 바닥 타일은 윗면을 y = 0.02에, 나머지는 발바닥을 y = 0에
-                float y = outName == "Floor" ? b.max.y - 0.02f : b.min.y;
+                // 3장 섬 가장자리는 밑면이 바닥 아래로 늘어져 있어 원래 원점(테두리 바닥 = 0) 그대로
+                float y = outName == "Floor" ? b.max.y - 0.02f : KeepOrigin.Contains(name) ? inst.transform.position.y : b.min.y;
                 inst.transform.localPosition -= new Vector3(b.center.x, y, b.center.z);
+                // 마을 신비 소품: 흙 받침 · 둘레 돌이 땅과 따로 놀아서(2026-11-18 사용자: 균일화) 받침 윗면까지 땅에 묻음 → 식물이 땅에서 바로 자람
+                if (SinkBed.Contains(name)) { float top = SubmeshTop(inst, "earth"); if (top > 0f) inst.transform.localPosition -= new Vector3(0f, top, 0f); }
             }
 
             if (PorterRig.IsPorter(outName)) PorterRig.AddFootGround(inst);
 
             // 굳은 승객 석상: 빛나는 금 선 재질 + 깨어남 컴포넌트
             if (name.StartsWith("Kit_Passenger")) { PassengerMats(inst); root.AddComponent<CatTang.FrozenPassenger>(); }
+            // 3장 키트: 거울면 · 수정 속 · 빛가루는 빛나는 단색
+            if (name.StartsWith("Kit_") && SrcDir == Ch3Src) GlowMats(inst);
+            if (name.StartsWith("Kit_V_") && SrcDir == VillageSrc) VillageGlowMats(inst);
 
             // 폭발물: 주황 ↔ 노랑 맥동 바깥 테두리 (2026-11-17 사용자: 몬스터처럼 테두리로 터진다는 걸 알려 줌)
             if (Explosives.Contains(name)) root.AddComponent<CatTang.DangerEdge>();
@@ -695,11 +1115,37 @@ namespace CatTang.EditorTools
         }
 
         // 배경 톤을 낮추지 않는 것: 픽업 · 폭발물 (폭발물은 DangerEdge 주황 테두리가 붙음)
-        static readonly HashSet<string> Pickups = new() { "Kit_Heart", "Kit_XpGem", "Kit_SandBomb", "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart" };
+        static readonly HashSet<string> Pickups = new() { "Kit_Heart", "Kit_XpGem", "Kit_SandBomb", "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart", "Kit_MemoryCrystal" };
         // 바닥에 깔리는 납작한 조각 (전차대 · 선로 · 승강장 가장자리)
-        static readonly HashSet<string> FlatFloor = new() { "Kit_Turntable", "Kit_RailTrack", "Kit_PlatformEdge" };
+        // 원점 높이를 그대로 두는 조각 (밑이 바닥 아래로 내려가는 것): 섬 가장자리 밑면 · 제단 테두리
+        static readonly HashSet<string> KeepOrigin = new() { "Kit_Cliff_Island", "Kit_Altar",
+            "Kit_V_Edge_A", "Kit_V_Edge_B", "Kit_V_Edge_C", "Kit_V_FloatIsle_S", "Kit_V_FloatIsle_M", "Kit_V_FloatIsle_L", "Kit_V_Debris", "Kit_V_Bridge", "Kit_V_BridgeBroken", "Kit_V_Plaza",
+            "Kit_V_GearStack_Float", "Kit_V_ClockShards", "Kit_V_StairsFloat", "Kit_V_FloatRock_Crystal", "Kit_V_ClockHand_Float" };   // 마을: 윗면 · 다리 바닥 = 원점(밑으로 늘어짐), 부스러기 = 가운데
+        // 흙 받침(moss_rock, 재질 earth)을 땅에 묻는 소품 (blender_kit_village_mystic.py)
+        static readonly HashSet<string> SinkBed = new() { "Kit_V_BellFlowers", "Kit_V_GlowMushrooms", "Kit_V_SpiritLanterns", "Kit_V_DreamTree_Crystal" };
+
+        /// <summary>원본 재질 이름이 role인 서브메시 정점 중 가장 높은 월드 y (없으면 0)</summary>
+        static float SubmeshTop(GameObject inst, string role)
+        {
+            float top = 0f;
+            foreach (var r in inst.GetComponentsInChildren<Renderer>(true))
+            {
+                var mf = r.GetComponent<MeshFilter>();
+                var mesh = mf ? mf.sharedMesh : (r as SkinnedMeshRenderer)?.sharedMesh;
+                if (!mesh) continue;
+                var verts = mesh.vertices;
+                for (int i = 0; i < mesh.subMeshCount; i++)
+                {
+                    if (SrcMatName(r, i) != role) continue;
+                    foreach (int vi in mesh.GetTriangles(i)) top = Mathf.Max(top, r.transform.TransformPoint(verts[vi]).y);
+                }
+            }
+            return top;
+        }
+
+        static readonly HashSet<string> FlatFloor = new() { "Kit_Turntable", "Kit_Arena", "Kit_RailTrack", "Kit_PlatformEdge", "Kit_Ripple", "Kit_Pebbles3", "Kit_Altar" };
         // 쏘면 터지는 물체 (1장 화약통 · 2장 증기 밸브 · 공중에 멈춘 짐 · 광차) → 프리팹에 DangerEdge
-        static readonly HashSet<string> Explosives = new() { "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart" };
+        static readonly HashSet<string> Explosives = new() { "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart", "Kit_MemoryCrystal" };
 
         static Material ToonFor(string name, Material src, int index)
         {
@@ -727,7 +1173,9 @@ namespace CatTang.EditorTools
             bool env = name.StartsWith("Kit_") && !Pickups.Contains(name);
             if (m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", env ? EnvTone.Saturation : 1f); m.SetFloat("_Brightness", env ? EnvTone.Brightness : 1f); }
             // 적: 배경과 갈리게 살짝 진홍 외곽선 + 붉은 가장자리 빛 (2026-11-17 사용자: 적에게 살짝 배경선)
-            if (name.StartsWith("Ch1_") || name.StartsWith("Ch2_")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }   // 적 배색 2안 (차가운 한 계열)
+            if ((name.StartsWith("Ch1_") || name.StartsWith("Ch2_") || name.StartsWith("Ch3_")) && !name.EndsWith("_Merchant")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }   // 적 배색 2안 (차가운 한 계열). 상인은 적이 아님
+            // 3장 블렌더 보스(마술사 · 고래): 적이라 빨간 바깥 테두리 (색은 이미 차가운 몬스터 색으로 뽑아 배색 치환은 안 함)
+            if (name == "Kit_Ch3_Magician" || name == "Kit_Ch3_Whale") EnemyEdge(m);
             if ((name == "Kit_Heart" || name == "Kit_XpGem") && m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", 1.15f); m.SetFloat("_Brightness", 1.12f); }   // 하트 · 경험치 보석은 더 선명하게
             if (name == "Kit_XpGem" && m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", 2.5f);   // 작은 물체라 외곽선을 얇게
             EditorUtility.SetDirty(m);

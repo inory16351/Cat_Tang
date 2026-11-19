@@ -132,6 +132,7 @@ namespace CatTang
         public static void LevelUp(Transform player, Color col)
         {
             if (!player) return;
+            Sfx.Play("levelup", 0.85f, 0f);
             var go = new GameObject("FX_LevelUp");
             go.transform.position = player.position;
             var l = go.AddComponent<LevelUpFx>();
@@ -188,7 +189,7 @@ namespace CatTang
         {
             var p = transform.position;
             FxBurst.Spawn(p + Vector3.up * 0.2f, Random.Range(0.6f, 0.9f), FxBurst.Kind.Spark, col, 0.14f);
-            FxBurst.Spawn(p + Vector3.up * 0.15f, Random.Range(0.9f, 1.2f), FxBurst.Kind.Dust, new Color(0.9f, 0.76f, 0.52f), 0.45f);
+            FxBurst.Spawn(p + Vector3.up * 0.15f, Random.Range(0.9f, 1.2f), FxBurst.Kind.Dust, FxBurst.MistDust, 0.45f);
             // 작은 탄자국 (바닥에 눕힌 판, 1.4초 뒤 사라짐)
             if (!holeTex) holeTex = Resources.Load<Texture2D>("FX/bullet_hole");
             if (!holeTex) return;
@@ -410,5 +411,57 @@ namespace CatTang
         }
 
         void OnDestroy() { if (wordR) Destroy(wordR.sharedMaterial); }
+    }
+}
+
+namespace CatTang
+{
+    /// <summary>고양이 머리 위에 연하게 뜨는 효과 아이콘 (2026-11-18 사용자: 종탑의 메아리 경직이 무슨 효과인지 알 수 있게 종 그림).
+    /// 같은 그림은 하나만 두고 다시 발동하면 시간만 늘림. 머리 위 대시 줄보다 위, 카메라를 봄</summary>
+    public class HeadIcon : MonoBehaviour
+    {
+        const float Life = 0.6f, Alpha = 0.55f, Size = 0.75f;
+        static readonly System.Collections.Generic.Dictionary<string, HeadIcon> live = new();
+        static readonly System.Collections.Generic.Dictionary<string, Texture2D> tex = new();
+        Transform owner; Renderer r; MaterialPropertyBlock mpb; float born; string key;
+
+        public static void Show(Transform owner, string sprite)
+        {
+            if (!owner) return;
+            if (live.TryGetValue(sprite, out var h) && h) { h.born = Time.time; return; }
+            if (!tex.TryGetValue(sprite, out var t) || !t) { t = Resources.Load<Texture2D>("UI/" + sprite); tex[sprite] = t; }
+            if (!t) return;
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Destroy(q.GetComponent<Collider>());
+            q.name = "HeadIcon_" + sprite;
+            var r = q.GetComponent<Renderer>();
+            r.sharedMaterial = new Material(Shader.Find("CatTang/Sprite") ?? Shader.Find("Sprites/Default")) { mainTexture = t, renderQueue = 3500 };
+            if (r.sharedMaterial.HasProperty("_ZTest")) r.sharedMaterial.SetFloat("_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            h = q.AddComponent<HeadIcon>();
+            h.owner = owner; h.r = r; h.mpb = new MaterialPropertyBlock(); h.born = Time.time; h.key = sprite;
+            live[sprite] = h;
+            h.LateUpdate();
+        }
+
+        void LateUpdate()
+        {
+            float t = Time.time - born;
+            if (!owner || t > Life) { Destroy(gameObject); return; }
+            var cam = Camera.main;
+            float pop = t < 0.08f ? Mathf.Lerp(0.6f, 1.1f, t / 0.08f) : Mathf.Lerp(1.1f, 1f, Mathf.Clamp01((t - 0.08f) / 0.1f));
+            transform.position = owner.position + Vector3.up * (3.0f + t * 0.3f);
+            if (cam) transform.rotation = cam.transform.rotation;
+            transform.localScale = Vector3.one * Size * pop;
+            float a = Alpha * (t > Life - 0.2f ? (Life - t) / 0.2f : 1f);
+            mpb.SetColor("_Color", new Color(1, 1, 1, a));
+            r.SetPropertyBlock(mpb);
+        }
+
+        void OnDestroy()
+        {
+            if (r) Destroy(r.sharedMaterial);
+            if (key != null && live.TryGetValue(key, out var h) && h == this) live.Remove(key);
+        }
     }
 }

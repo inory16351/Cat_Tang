@@ -1,6 +1,6 @@
 // 탄환 시계: 실린더 12칸 = 인벤토리. 오른총 = 홀수 칸, 왼총 = 짝수 칸. 발사는 1 → 12 (되감는 실린더 효과면 12 → 1).
 // 판정 시각 = 놓인 시각에 연산을 위 슬롯부터 적용 (+ 이웃 탄의 판정 +1 효과). 나누어떨어지지 않으면 반올림(.5는 0에서 멀어지게).
-// 깨어난 탄(자리 조건 충족)만 특성 · 고유 효과, 못 깨어나면 공격력만. 기본 탄 '탄환'은 조건 없음 = 늘 잠듦.
+// 활성화된 탄(자리 조건 충족)만 특성 · 고유 효과, 못 활성화되면 공격력만. 기본 탄 '탄환'은 조건 없음 = 늘 비활성화.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,7 +12,7 @@ namespace CatTang
     {
         public BulletDef bullet;
         public List<OpDef> ops = new();
-        public float permanentBonus;          // 영구 피해 성장 (처치로 쌓임)
+        public float permanentBonus;          // 영구 피해 성장 (처치로 소수까지 쌓이고 공격력엔 정수만 들어감)
     }
 
     public class Revolver
@@ -20,6 +20,7 @@ namespace CatTang
         public readonly Slot[] slots = new Slot[13];          // 1~12 사용
         public GunDef rightGun, leftGun;
         public int next = 1;
+        public readonly bool[] lost = new bool[13];             // 3장 거울 고래 '기억 삼키기'로 사라진 칸 (쏘면 헛방, 되찾거나 12초 뒤 복귀)
         public int shotsThisCycle;                             // 이번 바퀴에 쏜 수 (12면 장전)
         public bool reversed;                                  // 12 → 1로 쏨
         public bool reloading;
@@ -57,7 +58,7 @@ namespace CatTang
         public int BaseJudge(int slot) => ApplyOps(slot, slots[slot].ops);
         bool BaseAwake(int slot) { var b = slots[slot].bullet; return b != null && Meets(b.CondType, b.CondValue, BaseJudge(slot)); }
 
-        /// <summary>판정 시각 (이웃 탄의 '판정 +N' 효과 포함: 이웃이 스스로 깨어 있을 때)</summary>
+        /// <summary>판정 시각 (이웃 탄의 '판정 +N' 효과 포함: 이웃이 스스로 활성화되어 있을 때)</summary>
         public int JudgeTime(int slot)
         {
             int v = BaseJudge(slot);
@@ -113,7 +114,7 @@ namespace CatTang
             return v;
         }
 
-        /// <summary>깨어난 탄에서 센 특성 개수 (+ 특성 수 보너스, 미련 6단계면 잠든 탄의 첫 특성도)</summary>
+        /// <summary>활성화된 탄에서 센 특성 개수 (+ 특성 수 보너스, 미련 6단계면 비활성화된 탄의 첫 특성도)</summary>
         public Dictionary<int, int> TraitCounts()
         {
             var d = new Dictionary<int, int>();

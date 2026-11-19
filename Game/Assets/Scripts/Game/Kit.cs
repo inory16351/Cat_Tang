@@ -15,7 +15,8 @@ namespace CatTang
         public static GameObject Prefab(ChapterDef ch, string name)
         {
             if (ch == null) return null;
-            string key = $"Kit/Ch{ch.Id}/{name}";
+            // "@1/이름" = 다른 장 키트를 빌림 (3장 거울 속 마을이 1장 건물을 좌우 반전해 씀, Ch3Kit.Ch1Mirror)
+            string key = name.StartsWith("@") && name.Length > 3 && name[2] == '/' ? $"Kit/Ch{name[1]}/{name.Substring(3)}" : $"Kit/Ch{ch.Id}/{name}";
             if (!cache.TryGetValue(key, out var go)) cache[key] = go = Resources.Load<GameObject>(key);
             return go;
         }
@@ -70,7 +71,7 @@ namespace CatTang
             // 스테이지 1(황무지 절벽길)은 절벽 바위 모듈, 그 뒤(마을)는 건물 정면 모듈. module을 주면 그것 (술집 실내 = PlankWall)
             var rm = RunManager.Instance;
             bool cliff = rm && rm.stageIndex == 0 && !rm.IsMidBossRoom && Has(ch, "Cliff");
-            if (module == null && !cliff && wallCube && (Has(ch, Facades[0]) || Ch2Kit.Is(ch))) return BuildingRow(ch, wallCube, inward, hideCube);
+            if (module == null && !cliff && wallCube && (Has(ch, Facades[0]) || Ch2Kit.Is(ch) || Ch3Kit.Is(ch))) return BuildingRow(ch, wallCube, inward, hideCube);
             var prefab = Prefab(ch, module ?? (cliff ? "Cliff" : "Wall"));
             if (!prefab || !wallCube) return false;
             var t = wallCube.transform;
@@ -95,7 +96,9 @@ namespace CatTang
                     // 절벽도 똑같이 늘어서지 않게: 높이 · 들여쓰기 · 폭을 조금씩
                     var jr = new System.Random(Mathf.RoundToInt(t.position.x * 13 + t.position.z * 7) + i * 31);
                     float J(float lo, float hi) => lo + (float)jr.NextDouble() * (hi - lo);
-                    go.transform.localScale = new Vector3(w / modW * J(1f, 1.18f), J(0.8f, 1.35f), J(0.9f, 1.15f));
+                    // 3장 호수 기슭은 남쪽 벽(카메라 쪽)이 고양이를 가리지 않게 낮춤
+                    float southMul = inward.z > 0.5f && Ch3Kit.Is(ch) ? 0.5f : 1f;
+                    go.transform.localScale = new Vector3(w / modW * J(1f, 1.18f), J(0.8f, 1.35f) * southMul, J(0.9f, 1.15f));
                     go.transform.localPosition += -inward * J(0f, 0.6f);
                 }
             }
@@ -118,7 +121,8 @@ namespace CatTang
             var t = wallCube.transform;
             // 정면 세트: 1장 = 서부 건물 8종, 2장 = 장소별 역 건물 (Ch2Kit.Facades)
             var names = Facades; var widths = FacadeW;
-            bool ch2 = Ch2Kit.Is(ch);
+            bool ch2 = Ch2Kit.Is(ch), ch3 = Ch3Kit.Is(ch);
+            if (ch3) (names, widths) = Ch3Kit.Facades();
             if (ch2)
             {
                 (names, widths) = Ch2Kit.Facades();
@@ -142,7 +146,7 @@ namespace CatTang
             var rnd = new System.Random(Mathf.RoundToInt(t.position.x * 17.3f + t.position.z * 5.1f) ^ 0x5bd1);
             float R(float lo, float hi) => lo + (float)rnd.NextDouble() * (hi - lo);
             // 남쪽 벽(카메라 쪽, 정면이 북쪽을 봄)은 플레이어를 가리지 않게 낮춤
-            float hMul = inward.z > 0.5f ? (ch2 ? 0.55f : 0.72f) : 1f;      // 2장 역 건물은 키가 커서(6~7m) 더 낮춤
+            float hMul = inward.z > 0.5f ? (ch2 ? 0.55f : ch3 ? Ch3Kit.SouthWallMul() : 0.72f) : 1f;      // 2장 역 건물은 키가 커서(6~7m) 더 낮춤
             float x = -len / 2;
             int last = -1;
             bool first = true;
@@ -161,7 +165,7 @@ namespace CatTang
                 // 남은 길이에 맞는 건물 (같은 건물 연속 금지)
                 var fits = new List<int>();
                 for (int i = 0; i < names.Length; i++)
-                    if (i != last && widths[i] <= left + 0.3f && Has(ch, names[i])) fits.Add(i);
+                    if ((i != last || names.Length == 1) && widths[i] <= left + 0.3f && Has(ch, names[i])) fits.Add(i);   // 정면이 한 종류뿐이면(3장 구름 둑) 연속 허용
                 int pick; float w;
                 // 고른 뒤 남는 자투리가 애매(0.4~2.6m)하면 너무 늘어나니, 딱 맞거나 넉넉히 남는 건물을 우선
                 var good = fits.FindAll(i => { float a = left - widths[i]; return a >= 2.6f || a <= widths[i] * 0.3f; });
@@ -177,7 +181,7 @@ namespace CatTang
                 {
                     // 3m보다 짧게 남음: 가장 좁은 건물을 줄여 넣거나, 아주 짧으면 울타리
                     if (left < 2.2f) { if (alleys) Alley(ch, holder, axis * (x + left / 2), inward, yaw, left, face, rnd); break; }
-                    if (ch2)
+                    if (ch2 || ch3)
                     {
                         // 가장 좁은 정면을 줄여 넣음
                         pick = 0; for (int i = 1; i < widths.Length; i++) if (widths[i] < widths[pick] && Has(ch, names[i])) pick = i;
@@ -191,11 +195,12 @@ namespace CatTang
                 go.name = names[pick];
                 float back = R(0f, 0.7f);
                 // 정면 본체 앞면 위치: 1장 조각은 +1.1, 2장 조각은 모델 경계에서 잼 (차양 · 캐노피 기둥 포함)
-                float front = ch2 ? Mathf.Min(LocalBounds(prefab).max.z, 1.4f) : FacadeFront;
+                bool borrowed = names[pick].StartsWith("@");                 // 3장 거울 속 마을: 1장 건물을 좌우 반전
+                float front = borrowed ? FacadeFront : (ch2 || ch3) ? Mathf.Min(LocalBounds(prefab).max.z, 1.4f) : FacadeFront;
                 go.transform.localPosition = axis * (x + w / 2) + inward * (face - front - back);
                 go.transform.localRotation = Quaternion.Euler(0, yaw, 0);
                 var s0 = go.transform.localScale;
-                go.transform.localScale = new Vector3(s0.x * w / widths[pick], s0.y * R(0.88f, 1.15f) * hMul, s0.z);
+                go.transform.localScale = new Vector3(s0.x * w / widths[pick] * (borrowed ? -1f : 1f), s0.y * R(0.88f, 1.15f) * hMul, s0.z);
                 foreach (var c in go.GetComponentsInChildren<Collider>()) Object.Destroy(c);
                 x += w; last = pick;
             }
@@ -259,7 +264,7 @@ namespace CatTang
             if (r) r.enabled = false;
             return true;
         }
-        static Mesh GroundMesh(Vector2 size, float tile, int seed)
+        public static Mesh GroundMesh(Vector2 size, float tile, int seed)
         {
             var rnd = new System.Random(seed);
             var off = new Vector2((float)rnd.NextDouble(), (float)rnd.NextDouble());
@@ -281,16 +286,18 @@ namespace CatTang
         {
             var rnd = new System.Random(seed * 7 + 3);
             int n = Mathf.RoundToInt(size.x * size.y / 14f);
-            float total = 0; foreach (var w in GroundWeight) total += w;
+            var bits = GroundBits; var weights = GroundWeight;
+            if (Ch3Kit.Is(ch)) { bits = Ch3Kit.GroundBits; weights = Ch3Kit.GroundWeights(); }   // 3장: 조약돌 · 수정 조각 · 물결
+            float total = 0; foreach (var w in weights) total += w;
             var holder = new GameObject("GroundBits").transform;
             holder.SetParent(root, false);
             for (int i = 0; i < n; i++)
             {
                 float r = (float)rnd.NextDouble() * total; int k = 0;
-                while (k < GroundWeight.Length - 1 && r > GroundWeight[k]) { r -= GroundWeight[k]; k++; }
-                if (!Has(ch, GroundBits[k])) continue;
+                while (k < weights.Length - 1 && r > weights[k]) { r -= weights[k]; k++; }
+                if (weights[k] <= 0 || !Has(ch, bits[k])) continue;
                 var p = new Vector3(((float)rnd.NextDouble() - 0.5f) * (size.x - 1.5f), 0.02f, ((float)rnd.NextDouble() - 0.5f) * (size.y - 1.5f));
-                Place(ch, GroundBits[k], holder, p, rnd.Next(360), 0.75f + (float)rnd.NextDouble() * 0.5f, false);
+                Place(ch, bits[k], holder, p, rnd.Next(360), 0.75f + (float)rnd.NextDouble() * 0.5f, false);
             }
         }
     }

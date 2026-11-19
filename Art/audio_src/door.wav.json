@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "door",
+  "original_idea": "11:59 game SFX: door",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, heavy old wooden saloon door, swings open with a creak and a solid thump, dry wood, iron hinges, indoor, close.",
+  "sound_fields": {
+    "source": "heavy old wooden saloon door",
+    "action": "swings open with a creak and a solid thump",
+    "material": "dry wood, iron hinges",
+    "space": "indoor, close"
+  },
+  "bpm": null,
+  "seconds": 1.4,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 1,
+  "seed": 1159,
+  "candidate": 1,
+  "file": "door.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-19T10:11:22",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -4.56,
+  "raw_peak_dbfs": -4.56,
+  "ceiling_gain_db": 0.0
+}

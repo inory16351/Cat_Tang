@@ -18,6 +18,11 @@ namespace CatTang
     public class CursorTip : MonoBehaviour
     {
         const float W = 460, Pad = 20, IconSize = 72;
+        // 고유명사 설명 상자 (세피리아 아이템 툴팁처럼 본 툴팁 옆에 작게 쌓음, 2026-11-18)
+        const float SideW = 360, SidePad = 12, SideGap = 8;
+        const int SideMax = 4;
+        readonly System.Collections.Generic.List<(RectTransform box, Text title, Text body)> side = new();
+        bool sideLeft;
         static CursorTip inst;
         RectTransform rt, canvasRt;
         Image icon;
@@ -83,7 +88,49 @@ namespace CatTang
             inst.body.rectTransform.pivot = new Vector2(0, 1);
             inst.body.lineSpacing = 1.12f;
             UIKit.NoFit(inst.body);
+            for (int i = 0; i < SideMax; i++) inst.side.Add(MakeSide(inst.rt, i));
             panel.gameObject.SetActive(false);
+        }
+
+        static (RectTransform, Text, Text) MakeSide(RectTransform parent, int i)
+        {
+            var box = UIKit.Panel("Term" + i, parent, new Vector2(0, 1), Vector2.zero, new Vector2(SideW, 80), false, "panel_plain", 1.1f);
+            box.color = new Color(0.1f, 0.12f, 0.17f, 0.97f);
+            box.raycastTarget = false;
+            var brt = box.rectTransform;
+            brt.anchorMin = brt.anchorMax = brt.pivot = new Vector2(0, 1);
+            var t = UIKit.Label("Title", brt, new Vector2(0, 1), new Vector2(SidePad, -SidePad + 2), new Vector2(SideW - SidePad * 2, 26), 19, TextAnchor.MiddleLeft, true, Terms.LinkColor);
+            t.rectTransform.pivot = new Vector2(0, 1);
+            UIKit.NoFit(t, 14);
+            var b = UIKit.Label("Body", brt, new Vector2(0, 1), new Vector2(SidePad, -SidePad - 26), new Vector2(SideW - SidePad * 2, 60), 15, TextAnchor.UpperLeft);
+            b.rectTransform.pivot = new Vector2(0, 1);
+            b.lineSpacing = 1.08f;
+            UIKit.NoFit(b);
+            box.gameObject.SetActive(false);
+            return (brt, t, b);
+        }
+
+        /// <summary>툴팁 글 속 고유명사의 설명 상자를 채우고 쌓음 (자리는 Follow가 좌우로 정함)</summary>
+        void FillSide(TipContent c)
+        {
+            var terms = Terms.Find((c.title ?? "") + " " + (c.body ?? ""), SideMax);
+            terms.Remove(c.title);
+            float y = 0;
+            for (int i = 0; i < side.Count; i++)
+            {
+                var (box, t, b) = side[i];
+                bool on = i < terms.Count;
+                box.gameObject.SetActive(on);
+                if (!on) continue;
+                if (Terms.TraitBox(terms[i], out var tt, out var tb)) { t.text = tt; b.text = tb; }   // 특성: 롤체식 단계 표시
+                else { t.text = terms[i]; b.text = Terms.Desc(terms[i]) ?? ""; }
+                float bh = b.preferredHeight + 6;
+                b.rectTransform.sizeDelta = new Vector2(SideW - SidePad * 2, bh);
+                float h = SidePad + 26 + bh + SidePad;
+                box.sizeDelta = new Vector2(SideW, h);
+                box.anchoredPosition = new Vector2(0, -y);       // x는 Follow가 정함
+                y += h + SideGap;
+            }
         }
 
         void Fill()
@@ -100,6 +147,7 @@ namespace CatTang
             float bh = body.preferredHeight + 10;          // 줄 간격 · 크기 태그 오차 여유
             body.rectTransform.sizeDelta = new Vector2(W - Pad * 2, bh);
             rt.sizeDelta = new Vector2(W, Pad + IconSize + 12 + bh + Pad);
+            FillSide(c);
         }
 
         void Update()
@@ -120,11 +168,17 @@ namespace CatTang
             // 기본: 커서 오른쪽 아래. 넘치면 왼쪽 · 위로 뒤집고, 그래도 넘치면 화면 안으로 밀어 넣음
             float x = lp.x + 26, y = lp.y - 26;
             if (x + size.x > cr.xMax - 8) x = lp.x - 26 - size.x;
+            // 설명 상자는 본 툴팁 오른쪽에, 화면 밖이면 왼쪽에
+            bool anySide = side.Count > 0 && side[0].box.gameObject.activeSelf;
+            sideLeft = anySide && x + size.x + SideGap + SideW > cr.xMax - 8;
+            if (sideLeft && x - SideGap - SideW < cr.xMin + 8) x = cr.xMin + 8 + SideW + SideGap;
             if (y - size.y < cr.yMin + 8) y = lp.y + 26 + size.y;
             x = Mathf.Clamp(x, cr.xMin + 8, Mathf.Max(cr.xMin + 8, cr.xMax - 8 - size.x));
             y = Mathf.Clamp(y, Mathf.Min(cr.yMax - 8, cr.yMin + 8 + size.y), cr.yMax - 8);
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = new Vector2(x, y);
+            foreach (var (box, _, _) in side)
+                if (box.gameObject.activeSelf) box.anchoredPosition = new Vector2(sideLeft ? -SideGap - SideW : size.x + SideGap, box.anchoredPosition.y);
         }
     }
 

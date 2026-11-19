@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\ui_close.wav",
+  "source": {
+    "kind": "generate",
+    "title": "ui_close",
+    "original_idea": "11:59 game SFX: ui_close",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, old leather book, closes with a soft thump and a little paper flutter, leather, paper, close mic, dry, UI.",
+    "sound_fields": {
+      "source": "old leather book",
+      "action": "closes with a soft thump and a little paper flutter",
+      "material": "leather, paper",
+      "space": "close mic, dry, UI"
+    },
+    "bpm": null,
+    "seconds": 0.5,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "ui_close.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:39:03",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -21.53,
+    "raw_peak_dbfs": -21.53,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:39:03",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.42,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+27.70 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0627,
+  "file": "ui_close.ogg"
+}

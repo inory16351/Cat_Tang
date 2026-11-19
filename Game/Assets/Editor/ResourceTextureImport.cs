@@ -15,6 +15,8 @@ namespace CatTang.EditorTools
             imp.wrapMode = UnityEngine.TextureWrapMode.Clamp;
             imp.alphaIsTransparency = true;
             imp.textureCompression = TextureImporterCompression.Uncompressed;
+            // 로비 '그려지는' 순서 가면(reveal_*): 값 = 시각이라 색공간 변환 없이 (sRGB로 읽으면 순서가 휨)
+            if (System.IO.Path.GetFileName(assetPath).StartsWith("reveal_")) imp.sRGBTexture = false;
         }
     }
 }

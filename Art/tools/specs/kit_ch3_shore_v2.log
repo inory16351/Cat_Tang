@@ -1,0 +1,2053 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1ecce-97f1-7bc1-8a02-f8cc9011311f
+--------
+user
+Edit ONE existing Blender script: `Art/tools/blender_kit_ch3_walls.py`. Change ONLY the piece `Cliff_Shore` (its builder function); leave every other piece exactly as it is.
+Then RUN `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_walls.py` and fix errors until it exports every piece and re-renders the preview.
+Read `Art/tools/specs/_ch3_common.md` for material names / coordinates / export rules.
+
+## Problem
+In the game, `Cliff_Shore` modules are tiled side by side along the room edge (6 m wide each, randomly scaled in height 0.8-1.35x and width 1-1.18x). The current version is made of axis-aligned rectangular slabs, so a whole wall reads as a row of brown BOXES. The user strongly dislikes the "row of square brown boxes" look.
+
+## New `Cliff_Shore` (6 m wide, X -3..3, depth Y about -0.6..1.4, height up to ~3.6 m)
+A natural mirror-lake SHORE made of ROUNDED, organic rose sandstone boulders, not boxes:
+- 7-10 boulders of varied sizes (radius 0.5-1.6 m). Build each from a subdivided icosphere / cube with random vertex displacement (seeded), then flatten slightly (scale Z 0.6-0.9) and cut flat facets so it looks hand-carved, cel-shaded and chunky (faceted, ~40-120 faces each, no smooth blobs). No two boulders the same shape or size, random rotations.
+- Arrange them as an irregular PILE: big boulders at the back (Y < 0.6) reaching 2.6-3.6 m, medium ones in front at 1-1.8 m, small ones at the very front around Y 1.0-1.4. The TOP SILHOUETTE must be bumpy and irregular, never a flat or stepped line. Boulders overlap / interpenetrate so there are no gaps through the pile at ground level from X -3 to 3.
+- Both ends (X = +-3) should be lower and taper (so tiling neighbours blend), the tallest point somewhere in the middle third, offset from center.
+- Materials: `sandstone` main, `sandstone_light` on upward-facing facets (assign per face by normal Z > 0.55), `sandstone_dark` on downward / steep lower facets near the ground.
+- Keep the diagonal `gold` vein, but as a thin raised strip following the surface of one big boulder.
+- `sand` drift: a low rounded wedge at the front foot (height <= 0.35) along the whole width.
+- 3 small `crystal` clusters (hexagonal prisms with pointed tips) tucked between boulders, one up on a ledge.
+Under ~3000 triangles. Keep origin at bottom center and the same export settings / FBX path (`Kit_Cliff_Shore.fbx`).
+
+codex
+`_ch3_common.md`와 현재 빌더를 확인한 뒤 `Cliff_Shore` 함수만 수정하겠습니다. Blender 실행 후 전체 FBX 내보내기와 프리뷰 갱신까지 확인하겠습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/blender_kit_ch3_walls.py' in C:\Project\Cat_Tang
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short' in C:\Project\Cat_Tang
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/specs/_ch3_common.md' in C:\Project\Cat_Tang
+ succeeded in 103ms:
+ M Art/tools/blender_bake_fx.py
+ M Art/tools/blender_fx.py
+ M Game/Assets/Data/Tables/Chapter.csv
+ M Game/Assets/Data/Tables/Costume.csv
+ M Game/Assets/Data/Tables/Effect.csv
+ M Game/Assets/Data/Tables/Enum.csv
+ M Game/Assets/Data/Tables/TraitTier.csv
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/ModelPalette.cs
+ M Game/Assets/Scripts/Core/Tables.cs
+ M Game/Assets/Scripts/Game/BossBrain.cs
+ M Game/Assets/Scripts/Game/Ch2Bosses.cs
+ M Game/Assets/Scripts/Game/Ch2Kit.cs
+ M Game/Assets/Scripts/Game/Effects.cs
+ M Game/Assets/Scripts/Game/Enemy.cs
+ M Game/Assets/Scripts/Game/EnemyCh2.cs
+ M Game/Assets/Scripts/Game/EnemyFactory.cs
+ M Game/Assets/Scripts/Game/EnemyHpBar.cs
+ M Game/Assets/Scripts/Game/EnemyMoves.cs
+ M Game/Assets/Scripts/Game/EnemyProjectile.cs
+ M Game/Assets/Scripts/Game/ExtraFx.cs
+ M Game/Assets/Scripts/Game/FxPart.cs
+ M Game/Assets/Scripts/Game/GunkataFx.cs
+ M Game/Assets/Scripts/Game/Health.cs
+ M Game/Assets/Scripts/Game/Kit.cs
+ M Game/Assets/Scripts/Game/PlayerController.cs
+ M Game/Assets/Scripts/Game/Revolver.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RoomDoor.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M Game/Assets/Scripts/Game/RunManagerXp.cs
+ M Game/Assets/Scripts/UI/CursorTip.cs
+ M Game/Assets/Scripts/UI/GameUI.cs
+ M Game/Assets/Scripts/UI/InventoryScreen.cs
+ M Game/Assets/Scripts/UI/UIKit.cs
+ M HANDOFF.md
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+ M "docs/Cat_Tang_\353\252\251\353\241\235_\354\264\210\354\225\210.md"
+ M "docs/Cat_Tang_\354\264\235_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\273\250\354\205\211_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234.md"
+ M docs/data/Cat_Tang_Data.xlsx
+ M docs/tools/build_ch2_ppt.js
+ M docs/tools/build_docs.py
+ M docs/tools/build_level_ppts.js
+ M docs/tools/build_tables.py
+?? .tripo/
+?? Art/tools/__pycache__/
+?? Art/tools/blender_kit_ch2_arena.py
+?? Art/tools/blender_kit_ch3_landmarks.py
+?? Art/tools/blender_kit_ch3_props.py
+?? Art/tools/blender_kit_ch3_walls.py
+?? Art/tools/ground_texture_ch3.py
+?? Art/tools/memclock_v2.py
+?? Art/tools/memshatter.py
+?? Art/tools/specs/_ch3_common.md
+?? Art/tools/specs/blender_kit_ch3_landmarks_preview.png
+?? Art/tools/specs/blender_kit_ch3_props_preview.png
+?? Art/tools/specs/blender_kit_ch3_walls_preview.png
+?? Art/tools/specs/ch3_concept_spec.md
+?? Art/tools/specs/kit_ch2_arena.log
+?? Art/tools/specs/kit_ch2_arena_preview.png
+?? Art/tools/specs/kit_ch2_arena_spec.md
+?? Art/tools/specs/kit_ch2_arena_v2.log
+?? Art/tools/specs/kit_ch2_arena_v3.log
+?? Art/tools/specs/kit_ch3_landmarks.log
+?? Art/tools/specs/kit_ch3_landmarks_spec.md
+?? Art/tools/specs/kit_ch3_props.log
+?? Art/tools/specs/kit_ch3_props_spec.md
+?? Art/tools/specs/kit_ch3_shore_v2.log
+?? Art/tools/specs/kit_ch3_shore_v2_spec.md
+?? Art/tools/specs/kit_ch3_walls.log
+?? Art/tools/specs/kit_ch3_walls_spec.md
+?? Art/tools/specs/ui_bell_spec.md
+?? Art/tools/specs/ui_memory_clock_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Art/tripo_input/ch3/
+?? Art/tripo_input/merchant/
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat.meta
+?? Game/Assets/Art/Characters/Ch3.meta
+?? Game/Assets/Art/Characters/Ch3/
+?? Game/Assets/Art/Characters/Merchant.meta
+?? Game/Assets/Art/Characters/Merchant/
+?? Game/Assets/Art/Env/Ch3.meta
+?? Game/Assets/Art/Env/Ch3/
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx.meta
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab.meta
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png.meta
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab.meta
+?? Game/Assets/Resources/Kit/Ch3.meta
+?? Game/Assets/Resources/Kit/Ch3/
+?? Game/Assets/Resources/Merchants.meta
+?? Game/Assets/Resources/Merchants/
+?? Game/Assets/Resources/UI/bell_icon.png
+?? Game/Assets/Resources/UI/bell_icon.png.meta
+?? Game/Assets/Resources/UI/memory_clock.png
+?? Game/Assets/Resources/UI/memory_clock.png.meta
+?? Game/Assets/Resources/UI/merchant_arrow.png
+?? Game/Assets/Resources/UI/merchant_arrow.png.meta
+?? Game/Assets/Scripts/Game/Ch3Kit.cs
+?? Game/Assets/Scripts/Game/Ch3Kit.cs.meta
+?? Game/Assets/Scripts/Game/EnemyCh3.cs
+?? Game/Assets/Scripts/Game/EnemyCh3.cs.meta
+?? Game/Assets/Scripts/Game/MemoryClock.cs
+?? Game/Assets/Scripts/Game/MemoryClock.cs.meta
+?? Game/Assets/Scripts/Game/MirrorShard.cs
+?? Game/Assets/Scripts/Game/MirrorShard.cs.meta
+?? Game/Assets/Scripts/UI/EdgeMarker.cs
+?? Game/Assets/Scripts/UI/EdgeMarker.cs.meta
+?? Game/Assets/Scripts/UI/Terms.cs
+?? Game/Assets/Scripts/UI/Terms.cs.meta
+?? Game/Assets/_Recovery.meta
+?? Game/Assets/_Recovery/
+?? "docs/1159_2\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_3\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? "docs/1159_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? docs/images/ch3/
+?? docs/images/fx_preview/
+?? docs/images/ui_src/merchant_arrow.png
+?? docs/images/ui_src/prompts/merchant_arrow.log
+?? docs/images/ui_src/prompts/merchant_arrow.txt
+?? docs/tools/build_ch3_ppt.js
+?? docs/tools/ui_merchant_cut.py
+
+ succeeded in 262ms:
+## Common rules (chapter 3 "Mirage Desert = Mirror World")
+Setting: a dreamlike MIRROR WORLD beyond a desert mirage (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+The floor is a calm mirror lake that reflects a pink sunset sky; around it: rose sandstone rocks, ruined white marble colonnades with gold trim, gold-framed standing mirrors, glowing memory crystals, small fountains, floating mirror shards. Mood: serene, magical, sunset (peach / rose / cream / gold, teal only for water, white glow for crystals).
+Signature accent: GOLD ornate trim and frames, broken marble, and pale glowing crystal. Chunky silhouettes, no tiny detail, slightly hand-made irregularity (seeded random per piece, `random.seed(<fixed>)`). BEVEL modifier (0.02-0.05, 2 segments) on stone / marble / gold parts.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`sandstone`, `sandstone_light`, `sandstone_dark`, `rock`, `rock_dark`, `sand`, `marble`, `marble_dark`, `gold`, `gold_dark`, `mirror`, `mirror_back`, `crystal`, `crystal_core`, `water`, `water_foam`, `cloud`, `cloud_shade`, `cloth_rose`, `stardust`, `wood`, `roof_tile`, `window_lit`.
+`mirror` = the reflective glass face of every mirror. `mirror_back` = the dull back board of a mirror. `crystal` = pale crystal body, `crystal_core` = glowing inner crystal. `stardust` = tiny glowing floating bits. `water` = water surface, `water_foam` = ripples / splash.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece (unless the piece says otherwise).
+Each piece = ONE joined mesh object named exactly as listed, exported to its own FBX `Game/Assets/Art/Characters/Ch3/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end.
+Use `Art/tools/blender_kit_ch2_props.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+Finally render ONE preview PNG of all pieces laid out in a row (Workbench engine, flat MATERIAL color with a distinct viewport color per material name so pieces are readable, camera ~55 deg from above-front, 1600x900) to `Art/tools/specs/<script name without .py>_preview.png`. The preview is only for review; it must not change the exported FBX files.
+
+ succeeded in 321ms:
+# 嫄곗슱 ?멸퀎??踰?紐⑤뱢 7醫낃낵 寃?섏슜 誘몃━蹂닿린瑜??앹꽦?⑸땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_walls.py
+"""Deterministic, metre-scale Blender 5.x wall kit; stock Blender only."""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
+PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_walls_preview.png'
+PALETTE = {
+    'sandstone': (.67, .32, .38), 'sandstone_light': (.94, .62, .59),
+    'sandstone_dark': (.35, .14, .23), 'rock': (.45, .31, .40),
+    'rock_dark': (.22, .17, .24), 'sand': (.83, .53, .39),
+    'marble': (.91, .87, .78), 'marble_dark': (.43, .43, .51),
+    'gold': (.94, .61, .18), 'gold_dark': (.43, .25, .07),
+    'mirror': (.47, .71, .83), 'mirror_back': (.23, .23, .34),
+    'crystal': (.71, .86, .96), 'crystal_core': (1, .97, .85),
+    'cloud': (.88, .87, .98), 'cloud_shade': (.51, .48, .68),
+    'wood': (.35, .19, .22), 'roof_tile': (.65, .22, .31),
+    'window_lit': (1, .83, .43),
+}
+HARD = {'sandstone', 'sandstone_light', 'sandstone_dark', 'rock',
+        'rock_dark', 'marble', 'marble_dark', 'gold', 'gold_dark'}
+MATS = {}
+PARTS = []
+
+
+def setup_materials():
+    for role in PALETTE:
+        mat = bpy.data.materials.new(role)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        nodes = mat.node_tree.nodes
+        nodes.clear()
+        shader = nodes.new('ShaderNodeBsdfPrincipled')
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Metallic'].default_value = 0
+        shader.inputs['Roughness'].default_value = .8
+        out = nodes.new('ShaderNodeOutputMaterial')
+        mat.node_tree.links.new(shader.outputs['BSDF'], out.inputs['Surface'])
+        MATS[role] = mat
+
+
+def mesh(label, verts, faces, role, bevel=True):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[role])
+    if bevel and role in HARD:
+        mod = obj.modifiers.new('Worn edges 3cm', 'BEVEL')
+        mod.width, mod.segments = .03, 2
+        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(65)
+    PARTS.append(obj)
+    return obj
+
+
+def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
+    x, y, z = (s / 2 for s in size)
+    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
+             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+    return place(mesh(label, verts, [(0, 3, 2, 1), (4, 5, 6, 7),
+                 (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)],
+                 role, bevel), loc, rot)
+
+
+def extrude(label, profile, y0, y1, role, bevel=True):
+    """Closed X/Z polygon prism, including concave arch spandrels."""
+    n = len(profile)
+    verts = [(x, y, z) for y in (y0, y1) for x, z in profile]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
+    return mesh(label, verts, faces, role, bevel)
+
+
+def tube(label, points, radius, role, n=6):
+    verts = []
+    for i, point in enumerate(points):
+        tangent = Vector(points[min(i + 1, len(points) - 1)]) - Vector(points[max(0, i - 1)])
+        tangent.normalize()
+        side = Vector((0, 1, 0)).cross(tangent).normalized()
+        other = tangent.cross(side)
+        for j in range(n):
+            a = j * math.tau / n
+            verts.append(tuple(Vector(point) + radius * (side * math.cos(a) + other * math.sin(a))))
+    faces = [tuple(reversed(range(n))), tuple(range(len(verts) - n, len(verts)))]
+    faces += [(i * n + j, i * n + (j + 1) % n,
+               (i + 1) * n + (j + 1) % n, (i + 1) * n + j)
+              for i in range(len(points) - 1) for j in range(n)]
+    return mesh(label, verts, faces, role)
+
+
+def band(label, outer, inner, y0, y1, role):
+    """Closed planar ornamental ring, without a filled centre."""
+    n = len(outer)
+    assert n == len(inner)
+    verts = [(x, y, z) for y, points in ((y0, outer), (y0, inner),
+                                       (y1, outer), (y1, inner)) for x, z in points]
+    faces = []
+    for i in range(n):
+        j = (i + 1) % n
+        faces += [(i, j, n + j, n + i), (2*n+i, 3*n+i, 3*n+j, 2*n+j),
+                  (i, 2*n+i, 2*n+j, j), (n+i, n+j, 3*n+j, 3*n+i)]
+    return mesh(label, verts, faces, role)
+
+
+def slab(label, x0, x1, y0, y1, z0, z1, role='sandstone', facets=True):
+    """Clipped, irregular slab with a flat back, level sole and broad top facets."""
+    cut = min((x1-x0) * .13, .18)
+    outline = [(x0+cut, y0), (x1-cut, y0), (x1, y0+.15),
+               (x1, y1-.15), (x1-cut, y1), (x0+cut, y1),
+               (x0, y1-.15), (x0, y0+.15)]
+    verts = [(x, y, z0) for x, y in outline]
+    for i, (x, y) in enumerate(outline):
+        verts.append((x, y, z1 - random.uniform(.03, .16)))
+    verts.append(((x0+x1)/2 + random.uniform(-.08, .08), (y0+y1)/2, z1))
+    faces = [tuple(reversed(range(8)))]
+    faces += [(i, (i+1) % 8, (i+1) % 8+8, i+8) for i in range(8)]
+    faces += [(8+i, 8+(i+1) % 8, 16) for i in range(8)]
+    obj = mesh(label, verts, faces, role)
+    if facets:
+        low = 'sandstone_dark' if role == 'sandstone' else 'rock_dark'
+        high = 'sandstone_light' if role == 'sandstone' else 'rock'
+        obj.data.materials.append(MATS[low])
+        obj.data.materials.append(MATS[high])
+        for p in obj.data.polygons:
+            p.material_index = 2 if p.index >= 9 else (1 if p.index in (0, 1, 2, 8) else 0)
+    return obj
+
+
+def crystal(loc, height, radius=.12, tilt=0):
+    n = 5
+    verts = [(radius * math.cos(i*math.tau/n), radius * math.sin(i*math.tau/n), z)
+             for z in (0, height*.67) for i in range(n)]
+    verts.append((radius*.2, 0, height))
+    faces = [tuple(reversed(range(n)))]
+    faces += [(i, (i+1) % n, (i+1) % n+n, i+n) for i in range(n)]
+    faces += [(n+i, n+(i+1) % n, n*2) for i in range(n)]
+    obj = place(mesh('Five sided memory crystal', verts, faces, 'crystal'), loc, (0, tilt, 0))
+    obj.data.materials.append(MATS['crystal_core'])
+    obj.data.polygons[-2].material_index = 1
+
+
+def cluster(loc):
+    x, y, z = loc
+    for dx, dy, h, tilt in [(-.18, .02, .40, -.32), (0, 0, .66, .10), (.18, -.04, .34, .42)]:
+        crystal((x+dx, y+dy, z), h, .105, tilt)
+
+
+def cliff_shore():
+    # Three large, readable tiers, plus displaced lower strata.
+    slab('Tall monolith 4.2m', -1.65, .55, -.8, .77, 0, 4.2)
+    slab('Middle step 3m', .38, 3, -.8, .86, 0, 3)
+    slab('Low step 1.5m', -3, -1.5, -.8, 1.02, 0, 1.5)
+    slab('Front fractured shelf', -.92, 1.35, .56, 1.17, 0, 1.05)
+    slab('Small toe slab', 1.58, 2.8, .66, 1.20, 0, .61)
+    slab('High offset facet', -1.48, .15, -.62, .55, 3.6, 4.17)
+    # A shallow triangular prism ramp, facing the room.
+    mesh('Sand foot slope', [(-3, .76, 0), (3, .76, 0), (3, 1.4, 0), (-3, 1.4, 0),
+                            (-3, .76, .43), (3, .76, .43)],
+         [(0, 3, 2, 1), (0, 1, 5, 4), (3, 4, 5, 2), (0, 4, 3), (1, 2, 5)], 'sand')
+    tube('Diagonal gold mineral vein', [(-1.48, .785, 2.0), (-1.10, .787, 2.28),
+         (-.85, .787, 2.66), (-.40, .787, 2.96), (.23, .787, 3.56)], .026, 'gold')
+    cluster((-2.25, 1.08, .12))
+    cluster((2.32, 1.06, .16))
+    cluster((.89, .83, 1.04))
+
+
+def turned_capital(x, z):
+    n = 16
+    profile = [(.30, z-.23), (.37, z-.18), (.37, z-.10), (.45, z-.04), (.45, z)]
+    verts = [(x+r*math.cos(i*math.tau/n), .53+r*math.sin(i*math.tau/n), zz)
+             for r, zz in profile for i in range(n)]
+    faces = [tuple(reversed(range(n))), tuple(range((len(profile)-1)*n, len(profile)*n))]
+    faces += [(k*n+i, k*n+(i+1)%n, (k+1)*n+(i+1)%n, (k+1)*n+i)
+              for k in range(len(profile)-1) for i in range(n)]
+    mesh('Gold spreading capital', verts, faces, 'gold')
+
+
+def column(x, height, intact):
+    box('Square dark marble plinth', (x, .53, .12), (.84, .84, .24), 'marble_dark')
+    box('White column foot', (x, .53, .30), (.68, .68, .12), 'marble')
+    n = 32
+    top = height-.23 if intact else height
+    verts = []
+    for k, z in enumerate((.36, top)):
+        for i in range(n):
+            a = i*math.tau/n
+            r = (.30 if i%2 == 0 else .255) * (1 if k == 0 else .94)
+            zz = z if k == 0 or intact else z + .12*math.sin(a*3) - .06*math.cos(a*5)
+            verts.append((x+r*math.cos(a), .53+r*math.sin(a), zz))
+    faces = [tuple(reversed(range(n))), tuple(range(n, n*2))]
+    faces += [(i, (i+1)%n, (i+1)%n+n, i+n) for i in range(n)]
+    mesh('Fluted white shaft' if intact else 'Jagged broken fluted shaft', verts, faces, 'marble')
+    if intact:
+        turned_capital(x, height)
+
+
+def wall_colonnade():
+    for row in range(2):
+        for i in range(4):
+            box('Low rose back wall', (-3+i*2, -.42, .35+row*.70),
+                (2, .66, .68), 'sandstone')
+    for i, (x, h) in enumerate(zip((-3, -1, 1, 3), (4.2, 2.2, 4.2, 3.0))):
+        column(x, h, i in (0, 2))
+    extrude('Broken partial architrave', [(-3.58, 4.2), (1.55, 4.2), (1.39, 4.35),
+            (1.61, 4.49), (1.36, 4.64), (-3.42, 4.64), (-3.58, 4.51)], .12, .97, 'marble')
+    box('Architrave gold band', (-1.04, 1.002, 4.32), (5.01, .065, .085), 'gold')
+    for x, y, size in [(-2.1, 1.03, .55), (-.6, 1.04, .64), (2.0, 1.00, .48),
+                       (3.6, .69, .43)]:
+        slab('Dark marble fallen rubble', x-size/2, x+size/2, y-.22, y+.22,
+             0, random.uniform(.25, .43), 'marble_dark', False)
+
+
+def arch_path(radius, bottom=.10, spring=2.1, n=20):
+    return [(-radius, bottom), (-radius, spring)] + [
+        (radius*math.cos(math.pi-i*math.pi/n), spring+radius*math.sin(math.pi-i*math.pi/n))
+        for i in range(1, n+1)] + [(radius, bottom)]
+
+
+def wall_arch():
+    # The rear wall closes the niche at Y=.60; facade stands at Y=1.0.
+    top = [(-3, 4.5), (-1.7, 4.5), (-.2, 4.47), (1.2, 4.5),
+           (1.65, 4.18), (1.96, 4.33), (2.17, 3.98), (2.55, 4.1), (3, 3.87)]
+    extrude('Continuous flat recess backing', [(-3, 0), (3, 0)] + list(reversed(top)),
+            -.75, .60, 'sandstone_dark')
+    opening = arch_path(1.3, bottom=0)
+    profile = [(-3, 0)] + opening + [(3, 0)] + list(reversed(top))
+    extrude('Rose arch piers and spandrel', profile, .60, 1.0, 'sandstone')
+    panel = arch_path(1.285, bottom=.08)
+    extrude('Recess mirror backing', panel, .602, .614, 'mirror_back', False)
+    extrude('Recess reflective face', panel, .615, .625, 'mirror', False)
+    # Voussoirs emphasize real recess depth; the gold inlay remains a thin line.
+    for i in range(10):
+        a, b = i*math.pi/10+.012, (i+1)*math.pi/10-.012
+        p = [(r*math.cos(t), 2.1+r*math.sin(t))
+             for r, t in ((1.32,a), (1.54,a), (1.54,b), (1.32,b))]
+        extrude('Arch cut stone', p, .94, 1.045, 'sandstone_light')
+    band('Thin continuous gold arch outline', arch_path(1.36), arch_path(1.31),
+         1.046, 1.083, 'gold')
+    extrude('Gold keystone', [(-.13, 3.32), (.13, 3.32), (.21, 3.69), (-.21, 3.69)],
+            1.05, 1.16, 'gold')
+    for a, b in zip(top, top[1:]):
+        extrude('Light broken cap stone', [(a[0]+.012, a[1]-.08), (b[0]-.012, b[1]-.08),
+                (b[0]-.012, b[1]+.06), (a[0]+.012, a[1]+.06)], -.75, 1.04, 'sandstone_light')
+
+
+def ellipse(rx, rz, z, n=32):
+    return [(rx*math.cos(i*math.tau/n), z+rz*math.sin(i*math.tau/n)) for i in range(n)]
+
+
+def wall_mirrorframe():
+    box('Rose mirror wall', (0, .10, 1.8), (4, 1.60, 3.6), 'sandstone')
+    extrude('Oval dull backboard', ellipse(1.13, 1.23, 1.80), .91, .96, 'mirror_back', False)
+    extrude('Oval reflective face', ellipse(1.08, 1.18, 1.80), .965, .99, 'mirror', False)
+    band('Broad ornate oval gold frame', ellipse(1.2, 1.3, 1.80), ellipse(1.07, 1.17, 1.80),
+         .97, 1.15, 'gold')
+    band('Inner raised oval bead', ellipse(1.095, 1.195, 1.80), ellipse(1.055, 1.155, 1.80),
+         1.15, 1.195, 'gold')
+    for sign in (-1, 1):
+        for z in (1.05, 2.47):
+            points = [(sign*(1.13+.24*math.sin(t)), 1.13, z+.28*math.cos(t))
+                      for t in (0, .65, 1.3, 1.95, 2.6, 3.25, 3.9, 4.55)]
+            tube('Gilt scroll flourish', points, .045, 'gold')
+    # Small fan-shaped sun crest above the oval.
+    extrude('Gold sun centre', ellipse(.14, .14, 3.21, 12), 1.04, 1.17, 'gold')
+    for i in range(7):
+        a = i*math.pi/6
+        tip = (.36*math.cos(a), 3.21+.36*math.sin(a))
+        p = [(.18*math.cos(a-.18), 3.21+.18*math.sin(a-.18)), tip,
+             (.18*math.cos(a+.18), 3.21+.18*math.sin(a+.18))]
+        extrude('Sun crest ray', p, 1.07, 1.13, 'gold')
+    box('White marble projecting shelf', (0, .91, .43), (2.86, .66, .18), 'marble')
+    for x in (-.94, .94):
+        extrude('Carved shelf corbel', [(x-.13, .17), (x+.13, .17), (x+.13, .4),
+                (x-.13, .4)], .73, 1.02, 'marble')
+
+
+def wall():
+    # Four staggered courses; cut end blocks terminate exactly at tile boundaries.
+    for row in range(4):
+        cuts = [-2, -1, 0, 1, 2] if row%2 == 0 else [-2, -1.5, -.5, .5, 1.5, 2]
+        for i, (a, b) in enumerate(zip(cuts, cuts[1:])):
+            lo, hi = a + (.012 if a > -2 else 0), b - (.012 if b < 2 else 0)
+            z0, z1 = (row*.69+.008 if row else 0), (row+1)*.69-.012
+            if (row, i) in {(1, 1), (2, 3), (3, 1)}:
+                extrude('Chipped rose block', [(lo, z0), (hi, z0), (hi, z1-.12),
+                        (hi-.14, z1), (lo, z1)], -.7, 1.0, 'sandstone')
+            else:
+                box('Staggered rose block', ((lo+hi)/2, .15, (z0+z1)/2),
+                    (hi-lo, 1.7, z1-z0), 'sandstone')
+    box('Gold line below marble cap', (0, .15, 2.795), (4, 1.72, .07), 'gold')
+    box('White marble cap', (0, .15, 2.915), (4, 1.8, .17), 'marble')
+
+
+def cliff_island():
+    # A deliberately narrow top perimeter; all hanging rock stays behind Y=.2.
+    rim = [(-3, -2.12, 1.1), (-2.14, -1.35, 1.45), (-1.03, -.12, .95),
+           (-.14, .80, 1.6), (1.13, 2.06, 1.1), (2.04, 3, 1.38)]
+    for i, (a, b, h) in enumerate(rim):
+        slab('Irregular island rim', a, b, -.42, .6, 0, h,
+             'rock' if i%2 == 0 else 'sandstone')
+    outline = [(-3, -1.3), (-1.9, -1.3), (-.5, -1.3), (1.2, -1.3), (3, -1.3),
+               (3, -.55), (2.3, .18), (.9, .18), (-.7, .18), (-2.25, .18), (-3, -.5)]
+    n = len(outline)
+    verts = [(x, y, 0) for x, y in outline]
+    verts += [(x*.75+.12, -.65+(y+.65)*.7, -1.4-random.random()*.8) for x, y in outline]
+    verts += [(-.2, -.7, -4)]
+    faces = [tuple(reversed(range(n)))]
+    for i in range(n):
+        j = (i+1)%n
+        faces += [(i, j, n+i), (j, n+j, n+i), (n+i, n+j, n*2)]
+    obj = mesh('Inverted jagged island underside', verts, faces, 'rock_dark')
+    obj.data.materials.append(MATS['rock'])
+    for p in obj.data.polygons:
+        if p.index%7 == 2:
+            p.material_index = 1
+    for loc, h, tilt in [((-2.3, .35, 1.05), .54, -.2), ((.27, .32, 1.52), .72, .24),
+                         ((2.4, .34, 1.27), .46, -.25)]:
+        crystal(loc, h, .13, tilt)
+
+
+def puff(label, loc, radii, role, shade=False):
+    """Low-poly round lobes with clipped, closed, flattened bottoms."""
+    n, rings = 12, 6
+    verts = []
+    # Avoid coincident polar vertices; one top point closes each sphere.
+    for k in range(rings):
+        a = -.75 + (math.pi/2+.75)*k/rings
+        for i in range(n):
+            t = i*math.tau/n
+            verts.append((loc[0]+radii[0]*math.cos(a)*math.cos(t),
+                          loc[1]+radii[1]*math.cos(a)*math.sin(t),
+                          loc[2]+radii[2]*math.sin(a)))
+    verts.append((loc[0], loc[1], loc[2]+radii[2]))
+    faces = [tuple(reversed(range(n)))]
+    faces += [(k*n+i, k*n+(i+1)%n, (k+1)*n+(i+1)%n, (k+1)*n+i)
+              for k in range(rings-1) for i in range(n)]
+    faces += [((rings-1)*n+i, (rings-1)*n+(i+1)%n, rings*n) for i in range(n)]
+    obj = mesh(label, verts, faces, role, False)
+    for p in obj.data.polygons:
+        p.use_smooth = p.index != 0
+    return obj
+
+
+def wall_cloud():
+    # Three depth rows, flattened along Y to keep the bank tileable as a wall.
+    for row, y in enumerate((-.60, -.04, .52)):
+        for i, x in enumerate((-1.66, 0, 1.66)):
+            rz = (1.42, 1.55, 1.38)[i]
+            z = (1.62, 1.86, 1.36)[row] + (.08 if i == 0 else 0)
+            puff('Puffy cloud bank upper', (x, y, z), (1.40, .50, rz), 'cloud')
+            puff('Separate flattened lower cloud shade', (x, y-.015, .39),
+                 (1.39, .50, .39/.68163876), 'cloud_shade', True)
+    start = len(PARTS)
+    box('Upside down house body', (0, 0, .7), (2, 1.6, 1.4), 'sandstone_light')
+    extrude('Downward gabled tile roof', [(-1.16, 1.4), (1.16, 1.4), (0, 2.25)],
+            -.89, .89, 'roof_tile', False)
+    for x in (-.57, .57):
+        tube('Broad roof raised tile seam', [(x*1.9, .915, 1.43), (x, .915, 1.83),
+             (0, .915, 2.25)], .022, 'roof_tile')
+    box('Inverted wood door', (-.48, .823, .47), (.55, .065, .94), 'wood')
+    box('Door gold handle', (-.29, .868, .45), (.055, .04, .09), 'gold')
+    box('Single warm window surround', (.48, .823, .85), (.61, .07, .65), 'wood')
+    box('Single lit window', (.48, .867, .85), (.49, .028, .53), 'window_lit')
+    box('Window vertical mullion', (.48, .892, .85), (.045, .025, .54), 'wood')
+    box('Window horizontal mullion', (.48, .892, .85), (.49, .025, .045), 'wood')
+    box('Window sill now above window', (.48, .88, .51), (.72, .19, .08), 'wood')
+    transform = Matrix.Translation((0, .02, 5.0)) @ Matrix.Rotation(math.radians(190), 4, 'Y')
+    for obj in PARTS[start:]:
+        obj.data.transform(transform)
+
+
+SPECS = [
+    ('Cliff_Shore', 6, cliff_shore),
+    ('Wall_Colonnade', 8, wall_colonnade),
+    ('Wall_Arch', 6, wall_arch),
+    ('Wall_MirrorFrame', 4, wall_mirrorframe),
+    ('Wall', 4, wall),
+    ('Cliff_Island', 6, cliff_island),
+    ('Wall_Cloud', 6, wall_cloud),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
+            for fn in (min, max)]
+
+
+def finish(name, width):
+    bpy.ops.object.select_all(action='DESELECT')
+    for part in PARTS:
+        bpy.context.view_layer.objects.active = part
+        part.select_set(True)
+        for modifier in list(part.modifiers):
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+        part.select_set(False)
+    for part in PARTS:
+        part.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name, obj.data.name = name, name + '_Mesh'
+    # Only simplify if the applied two-segment bevels exceed the game budget.
+    # Material boundaries and silhouette are retained by the collapse solver.
+    if triangles(obj) > 3450:
+        mod = obj.modifiers.new('Wall triangle budget', 'DECIMATE')
+        mod.ratio, mod.delimit = 3350 / triangles(obj), {'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj) <= 3500, (name, triangles(obj))
+    # Normalize only X: preserve the authored height, front plane and underside.
+    low, high = bounds(obj)
+    for v in obj.data.vertices:
+        v.co.x = (v.co.x-(low.x+high.x)/2) * width/(high.x-low.x)
+        if name == 'Cliff_Island' and v.co.z < 0:
+            # Worn tip still reaches the specified -4m, with the top fixed at zero.
+            v.co.z *= -4/low.z
+        if abs(v.co.z) < .00001:
+            v.co.z = 0
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
+    bpy.context.view_layer.update()
+    low, high = bounds(obj)
+    assert abs(low.x+width/2) < 1e-5 and abs(high.x-width/2) < 1e-5, name
+    assert 1.2 <= high.y-low.y <= 2.25, (name, low, high)
+    if name == 'Cliff_Island':
+        assert abs(low.z+4) < 1e-5
+        assert all(v.co.y <= .20001 for v in obj.data.vertices if v.co.z < -.01)
+    else:
+        assert abs(low.z) < .015, (name, low.z)
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+    for mat in obj.data.materials:
+        assert mat.name in PALETTE
+        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+    obj['front'], obj['tile_width_m'], obj['triangle_count'] = '+Y', width, triangles(obj)
+    destination = OUTPUT / f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size > 1024
+    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+    return obj
+
+
+def preview(objects):
+    """Review-only colours, translations and camera, strictly after all exports."""
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = str(PREVIEW)
+    scene.view_settings.view_transform = 'Standard'
+    shade = scene.display.shading
+    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
+    shade.show_shadows, shade.show_cavity = False, True
+    shade.cavity_type = 'BOTH'
+    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.3, 1
+    shade.show_specular_highlight = False
+    shade.background_type, shade.background_color = 'WORLD', (.045, .055, .08)
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new('Review background')
+    scene.world.color = (.045, .055, .08)
+    helpers = []
+    try:
+        for role, mat in MATS.items():
+            mat.diffuse_color = (*PALETTE[role], 1)
+        total = sum(s[1] for s in SPECS)+1.0*(len(SPECS)-1)
+        x = -total/2
+        for obj, (_, width, _) in zip(objects, SPECS):
+            obj.location.x = x+width/2
+            x += width+1
+        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
+        scene.collection.objects.link(camera)
+        helpers.append(camera)
+        scene.camera = camera
+        camera.data.type, camera.data.ortho_scale = 'ORTHO', total+1.5
+        target = Vector((0, 0, .8))
+        elevation = math.radians(55)
+        camera.location = target+Vector((0, 50*math.cos(elevation), 50*math.sin(elevation)))
+        camera.rotation_euler = (target-camera.location).to_track_quat('-Z', 'Y').to_euler()
+        for obj in objects:
+            font = bpy.data.curves.new('Review caption', 'FONT')
+            font.body, font.align_x, font.size = obj.name, 'CENTER', .32
+            font.materials.append(MATS['crystal_core'])
+            label = bpy.data.objects.new('Review label', font)
+            scene.collection.objects.link(label)
+            label.location = (obj.location.x, 2.9, -1.7)
+            label.rotation_euler = camera.rotation_euler
+            helpers.append(label)
+        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
+        print(f'PREVIEW {PREVIEW}', flush=True)
+    finally:
+        scene.camera = None
+        for helper in helpers:
+            bpy.data.objects.remove(helper, do_unlink=True)
+        for obj in objects:
+            obj.location = (0, 0, 0)
+        for mat in MATS.values():
+            mat.diffuse_color = (.5, .5, .5, 1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials):
+        bpy.data.materials.remove(mat)
+    scene = bpy.context.scene
+    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1
+    setup_materials()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    objects = []
+    for i, (name, width, build) in enumerate(SPECS):
+        PARTS = []
+        random.seed(34117+i*7919)
+        build()
+        objects.append(finish(name, width))
+    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
+    preview(objects)
+    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
+    print('DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '*Cliff*' -g '*ch3*' -g '*preview*' Art .agents" in C:\Project\Cat_Tang
+ exited 1 in 1327ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '*Cliff*' -g '*ch3*' -g '*preview*' Art .a ...
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding UTF8 Art/tools/blender_kit_ch3_walls.py | Select-Object -Skip 405 -First 95; Get-Command python; Test-Path 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' " in C:\Project\Cat_Tang
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Item AGENTS.md,Art/AGENTS.md,Art/tools/AGENTS.md,C:/Project/AGENTS.md,C:/AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName; Get-Content -Encoding UTF8 -LiteralPath $_.FullName }; Get-ChildItem Art/tools -Filter AGENTS.md -Recurse -File | Select-Object -ExpandProperty FullName' in C:\Project\Cat_Tang
+ succeeded in 298ms:
+ succeeded in 1340ms:
+            for fn in (min, max)]
+
+
+def finish(name, width):
+    bpy.ops.object.select_all(action='DESELECT')
+    for part in PARTS:
+        bpy.context.view_layer.objects.active = part
+        part.select_set(True)
+        for modifier in list(part.modifiers):
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+        part.select_set(False)
+    for part in PARTS:
+        part.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name, obj.data.name = name, name + '_Mesh'
+    # Only simplify if the applied two-segment bevels exceed the game budget.
+    # Material boundaries and silhouette are retained by the collapse solver.
+    if triangles(obj) > 3450:
+        mod = obj.modifiers.new('Wall triangle budget', 'DECIMATE')
+        mod.ratio, mod.delimit = 3350 / triangles(obj), {'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj) <= 3500, (name, triangles(obj))
+    # Normalize only X: preserve the authored height, front plane and underside.
+    low, high = bounds(obj)
+    for v in obj.data.vertices:
+        v.co.x = (v.co.x-(low.x+high.x)/2) * width/(high.x-low.x)
+        if name == 'Cliff_Island' and v.co.z < 0:
+            # Worn tip still reaches the specified -4m, with the top fixed at zero.
+            v.co.z *= -4/low.z
+        if abs(v.co.z) < .00001:
+            v.co.z = 0
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
+    bpy.context.view_layer.update()
+    low, high = bounds(obj)
+    assert abs(low.x+width/2) < 1e-5 and abs(high.x-width/2) < 1e-5, name
+    assert 1.2 <= high.y-low.y <= 2.25, (name, low, high)
+    if name == 'Cliff_Island':
+        assert abs(low.z+4) < 1e-5
+        assert all(v.co.y <= .20001 for v in obj.data.vertices if v.co.z < -.01)
+    else:
+        assert abs(low.z) < .015, (name, low.z)
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+    for mat in obj.data.materials:
+        assert mat.name in PALETTE
+        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+    obj['front'], obj['tile_width_m'], obj['triangle_count'] = '+Y', width, triangles(obj)
+    destination = OUTPUT / f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size > 1024
+    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+    return obj
+
+
+def preview(objects):
+    """Review-only colours, translations and camera, strictly after all exports."""
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = str(PREVIEW)
+    scene.view_settings.view_transform = 'Standard'
+    shade = scene.display.shading
+    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
+    shade.show_shadows, shade.show_cavity = False, True
+    shade.cavity_type = 'BOTH'
+    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.3, 1
+    shade.show_specular_highlight = False
+    shade.background_type, shade.background_color = 'WORLD', (.045, .055, .08)
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new('Review background')
+    scene.world.color = (.045, .055, .08)
+    helpers = []
+    try:
+        for role, mat in MATS.items():
+            mat.diffuse_color = (*PALETTE[role], 1)
+        total = sum(s[1] for s in SPECS)+1.0*(len(SPECS)-1)
+        x = -total/2
+        for obj, (_, width, _) in zip(objects, SPECS):
+            obj.location.x = x+width/2
+Get-Command : 'python' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다
+음 다시 시도하십시오.
+위치 줄:2 문자:100
++ ... ls.py | Select-Object -Skip 405 -First 95; Get-Command python; Test-P ...
++                                                ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (python:String) [Get-Command], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException,Microsoft.PowerShell.Commands.GetCommandCommand
+ 
+True
+
+codex
+The new pile will use ten distinct faceted boulders, with a peak offset into the middle third and lower rocks at both ends. I’ll fit the gold vein to a boulder’s surface and give all three crystal clusters hexagonal shafts with pointed tips.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskBackup = Join-Path $env:TEMP '"'cat_tang_ch3_walls_before.py'; Copy-Item -LiteralPath Art/tools/blender_kit_ch3_walls.py -Destination "'$taskBackup; Write-Output $taskBackup; Get-Content -Encoding UTF8 Art/tools/blender_kit_ch3_walls.py | Select-Object -Skip 380 -First 30' in C:\Project\Cat_Tang
+ succeeded in 282ms:
+C:\Users\user\AppData\Local\Temp\cat_tang_ch3_walls_before.py
+    box('Window horizontal mullion', (.48, .892, .85), (.49, .025, .045), 'wood')
+    box('Window sill now above window', (.48, .88, .51), (.72, .19, .08), 'wood')
+    transform = Matrix.Translation((0, .02, 5.0)) @ Matrix.Rotation(math.radians(190), 4, 'Y')
+    for obj in PARTS[start:]:
+        obj.data.transform(transform)
+
+
+SPECS = [
+    ('Cliff_Shore', 6, cliff_shore),
+    ('Wall_Colonnade', 8, wall_colonnade),
+    ('Wall_Arch', 6, wall_arch),
+    ('Wall_MirrorFrame', 4, wall_mirrorframe),
+    ('Wall', 4, wall),
+    ('Cliff_Island', 6, cliff_island),
+    ('Wall_Cloud', 6, wall_cloud),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
+            for fn in (min, max)]
+
+
+def finish(name, width):
+    bpy.ops.object.select_all(action='DESELECT')
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py
+diff --git a/Art/tools/blender_kit_ch3_walls.py b/Art/tools/blender_kit_ch3_walls.py
+index d482a70be5d25300c22a3eff4914bf938dd0161f..c5409114a6e2ed4d1b196a9f2cc55d77e4990245
+--- a/Art/tools/blender_kit_ch3_walls.py
++++ b/Art/tools/blender_kit_ch3_walls.py
+@@ -162,22 +162,136 @@
+ 
+ 
+ def cliff_shore():
+-    # Three large, readable tiers, plus displaced lower strata.
+-    slab('Tall monolith 4.2m', -1.65, .55, -.8, .77, 0, 4.2)
+-    slab('Middle step 3m', .38, 3, -.8, .86, 0, 3)
+-    slab('Low step 1.5m', -3, -1.5, -.8, 1.02, 0, 1.5)
+-    slab('Front fractured shelf', -.92, 1.35, .56, 1.17, 0, 1.05)
+-    slab('Small toe slab', 1.58, 2.8, .66, 1.20, 0, .61)
+-    slab('High offset facet', -1.48, .15, -.62, .55, 3.6, 4.17)
+-    # A shallow triangular prism ramp, facing the room.
+-    mesh('Sand foot slope', [(-3, .76, 0), (3, .76, 0), (3, 1.4, 0), (-3, 1.4, 0),
+-                            (-3, .76, .43), (3, .76, .43)],
+-         [(0, 3, 2, 1), (0, 1, 5, 4), (3, 4, 5, 2), (0, 4, 3), (1, 2, 5)], 'sand')
+-    tube('Diagonal gold mineral vein', [(-1.48, .785, 2.0), (-1.10, .787, 2.28),
+-         (-.85, .787, 2.66), (-.40, .787, 2.96), (.23, .787, 3.56)], .026, 'gold')
+-    cluster((-2.25, 1.08, .12))
+-    cluster((2.32, 1.06, .16))
+-    cluster((.89, .83, 1.04))
++    # Ten overlapping, rounded stones with individually carved planar facets.
++    rng = random.Random(34117)
++
++    def boulder(label, footprint, bottom, radius, flatten):
++        bm = bmesh.new()
++        bmesh.ops.create_icosphere(bm, subdivisions=2, radius=1)
++        rotation = Euler(tuple(rng.uniform(-math.pi, math.pi) for _ in range(3))).to_matrix()
++        points = [rotation @ (v.co * rng.uniform(.89, 1.12) +
++                  Vector(tuple(rng.uniform(-.045, .045) for _ in range(3))))
++                  for v in bm.verts]
++        bm.free()
++        bm = bmesh.new()
++        for point in points:
++            bm.verts.new(point)
++        bmesh.ops.convex_hull(bm, input=list(bm.verts))
++        for vertex in list(bm.verts):
++            if not vertex.link_faces:
++                bm.verts.remove(vertex)
++        # Shave two oblique faces and a broad buried sole, retaining round shoulders.
++        for normal, distance in [((.32, .17, 1), .87),
++                                 ((-.8, .5, .24), .88), ((0, 0, -1), .65)]:
++            normal = Vector(normal).normalized()
++            bmesh.ops.bisect_plane(
++                bm, geom=list(bm.verts) + list(bm.edges) + list(bm.faces),
++                plane_co=normal * distance, plane_no=normal,
++                dist=.000001, clear_outer=True)
++            boundary = [edge for edge in bm.edges if edge.is_boundary]
++            if boundary:
++                bmesh.ops.holes_fill(bm, edges=boundary)
++        low = Vector(tuple(min(v.co[i] for v in bm.verts) for i in range(3)))
++        high = Vector(tuple(max(v.co[i] for v in bm.verts) for i in range(3)))
++        x0, x1, y0, y1 = footprint
++        for vertex in bm.verts:
++            unit = (vertex.co - low)
++            vertex.co = (x0 + unit.x / (high.x-low.x) * (x1-x0),
++                         y0 + unit.y / (high.y-low.y) * (y1-y0),
++                         bottom + unit.z / (high.z-low.z) * radius * 2 * flatten)
++        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++        bm.verts.ensure_lookup_table()
++        verts = [tuple(v.co) for v in bm.verts]
++        faces = [tuple(v.index for v in face.verts) for face in bm.faces]
++        assert 40 <= len(faces) <= 120, (label, len(faces))
++        bm.free()
++        obj = mesh(label, verts, faces, 'sandstone')
++        obj.data.materials.append(MATS['sandstone_light'])
++        obj.data.materials.append(MATS['sandstone_dark'])
++        for face in obj.data.polygons:
++            face.use_smooth = False
++            if face.normal.z > .55:
++                face.material_index = 1
++            elif face.normal.z < -.35 or (face.center.z < .52 and face.normal.z < .2):
++                face.material_index = 2
++        return obj
++
++    # Low curved ends blend into neighbours; the offset crown rests across two stones.
++    stones = [
++        ('Left tapered bank', (-3, -1.42, -.55, .69), 0, 1.05, .74),
++        ('Broad left shoulder', (-2.06, .12, -.60, .87), 0, 1.55, .86),
++        ('Central supporting boulder', (-.65, 1.97, -.58, 1.00), 0, 1.40, .78),
++        ('High rounded crown', (-.85, 1.75, -.52, .81), 1.35, 1.42, .76),
++        ('Right tapered bank', (1.03, 3, -.56, .75), 0, 1.18, .80),
++        ('Front left resting stone', (-2.67, -.62, .27, 1.18), 0, .90, .78),
++        ('Front ledge boulder', (-1.12, .98, .44, 1.27), 0, 1.04, .78),
++        ('Front right resting stone', (.56, 2.66, .34, 1.23), 0, .88, .73),
++        ('Small left waterline stone', (-3, -1.98, .66, 1.34), 0, .50, .65),
++        ('Small right waterline stone', (1.98, 3, .64, 1.40), 0, .56, .71),
++    ]
++    rocks = [boulder(*stone) for stone in stones]
++
++    # A shallow, curved sand drift closes the foot continuously across the tile.
++    verts = []
++    sections, sides = 17, 7
++    for i in range(sections):
++        x = -3 + 6 * i / (sections-1)
++        swell = math.sin(math.pi * i / (sections-1))
++        height = .09 + .19 * swell + .018 * math.sin(i * 1.7) * swell
++        back = .26 + .055 * math.sin(i * 1.1)
++        front = 1.30 + .10 * swell
++        verts.extend((x, y, z) for y, z in [
++            (back, 0), (front, 0), (front-.035, height*.16),
++            (front-.19, height*.52), (back+.48, height*.89),
++            (back+.20, height), (back-.04, height*.44)])
++    faces = [tuple(reversed(range(sides))),
++             tuple(range((sections-1)*sides, sections*sides))]
++    faces += [(i*sides+j, i*sides+(j+1)%sides,
++               (i+1)*sides+(j+1)%sides, (i+1)*sides+j)
++              for i in range(sections-1) for j in range(sides)]
++    mesh('Rounded sand drift', verts, faces, 'sand', False)
++
++    # Sample both edges against the crown so the narrow raised vein hugs its facets.
++    crown = rocks[3]
++    verts = []
++    samples = 23
++    for i in range(samples):
++        t = i / (samples-1)
++        x, z = -.25 + 1.20*t, 2.15 + 1.00*t
++        for side in (-1, 1):
++            hit, point, normal, _ = crown.ray_cast(
++                Vector((x + side*.017, 3, z - side*.020)), Vector((0, -1, 0)))
++            assert hit, ('Gold vein missed crown', i, side)
++            verts.extend((tuple(point-normal*.008), tuple(point+normal*.018)))
++    faces = [(0, 1, 3, 2), tuple(range((samples-1)*4, samples*4))]
++    faces += [(i*4+a, (i+1)*4+a, (i+1)*4+b, i*4+b)
++              for i in range(samples-1) for a, b in ((0, 2), (2, 3), (3, 1), (1, 0))]
++    vein = mesh('Surface following diagonal gold vein', verts, faces, 'gold')
++    vein.modifiers[0].width = .02
++
++    def shore_cluster(loc, support=None):
++        for dx, dy, height, lean in [(-.14, .015, .28, -.23),
++                                     (0, 0, .48, .08), (.14, -.025, .24, .28)]:
++            x, y, z = loc[0]+dx, loc[1]+dy, loc[2]
++            if support is not None:
++                hit, point, _, _ = support.ray_cast(Vector((x, y, 4)), Vector((0, 0, -1)))
++                assert hit, 'Ledge crystal needs a stone beneath it'
++                z = point.z - .025
++            radius, n = .085, 6
++            verts = [(radius*math.cos(j*math.tau/n), radius*math.sin(j*math.tau/n), zz)
++                     for zz in (0, height*.70) for j in range(n)]
++            verts.append((.012, 0, height))
++            faces = [tuple(reversed(range(n)))]
++            faces += [(j, (j+1)%n, (j+1)%n+n, j+n) for j in range(n)]
++            faces += [(n+j, n+(j+1)%n, n*2) for j in range(n)]
++            obj = place(mesh('Hexagonal shore crystal', verts, faces, 'crystal'),
++                        (x, y, z), (rng.uniform(-.12, .12), lean, rng.uniform(-.3, .3)))
++            obj.data.materials.append(MATS['crystal_core'])
++            obj.data.polygons[-2].material_index = 1
++
++    shore_cluster((-2.25, 1.10, .12))
++    shore_cluster((2.18, 1.10, .14))
++    shore_cluster((-.03, .89, 0), rocks[6])
+ 
+ 
+ def turned_capital(x, z):
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_walls.py" in C:\Project\Cat_Tang
+ succeeded in 1454ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py", line 670, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py", line 662, in main
+    objects.append(finish(name, width))
+                   ~~~~~~^^^^^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py", line 556, in finish
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Cliff_Shore
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskCheck = @'"'
+import bmesh, bpy
+from pathlib import Path
+path = Path('Art/tools/blender_kit_ch3_walls.py').resolve()
+ns = {'__name__': 'shore_check', '__file__': str(path)}
+exec(compile(path.read_bytes(), str(path), 'exec'), ns)
+bpy.ops.wm.read_factory_settings(use_empty=True)
+ns['setup_materials']()
+ns['cliff_shore']()
+for obj in ns['PARTS']:
+    for stage in ('raw', 'beveled'):
+        if stage == 'beveled':
+            bpy.context.view_layer.objects.active = obj
+            for mod in list(obj.modifiers):
+                bpy.ops.object.modifier_apply(modifier=mod.name)
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bad = sum(not e.is_manifold for e in bm.edges)
+        print('CHECK', obj.name, stage, len(bm.verts), len(bm.faces), bad, flush=True)
+        bm.free()
+'@; "'$taskCheckPath = Join-Path $env:TEMP '"'cat_tang_shore_check.py'; Set-Content -LiteralPath "'$taskCheckPath -Value $taskCheck -Encoding UTF8; & '"'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P "'$taskCheckPath' in C:\Project\Cat_Tang
+ succeeded in 1567ms:
+CHECK Left tapered bank raw 67 74 0
+CHECK Left tapered bank beveled 85 84 0
+CHECK Broad left shoulder raw 69 72 0
+CHECK Broad left shoulder beveled 121 116 0
+CHECK Central supporting boulder raw 70 73 0
+CHECK Central supporting boulder beveled 108 100 0
+CHECK High rounded crown raw 68 75 0
+CHECK High rounded crown beveled 88 87 0
+CHECK Right tapered bank raw 74 72 0
+CHECK Right tapered bank beveled 102 92 0
+CHECK Front left resting stone raw 68 74 0
+CHECK Front left resting stone beveled 102 95 0
+CHECK Front ledge boulder raw 68 67 0
+CHECK Front ledge boulder beveled 119 101 0
+CHECK Front right resting stone raw 67 70 0
+CHECK Front right resting stone beveled 93 90 0
+CHECK Small left waterline stone raw 69 72 0
+CHECK Small left waterline stone beveled 91 88 0
+CHECK Small right waterline stone raw 60 72 0
+CHECK Small right waterline stone beveled 72 80 0
+CHECK Rounded sand drift raw 119 114 0
+CHECK Rounded sand drift beveled 119 114 0
+CHECK Surface following diagonal gold vein raw 92 90 4
+CHECK Surface following diagonal gold vein beveled 292 290 4
+CHECK Hexagonal shore crystal raw 13 13 0
+CHECK Hexagonal shore crystal beveled 13 13 0
+CHECK Hexagonal shore crystal.001 raw 13 13 0
+CHECK Hexagonal shore crystal.001 beveled 13 13 0
+CHECK Hexagonal shore crystal.002 raw 13 13 0
+CHECK Hexagonal shore crystal.002 beveled 13 13 0
+CHECK Hexagonal shore crystal.003 raw 13 13 0
+CHECK Hexagonal shore crystal.003 beveled 13 13 0
+CHECK Hexagonal shore crystal.004 raw 13 13 0
+CHECK Hexagonal shore crystal.004 beveled 13 13 0
+CHECK Hexagonal shore crystal.005 raw 13 13 0
+CHECK Hexagonal shore crystal.005 beveled 13 13 0
+CHECK Hexagonal shore crystal.006 raw 13 13 0
+CHECK Hexagonal shore crystal.006 beveled 13 13 0
+CHECK Hexagonal shore crystal.007 raw 13 13 0
+CHECK Hexagonal shore crystal.007 beveled 13 13 0
+CHECK Hexagonal shore crystal.008 raw 13 13 0
+CHECK Hexagonal shore crystal.008 beveled 13 13 0
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py
+diff --git a/Art/tools/blender_kit_ch3_walls.py b/Art/tools/blender_kit_ch3_walls.py
+index d482a70be5d25300c22a3eff4914bf938dd0161f..0f1b4e9f4d4227ec762dab6d49c70b9524c37345
+--- a/Art/tools/blender_kit_ch3_walls.py
++++ b/Art/tools/blender_kit_ch3_walls.py
+@@ -162,22 +162,138 @@
+ 
+ 
+ def cliff_shore():
+-    # Three large, readable tiers, plus displaced lower strata.
+-    slab('Tall monolith 4.2m', -1.65, .55, -.8, .77, 0, 4.2)
+-    slab('Middle step 3m', .38, 3, -.8, .86, 0, 3)
+-    slab('Low step 1.5m', -3, -1.5, -.8, 1.02, 0, 1.5)
+-    slab('Front fractured shelf', -.92, 1.35, .56, 1.17, 0, 1.05)
+-    slab('Small toe slab', 1.58, 2.8, .66, 1.20, 0, .61)
+-    slab('High offset facet', -1.48, .15, -.62, .55, 3.6, 4.17)
+-    # A shallow triangular prism ramp, facing the room.
+-    mesh('Sand foot slope', [(-3, .76, 0), (3, .76, 0), (3, 1.4, 0), (-3, 1.4, 0),
+-                            (-3, .76, .43), (3, .76, .43)],
+-         [(0, 3, 2, 1), (0, 1, 5, 4), (3, 4, 5, 2), (0, 4, 3), (1, 2, 5)], 'sand')
+-    tube('Diagonal gold mineral vein', [(-1.48, .785, 2.0), (-1.10, .787, 2.28),
+-         (-.85, .787, 2.66), (-.40, .787, 2.96), (.23, .787, 3.56)], .026, 'gold')
+-    cluster((-2.25, 1.08, .12))
+-    cluster((2.32, 1.06, .16))
+-    cluster((.89, .83, 1.04))
++    # Ten overlapping, rounded stones with individually carved planar facets.
++    rng = random.Random(34117)
++
++    def boulder(label, footprint, bottom, radius, flatten):
++        bm = bmesh.new()
++        bmesh.ops.create_icosphere(bm, subdivisions=2, radius=1)
++        rotation = Euler(tuple(rng.uniform(-math.pi, math.pi) for _ in range(3))).to_matrix()
++        points = [rotation @ (v.co * rng.uniform(.89, 1.12) +
++                  Vector(tuple(rng.uniform(-.045, .045) for _ in range(3))))
++                  for v in bm.verts]
++        bm.free()
++        bm = bmesh.new()
++        for point in points:
++            bm.verts.new(point)
++        bmesh.ops.convex_hull(bm, input=list(bm.verts))
++        for vertex in list(bm.verts):
++            if not vertex.link_faces:
++                bm.verts.remove(vertex)
++        # Shave two oblique faces and a broad buried sole, retaining round shoulders.
++        for normal, distance in [((.32, .17, 1), .87),
++                                 ((-.8, .5, .24), .88), ((0, 0, -1), .65)]:
++            normal = Vector(normal).normalized()
++            bmesh.ops.bisect_plane(
++                bm, geom=list(bm.verts) + list(bm.edges) + list(bm.faces),
++                plane_co=normal * distance, plane_no=normal,
++                dist=.000001, clear_outer=True)
++            boundary = [edge for edge in bm.edges if edge.is_boundary]
++            if boundary:
++                bmesh.ops.holes_fill(bm, edges=boundary)
++        low = Vector(tuple(min(v.co[i] for v in bm.verts) for i in range(3)))
++        high = Vector(tuple(max(v.co[i] for v in bm.verts) for i in range(3)))
++        x0, x1, y0, y1 = footprint
++        for vertex in bm.verts:
++            unit = (vertex.co - low)
++            vertex.co = (x0 + unit.x / (high.x-low.x) * (x1-x0),
++                         y0 + unit.y / (high.y-low.y) * (y1-y0),
++                         bottom + unit.z / (high.z-low.z) * radius * 2 * flatten)
++        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++        bm.verts.ensure_lookup_table()
++        bm.verts.index_update()
++        verts = [tuple(v.co) for v in bm.verts]
++        faces = [tuple(v.index for v in face.verts) for face in bm.faces]
++        assert 40 <= len(faces) <= 120, (label, len(faces))
++        bm.free()
++        obj = mesh(label, verts, faces, 'sandstone')
++        obj.data.materials.append(MATS['sandstone_light'])
++        obj.data.materials.append(MATS['sandstone_dark'])
++        for face in obj.data.polygons:
++            face.use_smooth = False
++            if face.normal.z > .55:
++                face.material_index = 1
++            elif face.normal.z < -.35 or (face.center.z < .52 and face.normal.z < .2):
++                face.material_index = 2
++        return obj
++
++    # Low curved ends blend into neighbours; the offset crown rests across two stones.
++    stones = [
++        ('Left tapered bank', (-3, -1.42, -.55, .69), 0, 1.05, .74),
++        ('Broad left shoulder', (-2.06, .12, -.60, .87), 0, 1.55, .86),
++        ('Central supporting boulder', (-.65, 1.97, -.58, 1.00), 0, 1.40, .78),
++        ('High rounded crown', (-.85, 1.75, -.52, .81), 1.35, 1.42, .76),
++        ('Right tapered bank', (1.03, 3, -.56, .75), 0, 1.18, .80),
++        ('Front left resting stone', (-2.67, -.62, .27, 1.18), 0, .90, .78),
++        ('Front ledge boulder', (-1.12, .98, .44, 1.27), 0, 1.04, .78),
++        ('Front right resting stone', (.56, 2.66, .34, 1.23), 0, .88, .73),
++        ('Small left waterline stone', (-3, -1.98, .66, 1.34), 0, .50, .65),
++        ('Small right waterline stone', (1.98, 3, .64, 1.40), 0, .56, .71),
++    ]
++    rocks = [boulder(*stone) for stone in stones]
++
++    # A shallow, curved sand drift closes the foot continuously across the tile.
++    verts = []
++    sections, sides = 17, 7
++    for i in range(sections):
++        x = -3 + 6 * i / (sections-1)
++        swell = math.sin(math.pi * i / (sections-1))
++        height = .09 + .19 * swell + .018 * math.sin(i * 1.7) * swell
++        back = .26 + .055 * math.sin(i * 1.1)
++        front = 1.30 + .10 * swell
++        verts.extend((x, y, z) for y, z in [
++            (back, 0), (front, 0), (front-.035, height*.16),
++            (front-.19, height*.52), (back+.48, height*.89),
++            (back+.20, height), (back-.04, height*.44)])
++    faces = [tuple(reversed(range(sides))),
++             tuple(range((sections-1)*sides, sections*sides))]
++    faces += [(i*sides+j, i*sides+(j+1)%sides,
++               (i+1)*sides+(j+1)%sides, (i+1)*sides+j)
++              for i in range(sections-1) for j in range(sides)]
++    mesh('Rounded sand drift', verts, faces, 'sand', False)
++
++    # Sample both edges against the crown so the narrow raised vein hugs its facets.
++    crown = rocks[3]
++    verts = []
++    samples = 23
++    for i in range(samples):
++        t = i / (samples-1)
++        x, z = -.25 + 1.20*t, 2.15 + 1.00*t
++        for side in (-1, 1):
++            hit, point, normal, _ = crown.ray_cast(
++                Vector((x + side*.017, 3, z - side*.020)), Vector((0, -1, 0)))
++            assert hit, ('Gold vein missed crown', i, side)
++            verts.extend((tuple(point-normal*.008), tuple(point+normal*.018)))
++    end = (samples-1)*4
++    faces = [(0, 1, 3, 2), (end, end+2, end+3, end+1)]
++    faces += [(i*4+a, (i+1)*4+a, (i+1)*4+b, i*4+b)
++              for i in range(samples-1) for a, b in ((0, 2), (2, 3), (3, 1), (1, 0))]
++    vein = mesh('Surface following diagonal gold vein', verts, faces, 'gold')
++    vein.modifiers[0].width = .02
++
++    def shore_cluster(loc, support=None):
++        for dx, dy, height, lean in [(-.14, .015, .28, -.23),
++                                     (0, 0, .48, .08), (.14, -.025, .24, .28)]:
++            x, y, z = loc[0]+dx, loc[1]+dy, loc[2]
++            if support is not None:
++                hit, point, _, _ = support.ray_cast(Vector((x, y, 4)), Vector((0, 0, -1)))
++                assert hit, 'Ledge crystal needs a stone beneath it'
++                z = point.z - .025
++            radius, n = .085, 6
++            verts = [(radius*math.cos(j*math.tau/n), radius*math.sin(j*math.tau/n), zz)
++                     for zz in (0, height*.70) for j in range(n)]
++            verts.append((.012, 0, height))
++            faces = [tuple(reversed(range(n)))]
++            faces += [(j, (j+1)%n, (j+1)%n+n, j+n) for j in range(n)]
++            faces += [(n+j, n+(j+1)%n, n*2) for j in range(n)]
++            obj = place(mesh('Hexagonal shore crystal', verts, faces, 'crystal'),
++                        (x, y, z), (rng.uniform(-.12, .12), lean, rng.uniform(-.3, .3)))
++            obj.data.materials.append(MATS['crystal_core'])
++            obj.data.polygons[-2].material_index = 1
++
++    shore_cluster((-2.25, 1.10, .12))
++    shore_cluster((2.18, 1.10, .14))
++    shore_cluster((-.03, .89, 0), rocks[6])
+ 
+ 
+ def turned_capital(x, z):
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_walls.py" in C:\Project\Cat_Tang
+ succeeded in 3259ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Cliff_Shore.fbx'
+export finished in 0.0053 sec.
+EXPORTED Cliff_Shore 2966 (6.0, 2.0, 3.5084)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0061 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_Arch.fbx'
+export finished in 0.0055 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0056 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall.fbx'
+export finished in 0.0046 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Cliff_Island.fbx'
+export finished in 0.0046 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_Cloud.fbx'
+export finished in 0.0061 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+00:02.875  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_walls_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_walls_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+All seven pieces now export, and the preview has re-rendered. `Cliff_Shore` is 6 × 2 × 3.51 m at 2,966 triangles. I’m checking the close-up and comparing the other six meshes against their original builders.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskVerify = @'"'
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import random
+import tempfile
+import bpy
+from mathutils import Vector
+
+path = Path('Art/tools/blender_kit_ch3_walls.py').resolve()
+before = (Path(tempfile.gettempdir()) / 'cat_tang_ch3_walls_before.py').read_bytes()
+after = path.read_bytes()
+start = b'def cliff_shore():'
+end = b'def turned_capital('
+assert before.split(start)[0] == after.split(start)[0]
+assert before.split(end)[1] == after.split(end)[1]
+print('VERIFIED only cliff_shore function changed', flush=True)
+
+def load(source):
+    ns = {'__name__': 'walls_verification', '__file__': str(path)}
+    exec(compile(source, str(path), 'exec'), ns)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    ns['setup_materials']()
+    ns['OUTPUT'] = Path(tempfile.gettempdir()) / 'cat_tang_ch3_verify'
+    ns['OUTPUT'].mkdir(exist_ok=True)
+    return ns
+
+def fingerprint(obj):
+    data = {
+        'vertices': [tuple(v.co) for v in obj.data.vertices],
+        'faces': [(tuple(p.vertices), p.material_index, p.use_smooth) for p in obj.data.polygons],
+        'materials': [mat.name for mat in obj.data.materials],
+        'transform': [tuple(row) for row in obj.matrix_world],
+    }
+    return hashlib.sha256(json.dumps(data).encode()).hexdigest()
+
+hashes = []
+for source in (before, after):
+    ns = load(source)
+    current = {}
+    for i, (name, width, builder) in enumerate(ns['SPECS']):
+        if name == 'Cliff_Shore':
+            continue
+        ns['PARTS'] = []
+        random.seed(34117+i*7919)
+        builder()
+        current[name] = fingerprint(ns['finish'](name, width))
+    hashes.append(current)
+assert hashes[0] == hashes[1], hashes
+print('VERIFIED other six final meshes identical', flush=True)
+
+ns = load(after)
+ns['cliff_shore']()
+parts = ns['PARTS']
+rocks = parts[:10]
+assert len(rocks) == 10
+for rock in rocks:
+    assert 40 <= len(rock.data.polygons) <= 120
+    for face in rock.data.polygons:
+        assert not face.use_smooth
+        if face.normal.z > .55:
+            assert rock.data.materials[face.material_index].name == 'sandstone_light'
+assert max(v.co.z for v in parts[10].data.vertices) <= .35
+crystals = [obj for obj in parts if obj.name.startswith('Hexagonal shore crystal')]
+assert len(crystals) == 9
+assert all(len(obj.data.polygons[0].vertices) == 6 for obj in crystals)
+# Every ground-level X sample intersects sandstone or the continuous sand foot.
+for i in range(601):
+    x = -3 + i*.01
+    assert any(obj.ray_cast(Vector((x, 3, .035)), Vector((0, -1, 0)))[0]
+               for obj in parts[:11]), ('Foot gap', x)
+print('VERIFIED ten faceted boulders, three hexagonal crystal clusters, sand height, continuous foot', flush=True)
+obj = ns['finish']('Cliff_Shore', 6)
+assert ns['triangles'](obj) < 3000
+low, high = ns['bounds'](obj)
+assert -.61 <= low.y and high.y <= 1.41
+assert 3.4 < high.z <= 3.6
+assert tuple(obj.location) == (0, 0, 0)
+peaks = [v.co for v in obj.data.vertices if v.co.z > high.z-.002]
+assert all(-1 < p.x < 1 for p in peaks), peaks
+print('VERIFIED shore bounds, bottom-centred origin, offset middle-third peak, triangle budget', flush=True)
+
+# Close-up review stays in the temporary directory.
+scene = bpy.context.scene
+scene.render.engine = 'BLENDER_WORKBENCH'
+scene.render.resolution_x = 1500
+scene.render.resolution_y = 900
+scene.render.resolution_percentage = 100
+scene.render.image_settings.file_format = 'PNG'
+scene.render.filepath = str(Path(tempfile.gettempdir()) / 'cat_tang_shore_closeup.png')
+scene.view_settings.view_transform = 'Standard'
+shade = scene.display.shading
+shade.light, shade.color_type = 'FLAT', 'MATERIAL'
+shade.show_shadows, shade.show_cavity = False, True
+shade.cavity_type = 'BOTH'
+shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.3, 1
+shade.show_specular_highlight = False
+scene.world.color = (.045, .055, .08)
+for role, mat in ns['MATS'].items():
+    mat.diffuse_color = (*ns['PALETTE'][role], 1)
+camera = bpy.data.objects.new('Temporary closeup camera', bpy.data.cameras.new('Temporary closeup camera'))
+scene.collection.objects.link(camera)
+scene.camera = camera
+camera.data.type, camera.data.ortho_scale = 'ORTHO', 7.4
+target = Vector((0, .25, 1.50))
+camera.location = target + Vector((0, 10*math.cos(math.radians(55)), 10*math.sin(math.radians(55))))
+camera.rotation_euler = (target-camera.location).to_track_quat('-Z', 'Y').to_euler()
+bpy.ops.render.render(write_still=True)
+print('VERIFICATION DONE', flush=True)
+'@; "'$taskVerifyPath = Join-Path $env:TEMP '"'cat_tang_shore_verify.py'; Set-Content -LiteralPath "'$taskVerifyPath -Value $taskVerify -Encoding UTF8; & '"'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P "'$taskVerifyPath' in C:\Project\Cat_Tang
+ succeeded in 3676ms:
+VERIFIED only cliff_shore function changed
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0129 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Arch.fbx'
+export finished in 0.0079 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0084 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall.fbx'
+export finished in 0.0054 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Island.fbx'
+export finished in 0.0055 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Cloud.fbx'
+export finished in 0.0078 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0101 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Arch.fbx'
+export finished in 0.0076 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0082 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall.fbx'
+export finished in 0.0055 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Island.fbx'
+export finished in 0.0090 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Cloud.fbx'
+export finished in 0.0099 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+VERIFIED other six final meshes identical
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\cat_tang_shore_verify.py", line 71, in <module>
+    assert any(obj.ray_cast(Vector((x, 3, .035)), Vector((0, -1, 0)))[0]
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               for obj in parts[:11]), ('Foot gap', x)
+               ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('Foot gap', 3.0)
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskVerifyPath = Join-Path $env:TEMP '"'cat_tang_shore_verify.py'; "'$taskVerifySource = Get-Content -Raw -LiteralPath $taskVerifyPath; $taskVerifySource = $taskVerifySource.Replace('"'x = -3 + i*.01', 'x = -2.999 + i*(5.998/600)'); Set-Content -LiteralPath "'$taskVerifyPath -Value $taskVerifySource -Encoding UTF8; & '"'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P "'$taskVerifyPath' in C:\Project\Cat_Tang
+ succeeded in 2927ms:
+VERIFIED only cliff_shore function changed
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0064 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Arch.fbx'
+export finished in 0.0057 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0052 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall.fbx'
+export finished in 0.0047 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Island.fbx'
+export finished in 0.0047 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Cloud.fbx'
+export finished in 0.0058 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0057 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Arch.fbx'
+export finished in 0.0057 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0052 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall.fbx'
+export finished in 0.0049 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Island.fbx'
+export finished in 0.0045 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Cloud.fbx'
+export finished in 0.0059 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+VERIFIED other six final meshes identical
+VERIFIED ten faceted boulders, three hexagonal crystal clusters, sand height, continuous foot
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Shore.fbx'
+export finished in 0.0056 sec.
+EXPORTED Cliff_Shore 2966 (6.0, 2.0, 3.5084)
+VERIFIED shore bounds, bottom-centred origin, offset middle-third peak, triangle budget
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\cat_tang_shore_verify.py", line 99, in <module>
+    scene.world.color = (.045, .055, .08)
+    ^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'color' and no __dict__ for setting new attributes
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskVerifyPath = Join-Path $env:TEMP '"'cat_tang_shore_verify.py'; "'$taskVerifySource = Get-Content -Raw -LiteralPath $taskVerifyPath; $taskVerifySource = $taskVerifySource.Replace('"'scene.world.color =', \"scene.world = bpy.data.worlds.new('Temporary review world')"'`nscene.world.color ="); Set-Content -LiteralPath $taskVerifyPath -Value $taskVerifySource -Encoding UTF8; & '"'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P "'$taskVerifyPath' in C:\Project\Cat_Tang
+ succeeded in 3921ms:
+VERIFIED only cliff_shore function changed
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0060 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Arch.fbx'
+export finished in 0.0055 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0053 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall.fbx'
+export finished in 0.0048 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Island.fbx'
+export finished in 0.0045 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Cloud.fbx'
+export finished in 0.0060 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0062 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Arch.fbx'
+export finished in 0.0053 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0053 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall.fbx'
+export finished in 0.0047 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Island.fbx'
+export finished in 0.0044 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Wall_Cloud.fbx'
+export finished in 0.0058 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+VERIFIED other six final meshes identical
+VERIFIED ten faceted boulders, three hexagonal crystal clusters, sand height, continuous foot
+
+FBX export starting... 'C:\\Users\\user\\AppData\\Local\\Temp\\cat_tang_ch3_verify\\Kit_Cliff_Shore.fbx'
+export finished in 0.0061 sec.
+EXPORTED Cliff_Shore 2966 (6.0, 2.0, 3.5084)
+VERIFIED shore bounds, bottom-centred origin, offset middle-third peak, triangle budget
+00:03.266  render           | Saved: 'C:\Users\user\AppData\Local\Temp\cat_tang_shore_closeup.png'
+VERIFICATION DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py
+diff --git a/Art/tools/blender_kit_ch3_walls.py b/Art/tools/blender_kit_ch3_walls.py
+index d482a70be5d25300c22a3eff4914bf938dd0161f..ffc798209893057b8f32d1eacdad27b0e3ef64dd
+--- a/Art/tools/blender_kit_ch3_walls.py
++++ b/Art/tools/blender_kit_ch3_walls.py
+@@ -162,22 +162,138 @@
+ 
+ 
+ def cliff_shore():
+-    # Three large, readable tiers, plus displaced lower strata.
+-    slab('Tall monolith 4.2m', -1.65, .55, -.8, .77, 0, 4.2)
+-    slab('Middle step 3m', .38, 3, -.8, .86, 0, 3)
+-    slab('Low step 1.5m', -3, -1.5, -.8, 1.02, 0, 1.5)
+-    slab('Front fractured shelf', -.92, 1.35, .56, 1.17, 0, 1.05)
+-    slab('Small toe slab', 1.58, 2.8, .66, 1.20, 0, .61)
+-    slab('High offset facet', -1.48, .15, -.62, .55, 3.6, 4.17)
+-    # A shallow triangular prism ramp, facing the room.
+-    mesh('Sand foot slope', [(-3, .76, 0), (3, .76, 0), (3, 1.4, 0), (-3, 1.4, 0),
+-                            (-3, .76, .43), (3, .76, .43)],
+-         [(0, 3, 2, 1), (0, 1, 5, 4), (3, 4, 5, 2), (0, 4, 3), (1, 2, 5)], 'sand')
+-    tube('Diagonal gold mineral vein', [(-1.48, .785, 2.0), (-1.10, .787, 2.28),
+-         (-.85, .787, 2.66), (-.40, .787, 2.96), (.23, .787, 3.56)], .026, 'gold')
+-    cluster((-2.25, 1.08, .12))
+-    cluster((2.32, 1.06, .16))
+-    cluster((.89, .83, 1.04))
++    # Ten overlapping, rounded stones with individually carved planar facets.
++    rng = random.Random(34117)
++
++    def boulder(label, footprint, bottom, radius, flatten):
++        bm = bmesh.new()
++        bmesh.ops.create_icosphere(bm, subdivisions=2, radius=1)
++        rotation = Euler(tuple(rng.uniform(-math.pi, math.pi) for _ in range(3))).to_matrix()
++        points = [rotation @ (v.co * rng.uniform(.89, 1.12) +
++                  Vector(tuple(rng.uniform(-.045, .045) for _ in range(3))))
++                  for v in bm.verts]
++        bm.free()
++        bm = bmesh.new()
++        for point in points:
++            bm.verts.new(point)
++        bmesh.ops.convex_hull(bm, input=list(bm.verts))
++        for vertex in list(bm.verts):
++            if not vertex.link_faces:
++                bm.verts.remove(vertex)
++        # Shave two oblique faces and a broad buried sole, retaining round shoulders.
++        for normal, distance in [((.32, .17, 1), .87),
++                                 ((-.8, .5, .24), .88), ((0, 0, -1), .65)]:
++            normal = Vector(normal).normalized()
++            bmesh.ops.bisect_plane(
++                bm, geom=list(bm.verts) + list(bm.edges) + list(bm.faces),
++                plane_co=normal * distance, plane_no=normal,
++                dist=.000001, clear_outer=True)
++            boundary = [edge for edge in bm.edges if edge.is_boundary]
++            if boundary:
++                bmesh.ops.holes_fill(bm, edges=boundary)
++        low = Vector(tuple(min(v.co[i] for v in bm.verts) for i in range(3)))
++        high = Vector(tuple(max(v.co[i] for v in bm.verts) for i in range(3)))
++        x0, x1, y0, y1 = footprint
++        for vertex in bm.verts:
++            unit = (vertex.co - low)
++            vertex.co = (x0 + unit.x / (high.x-low.x) * (x1-x0),
++                         y0 + unit.y / (high.y-low.y) * (y1-y0),
++                         bottom + unit.z / (high.z-low.z) * radius * 2 * flatten)
++        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++        bm.verts.ensure_lookup_table()
++        bm.verts.index_update()
++        verts = [tuple(v.co) for v in bm.verts]
++        faces = [tuple(v.index for v in face.verts) for face in bm.faces]
++        assert 40 <= len(faces) <= 120, (label, len(faces))
++        bm.free()
++        obj = mesh(label, verts, faces, 'sandstone')
++        obj.data.materials.append(MATS['sandstone_light'])
++        obj.data.materials.append(MATS['sandstone_dark'])
++        for face in obj.data.polygons:
++            face.use_smooth = False
++            if face.normal.z > .55:
++                face.material_index = 1
++            elif face.normal.z < -.35 or (face.center.z < .52 and face.normal.z < .2):
++                face.material_index = 2
++        return obj
++
++    # Low curved ends blend into neighbours; the offset crown rests across two stones.
++    stones = [
++        ('Left tapered bank', (-3, -1.42, -.55, .69), 0, 1.05, .74),
++        ('Broad left shoulder', (-2.06, .12, -.60, .87), 0, 1.55, .86),
++        ('Central supporting boulder', (-.65, 1.97, -.58, 1.00), 0, 1.40, .78),
++        ('High rounded crown', (-.85, 1.75, -.52, .81), 1.35, 1.42, .76),
++        ('Right tapered bank', (1.03, 3, -.56, .75), 0, 1.18, .80),
++        ('Front left resting stone', (-2.67, -.62, .27, 1.18), 0, .90, .78),
++        ('Front ledge boulder', (-1.12, .98, .44, 1.27), 0, 1.04, .78),
++        ('Front right resting stone', (.56, 2.66, .34, 1.23), 0, .88, .73),
++        ('Small left waterline stone', (-3, -1.98, .66, 1.34), 0, .50, .65),
++        ('Small right waterline stone', (1.98, 3, .64, 1.40), 0, .56, .71),
++    ]
++    rocks = [boulder(*stone) for stone in stones]
++
++    # A shallow, curved sand drift closes the foot continuously across the tile.
++    verts = []
++    sections, sides = 17, 7
++    for i in range(sections):
++        x = -3 + 6 * i / (sections-1)
++        swell = math.sin(math.pi * i / (sections-1))
++        height = .09 + .19 * swell + .018 * math.sin(i * 1.7) * swell
++        back = .26 + .055 * math.sin(i * 1.1)
++        front = 1.30 + .10 * swell
++        verts.extend((x, y, z) for y, z in [
++            (back, 0), (front, 0), (front-.035, height*.16),
++            (front-.19, height*.52), (back+.48, height*.89),
++            (back+.20, height), (back-.04, height*.44)])
++    faces = [tuple(reversed(range(sides))),
++             tuple(range((sections-1)*sides, sections*sides))]
++    faces += [(i*sides+j, i*sides+(j+1)%sides,
++               (i+1)*sides+(j+1)%sides, (i+1)*sides+j)
++              for i in range(sections-1) for j in range(sides)]
++    mesh('Rounded sand drift', verts, faces, 'sand', False)
++
++    # Sample both edges against the crown so the narrow raised vein hugs its facets.
++    crown = rocks[3]
++    verts = []
++    samples = 23
++    for i in range(samples):
++        t = i / (samples-1)
++        x, z = -.25 + 1.20*t, 2.15 + 1.00*t
++        for side in (-1, 1):
++            hit, point, normal, _ = crown.ray_cast(
++                Vector((x + side*.017, 3, z - side*.020)), Vector((0, -1, 0)))
++            assert hit, ('Gold vein missed crown', i, side)
++            verts.extend((tuple(point-normal*.008), tuple(point+normal*.018)))
++    end = (samples-1)*4
++    faces = [(0, 1, 3, 2), (end, end+2, end+3, end+1)]
++    faces += [(i*4+a, (i+1)*4+a, (i+1)*4+b, i*4+b)
++              for i in range(samples-1) for a, b in ((0, 2), (2, 3), (3, 1), (1, 0))]
++    vein = mesh('Surface following diagonal gold vein', verts, faces, 'gold')
++    vein.modifiers[0].width = .02
++
++    def shore_cluster(loc, support=None):
++        for dx, dy, height, lean in [(-.14, .015, .28, -.23),
++                                     (0, 0, .48, .08), (.14, -.025, .24, .28)]:
++            x, y, z = loc[0]+dx, loc[1]+dy, loc[2]
++            if support is not None:
++                hit, point, _, _ = support.ray_cast(Vector((x, y, 4)), Vector((0, 0, -1)))
++                assert hit, 'Ledge crystal needs a stone beneath it'
++                z = point.z - .025
++            radius, n = .085, 6
++            verts = [(radius*math.cos(j*math.tau/n), radius*math.sin(j*math.tau/n), zz)
++                     for zz in (0, height*.70) for j in range(n)]
++            verts.append((.012, 0, height))
++            faces = [tuple(reversed(range(n)))]
++            faces += [(j, (j+1)%n, (j+1)%n+n, j+n) for j in range(n)]
++            faces += [(n+j, n+(j+1)%n, n*2) for j in range(n)]
++            obj = place(mesh('Hexagonal shore crystal', verts, faces, 'crystal'),
++                        (x, y, z), (rng.uniform(-.12, .12), lean, rng.uniform(-.3, .3)))
++            obj.data.materials.append(MATS['crystal_core'])
++            obj.data.polygons[-2].material_index = 1
++
++    shore_cluster((-1.80, 1.23, .12))
++    shore_cluster((1.70, 1.25, .12))
++    shore_cluster((-.03, .89, 0), rocks[6])
+ 
+ 
+ def turned_capital(x, z):
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_walls.py" in C:\Project\Cat_Tang
+ succeeded in 3055ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_walls.py:38: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Cliff_Shore.fbx'
+export finished in 0.0059 sec.
+EXPORTED Cliff_Shore 2966 (6.0, 2.0, 3.5084)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_Colonnade.fbx'
+export finished in 0.0068 sec.
+EXPORTED Wall_Colonnade 3350 (8.0, 2.01, 4.64)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_Arch.fbx'
+export finished in 0.0054 sec.
+EXPORTED Wall_Arch 3350 (6.0, 1.9105, 4.56)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_MirrorFrame.fbx'
+export finished in 0.0060 sec.
+EXPORTED Wall_MirrorFrame 3350 (4.0, 1.94, 3.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall.fbx'
+export finished in 0.0049 sec.
+EXPORTED Wall 2148 (4.0, 1.8, 3.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Cliff_Island.fbx'
+export finished in 0.0048 sec.
+EXPORTED Cliff_Island 744 (6.0, 1.897, 6.2132)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Wall_Cloud.fbx'
+export finished in 0.0060 sec.
+EXPORTED Wall_Cloud 2916 (6.0, 2.1347, 5.1684)
+00:02.750  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_walls_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_walls_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskVerifyPath = Join-Path $env:TEMP '"'cat_tang_shore_verify.py'; & 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P "'$taskVerifyPath | Select-String -Pattern '"'VERIFIED|VERIFICATION|Traceback|Error|Assertion|Saved:'" in C:\Project\Cat_Tang
+ succeeded in 4085ms:
+
+VERIFIED only cliff_shore function changed
+VERIFIED other six final meshes identical
+VERIFIED ten faceted boulders, three hexagonal crystal clusters, sand height, continuous foot
+VERIFIED shore bounds, bottom-centred origin, offset middle-third peak, triangle budget
+00:03.438  render           | Saved: 'C:\Users\user\AppData\Local\Temp\cat_tang_shore_closeup.png'
+VERIFICATION DONE
+
+
+
+codex
+Updated only `cliff_shore()` in [the script](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch3_walls.py).
+
+- Ten rounded, faceted boulders with gold vein, sand drift, and three crystal clusters.
+- **2,966 triangles**, measuring **6 × 2 × 3.51 m**.
+- All seven FBXs exported successfully and the [preview regenerated](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch3_walls_preview.png).
+- Verified the other six meshes match their originals exactly.
+tokens used
+64,050
+Updated only `cliff_shore()` in [the script](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch3_walls.py).
+
+- Ten rounded, faceted boulders with gold vein, sand drift, and three crystal clusters.
+- **2,966 triangles**, measuring **6 × 2 × 3.51 m**.
+- All seven FBXs exported successfully and the [preview regenerated](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch3_walls_preview.png).
+- Verified the other six meshes match their originals exactly.

@@ -15,7 +15,7 @@ namespace CatTang
     {
         public const float Width = 4.6f, Height = 2.5f, Thick = 0.5f;
         const float RattleTime = 0.28f;
-        static readonly Color DustCol = new(0.9f, 0.76f, 0.52f);
+        static readonly Color DustCol = FxBurst.MistDust;
         static readonly Color WoodCol = new(0.62f, 0.4f, 0.22f);
 
         Transform visual;

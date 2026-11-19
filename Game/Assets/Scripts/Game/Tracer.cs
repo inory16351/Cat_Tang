@@ -51,6 +51,35 @@ namespace CatTang
         }
         Color? haloCol;
         static Tracer last;
+        Vector3[] path;                 // 곡선 궤적 (자동 추적 탄, 2026-11-18 사용자): 꺾은선, 탄두가 이 선을 따라 날아감
+        float[] pathLen;
+
+        /// <summary>곡선 궤적: pts를 잇는 꺾은선 (자동 추적 탄이 조준 방향에서 표적 쪽으로 휘어 들어감)</summary>
+        public static void SpawnPath(Vector3[] pts, Color c, float width, bool doubleLine, bool trait, Color? halo2 = null)
+        {
+            if (pts == null || pts.Length < 2) return;
+            Spawn(pts[0], pts[pts.Length - 1], c, width, doubleLine, trait, halo2);
+            var t = last;
+            if (!t) return;
+            t.path = pts;
+            t.pathLen = new float[pts.Length];
+            for (int i = 1; i < pts.Length; i++) t.pathLen[i] = t.pathLen[i - 1] + Vector3.Distance(pts[i - 1], pts[i]);
+            foreach (var lr in new[] { t.halo, t.core })
+            {
+                lr.positionCount = pts.Length;
+                lr.SetPositions(pts);
+            }
+            t.head.positionCount = 2;
+            t.Update();
+        }
+
+        Vector3 PathAt(float d)
+        {
+            if (d <= 0) return path[0];
+            for (int i = 1; i < path.Length; i++)
+                if (d <= pathLen[i]) return Vector3.Lerp(path[i - 1], path[i], (d - pathLen[i - 1]) / Mathf.Max(1e-4f, pathLen[i] - pathLen[i - 1]));
+            return path[path.Length - 1];
+        }
 
         public static void Spawn(Vector3 a, Vector3 b, Color c, float width, bool doubleLine)
         {
@@ -119,7 +148,18 @@ namespace CatTang
             // 탄두: 총구 → 목표로 날아가는 밝은 짧은 줄, 도착하면 꺼짐
             float tk = age / HeadTime;
             head.enabled = tk < 1.15f;
-            if (head.enabled)
+            if (head.enabled && path != null)
+            {
+                float plen = pathLen[pathLen.Length - 1];
+                float ptip = Mathf.Min(plen, plen * Mathf.Clamp01(tk));
+                head.SetPosition(0, PathAt(Mathf.Max(0, ptip - HeadLen)));
+                head.SetPosition(1, PathAt(ptip));
+                head.startWidth = width * 0.4f;
+                head.endWidth = width * 1.6f;
+                head.startColor = new Color(hot.r, hot.g, hot.b, 0);
+                head.endColor = Color.Lerp(hot, Color.white, 0.5f);
+            }
+            else if (head.enabled)
             {
                 float len = (b - a).magnitude;
                 var dir = len > 1e-4f ? (b - a) / len : Vector3.forward;

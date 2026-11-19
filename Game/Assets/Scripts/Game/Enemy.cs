@@ -12,7 +12,7 @@ namespace CatTang
     [RequireComponent(typeof(Health))]
     public partial class Enemy : MonoBehaviour
     {
-        public enum Kind { Outlaw, Brute, Bomber, Boss, Conductor, Porter, Signal }   // 뒤 셋 = 2장 (EnemyCh2.cs)
+        public enum Kind { Outlaw, Brute, Bomber, Boss, Conductor, Porter, Signal, MirrorShooter, LightMage, MirrorBlade, GlassKnight, Trickster }   // Conductor~Signal = 2장 (EnemyCh2.cs), MirrorShooter~ = 3장 (EnemyCh3.cs)
         public static readonly List<Enemy> All = new();
 
         public Kind kind = Kind.Outlaw;
@@ -23,6 +23,7 @@ namespace CatTang
         public string bossPattern = "Spiral";
         public ChapterDef chapter;
         public bool elite;                            // 강화형 (스테이지 3부터): 공격 하나 추가 · 체력 1.5배
+        public bool noReward;                         // 죽어도 방 정리 · 골드 · 경험치에 안 셈 (3장 신기루 분신)
         public float chapterDmg = 1f;                 // 챕터 피해 배율 (보스 패턴 피해에 곱함)
         [HideInInspector] public BossBrain brain;     // 있으면 보스 패턴을 이 두뇌가 맡음 (1장 보스 · 중간 보스)
 
@@ -93,6 +94,11 @@ namespace CatTang
                 case Kind.Conductor: ConductorUpdate(p, dir, dist, spd); break;
                 case Kind.Porter: PorterUpdate(p, dir, dist, spd); break;
                 case Kind.Signal: SignalUpdate(p, dir, dist, spd); break;
+                case Kind.MirrorShooter: ShooterUpdate(p, dir, dist, spd); break;
+                case Kind.LightMage: MageUpdate(p, dir, dist, spd); break;
+                case Kind.MirrorBlade: BladeUpdate(p, dir, dist, spd); break;
+                case Kind.GlassKnight: KnightUpdate(p, dir, dist, spd); break;
+                case Kind.Trickster: TricksterUpdate(p, dir, dist, spd); break;
                 case Kind.Boss:
                     if (!brain) brain = GetComponent<BossBrain>();
                     if (brain) brain.Tick(p, dir, dist, spd); else BossUpdate(p, dir, dist, spd);
@@ -231,7 +237,7 @@ namespace CatTang
                     // 착지: 먼지 · 화면 흔들림, 그 자리에서 점멸 시작
                     transform.position = leapTo;
                     if (model) { model.localPosition = Vector3.zero; model.localRotation = modelBaseRot; model.localScale = Vector3.Scale(modelScale, new Vector3(1.2f, 0.75f, 1.2f)); }
-                    FxBurst.Spawn(transform.position + Vector3.up * 0.15f, 1.3f, FxBurst.Kind.Dust, new Color(0.92f, 0.8f, 0.55f));
+                    FxBurst.Spawn(transform.position + Vector3.up * 0.15f, 1.3f, FxBurst.Kind.Dust, FxBurst.MistDust);
                     CameraFollow.Shake(0.08f);
                     act = Act.Fuse;
                     actUntil = Time.time + BomberFuse;
@@ -418,12 +424,14 @@ namespace CatTang
             if (blew) GunkataFx.Explosion(transform.position, BomberRadius, true);   // 3D 자폭 폭발 (모래 먼지 · 파편)
             if (Mathf.Approximately(health.lastDamageWasDelayed, Time.time)) PlayerController.Instance?.DelayedKill(transform.position);
             // 사망: 이미지 폭발 대신 몸이 검게 굳어 검은 안개로 흩어지며 사라짐 (DeathMist)
+            Sfx.Play("enemy_die", kind == Kind.Boss ? 1f : 0.65f, kind == Kind.Boss ? 0f : 0.1f, 3);
             if (!blew)
             {
                 if (model) { DeathMist.Play(model, kind == Kind.Boss ? 1.6f : 1f); model = null; }
                 else FxBurst.Spawn(transform.position + Vector3.up, kind == Kind.Boss ? 6f : 2.2f, FxBurst.Kind.Explosion);
             }
-            RunManager.Instance?.OnEnemyKilled(this);
+            OnDieCh3();
+            if (!noReward) RunManager.Instance?.OnEnemyKilled(this);
             Destroy(gameObject);
         }
     }

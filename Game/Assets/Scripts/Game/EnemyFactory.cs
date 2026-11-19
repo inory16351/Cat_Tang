@@ -54,6 +54,7 @@ namespace CatTang
         /// <summary>일반 적 웨이브 구성: 무법자 = 챕터 사격형 비율 + 10%, 폭탄병 25%, 나머지 깡패</summary>
         public static Enemy RandomMinion(Vector3 pos, ChapterDef ch, bool elite = false)
         {
+            if (ch != null && ch.Id >= 3) return RandomCh3(pos, ch, elite);
             if (ch != null && ch.Id == 2)
             {
                 // 2장: 차장 40% · 짐꾼 30% · 신호수 30% (세 종류가 처음부터 섞여 나옴)
@@ -90,7 +91,9 @@ namespace CatTang
             foreach (var r in model.GetComponentsInChildren<Renderer>())
             {
                 var mats = r.materials;
-                foreach (var m in mats) if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", m.GetColor("_BaseColor") * new Color(1.15f, 0.82f, 0.68f));
+                // 3장 강화형: 더 밝고 차가운 빛 (md: 더 투명하고 일렁이는 모습), 1 · 2장: 더 달군 색
+                var mul = e.chapter != null && e.chapter.Id >= 3 ? new Color(0.9f, 1.15f, 1.35f) : new Color(1.15f, 0.82f, 0.68f);
+                foreach (var m in mats) if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", m.GetColor("_BaseColor") * mul);
                 r.materials = mats;
             }
             e.SetModel(model);
@@ -211,10 +214,115 @@ namespace CatTang
             return e;
         }
 
+        // ---------- 3장 (신기루 사막 = 거울 세계, 2026-11-18) — 체력 · 피해는 md 3장 값 그대로. 모델(Resources/Enemies/Ch3_*)이 없으면 도형 ----------
+        // 적 구성: 다섯 종류가 처음부터 섞여 나오고, 방마다 3~4종을 뽑아 섞음
+        static object ch3MixRoom;
+        static readonly System.Collections.Generic.List<int> ch3Mix = new();
+
+        static Enemy RandomCh3(Vector3 pos, ChapterDef ch, bool elite)
+        {
+            var room = RunManager.Instance ? (object)RunManager.Instance.CurrentRoom : null;
+            if (room == null || room != ch3MixRoom || ch3Mix.Count == 0)
+            {
+                ch3MixRoom = room;
+                ch3Mix.Clear();
+                var all = new System.Collections.Generic.List<int> { 0, 1, 2, 3, 4 };
+                int n = Random.value < 0.5f ? 3 : 4;
+                while (ch3Mix.Count < n) { int i = Random.Range(0, all.Count); ch3Mix.Add(all[i]); all.RemoveAt(i); }
+            }
+            return ch3Mix[Random.Range(0, ch3Mix.Count)] switch
+            {
+                0 => MirrorShooter(pos, ch, elite),
+                1 => LightMage(pos, ch, elite),
+                2 => MirrorBlade(pos, ch, elite),
+                3 => GlassKnight(pos, ch, elite),
+                _ => Trickster(pos, ch, elite),
+            };
+        }
+
+        static readonly Color Ch3Body = new Color(0.62f, 0.6f, 0.82f), Ch3Glass = new Color(0.78f, 0.93f, 1f);
+
+        static Enemy Make3(string name, string model, Vector3 pos, ChapterDef ch, bool elite, float hp, Enemy.Kind kind, float r, float h, float speed, Color tint, System.Action<Transform> extra = null)
+        {
+            var e = Root(name, pos, hp, kind, r, h);
+            if (!AttachModelFor(e, model, elite, out bool plus))
+            {
+                Proto2(e, ch, Color.Lerp(Ch3Body, tint, 0.4f), h * 0.85f, r * 1.1f);
+                extra?.Invoke(e.transform.Find("Model"));
+            }
+            e.chapter = ch;
+            e.speed = speed;
+            if (elite) MakeElite(e, plus);
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // 거울 사수: 내구 108 · 이속 2.8 · 반사탄 12
+        public static Enemy MirrorShooter(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Make3("Enemy_MirrorShooter", "Ch3_Shooter", pos, ch, elite, 108, Enemy.Kind.MirrorShooter, 0.55f, 2.4f, 2.8f, new Color(0.7f, 0.9f, 1f),
+                m => Part(PrimitiveType.Cylinder, m, new Vector3(0.35f, 1.2f, 0.45f), new Vector3(0.45f, 0.03f, 0.45f), M(Ch3Glass, 1f), new Vector3(90, 0, 0)));   // 손거울
+            e.projectileDamage = 12;
+            e.shootInterval = Enemy.ShooterInterval;
+            return e;
+        }
+
+        // 빛가루 법사: 내구 108 · 이속 2.6 · 유도 구슬 12
+        public static Enemy LightMage(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Make3("Enemy_LightMage", "Ch3_Mage", pos, ch, elite, 108, Enemy.Kind.LightMage, 0.55f, 2.4f, 2.6f, new Color(1f, 0.85f, 0.95f),
+                m => Part(PrimitiveType.Sphere, m, new Vector3(0, 2.3f, -0.3f), Vector3.one * 0.45f, M(new Color(1f, 0.95f, 0.75f), 1f)));                         // 머리 위 빛
+            e.projectileDamage = 12;
+            return e;
+        }
+
+        // 거울 너머 검객: 내구 144 · 이속 3.6 · 베기 16
+        public static Enemy MirrorBlade(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Make3("Enemy_MirrorBlade", "Ch3_Blade", pos, ch, elite, 144, Enemy.Kind.MirrorBlade, 0.6f, 2.5f, 3.6f, new Color(0.55f, 0.5f, 0.9f),
+                m => Part(PrimitiveType.Cube, m, new Vector3(0.45f, 1.1f, 0.6f), new Vector3(0.08f, 0.08f, 1.3f), M(Ch3Glass, 1f)));                                 // 유리 칼
+            e.contactDamage = 16;
+            return e;
+        }
+
+        // 유리 기사: 내구 288 · 이속 2.6 · 정면 반사 · 방패 밀치기 16
+        public static Enemy GlassKnight(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Make3("Enemy_GlassKnight", "Ch3_Knight", pos, ch, elite, 288, Enemy.Kind.GlassKnight, 0.95f, 2.8f, 2.6f, new Color(0.6f, 0.75f, 0.95f),
+                m => { var mir = Part(PrimitiveType.Cube, m, new Vector3(0, 1.2f, 0.8f), new Vector3(1.4f, 1.6f, 0.12f), M(Ch3Glass, 1f)); mir.name = "Mirror"; });   // 거울 방패
+            e.contactDamage = 16;
+            e.GetComponent<Health>().ReflectFrom = e.KnightReflects;
+            return e;
+        }
+
+        // 신기루 분신술사: 내구 108 · 이속 3.0 · 빛 탄 12
+        public static Enemy Trickster(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Make3("Enemy_Trickster", "Ch3_Trickster", pos, ch, elite, 108, Enemy.Kind.Trickster, 0.55f, 2.3f, 3f, new Color(1f, 0.7f, 0.85f),
+                m => Part(PrimitiveType.Cylinder, m, new Vector3(0, 2.05f, 0), new Vector3(0.9f, 0.06f, 0.9f), M(new Color(0.35f, 0.25f, 0.45f))));                  // 넓은 모자
+            e.projectileDamage = 12;
+            return e;
+        }
+
+        /// <summary>신기루 분신: 본체와 같은 모습 · 한 발에 소멸 · 방 정리 · 보상에 안 셈</summary>
+        public static Enemy TricksterClone(Vector3 pos, ChapterDef ch, Enemy owner)
+        {
+            var e = Trickster(pos, ch, false);
+            e.name = "Enemy_TricksterClone";
+            e.cloneOwner = owner;
+            e.noReward = true;
+            e.projectileDamage = owner.projectileDamage;
+            var h = e.GetComponent<Health>();
+            h.maxHp = 1; h.ResetHp(1);
+            if (owner.elite) { var m = e.transform.Find("Model"); var om = owner.transform.Find("Model"); if (m && om) m.localScale = om.localScale; }
+            return e;
+        }
+
         // 1장 중간 보스: 태엽 현상금 사냥꾼 · 체력 1080 · 이속 4
         public static Enemy MidBoss(Vector3 pos, ChapterDef ch)
         {
             if (ch.Id == 2) return MidBoss2(pos, ch);
+            if (ch.Id == 3) return MidBoss3(pos, ch);
             var e = Root("MidBoss_BountyHunter", pos, 1080 * ch.HpMul, Enemy.Kind.Boss, 1.3f, 3.8f);
             if (!AttachModel(e, "Ch1_MidBoss"))
             {
@@ -249,6 +357,47 @@ namespace CatTang
             return e;
         }
 
+        // 3장 블렌더 보스(리깅 없음): Resources/Kit/Ch3/이름 프리팹을 "Model"로 붙이고, 조각 움직임 컴포넌트는 그 아래 메시(Enemy가 흔드는 Model과 따로)에
+        static T AttachKit3<T>(Enemy e, string res) where T : Component
+        {
+            var prefab = Resources.Load<GameObject>("Kit/Ch3/" + res);
+            if (!prefab) return null;
+            var m = Object.Instantiate(prefab, e.transform, false);
+            m.name = "Model";
+            foreach (var c in m.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+            e.SetModel(m.transform);
+            var mesh = m.transform.childCount > 0 ? m.transform.GetChild(0) : m.transform;
+            return mesh.gameObject.AddComponent<T>();
+        }
+
+        // 3장 중간 보스: 신기루 마술사 · 체력 3960 · 이속 3.5 (블렌더 + Codex 4m 태엽 꼭두각시)
+        static Enemy MidBoss3(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("MidBoss_MirageMagician", pos, 3960, Enemy.Kind.Boss, 1.2f, 4f);
+            if (!AttachKit3<PuppetAnim>(e, "Ch3_Magician")) Proto2(e, ch, new Color(0.45f, 0.4f, 0.65f), 3.8f, 1.1f);
+            e.speed = 3.5f;
+            e.chapter = ch;
+            e.chapterDmg = 1f;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch3MidBoss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
+        // 3장 보스: 거울 고래 · 체력 7020(표) · 이속 3 (블렌더 + Codex 길이 14m, 조각 움직임 WhaleAnim)
+        static Enemy Boss3(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("Boss_MirrorWhale", pos, ch.BossHp, Enemy.Kind.Boss, 3.2f, 5f);
+            if (!AttachKit3<WhaleAnim>(e, "Ch3_Whale")) Proto2(e, ch, new Color(0.7f, 0.85f, 0.95f), 4.5f, 5f);
+            e.speed = 3f;
+            e.chapter = ch;
+            e.chapterDmg = 1f;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch3Boss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            return e;
+        }
+
         // 2장 보스: 멈춘 기관차 거인 · 체력 4860(표) · 이속 2.5
         static Enemy Boss2(Vector3 pos, ChapterDef ch)
         {
@@ -266,6 +415,7 @@ namespace CatTang
         public static Enemy Boss(Vector3 pos, ChapterDef ch)
         {
             if (ch.Id == 2) return Boss2(pos, ch);
+            if (ch.Id == 3) return Boss3(pos, ch);
             var body = M(Color.Lerp(new Color(0.88f, 0.78f, 0.58f), ch.Wall, 0.35f), 6f);
             var gold = M(new Color(0.95f, 0.7f, 0.25f), 5f);
             var e = Root("Boss_" + ch.BossPattern, pos, ch.BossHp, Enemy.Kind.Boss, 2.4f, 6.2f);

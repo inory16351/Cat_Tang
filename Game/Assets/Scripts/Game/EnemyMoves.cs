@@ -142,7 +142,7 @@ namespace CatTang
             var from = transform.position;
             var to = from + side * RollDist;
             var rm = RunManager.Instance; if (rm) to = rm.ClampToRoom(to, 1.2f);
-            FxBurst.Spawn(from + Vector3.up * 0.15f, 1.1f, FxBurst.Kind.Dust, new Color(0.92f, 0.8f, 0.55f));
+            FxBurst.Spawn(from + Vector3.up * 0.15f, 1.1f, FxBurst.Kind.Dust, FxBurst.MistDust);
             // 고양이 대시처럼 실루엣: 출발 자리 진한 잔상 → 지나가며 옅은 잔상 → 도착 자리 밝은 잔상 (몬스터 색 = 보랏빛, 일반 레이어)
             if (model) Afterimage.Spawn(model, DashSil, 0.35f, false);
             float t = 0, ghost = 0;
@@ -203,7 +203,7 @@ namespace CatTang
                 float at = start + len * b / 0.6f;
                 while (Time.time < at) { if (act != Act.Windup) yield break; yield return null; }
                 var side = Vector3.Cross(Vector3.up, lockDir).normalized;
-                FxBurst.Spawn(transform.position + side * 0.35f - lockDir * 0.3f + Vector3.up * 0.1f, 1.3f, FxBurst.Kind.Dust, new Color(0.9f, 0.75f, 0.5f));
+                FxBurst.Spawn(transform.position + side * 0.35f - lockDir * 0.3f + Vector3.up * 0.1f, 1.3f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 CameraFollow.Shake(0.04f);
             }
         }
@@ -221,7 +221,7 @@ namespace CatTang
             {
                 var d = Effects.Flat(p.transform.position - transform.position);
                 if (d.magnitude <= SlamRadius) { p.health.TakeDamage(contactDamage); p.health.Knockback((d.sqrMagnitude > 1e-4f ? d.normalized : transform.forward) * 7f); }
-                FxBurst.Spawn(transform.position + Vector3.up * 0.15f, SlamRadius * 1.6f, FxBurst.Kind.Dust, new Color(0.85f, 0.7f, 0.5f));
+                FxBurst.Spawn(transform.position + Vector3.up * 0.15f, SlamRadius * 1.6f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 PropHit.Area(transform.position, SlamRadius, contactDamage);
                 GunkataFx.HitImpact(transform.position + Vector3.up * 0.3f, Vector3.down, new Color(1f, 0.6f, 0.3f), false, 1.4f);
                 CameraFollow.Shake(0.18f);
@@ -278,23 +278,47 @@ namespace CatTang
             if (kit) { bomb = Instantiate(kit); if (!sb) bomb.transform.localScale *= 0.35f; else bomb.transform.localScale *= 1.25f; foreach (var c in bomb.GetComponentsInChildren<Collider>()) Destroy(c); }
             else { bomb = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(bomb.GetComponent<Collider>()); bomb.transform.localScale = Vector3.one * 0.35f; bomb.GetComponent<Renderer>().sharedMaterial = RoomBuilder.Mat(new Color(0.85f, 0.6f, 0.3f), 2f); }   // 최후 대비: 회색 기본 재질 말고 모래색
             var from = transform.position + Vector3.up * 1.4f + transform.forward * 0.3f;   // 손이 앞으로 휘둘러진 자리
+            // 날아가 터지는 건 폭탄이 스스로 함 (2026-11-18 사용자: 던진 도중 폭탄병이 죽으면 폭탄이 공중에 멈춰 남던 문제 → 끝까지 날아가 터짐)
+            ThrownBomb.Launch(bomb, from, at, SandBombFlight, SandBombRadius, contactDamage * 0.6f);
             for (float t = 0; t < 1f; t += Time.deltaTime / SandBombFlight)
             {
-                if (!bomb) break;
-                bomb.transform.position = Vector3.Lerp(from, at, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 3f;
-                bomb.transform.Rotate(new Vector3(360f, 0, 180f) * Time.deltaTime);
                 // 던진 뒤 옆으로 물러남
-                var away = Effects.Flat(transform.position - p.transform.position).normalized;
-                transform.position += (away + Vector3.Cross(Vector3.up, away) * strafeSign) .normalized * speed * 0.6f * Time.deltaTime;
+                if (p) { var away = Effects.Flat(transform.position - p.transform.position).normalized; transform.position += (away + Vector3.Cross(Vector3.up, away) * strafeSign).normalized * speed * 0.6f * Time.deltaTime; }
                 yield return null;
             }
-            if (bomb) Destroy(bomb);
-            if (p && p.health.Alive && Effects.Flat(p.transform.position - at).magnitude <= SandBombRadius) p.health.TakeDamage(contactDamage * 0.6f);
-            GunkataFx.Explosion(at, SandBombRadius, true);
-            PropHit.Area(at, SandBombRadius, contactDamage * 0.6f);
             nextAttack = Time.time + Random.Range(2.2f, 3f) / AtkMul;
             strafeSign = -strafeSign;
             busy = false;
+        }
+    }
+
+    /// <summary>던진 모래 폭탄: 포물선으로 날아가 착지 자리에서 터짐. 던진 적과 따로 움직여 그 적이 죽어도 끝까지 감</summary>
+    public class ThrownBomb : MonoBehaviour
+    {
+        Vector3 from, to; float flight, radius, damage, t;
+
+        public static void Launch(GameObject bomb, Vector3 from, Vector3 to, float flight, float radius, float damage)
+        {
+            if (!bomb) return;
+            var b = bomb.AddComponent<ThrownBomb>();
+            b.from = from; b.to = to; b.flight = Mathf.Max(0.05f, flight); b.radius = radius; b.damage = damage;
+            bomb.transform.position = from;
+        }
+
+        void Update()
+        {
+            t += Time.deltaTime / flight;
+            if (t < 1f)
+            {
+                transform.position = Vector3.Lerp(from, to, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 3f;
+                transform.Rotate(new Vector3(360f, 0, 180f) * Time.deltaTime);
+                return;
+            }
+            var p = PlayerController.Instance;
+            if (p && p.health.Alive && Effects.Flat(p.transform.position - to).magnitude <= radius) p.health.TakeDamage(damage);
+            GunkataFx.Explosion(to, radius, true);
+            PropHit.Area(to, radius, damage);
+            Destroy(gameObject);
         }
     }
 }

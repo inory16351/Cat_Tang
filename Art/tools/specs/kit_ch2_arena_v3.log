@@ -1,0 +1,3688 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1ec0b-7e81-7e83-89fa-17cf8446589a
+--------
+user
+Make ONE Blender low-poly floor piece for the Unity game Cat_Tang, chapter 2 boss arena, and export it to FBX.
+
+Write the Blender Python script to `Art/tools/blender_kit_ch2_arena.py` (Korean header comment: what it makes, how to run), then run it headless:
+`blender -b -P Art/tools/blender_kit_ch2_arena.py` (find blender.exe the same way the existing scripts / logs in Art/tools do).
+Read `Art/tools/specs/_ch2_common.md` (materials, coordinates, export rules) and copy the setup / bevel / finish / export style of `Art/tools/blender_kit_ch2_landmarks.py` (its `turntable` piece is the OLD version of this floor: replace it with this richer one, but do NOT edit that script).
+
+## Why
+The old turntable deck read as a plain brown disc in game (one `wood_dark` colour, thin outline). The camera looks down ~55 deg from far away, so detail must come from LARGE colour regions made of separate material faces, not small bevels.
+
+## Revision 3 (2026-11-18) - REPLACE revision 2 completely
+Revisions 1 and 2 still clashed with the room's paving tiles (the room floor is a warm grey-beige stone-tile TEXTURE that we cannot reproduce with faces). New idea: a GIANT CLOCK laid on the floor, with NO full disc - the room's own tiles are the clock face. The model only contains the clock parts that sit ON the tiles. Rewrite `blender_kit_ch2_arena.py` for this; same piece name `Arena`, same FBX path and export settings.
+
+## Piece: `Arena` -> `Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx`
+Diameter 32 m. ORIGIN at BOTTOM center (Z = 0 = the floor the tiles are on; everything is at Z >= 0). +Y = front = 12 o'clock.
+1. Rim curb (the arena edge), radius 15.0 -> 16.0, height 0.25: `stone` coping in 24 blocks with tiny gaps, `stone_dark` thin lip on its inner vertical face.
+2. Hour SLOTS in the rim (like the chambers of a revolver cylinder): at each of the 12 hours a ROUND socket cut down into the curb top: hole radius 0.42, `iron_dark` hole floor at Z 0.08, `brass` ring around it (0.12 wide, top Z 0.26). At 12 / 3 / 6 / 9 the slot is a DOUBLE (two sockets side by side, 0.95 m apart along the rim). Between hours, 4 small minute notches per gap: `iron_dark` rectangles 0.35 x 0.1 inset in the curb top.
+3. Chapter ring: a thin `brass` ring at radius 14.4 -> 14.6, height 0.03, lying on the tiles.
+4. Rails = the 12-6 and 3-9 lines: two `rail_steel` track pairs crossing in a + through the center (along X and Y), gauge 1.5 m, rail top 0.12 wide, height 0.05, running from radius 1.6 to 14.4, with `iron_dark` tie plates (2.2 x 0.22, height 0.02) every 1.2 m. These are boss charge paths: clearly visible.
+5. Giant HANDS lying flat on the tiles (height 0.04, slightly above the tie plates): hour hand pointing at 10 o'clock, length 8.5 m, tapered 0.9 -> 0.3 m, `iron_dark` with a `brass` spade tip; minute hand pointing at 2 o'clock, length 13 m, tapered 0.6 -> 0.2 m, `iron_dark` with `brass` arrow tip; a short counterweight tail (1.8 m) behind each. Hands must not overlap the rails except at the hub.
+6. Center hub: `brass` disc radius 1.5 (height 0.08) with 12 low gear teeth, `iron_dark` pin radius 0.5 on top (height 0.14).
+NO filled face, NO wood, NO cream. Materials only: `stone`, `stone_dark`, `iron`, `iron_dark`, `rail_steel`, `brass`.
+Budget <= 9000 triangles. One joined manifold mesh named `Arena`. Total bounds 32 x 32 x ~0.25 (assert X/Y = 32 from the rim). Print `EXPORTED Arena <tris> <dims>` and `DONE`.
+Preview: render it ON TOP of a plain warm grey-beige plane (0.62, 0.56, 0.48) so it looks like it will on the tiles.
+
+Also render a preview PNG `Art/tools/specs/kit_ch2_arena_preview.png` (top-down orthographic + one 55 deg view, temporary preview colours per role only in the render, not in the exported materials) and look at it; fix anything that reads wrong.
+
+Do NOT edit any C# file, other scripts, or git.
+
+codex
+I’ll check the shared spec and landmark script, build the clock floor, then export it and inspect both preview views.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/specs/_ch2_common.md; Get-Content Art/tools/blender_kit_ch2_landmarks.py' in C:\Project\Cat_Tang
+ succeeded in 228ms:
+## Common rules (chapter 2 "The Stopped Station")
+Setting: a western-era steam railway station where time STOPPED a second before departure (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+Signature accent: things frozen mid-motion (a puff of steam hanging still, a suitcase stuck in mid-air) and small brass clock/gear details. Chunky silhouettes, no tiny detail, slightly hand-made irregularity (seeded random per piece). BEVEL modifier (0.02-0.04, 2 segments) on wood/metal parts.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`wood`, `wood_dark`, `wood_light`, `iron`, `iron_dark`, `rust`, `brass`, `rail_steel`, `brick`, `brick_dark`, `stone`, `stone_dark`, `roof_tin`, `soot`, `coal`, `window`, `window_lit`, `glass_lamp`, `canvas`, `leather`, `leather_dark`, `cloth_red`, `paint_cream`, `paint_green`, `clock_face`, `steam`, `signal_red`, `signal_amber`, `signal_green`.
+`steam` = frozen white puffs; `window_lit` / `glass_lamp` = warm glowing glass.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece.
+Each piece = ONE joined mesh object named exactly as listed, exported to its own FBX `Game/Assets/Art/Characters/Ch2/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end.
+Use `Art/tools/blender_kit_landmarks.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+# 硫덉텣 ??쓽 ????μ븷臾?6醫? 蹂댁뒪 ?뚯쟾?? ?밴컯??寃쎄퀎瑜??앹꽦?⑸땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch2_landmarks.py
+"""Standalone Blender 5.x, deterministic metre-scale chapter-two FBX kit.
+
+The room-facing side is +Y. Locomotive travel is +X, exposing its running
+gear to the room. All role materials deliberately have identical grey shaders.
+Only meshes are exported; disconnected details remain in one joined object.
+"""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2'
+ROLES = set('wood wood_dark wood_light iron iron_dark rust brass rail_steel '
+            'brick brick_dark stone stone_dark roof_tin soot coal window '
+            'window_lit glass_lamp canvas leather leather_dark cloth_red '
+            'paint_cream paint_green clock_face steam signal_red signal_amber '
+            'signal_green'.split())
+MATERIALS = {}
+PARTS = []
+RNG = random.Random(20261117)
+SERIAL = 0
+METAL_WOOD = set('wood wood_dark wood_light iron iron_dark rust brass '
+                 'rail_steel roof_tin paint_green paint_cream cloth_red'.split())
+
+
+def setup_materials():
+    for name in sorted(ROLES):
+        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        shader = mat.node_tree.nodes.get('Principled BSDF')
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Roughness'].default_value = .85
+        shader.inputs['Metallic'].default_value = 0
+        MATERIALS[name] = mat
+
+
+def mesh(label, verts, faces, role, bevel=False, top_only=False):
+    global SERIAL
+    assert role in ROLES, role
+    SERIAL += 1
+    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(data.name, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATERIALS[role])
+    if bevel and role in METAL_WOOD:
+        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
+        mod.width = .025
+        mod.segments = 2
+        mod.affect = 'EDGES'
+        mod.use_clamp_overlap = True
+        if top_only:
+            # Soften the exposed upper perimeter; the buried bottom stays cheap.
+            weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
+            top = max(v.co.z for v in data.vertices)
+            for edge in data.edges:
+                if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
+                    weights.data[edge.index].value = 1
+            mod.limit_method = 'WEIGHT'
+        else:
+            mod.limit_method = 'ANGLE'
+            mod.angle_limit = math.radians(40)
+    PARTS.append(obj)
+    return obj
+
+
+def move(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, role='wood', rot=(0, 0, 0), bevel=True):
+    x, y, z = (s / 2 for s in size)
+    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
+             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, role='iron', n=12, top=None,
+             rot=(0, 0, 0), bevel=True):
+    top = radius if top is None else top
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for r, z in [(radius, -depth / 2), (top, depth / 2)] for j in range(n)]
+    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
+
+
+def rod(label, a, b, radius, role='iron', n=8, bevel=False):
+    a, b = Vector(a), Vector(b)
+    obj = cylinder(label, (0, 0, 0), radius, (b - a).length, role,
+                   n=n, bevel=bevel)
+    obj.data.transform(Matrix.Translation((a + b) / 2) @
+                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
+    return obj
+
+
+def beam(label, a, b, width, role='iron', depth=None, bevel=True):
+    a, b = Vector(a), Vector(b)
+    obj = box(label, (0, 0, 0), (width, depth or width, (b - a).length), role,
+              bevel=bevel)
+    obj.data.transform(Matrix.Translation((a + b) / 2) @
+                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
+    return obj
+
+
+def ring(label, loc, radius, thickness, height, role='iron', n=24,
+         rot=(0, 0, 0), bevel=False):
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for r, z in [(radius - thickness, -height / 2), (radius, -height / 2),
+                          (radius, height / 2), (radius - thickness, height / 2)]
+             for j in range(n)]
+    faces = [(k * n + j, k * n + (j + 1) % n,
+              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+             for k in range(4) for j in range(n)]
+    return move(mesh(label, verts, faces, role, bevel, True), loc, rot)
+
+
+def tube(label, points, radii, role='iron', n=8, bevel=False):
+    verts = []
+    previous = None
+    for k, p in enumerate(points):
+        tangent = (Vector(points[min(k + 1, len(points) - 1)]) -
+                   Vector(points[max(0, k - 1)])).normalized()
+        if previous is None:
+            reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
+            u = reference.cross(tangent).normalized()
+        else:
+            u = (previous - tangent * previous.dot(tangent)).normalized()
+        v = tangent.cross(u).normalized()
+        previous = u
+        for j in range(n):
+            a = j * math.tau / n
+            verts.append(tuple(Vector(p) + radii[k] * (u * math.cos(a) + v * math.sin(a))))
+    faces = [tuple(reversed(range(n)))]
+    for k in range(len(points) - 1):
+        for j in range(n):
+            a, b = k * n + j, k * n + (j + 1) % n
+            faces.append((a, b, b + n, a + n))
+    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
+    return mesh(label, verts, faces, role, bevel)
+
+
+def lump(label, loc, size, role, detail=1, irregular=.08, ground=False):
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=detail, radius=1)
+    for v in bm.verts:
+        v.co *= 1 + RNG.uniform(-irregular, irregular)
+        for axis in range(3):
+            v.co[axis] = v.co[axis] * size[axis] / 2 + loc[axis]
+        if ground:
+            v.co.z = max(0, v.co.z)
+    bm.verts.ensure_lookup_table()
+    result = mesh(label, [tuple(v.co) for v in bm.verts],
+                  [tuple(v.index for v in f.verts) for f in bm.faces], role)
+    bm.free()
+    return result
+
+
+def clock(label, loc, radius, normal=(0, 1, 0)):
+    start = len(PARTS)
+    cylinder(label + ' bezel', (0, 0, 0), radius, .13, 'brass', n=16)
+    cylinder(label + ' lens', (0, 0, .076), radius * .79, .025,
+             'clock_face', n=16, bevel=False)
+    for j in range(4):
+        a = j * math.pi / 2
+        box('Clock hour marker', (radius * .61 * math.cos(a),
+                                 radius * .61 * math.sin(a), .097),
+            (.055, .10, .022), 'iron_dark', (0, 0, a), bevel=False)
+    beam('Frozen clock minute hand', (0, 0, .115), (0, radius * .51, .115),
+         .045, 'iron_dark', bevel=False)
+    beam('Frozen clock hour hand', (0, 0, .12), (radius * .32, -.08, .12),
+         .05, 'iron_dark', bevel=False)
+    rotation = Vector(normal).to_track_quat('Z', 'Y').to_matrix().to_4x4()
+    for obj in PARTS[start:]:
+        obj.data.transform(Matrix.Translation(Vector(loc)) @ rotation)
+
+
+def coach():
+    # Axle bearings and low bogies leave the specified floor exactly 0.5m high.
+    for x in [-3.35, 3.35]:
+        box('Coach bogie', (x, 0, .24), (1.75, 2.45, .25), 'iron_dark')
+        for dx in [-.55, .55]:
+            rod('Coach axle', (x + dx, -1.25, .24), (x + dx, 1.25, .24), .075, 'iron_dark')
+            for y in [-1.26, 1.26]:
+                cylinder('Coach wheel', (x + dx, y, .24), .24, .16,
+                         'iron_dark', n=10, rot=(math.pi / 2, 0, 0), bevel=False)
+    box('Wood carriage floor top 0.5m', (0, -.13, .425), (9.6, 2.82, .15), 'wood')
+    for x in [-4.9, 4.9]:
+        box('Coupler block', (x, -.1, .32), (.2, .36, .2), 'iron_dark')
+    box('Closed green back wall', (0, -1.49, 1.67), (9.6, .16, 2.34), 'paint_green')
+    box('Back wood lower panel', (0, -1.385, .96), (9.55, .07, .85), 'wood')
+    box('Back brass waist rail', (0, -1.33, 1.43), (9.5, .06, .065), 'brass', bevel=False)
+    for x in [-3.72, -1.86, 0, 1.86, 3.72]:
+        box('Back window frame', (x, -1.475, 2.12), (1.48, .20, 1.03), 'wood_dark')
+        box('Back lit window', (x, -1.475, 2.12), (1.25, .23, .8), 'window_lit', bevel=False)
+        box('Window center mullion', (x, -1.345, 2.12), (.06, .05, .83), 'wood', bevel=False)
+    for x in [-4.72, 4.72]:
+        box('Closed wooden carriage end', (x, -.2, 1.61), (.16, 2.58, 2.22), 'paint_green')
+        box('End wooden panel', (x, -.2, .98), (.21, 2.5, .83), 'wood')
+    # Three transverse bench rows: paired leather cushions, broad tall backs.
+    for x in [-2.75, 0, 2.75]:
+        box('Bench wood pedestal', (x, -.12, .72), (.95, 1.96, .44), 'wood_dark')
+        for y in [-.65, .41]:
+            box('Leather bench cushion', (x, y, 1.01), (1.12, .93, .20), 'leather')
+        box('Leather transverse row back', (x - .48, -.12, 1.34), (.19, 2.02, .66),
+            'leather', (0, -.08, 0))
+        for y in [-1.14, .93]:
+            rod('Brass seat handrail upright', (x - .39, y, .98), (x - .39, y, 1.51), .045, 'brass')
+            rod('Brass seat handrail', (x - .39, y, 1.51), (x + .44, y, 1.51), .045, 'brass')
+    # A volumetric half-barrel shell on the BACK only. No front canopy hides seats.
+    sections = []
+    for j in range(9):
+        a = j * math.pi / 16
+        sections.append((-1.6 * math.cos(a), 2.78 + .82 * math.sin(a)))
+    cross = sections + [(y, z - .085) for y, z in reversed(sections)]
+    n = len(cross)
+    verts = [(x, y, z) for x in [-4.88, 4.88] for y, z in cross]
+    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    mesh('Cutaway curved tin roof', verts, faces, 'roof_tin', True)
+    box('Cut roof front lip', (0, -.02, 3.54), (9.8, .07, .10), 'roof_tin')
+    for x in [-3.5, 3.5]:
+        box('Iron boarding step', (x, 1.24, .12), (1.12, .72, .24), 'iron')
+        rod('Boarding brass grab', (x + .66, .95, .56), (x + .66, .95, 1.67), .055, 'brass')
+
+
+def locomotive():
+    box('Locomotive chassis', (-.15, 0, .91), (8.35, 2.7, .3), 'iron_dark')
+    # Side-facing running gear is the primary high-camera read.
+    for y in [-1.36, 1.36]:
+        for x in [-2.72, -.7, 1.32]:
+            ring('Driving wheel tire', (x, y, .74), .74, .13, .18,
+                 'iron', n=14, rot=(math.pi / 2, 0, 0))
+            cylinder('Driving wheel hub', (x, y, .74), .18, .24, 'iron',
+                     n=10, rot=(math.pi / 2, 0, 0), bevel=False)
+            for j in range(6):
+                a = j * math.tau / 6
+                rod('Broad wheel spoke', (x, y, .74),
+                    (x + .61 * math.cos(a), y, .74 + .61 * math.sin(a)), .065, 'iron', n=6)
+        beam('Connecting rod', (-2.72, y * 1.12, .89), (1.32, y * 1.12, .89),
+             .15, 'iron', depth=.1)
+        for x in [-2.72, -.7, 1.32]:
+            cylinder('Rod crank pin', (x, y * 1.15, .89), .11, .10,
+                     'brass', n=8, rot=(math.pi / 2, 0, 0), bevel=False)
+        cylinder('Front pilot wheel', (3.18, y, .4), .4, .17,
+                 'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
+    cylinder('Black boiler', (-.05, 0, 2.12), 1.05, 5.8, 'iron_dark',
+             n=16, rot=(0, math.pi / 2, 0))
+    for x in [-2.5, -.4, 2.52]:
+        ring('Boiler iron band', (x, 0, 2.12), 1.085, .055, .12,
+             'iron', n=16, rot=(0, math.pi / 2, 0))
+    cylinder('Smokebox front', (2.93, 0, 2.12), .94, .16, 'iron_dark',
+             n=16, rot=(0, math.pi / 2, 0))
+    box('Rear firebox', (-3.63, 0, 1.88), (1.42, 2.38, 1.78), 'iron_dark')
+    box('Firebox shoulder cap', (-3.63, 0, 2.87), (1.68, 2.65, .22), 'iron_dark')
+    cylinder('Steam dome', (-1.05, 0, 3.14), .39, .53, 'iron_dark', n=12, top=.3)
+    cylinder('Flared soot chimney', (1.52, 0, 3.23), .25, .77,
+             'soot', top=.42, n=12, bevel=False)
+    ring('Chimney lip', (1.52, 0, 3.62), .45, .10, .15, 'soot', n=12)
+    for loc, size in [((1.52, 0, 3.88), (.65, .6, .55)),
+                      ((1.11, -.05, 4.03), (.72, .65, .5)),
+                      ((.73, -.12, 4.08), (.55, .52, .4))]:
+        lump('Frozen detached steam puff', loc, size, 'steam', detail=2, irregular=.04)
+    # The large lens turns slightly toward +Y so its circle reads from the room.
+    clock('Round locomotive headlight', (3.05, .39, 2.77), .48, (1, .65, .12))
+    for y in [-1.08, 1.08]:
+        rod('Boiler side handrail', (-2.62, y, 2.62), (2.4, y, 2.62), .045, 'brass')
+    # Solid wedge, with chunky slats proud of the sloping red pilot face.
+    verts = [(3.25, -1.58, .13), (4.5, -1.58, .13), (3.25, -1.58, .94),
+             (3.25, 1.58, .13), (4.5, 1.58, .13), (3.25, 1.58, .94)]
+    mesh('Solid red cowcatcher wedge', verts,
+         [(0, 2, 1), (3, 4, 5), (0, 1, 4, 3), (1, 2, 5, 4), (2, 0, 3, 5)],
+         'cloth_red', True)
+    for y in [-1.38, -.92, -.46, 0, .46, .92, 1.38]:
+        beam('Red cowcatcher slat', (3.28, y, .98), (4.45, y, .22),
+             .13, 'cloth_red', bevel=False)
+
+
+def water_crane():
+    cx, cy = -.30, -.27
+    for sx in [-1, 1]:
+        for sy in [-1, 1]:
+            bottom = (cx + sx * 1.03, cy + sy * 1.04, .09)
+            top = (cx + sx * .75, cy + sy * .75, 4.28)
+            box('Tower iron foot', (bottom[0], bottom[1], .09), (.34, .34, .18), 'iron')
+            beam('Tower splayed iron leg', bottom, top, .19, 'iron')
+    for sy in [-1, 1]:
+        for sign in [-1, 1]:
+            beam('Tower X bracing', (cx - sign * .99, cy + sy * .99, .42),
+                 (cx + sign * .76, cy + sy * .76, 4.03), .10, 'iron', bevel=False)
+    for sx in [-1, 1]:
+        beam('Tower side diagonal', (cx + sx * .99, cy - .99, .42),
+             (cx + sx * .76, cy + .76, 4.03), .10, 'iron', bevel=False)
+    box('Tank support deck', (cx, cy, 4.20), (2.38, 2.38, .19), 'iron')
+    cylinder('Solid wooden water tank', (cx, cy, 5.01), 1.08, 1.48, 'wood', n=16)
+    for j in range(16):
+        a = j * math.tau / 16
+        rod('Tank stave joint', (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 4.32),
+            (cx + 1.084 * math.cos(a), cy + 1.084 * math.sin(a), 5.68),
+            .018, 'wood_dark', n=4)
+    for z in [4.39, 5.0, 5.62]:
+        ring('Tank iron hoop', (cx, cy, z), 1.14, .065, .12, 'iron', n=16)
+    cylinder('Tank shallow wooden lid', (cx, cy, 5.87), 1.18, .26,
+             'wood_dark', top=.12, n=16)
+    for a, length in [(.48, .52), (1.12, .79), (1.92, .39), (2.5, .60)]:
+        x, y = cx + 1.09 * math.cos(a), cy + 1.09 * math.sin(a)
+        box('Broad tank rust streak', (x, y, 5.53 - length / 2),
+            (.04, .14, length), 'rust', (0, 0, a), bevel=False)
+    cylinder('Spout swivel', (.62, .48, 4.65), .24, .40, 'iron', n=10)
+    tube('Swinging water spout', [(.59, .48, 4.72), (1.13, 1.12, 4.72),
+                                (1.28, 1.29, 4.52), (1.28, 1.29, 3.88)],
+         [.16, .16, .16, .19], 'iron', n=8, bevel=True)
+    rod('Spout brace', (.59, .48, 5.05), (1.13, 1.12, 4.69), .055, 'iron')
+    # Isolated droplet, not a continuous stream: time stopped during the pour.
+    lump('Frozen water droplet', (1.28, 1.29, 3.46), (.30, .30, .55),
+         'steam', detail=2, irregular=.025)
+    clock('Tower valve clock', (.38, .88, 4.28), .20)
+
+
+def coal_pile():
+    lump('Solid coal heap core', (0, -.05, .50), (4.35, 3.25, 1.30),
+         'coal', detail=2, irregular=.12, ground=True)
+    for j in range(22):
+        a = j * 2.399963
+        r = math.sqrt((j + .5) / 22)
+        x, y = 1.83 * r * math.cos(a), 1.32 * r * math.sin(a)
+        z = .37 + .75 * (1 - r * r)
+        s = RNG.uniform(.58, .9)
+        lump('Angular exposed coal chunk', (x, y, z), (s, s * .85, s * .8),
+             'coal', irregular=.17, ground=True)
+    lump('Coal crown lump', (-.2, -.08, 1.35), (.93, .87, .8), 'coal', irregular=.09)
+    box('Coal retaining board', (0, 1.44, .33), (4.5, .17, .66), 'wood_dark')
+    for x in [-1.95, 0, 1.95]:
+        box('Retaining board iron stake', (x, 1.56, .38), (.14, .17, .76), 'iron')
+    # An oversized spade blade and D grip read clearly against the broad heap.
+    box('Shovel blade', (.83, .65, .66), (.44, .10, .56),
+        'iron', (0, -.35, -.08))
+    rod('Iron shovel shaft', (.88, .65, .8), (1.25, .65, 1.58), .052, 'iron')
+    ring('Shovel D grip', (1.29, .65, 1.68), .17, .045, .08,
+         'iron', n=8, rot=(math.pi / 2, 0, 0))
+
+
+def suitcase(loc, size, role, rot=(0, 0, 0)):
+    start = len(PARTS)
+    sx, sy, sz = size
+    box('Baggage case', (0, 0, 0), size, role)
+    strap = 'canvas' if role == 'leather' else 'leather'
+    for x in [-sx * .30, sx * .30]:
+        box('Case top strap', (x, 0, sz / 2 + .012), (.08, sy + .025, .026), strap, bevel=False)
+        box('Case front strap', (x, sy / 2 + .012, 0), (.08, .026, sz), strap, bevel=False)
+        box('Case brass clasp', (x, sy / 2 + .033, .025), (.12, .035, .11), 'brass', bevel=False)
+    tube('Case carrying handle', [(-.13, sy / 2, 0), (-.13, sy / 2 + .13, 0),
+                                  (.13, sy / 2 + .13, 0), (.13, sy / 2, 0)],
+         [.032] * 4, 'iron', n=6)
+    matrix = Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4()
+    for obj in PARTS[start:]:
+        obj.data.transform(matrix)
+
+
+def luggage_cart():
+    for x in [-1.27, 1.17]:
+        rod('Cart axle', (x, -.77, .28), (x, .77, .28), .075)
+        for y in [-.78, .78]:
+            cylinder('Baggage cart wheel', (x, y, .28), .28, .18,
+                     'iron', n=12, rot=(math.pi / 2, 0, 0))
+    box('Baggage cart frame', (-.12, 0, .43), (3.55, 1.56, .18), 'iron')
+    for j in range(5):
+        box('Baggage bed plank', (-.12, -.64 + j * .32, .57), (3.65, .30, .13), 'wood')
+    tube('Iron cart push handle', [(1.57, -.64, .53), (1.92, -.64, 1.14),
+                                 (1.92, .64, 1.14), (1.57, .64, .53)],
+         [.065] * 4, 'iron', n=8, bevel=True)
+    suitcase((-.92, -.05, .82), (1.36, 1.10, .39), 'leather', (0, 0, -.05))
+    suitcase((.53, -.10, .86), (1.25, 1.10, .46), 'canvas', (0, -.08, .03))
+    suitcase((-.60, -.10, 1.14), (1.15, .86, .36), 'canvas', (0, .15, -.12))
+    suitcase((.56, .0, 1.18), (.93, .87, .30), 'leather', (.08, -.13, .13))
+    # Visible air gaps separate both falling cases from the supported stack.
+    suitcase((-1.11, .04, 1.83), (.86, .63, .30), 'leather', (.17, -.30, -.23))
+    suitcase((.40, .03, 1.92), (.78, .57, .28), 'canvas', (-.14, .35, .23))
+
+
+def signal_gantry():
+    for x in [-2.2, 2.2]:
+        box('Solid gantry foot', (x, 0, .12), (.60, 1.2, .24), 'iron')
+        box('Solid gantry column', (x, 0, 2.05), (.32, .44, 3.86), 'iron')
+        for z in [.7, 1.5, 2.3, 3.1]:
+            box('Column flange', (x, 0, z), (.41, .51, .09), 'iron', bevel=False)
+    for z in [3.77, 4.39]:
+        box('Gantry truss chord', (0, -.09, z), (5, .28, .18), 'iron')
+    for j in range(8):
+        x = -2.4 + j * .6
+        beam('Lattice diagonal', (x, -.09, 3.86 if j % 2 == 0 else 4.30),
+             (x + .6, -.09, 4.30 if j % 2 == 0 else 3.86), .085,
+             'iron', bevel=False)
+    for x in [-1.16, 1.16]:
+        box('Tall signal backing', (x, .19, 3.62), (.62, .28, 1.76), 'iron_dark')
+        for z, role in [(4.17, 'signal_red'), (3.62, 'signal_amber'), (3.07, 'signal_green')]:
+            cylinder('Signal lens socket', (x, .365, z), .235, .12,
+                     'iron', n=12, rot=(math.pi / 2, 0, 0), bevel=False)
+            cylinder('Signal colored lens', (x, .44, z), .185, .07,
+                     role, n=12, rot=(math.pi / 2, 0, 0), bevel=False)
+            box('Signal rain hood', (x, .40, z + .22), (.53, .38, .075), 'iron_dark')
+
+
+def clip_x(poly, cut, keep_greater):
+    """Clip a convex polygon to a plank boundary without stair-stepped ends."""
+    result = []
+    for a, b in zip(poly, poly[1:] + poly[:1]):
+        inside_a = a[0] >= cut if keep_greater else a[0] <= cut
+        inside_b = b[0] >= cut if keep_greater else b[0] <= cut
+        if inside_a:
+            result.append(a)
+        if inside_a != inside_b:
+            t = (cut - a[0]) / (b[0] - a[0])
+            result.append((cut, a[1] + t * (b[1] - a[1])))
+    return result
+
+
+def turntable():
+    # Only this asset has a top-centred origin: everything lies in [-0.3, 0].
+    ring('Stone pit edge 0.6m wide', (0, 0, -.15), 12, .6, .30, 'stone', n=96)
+    cylinder('Solid recessed deck substrate', (0, 0, -.195), 11.4, .21,
+             'wood_dark', n=64, bevel=False)
+    circle = [(11.35 * math.cos(j * math.tau / 96), 11.35 * math.sin(j * math.tau / 96))
+              for j in range(96)]
+    for j in range(54):
+        low = -11.35 + j * 22.7 / 54 + .009
+        high = -11.35 + (j + 1) * 22.7 / 54 - .009
+        poly = clip_x(clip_x(circle, low, True), high, False)
+        if len(poly) < 3:
+            continue
+        n = len(poly)
+        verts = [(x, y, z) for z in [-.18, -.06] for x, y in poly]
+        faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
+        faces += [(k, (k + 1) % n, (k + 1) % n + n, k + n) for k in range(n)]
+        # Diagonal planks distinguish BOTH orthogonal rail pairs at high angles.
+        plank = mesh('Circle-clipped deck plank', verts, faces, 'wood_dark', True, True)
+        plank.data.transform(Matrix.Rotation(math.pi / 4, 4, 'Z'))
+    ring('Iron deck edge rail', (0, 0, -.045), 11.4, .075, .09, 'iron', n=96)
+    # Two standard-gauge track pairs cross at grade. Split Y rails exactly at
+    # the X rail heads, avoiding overlapping coplanar crossing faces.
+    gauge = .75
+    end = math.sqrt(11.28 ** 2 - (gauge + .08) ** 2)
+    for offset in [-gauge, gauge]:
+        box('X track rail foot', (0, offset, -.082), (end * 2, .18, .025), 'rail_steel', bevel=False)
+        box('X track rail web', (0, offset, -.048), (end * 2, .055, .065), 'rail_steel', bevel=False)
+        box('X track rail head', (0, offset, -.021), (end * 2, .12, .032), 'rail_steel')
+        for start, stop in [(-end, -gauge - .09), (-gauge + .09, gauge - .09), (gauge + .09, end)]:
+            center, length = (start + stop) / 2, stop - start
+            box('Y track rail foot', (offset, center, -.082), (.18, length, .025), 'rail_steel', bevel=False)
+        for start, stop in [(-end, -gauge - .06), (-gauge + .06, gauge - .06), (gauge + .06, end)]:
+            center, length = (start + stop) / 2, stop - start
+            box('Y track rail web', (offset, center, -.048), (.055, length, .065), 'rail_steel', bevel=False)
+            box('Y track rail head', (offset, center, -.021), (.12, length, .032), 'rail_steel')
+    cylinder('Brass central hub', (0, 0, -.04), .56, .08, 'brass', n=32)
+    for j in range(16):
+        a = j * math.tau / 16
+        box('Brass hub gear tooth', (.60 * math.cos(a), .60 * math.sin(a), -.045),
+            (.20, .14, .09), 'brass', (0, 0, a), bevel=False)
+    cylinder('Center axle cap', (0, 0, -.015), .21, .03, 'brass', n=16)
+    for j in range(8):
+        a = j * math.tau / 8
+        cylinder('Hub bolt', (.39 * math.cos(a), .39 * math.sin(a), -.012),
+                 .045, .024, 'iron', n=6, bevel=False)
+
+
+def platform_edge():
+    box('Platform stone slab', (0, -.01, .218), (8, 1.18, .436), 'stone', bevel=False)
+    # Adjacent volumes avoid coplanar grey/recolourable faces and z-fighting.
+    box('Dark room-facing platform face', (0, .59, .218), (8, .02, .436), 'stone_dark', bevel=False)
+    for j in range(8):
+        x = -3.5 + j
+        box('Top stone coping', (x, 0, .462), (.982, 1.2, .052), 'stone', bevel=False)
+        box('Cream safety line', (x, .40, .494), (.982, .19, .012), 'paint_cream')
+    for x in [-3, -2, -1, 0, 1, 2, 3]:
+        box('Face stone mortar joint', (x, .5995, .22), (.022, .003, .42), 'stone', bevel=False)
+
+
+SPECS = [
+    ('LM_Coach', (10, 3.2, 3.6), coach),
+    ('LM_Locomotive', (9, 3.4, 4.2), locomotive),
+    ('LM_WaterCrane', (3, 3, 6), water_crane),
+    ('LM_CoalPile', (4.5, 3.5, 1.8), coal_pile),
+    ('LM_LuggageCart', (4, 1.8, 2), luggage_cart),
+    ('LM_SignalGantry', (5, 1.2, 4.5), signal_gantry),
+    ('Turntable', (24, 24, .3), turntable),
+    ('PlatformEdge', (8, 1.2, .5), platform_edge),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def finish(name, dimensions):
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name = name
+    obj.data.name = name + '_Mesh'
+    budget = 6000 if name == 'Turntable' else 4000
+    count = triangles(obj)
+    # Material-delimited reduction is a fallback for Blender tessellation
+    # differences. Main forms already use economical hand-authored topology.
+    for attempt in range(3):
+        if count <= budget:
+            break
+        mod = obj.modifiers.new('Preserve silhouette within triangle budget', 'DECIMATE')
+        mod.ratio = (budget - 100) / count
+        mod.delimit = {'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+        count = triangles(obj)
+    assert count <= budget, (name, count, budget)
+    coords = [v.co for v in obj.data.vertices]
+    low = Vector([min(v[i] for v in coords) for i in range(3)])
+    high = Vector([max(v[i] for v in coords) for i in range(3)])
+    span = high - low
+    center = (low + high) / 2
+    scale = Vector([dimensions[i] / span[i] for i in range(3)])
+    for v in coords:
+        v.x = (v.x - center.x) * scale.x
+        v.y = (v.y - center.y) * scale.y
+        v.z = (v.z - (high.z if name == 'Turntable' else low.z)) * scale.z
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(obj.data)
+    bm.free()
+    for face in obj.data.polygons:
+        face.use_smooth = False
+    obj.data.update()
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
+    bpy.context.view_layer.update()
+    assert all(abs(obj.dimensions[i] - dimensions[i]) < .001 for i in range(3)), name
+    # BMesh replaced the datablock's vertex storage; do not reuse old RNA refs.
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
+    assert all(m and m.name in ROLES for m in obj.data.materials), name
+    if name == 'Turntable':
+        assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-5
+        assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-5
+    else:
+        assert abs(min(v.co.z for v in obj.data.vertices)) < 1e-5
+    # Joining must not accidentally introduce open construction surfaces.
+    check = bmesh.new()
+    check.from_mesh(obj.data)
+    assert all(e.is_manifold for e in check.edges), (name, 'open mesh component')
+    check.free()
+    obj['dimensions_m'] = list(dimensions)
+    obj['front'] = '+Y'
+    obj['chapter'] = 'The Stopped Station'
+    obj['origin_rule'] = 'top center' if name == 'Turntable' else 'bottom center'
+    obj['solid_obstacle'] = name.startswith('LM_')
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    destination = OUTPUT / f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size > 1024, destination
+    print(f'EXPORTED {name} {triangles(obj)} '
+          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+    return obj
+
+
+def main():
+    global PARTS, RNG
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=False)
+    bpy.context.scene.unit_settings.system = 'METRIC'
+    bpy.context.scene.unit_settings.scale_length = 1
+    setup_materials()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    exported = []
+    for index, (name, dimensions, build) in enumerate(SPECS):
+        PARTS = []
+        RNG = random.Random(261117 + index * 7919)
+        build()
+        exported.append(finish(name, dimensions))
+    assert [obj.name for obj in exported] == [spec[0] for spec in SPECS]
+    assert len(bpy.context.scene.objects) == len(SPECS)
+    assert all(obj.type == 'MESH' for obj in bpy.context.scene.objects)
+    for mat in MATERIALS.values():
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+    print('DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '*arena*' -g '*blender*' Art/tools .agents .codex" in C:\Project\Cat_Tang
+ exited 1 in 943ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '*arena*' -g '*blender*' Art/tools .agents ...
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Path AGENTS.md,Art/AGENTS.md,Art/tools/AGENTS.md,Art/tools/specs/AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName; Get-Content -LiteralPath $_.FullName }; Get-ChildItem Art/tools -File | Select-Object Name; Get-Content Art/tools/blender_kit_ch2_arena.py -ErrorAction SilentlyContinue; Get-ChildItem Art/tools -File | Where-Object { $_.Extension -in '"'.log','.ps1','.txt' } | Select-String -Pattern 'blender.exe' | Select-Object -First 20" in C:\Project\Cat_Tang
+ succeeded in 239ms:
+
+Name                         
+----                         
+blender_bake_fx.py           
+blender_fx.py                
+blender_kit_ch2_arena.py     
+blender_kit_ch2_landmarks.py 
+blender_kit_ch2_passengers.py
+blender_kit_ch2_props.py     
+blender_kit_ch2_station.py   
+blender_kit_ch2_train.py     
+blender_kit_facades.py       
+blender_kit_ground.py        
+blender_kit_heart.py         
+blender_kit_landmarks.py     
+blender_kit_props.py         
+blender_kit_sandbomb.py      
+blender_kit_simple.py        
+blender_kit_woodgate.py      
+blender_kit_xpgem.py         
+denoise.py                   
+ground_texture.py            
+ground_texture_ch2.py        
+keep_main.py                 
+make_test_bullet.py          
+render_turntable.py          
+sheet_cut.py                 
+tripo_cli_import.py          
+tripo_import.py              
+# 梨뺥꽣 2 蹂댁뒪 寃쎄린?? ?앹옱 泥좊룄 ?꾩감? ?쇳듃, ??옄 紐⑹옱 援먮웾怨?泥좊줈瑜?留뚮뱾怨?FBX/誘몃━蹂닿린濡???ν빀?덈떎.
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b -P Art/tools/blender_kit_ch2_arena.py
+"""One deterministic metre-scale Arena; grey role materials, top-centred origin.
+
+Independent closed slabs are intentional, as in the landmark kit. The preview
+uses temporary role colours AFTER export, restoring all shaders afterwards.
+"""
+
+import math
+import random
+from array import array
+from fractions import Fraction
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx'
+PREVIEW = ROOT / 'Art/tools/specs/kit_ch2_arena_preview.png'
+ROLES = set('stone stone_dark wood wood_dark iron iron_dark rail_steel brass'.split())
+MATERIALS = {}
+PARTS = []
+SERIAL = 0
+TAU = math.tau
+
+
+def setup_materials():
+    for name in sorted(ROLES):
+        mat = bpy.data.materials.new(name)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        shader = mat.node_tree.nodes['Principled BSDF']
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Roughness'].default_value = .85
+        shader.inputs['Metallic'].default_value = 0
+        MATERIALS[name] = mat
+
+
+def mesh(label, verts, faces, role, bevel=False):
+    global SERIAL
+    assert role in ROLES
+    SERIAL += 1
+    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(data.name, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATERIALS[role])
+    if bevel:
+        # Same 25 mm, two-segment upper-perimeter bevel as the landmark kit.
+        # Reserve it for the exposed plates and hub; repeated thin inlays and
+        # wedge seams retain their hand-authored topology to meet the budget.
+        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
+        mod.width = .025
+        mod.segments = 2
+        mod.affect = 'EDGES'
+        mod.use_clamp_overlap = True
+        mod.limit_method = 'WEIGHT'
+        weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
+        top = max(v.co.z for v in data.vertices)
+        for edge in data.edges:
+            if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
+                weights.data[edge.index].value = 1
+    PARTS.append(obj)
+    return obj
+
+
+def slab(label, outline, bottom, top, role, bevel=False):
+    n = len(outline)
+    verts = [(x, y, z) for z in (bottom, top) for x, y in outline]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return mesh(label, verts, faces, role, bevel)
+
+
+def box(label, loc, size, role, angle=0, bevel=False):
+    x, y, z = (s / 2 for s in size)
+    obj = slab(label, [(-x, -y), (x, -y), (x, y), (-x, y)], -z, z, role, bevel)
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler((0, 0, angle)).to_matrix().to_4x4())
+    return obj
+
+
+def polar(radius, angle):
+    return (radius * math.cos(angle), radius * math.sin(angle))
+
+
+def disc(label, radius, bottom, top, role, bevel=False):
+    return slab(label, [polar(radius, j * TAU / 24) for j in range(24)],
+                bottom, top, role, bevel)
+
+
+def ring(label, inner, outer, bottom, top, role):
+    n = 72
+    verts = [(r * math.cos(j * TAU / n), r * math.sin(j * TAU / n), z)
+             for r, z in ((inner, bottom), (outer, bottom),
+                          (outer, top), (inner, top)) for j in range(n)]
+    faces = [(k * n + j, k * n + (j + 1) % n,
+              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+             for k in range(4) for j in range(n)]
+    return mesh(label, verts, faces, role)
+
+
+def wedge(label, inner, outer, a, b, bottom, top, role, gap=0):
+    # Offset the rays by half the gap to keep the coping joints constant-width.
+    # Two arc segments per block retain the kit's chunky circular silhouette.
+    ai, ao = math.asin(gap / (2 * inner)), math.asin(gap / (2 * outer))
+    outer_arc = [polar(outer, a + ao + (b - a - 2 * ao) * j / 2) for j in range(3)]
+    inner_arc = [polar(inner, a + ai + (b - a - 2 * ai) * j / 2) for j in range(3)]
+    return slab(label, outer_arc + inner_arc[::-1], bottom, top, role)
+
+
+def difference(obj, cutter):
+    bpy.context.view_layer.objects.active = obj
+    mod = obj.modifiers.new('Inset without coplanar overlay', 'BOOLEAN')
+    mod.operation = 'DIFFERENCE'
+    mod.solver = 'EXACT'
+    mod.object = cutter
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+
+def remove_part(obj):
+    PARTS.remove(obj)
+    bpy.data.objects.remove(obj, do_unlink=True)
+
+
+def paving():
+    # Shared course boundaries keep the entire floor a closed manifold shell.
+    # Counts change only every four courses, keeping economical rectangular
+    # setts about 0.9 m tangentially x 0.6 m radially at the outside of a group.
+    rng = random.Random(20261118)
+    courses = 26
+    counts = [16 * (1 + k // 4) for k in range(courses)]
+    boundaries = [{Fraction(0)}]
+    for k in range(1, courses):
+        boundaries.append({Fraction(j, counts[k - 1]) for j in range(counts[k - 1])} |
+                          {Fraction(j, counts[k]) for j in range(counts[k])})
+    boundaries.append({Fraction(j, counts[-1]) for j in range(counts[-1])})
+    verts, faces, roles = [], [], []
+    indices = {}
+
+    def vertex(radius, turn, z):
+        x, y = polar(radius, float(turn) * TAU)
+        key = tuple(round(v, 7) for v in (x, y, z))
+        if key not in indices:
+            indices[key] = len(verts)
+            verts.append((x, y, z))
+        return indices[key]
+
+    for k, count in enumerate(counts):
+        inner, outer = 15.4 * k / courses, 15.4 * (k + 1) / courses
+        for j in range(count):
+            a, b = Fraction(j, count), Fraction(j + 1, count)
+            outer_turns = [a] + sorted(t for t in boundaries[k + 1] if a < t < b) + [b]
+            face = [vertex(outer, t % 1, -.08) for t in outer_turns]
+            if k:
+                inner_turns = [a] + sorted(t for t in boundaries[k] if a < t < b) + [b]
+                face += [vertex(inner, t % 1, -.08) for t in reversed(inner_turns)]
+            else:
+                face.append(vertex(0, 0, -.08))
+            faces.append(face)
+            roles.append('stone_dark' if rng.random() < 1 / 6 else 'stone')
+    outer = sorted(boundaries[-1])
+    top = [vertex(15.4, t, -.08) for t in outer]
+    bottom = [vertex(15.4, t, -.3) for t in outer]
+    faces.append(tuple(reversed(bottom)))
+    roles.append('stone')
+    for j in range(len(outer)):
+        nxt = (j + 1) % len(outer)
+        faces.append((bottom[j], bottom[nxt], top[nxt], top[j]))
+        roles.append('stone')
+    obj = mesh('Concentric laid stone setts', verts, faces, 'stone')
+    obj.data.materials.append(MATERIALS['stone_dark'])
+    for face, role in zip(obj.data.polygons, roles):
+        face.material_index = int(role == 'stone_dark')
+    obj['sett_count'] = sum(counts)
+    return obj
+
+
+def deck_surface(start, stop, angle, rng):
+    # One continuous solid deck with face-assigned flush rail heads and plates.
+    # This keeps the exact top at Z=0 without overlapping coplanar surfaces.
+    # Planks are .45 m along the deck, with .04 m dark inset seams. They span
+    # the deck transversely. Plates span under both rails every 1.2 m.
+    edges = {start, stop}
+    for j in range(64):
+        a = -15.5 + j * .49
+        for x in (a, min(a + .45, 15.5)):
+            if start < x < stop:
+                edges.add(round(x, 6))
+    plate_centres = [j * 1.2 for j in range(-12, 13)]
+    for centre in plate_centres:
+        for x in (centre - .10, centre + .10):
+            if start < x < stop:
+                edges.add(round(x, 6))
+    xs = sorted(edges)
+    ys = [-1.42, -.81, -.69, .69, .81, 1.42]
+    stride = len(ys)
+    verts = [(x, y, 0) for x in xs for y in ys]
+    faces, roles = [], []
+    boards = ['wood_dark' if rng.random() < .7 else 'wood' for j in range(64)]
+    for i in range(len(xs) - 1):
+        x = (xs[i] + xs[i + 1]) / 2
+        board = min(63, int((x + 15.5) / .49))
+        seam = (x + 15.5) - board * .49 > .45
+        plate = any(abs(x - centre) < .100001 for centre in plate_centres)
+        for j in range(stride - 1):
+            a, b = i * stride + j, (i + 1) * stride + j
+            faces.append((a, b, b + 1, a + 1))
+            role = 'wood_dark' if seam else boards[board]
+            if plate:
+                role = 'iron_dark'
+            if j in (1, 3):
+                role = 'rail_steel'
+            roles.append(role)
+    # Reuse all boundary vertices on the walls and bottom, with no T-junctions.
+    perimeter = ([i * stride for i in range(len(xs))] +
+                 [(len(xs) - 1) * stride + j for j in range(1, stride)] +
+                 [i * stride + stride - 1 for i in reversed(range(len(xs) - 1))] +
+                 list(reversed(range(1, stride - 1))))
+    bottom = []
+    for index in perimeter:
+        x, y, z = verts[index]
+        bottom.append(len(verts))
+        verts.append((x, y, -.075))
+    faces.append(tuple(reversed(bottom)))
+    roles.append('wood_dark')
+    for i, a in enumerate(perimeter):
+        nxt = (i + 1) % len(perimeter)
+        faces.append((bottom[i], bottom[nxt], perimeter[nxt], a))
+        roles.append('wood_dark')
+    obj = mesh('Transverse planks and flush railway hardware', verts, faces, 'wood')
+    slots = ['wood'] + sorted(ROLES - {'wood'})
+    for name in slots[1:]:
+        obj.data.materials.append(MATERIALS[name])
+    for face, role in zip(obj.data.polygons, roles):
+        face.material_index = slots.index(role)
+    obj.data.transform(Matrix.Rotation(angle, 4, 'Z'))
+    # Dissolve only coplanar faces with the same material. Rail/plate/plank
+    # boundaries survive, while invisible subdivisions inside a role disappear.
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bm.normal_update()
+    bmesh.ops.dissolve_limit(bm, angle_limit=.001, use_dissolve_boundaries=False,
+                            verts=list(bm.verts), edges=list(bm.edges),
+                            delimit={'MATERIAL'})
+    bm.to_mesh(obj.data)
+    bm.free()
+    return obj
+
+
+def build():
+    rng = random.Random(20261118)
+    paving()
+    # The middle vertex of each outer arc includes the cardinal extrema.
+    rim = []
+    for j in range(24):
+        a = j * TAU / 24 - TAU / 48
+        rim.append(wedge('Stone coping block', 15.4, 16, a, a + TAU / 24,
+                         -.3, 0, 'stone', gap=.025))
+    # The 31 m decks extend 0.1 m beyond the pit at each end. Seat those ends
+    # in the coping, preserving the top-centred origin without z-fighting.
+    for angle, indices in ((0, (0, 12)), (math.pi / 2, (6, 18))):
+        cutter = box('Temporary coping bridge seat', (0, 0, -.02),
+                     (31, 3.2, .12), 'stone', angle)
+        for index in indices:
+            difference(rim[index], cutter)
+        remove_part(cutter)
+    for hour in range(12):
+        a = math.pi / 2 - hour * TAU / 12
+        x, y = polar(15.7, a)
+        cutter = box('Temporary stud recess', (x, y, 0), (.35, .35, .05), 'stone', a)
+        difference(rim[(6 - hour * 2) % 24], cutter)
+        remove_part(cutter)
+        box('Inset brass hour stud', (x, y, -.0125), (.35, .35, .025), 'brass', a)
+
+    ring('Outer wheel ring rail', 14.53, 14.67, -.065, -.03, 'rail_steel')
+    for j in range(36):
+        a = j * TAU / 36
+        x, y = polar(14.6, a)
+        box('Outer wheel rail base plate', (x, y, -.068), (.34, .46, .020),
+            'iron_dark', a)
+
+    start = len(PARTS)
+    deck_surface(-15.5, 15.5, 0, rng)
+    for lo, hi in ((-15.5, -1.6), (1.6, 15.5)):
+        deck_surface(lo, hi, math.pi / 2, rng)
+    for angle, intervals in ((0, ((-15.5, 15.5),)),
+                             (math.pi / 2, ((-15.5, -1.6), (1.6, 15.5)))):
+        c, s = math.cos(angle), math.sin(angle)
+        for lo, hi in intervals:
+            for offset in (-1.51, 1.51):
+                d = (lo + hi) / 2
+                box('Iron bridge edge girder', (d * c - offset * s, d * s + offset * c, -.04),
+                    (hi - lo, .18, .08), 'iron', angle, bevel=True)
+    decks = PARTS[start:]
+    cutter = disc('Temporary king-pin socket', 1.8, -.2, .1, 'iron_dark')
+    for obj in decks:
+        # Apply the kit bevel before cutting the central socket.
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        difference(obj, cutter)
+    remove_part(cutter)
+    disc('Iron king-pin disc', 1.8, -.078, -.012, 'iron_dark')
+    # A single closed toothed outline avoids coplanar faces between teeth/cap.
+    teeth = []
+    for j in range(12):
+        for fraction, radius in ((0, .9), (.22, 1.0), (.62, 1.0), (.84, .9)):
+            teeth.append(polar(radius, (j + fraction) * TAU / 12))
+    slab('Brass king-pin cap with twelve low teeth', teeth, -.012, 0, 'brass')
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def finish():
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name = 'Arena'
+    obj.data.name = 'Arena_Mesh'
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert all(e.is_manifold for e in bm.edges), 'Open/non-manifold slab'
+    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate face'
+    # Lock the same tessellation for the renderer, FBX and Unity importer.
+    bmesh.ops.triangulate(bm, faces=list(bm.faces), ngon_method='BEAUTY')
+    assert all(e.is_manifold for e in bm.edges), 'Non-manifold triangulation'
+    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate triangle'
+    bm.to_mesh(obj.data)
+    bm.free()
+    for face in obj.data.polygons:
+        face.use_smooth = False
+    obj.data.update()
+    obj.location = (0, 0, 0)
+    obj.rotation_euler = (0, 0, 0)
+    obj.scale = (1, 1, 1)
+    bpy.context.view_layer.update()
+    assert triangles(obj) <= 9000, triangles(obj)
+    assert all(abs(obj.dimensions[i] - (32, 32, .3)[i]) < .001 for i in range(3)), tuple(obj.dimensions)
+    assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-6
+    assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-6
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+    assert set(m.name for m in obj.data.materials) == ROLES
+    obj['dimensions_m'] = [32, 32, .3]
+    obj['front'] = '+Y'
+    obj['chapter'] = 'The Stopped Station'
+    obj['origin_rule'] = 'top center'
+    obj['solid_obstacle'] = False
+    obj['rail_gauge_m'] = 1.5
+    obj['triangle_count'] = triangles(obj)
+    obj['design_revision'] = '2026-11-18 railway turntable pit'
+    obj['pit_floor_z_m'] = -.08
+    obj['ring_rail_radius_m'] = 14.6
+    obj['bridge_width_m'] = 3.2
+    obj['bridge_length_m'] = 31.0
+    obj['rail_head_width_m'] = .12
+    return obj
+
+
+def export(obj):
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    assert len(bpy.context.scene.objects) == 1
+    for mat in obj.data.materials:
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+    bpy.ops.export_scene.fbx(
+        filepath=str(OUTPUT), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 1024
+    print(f'EXPORTED Arena {triangles(obj)} '
+          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+
+
+def preview(obj):
+    # Render-only palette, using precisely one colour per exported role.
+    palette = {
+        'stone': (.43, .405, .36), 'stone_dark': (.355, .34, .305),
+        'wood': (.20, .135, .085), 'wood_dark': (.115, .085, .060),
+        'iron': (.16, .18, .185), 'iron_dark': (.055, .065, .068),
+        'rail_steel': (.52, .58, .60), 'brass': (.53, .34, .11),
+    }
+    helpers = []
+    scene = bpy.context.scene
+    scene.render.engine = 'CYCLES'
+    scene.cycles.samples = 24
+    scene.cycles.use_denoising = True
+    scene.render.resolution_x = 900
+    scene.render.resolution_y = 900
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.film_transparent = False
+    scene.view_settings.view_transform = 'Standard'
+    scene.world = bpy.data.worlds.new('Preview world')
+    scene.world.use_nodes = True
+    scene.world.node_tree.nodes['Background'].inputs['Color'].default_value = (.10, .115, .13, 1)
+    scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value = .7
+    for name, colour in palette.items():
+        mat = MATERIALS[name]
+        mat.diffuse_color = (*colour, 1)
+        mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*colour, 1)
+    try:
+        light = bpy.data.objects.new('Preview sun', bpy.data.lights.new('Preview sun', 'SUN'))
+        scene.collection.objects.link(light)
+        helpers.append(light)
+        light.data.energy = 2.5
+        light.data.angle = math.radians(15)
+        light.rotation_euler = (math.radians(25), math.radians(-20), math.radians(-25))
+        camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
+        scene.collection.objects.link(camera)
+        helpers.append(camera)
+        camera.data.type = 'ORTHO'
+        camera.data.ortho_scale = 36
+        scene.camera = camera
+        pixels = array('f', [0]) * (1800 * 900 * 4)
+        for index, elevation in enumerate((90, 55)):
+            a = math.radians(elevation)
+            camera.location = (0, -60 * math.cos(a), 60 * math.sin(a))
+            camera.rotation_euler = (Vector((0, 0, -.1)) - camera.location).to_track_quat('-Z', 'Y').to_euler()
+            # Save each view temporarily so pixel data remains accessible on
+            # headless Blender builds that expose no Render Result pixels.
+            temp = PREVIEW.with_name(f'.arena_preview_{index}.png')
+            scene.render.filepath = str(temp)
+            bpy.ops.render.render(write_still=True)
+            im = bpy.data.images.load(str(temp), check_existing=False)
+            src = array('f', [0]) * (900 * 900 * 4)
+            im.pixels.foreach_get(src)
+            for row in range(900):
+                start = (row * 1800 + index * 900) * 4
+                pixels[start:start + 3600] = src[row * 3600:(row + 1) * 3600]
+            bpy.data.images.remove(im)
+            temp.unlink()
+        sheet = bpy.data.images.new('Arena top and 55 degree preview', width=1800, height=900)
+        sheet.pixels.foreach_set(pixels)
+        sheet.filepath_raw = str(PREVIEW)
+        sheet.file_format = 'PNG'
+        sheet.save()
+        print(f'PREVIEW {PREVIEW}', flush=True)
+    finally:
+        for mat in MATERIALS.values():
+            mat.diffuse_color = (.5, .5, .5, 1)
+            mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        scene.camera = None
+        for helper in helpers:
+            bpy.data.objects.remove(helper, do_unlink=True)
+    assert len(scene.objects) == 1 and scene.objects[0] == obj
+
+
+def main():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    # Remove unused startup materials so role names never acquire .001 suffixes.
+    for mat in list(bpy.data.materials):
+        bpy.data.materials.remove(mat)
+    bpy.context.scene.unit_settings.system = 'METRIC'
+    bpy.context.scene.unit_settings.scale_length = 1
+    setup_materials()
+    build()
+    obj = finish()
+    export(obj)
+    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+    preview(obj)
+    print('DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Command blender -ErrorAction SilentlyContinue; Get-ChildItem 'C:/Program Files/Blender Foundation' -Filter blender.exe -Recurse -ErrorAction SilentlyContinue | Select-Object FullName" in C:\Project\Cat_Tang
+ succeeded in 1105ms:
+
+FullName                                                   
+--------                                                   
+C:\Program Files\Blender Foundation\Blender 5.3\blender.exe
+
+
+
+codex
+The existing Arena is revision 2, with a filled stone floor and wooden decks. I’ll replace it with the open clock layout, cut real recessed sockets into the curb, and keep the exported materials grey as the spec requires. The hand roots will narrow near the hub to clear the charge rails.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Path C:/Project/AGENTS.md,C:/AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { Get-Content -LiteralPath $_.FullName }; Get-Content Art/tools/render_turntable.py -TotalCount 60' in C:\Project\Cat_Tang
+ succeeded in 163ms:
+# Blender 諛곗튂 ?뚮뜑: 紐⑤뜽(GLB/FBX)????쨌 ??쨌 ??쨌 3/4 쨌 ?묐럭(寃뚯엫 移대찓??50??濡?李띿뼱 ???μ쑝濡??⑹튇??
+# ?ㅽ뻾: blender -b -P render_turntable.py -- <model.glb> <out.png>
+import bpy, sys, math, os
+from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+model_path, out_path = argv[0], argv[1]
+tmp_dir = os.path.join(os.path.dirname(out_path), "_views")
+os.makedirs(tmp_dir, exist_ok=True)
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+ext = os.path.splitext(model_path)[1].lower()
+if ext in (".glb", ".gltf"):
+    bpy.ops.import_scene.gltf(filepath=model_path)
+elif ext == ".fbx":
+    bpy.ops.import_scene.fbx(filepath=model_path)
+else:
+    bpy.ops.wm.obj_import(filepath=model_path)
+
+meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+# ?꾩껜 寃쎄퀎 ?곸옄
+mn = Vector((1e9, 1e9, 1e9)); mx = Vector((-1e9, -1e9, -1e9))
+for o in meshes:
+    for c in o.bound_box:
+        w = o.matrix_world @ Vector(c)
+        mn = Vector((min(mn[i], w[i]) for i in range(3)))
+        mx = Vector((max(mx[i], w[i]) for i in range(3)))
+center = (mn + mx) / 2
+size = max(mx - mn)
+tris = sum(len(o.data.polygons) for o in meshes)
+print(f"MESHES {len(meshes)} FACES {tris} SIZE {tuple(round(v,3) for v in (mx-mn))}")
+
+scene = bpy.context.scene
+scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items] else "BLENDER_EEVEE"
+scene.render.resolution_x = 512
+scene.render.resolution_y = 512
+scene.render.film_transparent = False
+world = bpy.data.worlds.new("W"); scene.world = world
+world.use_nodes = True
+world.node_tree.nodes["Background"].inputs[0].default_value = (0.16, 0.14, 0.2, 1)
+world.node_tree.nodes["Background"].inputs[1].default_value = 1.0
+
+sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", "SUN"))
+sun.data.energy = 3.0
+sun.rotation_euler = (math.radians(50), 0, math.radians(30))
+scene.collection.objects.link(sun)
+
+cam_data = bpy.data.cameras.new("Cam")
+cam_data.type = "ORTHO"
+cam_data.ortho_scale = size * 1.25
+cam = bpy.data.objects.new("Cam", cam_data)
+scene.collection.objects.link(cam)
+scene.camera = cam
+
+def look_at(obj, target):
+    d = target - obj.location
+    obj.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+
+# glTF??Y-up??Z-up?쇰줈 諛붽퓭 媛?몄삤怨? ?욌え?듭? -Y 履쎌쓣 蹂몃떎
+views = [("front", 0, 0), ("side", 90, 0), ("back", 180, 0), ("three_quarter", 35, 10), ("topdown_50", 20, 50)]
+
+2026-11-18T00:28:55.614354Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid patch: multiple operations target C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py
+diff --git a/Art/tools/blender_kit_ch2_arena.py b/Art/tools/blender_kit_ch2_arena.py
+deleted file mode 100644
+index 1c11b4bf5eb4c698e41b3b0acf2cfa6c3d893af0..0000000000000000000000000000000000000000
+--- a/Art/tools/blender_kit_ch2_arena.py
++++ /dev/null
+@@ -1,487 +0,0 @@
+-# 챕터 2 보스 경기장: 석재 철도 전차대 피트, 십자 목재 교량과 철로를 만들고 FBX/미리보기로 저장합니다.
+-# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b -P Art/tools/blender_kit_ch2_arena.py
+-"""One deterministic metre-scale Arena; grey role materials, top-centred origin.
+-
+-Independent closed slabs are intentional, as in the landmark kit. The preview
+-uses temporary role colours AFTER export, restoring all shaders afterwards.
+-"""
+-
+-import math
+-import random
+-from array import array
+-from fractions import Fraction
+-from pathlib import Path
+-
+-import bmesh
+-import bpy
+-from mathutils import Euler, Matrix, Vector
+-
+-
+-ROOT = Path(__file__).resolve().parents[2]
+-OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx'
+-PREVIEW = ROOT / 'Art/tools/specs/kit_ch2_arena_preview.png'
+-ROLES = set('stone stone_dark wood wood_dark iron iron_dark rail_steel brass'.split())
+-MATERIALS = {}
+-PARTS = []
+-SERIAL = 0
+-TAU = math.tau
+-
+-
+-def setup_materials():
+-    for name in sorted(ROLES):
+-        mat = bpy.data.materials.new(name)
+-        mat.use_nodes = True
+-        mat.diffuse_color = (.5, .5, .5, 1)
+-        shader = mat.node_tree.nodes['Principled BSDF']
+-        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+-        shader.inputs['Roughness'].default_value = .85
+-        shader.inputs['Metallic'].default_value = 0
+-        MATERIALS[name] = mat
+-
+-
+-def mesh(label, verts, faces, role, bevel=False):
+-    global SERIAL
+-    assert role in ROLES
+-    SERIAL += 1
+-    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
+-    data.from_pydata(verts, [], faces)
+-    data.update()
+-    obj = bpy.data.objects.new(data.name, data)
+-    bpy.context.collection.objects.link(obj)
+-    data.materials.append(MATERIALS[role])
+-    if bevel:
+-        # Same 25 mm, two-segment upper-perimeter bevel as the landmark kit.
+-        # Reserve it for the exposed plates and hub; repeated thin inlays and
+-        # wedge seams retain their hand-authored topology to meet the budget.
+-        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
+-        mod.width = .025
+-        mod.segments = 2
+-        mod.affect = 'EDGES'
+-        mod.use_clamp_overlap = True
+-        mod.limit_method = 'WEIGHT'
+-        weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
+-        top = max(v.co.z for v in data.vertices)
+-        for edge in data.edges:
+-            if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
+-                weights.data[edge.index].value = 1
+-    PARTS.append(obj)
+-    return obj
+-
+-
+-def slab(label, outline, bottom, top, role, bevel=False):
+-    n = len(outline)
+-    verts = [(x, y, z) for z in (bottom, top) for x, y in outline]
+-    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+-    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+-    return mesh(label, verts, faces, role, bevel)
+-
+-
+-def box(label, loc, size, role, angle=0, bevel=False):
+-    x, y, z = (s / 2 for s in size)
+-    obj = slab(label, [(-x, -y), (x, -y), (x, y), (-x, y)], -z, z, role, bevel)
+-    obj.data.transform(Matrix.Translation(Vector(loc)) @
+-                       Euler((0, 0, angle)).to_matrix().to_4x4())
+-    return obj
+-
+-
+-def polar(radius, angle):
+-    return (radius * math.cos(angle), radius * math.sin(angle))
+-
+-
+-def disc(label, radius, bottom, top, role, bevel=False):
+-    return slab(label, [polar(radius, j * TAU / 24) for j in range(24)],
+-                bottom, top, role, bevel)
+-
+-
+-def ring(label, inner, outer, bottom, top, role):
+-    n = 72
+-    verts = [(r * math.cos(j * TAU / n), r * math.sin(j * TAU / n), z)
+-             for r, z in ((inner, bottom), (outer, bottom),
+-                          (outer, top), (inner, top)) for j in range(n)]
+-    faces = [(k * n + j, k * n + (j + 1) % n,
+-              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+-             for k in range(4) for j in range(n)]
+-    return mesh(label, verts, faces, role)
+-
+-
+-def wedge(label, inner, outer, a, b, bottom, top, role, gap=0):
+-    # Offset the rays by half the gap to keep the coping joints constant-width.
+-    # Two arc segments per block retain the kit's chunky circular silhouette.
+-    ai, ao = math.asin(gap / (2 * inner)), math.asin(gap / (2 * outer))
+-    outer_arc = [polar(outer, a + ao + (b - a - 2 * ao) * j / 2) for j in range(3)]
+-    inner_arc = [polar(inner, a + ai + (b - a - 2 * ai) * j / 2) for j in range(3)]
+-    return slab(label, outer_arc + inner_arc[::-1], bottom, top, role)
+-
+-
+-def difference(obj, cutter):
+-    bpy.context.view_layer.objects.active = obj
+-    mod = obj.modifiers.new('Inset without coplanar overlay', 'BOOLEAN')
+-    mod.operation = 'DIFFERENCE'
+-    mod.solver = 'EXACT'
+-    mod.object = cutter
+-    bpy.ops.object.modifier_apply(modifier=mod.name)
+-
+-
+-def remove_part(obj):
+-    PARTS.remove(obj)
+-    bpy.data.objects.remove(obj, do_unlink=True)
+-
+-
+-def paving():
+-    # Shared course boundaries keep the entire floor a closed manifold shell.
+-    # Counts change only every four courses, keeping economical rectangular
+-    # setts about 0.9 m tangentially x 0.6 m radially at the outside of a group.
+-    rng = random.Random(20261118)
+-    courses = 26
+-    counts = [16 * (1 + k // 4) for k in range(courses)]
+-    boundaries = [{Fraction(0)}]
+-    for k in range(1, courses):
+-        boundaries.append({Fraction(j, counts[k - 1]) for j in range(counts[k - 1])} |
+-                          {Fraction(j, counts[k]) for j in range(counts[k])})
+-    boundaries.append({Fraction(j, counts[-1]) for j in range(counts[-1])})
+-    verts, faces, roles = [], [], []
+-    indices = {}
+-
+-    def vertex(radius, turn, z):
+-        x, y = polar(radius, float(turn) * TAU)
+-        key = tuple(round(v, 7) for v in (x, y, z))
+-        if key not in indices:
+-            indices[key] = len(verts)
+-            verts.append((x, y, z))
+-        return indices[key]
+-
+-    for k, count in enumerate(counts):
+-        inner, outer = 15.4 * k / courses, 15.4 * (k + 1) / courses
+-        for j in range(count):
+-            a, b = Fraction(j, count), Fraction(j + 1, count)
+-            outer_turns = [a] + sorted(t for t in boundaries[k + 1] if a < t < b) + [b]
+-            face = [vertex(outer, t % 1, -.08) for t in outer_turns]
+-            if k:
+-                inner_turns = [a] + sorted(t for t in boundaries[k] if a < t < b) + [b]
+-                face += [vertex(inner, t % 1, -.08) for t in reversed(inner_turns)]
+-            else:
+-                face.append(vertex(0, 0, -.08))
+-            faces.append(face)
+-            roles.append('stone_dark' if rng.random() < 1 / 6 else 'stone')
+-    outer = sorted(boundaries[-1])
+-    top = [vertex(15.4, t, -.08) for t in outer]
+-    bottom = [vertex(15.4, t, -.3) for t in outer]
+-    faces.append(tuple(reversed(bottom)))
+-    roles.append('stone')
+-    for j in range(len(outer)):
+-        nxt = (j + 1) % len(outer)
+-        faces.append((bottom[j], bottom[nxt], top[nxt], top[j]))
+-        roles.append('stone')
+-    obj = mesh('Concentric laid stone setts', verts, faces, 'stone')
+-    obj.data.materials.append(MATERIALS['stone_dark'])
+-    for face, role in zip(obj.data.polygons, roles):
+-        face.material_index = int(role == 'stone_dark')
+-    obj['sett_count'] = sum(counts)
+-    return obj
+-
+-
+-def deck_surface(start, stop, angle, rng):
+-    # One continuous solid deck with face-assigned flush rail heads and plates.
+-    # This keeps the exact top at Z=0 without overlapping coplanar surfaces.
+-    # Planks are .45 m along the deck, with .04 m dark inset seams. They span
+-    # the deck transversely. Plates span under both rails every 1.2 m.
+-    edges = {start, stop}
+-    for j in range(64):
+-        a = -15.5 + j * .49
+-        for x in (a, min(a + .45, 15.5)):
+-            if start < x < stop:
+-                edges.add(round(x, 6))
+-    plate_centres = [j * 1.2 for j in range(-12, 13)]
+-    for centre in plate_centres:
+-        for x in (centre - .10, centre + .10):
+-            if start < x < stop:
+-                edges.add(round(x, 6))
+-    xs = sorted(edges)
+-    ys = [-1.42, -.81, -.69, .69, .81, 1.42]
+-    stride = len(ys)
+-    verts = [(x, y, 0) for x in xs for y in ys]
+-    faces, roles = [], []
+-    boards = ['wood_dark' if rng.random() < .7 else 'wood' for j in range(64)]
+-    for i in range(len(xs) - 1):
+-        x = (xs[i] + xs[i + 1]) / 2
+-        board = min(63, int((x + 15.5) / .49))
+-        seam = (x + 15.5) - board * .49 > .45
+-        plate = any(abs(x - centre) < .100001 for centre in plate_centres)
+-        for j in range(stride - 1):
+-            a, b = i * stride + j, (i + 1) * stride + j
+-            faces.append((a, b, b + 1, a + 1))
+-            role = 'wood_dark' if seam else boards[board]
+-            if plate:
+-                role = 'iron_dark'
+-            if j in (1, 3):
+-                role = 'rail_steel'
+-            roles.append(role)
+-    # Reuse all boundary vertices on the walls and bottom, with no T-junctions.
+-    perimeter = ([i * stride for i in range(len(xs))] +
+-                 [(len(xs) - 1) * stride + j for j in range(1, stride)] +
+-                 [i * stride + stride - 1 for i in reversed(range(len(xs) - 1))] +
+-                 list(reversed(range(1, stride - 1))))
+-    bottom = []
+-    for index in perimeter:
+-        x, y, z = verts[index]
+-        bottom.append(len(verts))
+-        verts.append((x, y, -.075))
+-    faces.append(tuple(reversed(bottom)))
+-    roles.append('wood_dark')
+-    for i, a in enumerate(perimeter):
+-        nxt = (i + 1) % len(perimeter)
+-        faces.append((bottom[i], bottom[nxt], perimeter[nxt], a))
+-        roles.append('wood_dark')
+-    obj = mesh('Transverse planks and flush railway hardware', verts, faces, 'wood')
+-    slots = ['wood'] + sorted(ROLES - {'wood'})
+-    for name in slots[1:]:
+-        obj.data.materials.append(MATERIALS[name])
+-    for face, role in zip(obj.data.polygons, roles):
+-        face.material_index = slots.index(role)
+-    obj.data.transform(Matrix.Rotation(angle, 4, 'Z'))
+-    # Dissolve only coplanar faces with the same material. Rail/plate/plank
+-    # boundaries survive, while invisible subdivisions inside a role disappear.
+-    bm = bmesh.new()
+-    bm.from_mesh(obj.data)
+-    bm.normal_update()
+-    bmesh.ops.dissolve_limit(bm, angle_limit=.001, use_dissolve_boundaries=False,
+-                            verts=list(bm.verts), edges=list(bm.edges),
+-                            delimit={'MATERIAL'})
+-    bm.to_mesh(obj.data)
+-    bm.free()
+-    return obj
+-
+-
+-def build():
+-    rng = random.Random(20261118)
+-    paving()
+-    # The middle vertex of each outer arc includes the cardinal extrema.
+-    rim = []
+-    for j in range(24):
+-        a = j * TAU / 24 - TAU / 48
+-        rim.append(wedge('Stone coping block', 15.4, 16, a, a + TAU / 24,
+-                         -.3, 0, 'stone', gap=.025))
+-    # The 31 m decks extend 0.1 m beyond the pit at each end. Seat those ends
+-    # in the coping, preserving the top-centred origin without z-fighting.
+-    for angle, indices in ((0, (0, 12)), (math.pi / 2, (6, 18))):
+-        cutter = box('Temporary coping bridge seat', (0, 0, -.02),
+-                     (31, 3.2, .12), 'stone', angle)
+-        for index in indices:
+-            difference(rim[index], cutter)
+-        remove_part(cutter)
+-    for hour in range(12):
+-        a = math.pi / 2 - hour * TAU / 12
+-        x, y = polar(15.7, a)
+-        cutter = box('Temporary stud recess', (x, y, 0), (.35, .35, .05), 'stone', a)
+-        difference(rim[(6 - hour * 2) % 24], cutter)
+-        remove_part(cutter)
+-        box('Inset brass hour stud', (x, y, -.0125), (.35, .35, .025), 'brass', a)
+-
+-    ring('Outer wheel ring rail', 14.53, 14.67, -.065, -.03, 'rail_steel')
+-    for j in range(36):
+-        a = j * TAU / 36
+-        x, y = polar(14.6, a)
+-        box('Outer wheel rail base plate', (x, y, -.068), (.34, .46, .020),
+-            'iron_dark', a)
+-
+-    start = len(PARTS)
+-    deck_surface(-15.5, 15.5, 0, rng)
+-    for lo, hi in ((-15.5, -1.6), (1.6, 15.5)):
+-        deck_surface(lo, hi, math.pi / 2, rng)
+-    for angle, intervals in ((0, ((-15.5, 15.5),)),
+-                             (math.pi / 2, ((-15.5, -1.6), (1.6, 15.5)))):
+-        c, s = math.cos(angle), math.sin(angle)
+-        for lo, hi in intervals:
+-            for offset in (-1.51, 1.51):
+-                d = (lo + hi) / 2
+-                box('Iron bridge edge girder', (d * c - offset * s, d * s + offset * c, -.04),
+-                    (hi - lo, .18, .08), 'iron', angle, bevel=True)
+-    decks = PARTS[start:]
+-    cutter = disc('Temporary king-pin socket', 1.8, -.2, .1, 'iron_dark')
+-    for obj in decks:
+-        # Apply the kit bevel before cutting the central socket.
+-        bpy.context.view_layer.objects.active = obj
+-        for mod in list(obj.modifiers):
+-            bpy.ops.object.modifier_apply(modifier=mod.name)
+-        difference(obj, cutter)
+-    remove_part(cutter)
+-    disc('Iron king-pin disc', 1.8, -.078, -.012, 'iron_dark')
+-    # A single closed toothed outline avoids coplanar faces between teeth/cap.
+-    teeth = []
+-    for j in range(12):
+-        for fraction, radius in ((0, .9), (.22, 1.0), (.62, 1.0), (.84, .9)):
+-            teeth.append(polar(radius, (j + fraction) * TAU / 12))
+-    slab('Brass king-pin cap with twelve low teeth', teeth, -.012, 0, 'brass')
+-
+-
+-def triangles(obj):
+-    obj.data.calc_loop_triangles()
+-    return len(obj.data.loop_triangles)
+-
+-
+-def finish():
+-    bpy.ops.object.select_all(action='DESELECT')
+-    for obj in PARTS:
+-        obj.select_set(True)
+-        bpy.context.view_layer.objects.active = obj
+-        for mod in list(obj.modifiers):
+-            bpy.ops.object.modifier_apply(modifier=mod.name)
+-        obj.select_set(False)
+-    for obj in PARTS:
+-        obj.select_set(True)
+-    bpy.context.view_layer.objects.active = PARTS[0]
+-    bpy.ops.object.join()
+-    obj = bpy.context.object
+-    obj.name = 'Arena'
+-    obj.data.name = 'Arena_Mesh'
+-    bm = bmesh.new()
+-    bm.from_mesh(obj.data)
+-    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+-    assert all(e.is_manifold for e in bm.edges), 'Open/non-manifold slab'
+-    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate face'
+-    # Lock the same tessellation for the renderer, FBX and Unity importer.
+-    bmesh.ops.triangulate(bm, faces=list(bm.faces), ngon_method='BEAUTY')
+-    assert all(e.is_manifold for e in bm.edges), 'Non-manifold triangulation'
+-    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate triangle'
+-    bm.to_mesh(obj.data)
+-    bm.free()
+-    for face in obj.data.polygons:
+-        face.use_smooth = False
+-    obj.data.update()
+-    obj.location = (0, 0, 0)
+-    obj.rotation_euler = (0, 0, 0)
+-    obj.scale = (1, 1, 1)
+-    bpy.context.view_layer.update()
+-    assert triangles(obj) <= 9000, triangles(obj)
+-    assert all(abs(obj.dimensions[i] - (32, 32, .3)[i]) < .001 for i in range(3)), tuple(obj.dimensions)
+-    assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-6
+-    assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-6
+-    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+-    assert set(m.name for m in obj.data.materials) == ROLES
+-    obj['dimensions_m'] = [32, 32, .3]
+-    obj['front'] = '+Y'
+-    obj['chapter'] = 'The Stopped Station'
+-    obj['origin_rule'] = 'top center'
+-    obj['solid_obstacle'] = False
+-    obj['rail_gauge_m'] = 1.5
+-    obj['triangle_count'] = triangles(obj)
+-    obj['design_revision'] = '2026-11-18 railway turntable pit'
+-    obj['pit_floor_z_m'] = -.08
+-    obj['ring_rail_radius_m'] = 14.6
+-    obj['bridge_width_m'] = 3.2
+-    obj['bridge_length_m'] = 31.0
+-    obj['rail_head_width_m'] = .12
+-    return obj
+-
+-
+-def export(obj):
+-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+-    bpy.ops.object.select_all(action='DESELECT')
+-    obj.select_set(True)
+-    bpy.context.view_layer.objects.active = obj
+-    assert len(bpy.context.scene.objects) == 1
+-    for mat in obj.data.materials:
+-        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+-    bpy.ops.export_scene.fbx(
+-        filepath=str(OUTPUT), use_selection=True,
+-        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+-        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+-        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+-    )
+-    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 1024
+-    print(f'EXPORTED Arena {triangles(obj)} '
+-          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+-
+-
+-def preview(obj):
+-    # Render-only palette, using precisely one colour per exported role.
+-    palette = {
+-        'stone': (.43, .405, .36), 'stone_dark': (.355, .34, .305),
+-        'wood': (.20, .135, .085), 'wood_dark': (.115, .085, .060),
+-        'iron': (.16, .18, .185), 'iron_dark': (.055, .065, .068),
+-        'rail_steel': (.52, .58, .60), 'brass': (.53, .34, .11),
+-    }
+-    helpers = []
+-    scene = bpy.context.scene
+-    scene.render.engine = 'CYCLES'
+-    scene.cycles.samples = 24
+-    scene.cycles.use_denoising = True
+-    scene.render.resolution_x = 900
+-    scene.render.resolution_y = 900
+-    scene.render.resolution_percentage = 100
+-    scene.render.image_settings.file_format = 'PNG'
+-    scene.render.film_transparent = False
+-    scene.view_settings.view_transform = 'Standard'
+-    scene.world = bpy.data.worlds.new('Preview world')
+-    scene.world.use_nodes = True
+-    scene.world.node_tree.nodes['Background'].inputs['Color'].default_value = (.10, .115, .13, 1)
+-    scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value = .7
+-    for name, colour in palette.items():
+-        mat = MATERIALS[name]
+-        mat.diffuse_color = (*colour, 1)
+-        mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*colour, 1)
+-    try:
+-        light = bpy.data.objects.new('Preview sun', bpy.data.lights.new('Preview sun', 'SUN'))
+-        scene.collection.objects.link(light)
+-        helpers.append(light)
+-        light.data.energy = 2.5
+-        light.data.angle = math.radians(15)
+-        light.rotation_euler = (math.radians(25), math.radians(-20), math.radians(-25))
+-        camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
+-        scene.collection.objects.link(camera)
+-        helpers.append(camera)
+-        camera.data.type = 'ORTHO'
+-        camera.data.ortho_scale = 36
+-        scene.camera = camera
+-        pixels = array('f', [0]) * (1800 * 900 * 4)
+-        for index, elevation in enumerate((90, 55)):
+-            a = math.radians(elevation)
+-            camera.location = (0, -60 * math.cos(a), 60 * math.sin(a))
+-            camera.rotation_euler = (Vector((0, 0, -.1)) - camera.location).to_track_quat('-Z', 'Y').to_euler()
+-            # Save each view temporarily so pixel data remains accessible on
+-            # headless Blender builds that expose no Render Result pixels.
+-            temp = PREVIEW.with_name(f'.arena_preview_{index}.png')
+-            scene.render.filepath = str(temp)
+-            bpy.ops.render.render(write_still=True)
+-            im = bpy.data.images.load(str(temp), check_existing=False)
+-            src = array('f', [0]) * (900 * 900 * 4)
+-            im.pixels.foreach_get(src)
+-            for row in range(900):
+-                start = (row * 1800 + index * 900) * 4
+-                pixels[start:start + 3600] = src[row * 3600:(row + 1) * 3600]
+-            bpy.data.images.remove(im)
+-            temp.unlink()
+-        sheet = bpy.data.images.new('Arena top and 55 degree preview', width=1800, height=900)
+-        sheet.pixels.foreach_set(pixels)
+-        sheet.filepath_raw = str(PREVIEW)
+-        sheet.file_format = 'PNG'
+-        sheet.save()
+-        print(f'PREVIEW {PREVIEW}', flush=True)
+-    finally:
+-        for mat in MATERIALS.values():
+-            mat.diffuse_color = (.5, .5, .5, 1)
+-            mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.5, .5, .5, 1)
+-        scene.camera = None
+-        for helper in helpers:
+-            bpy.data.objects.remove(helper, do_unlink=True)
+-    assert len(scene.objects) == 1 and scene.objects[0] == obj
+-
+-
+-def main():
+-    bpy.ops.wm.read_factory_settings(use_empty=True)
+-    # Remove unused startup materials so role names never acquire .001 suffixes.
+-    for mat in list(bpy.data.materials):
+-        bpy.data.materials.remove(mat)
+-    bpy.context.scene.unit_settings.system = 'METRIC'
+-    bpy.context.scene.unit_settings.scale_length = 1
+-    setup_materials()
+-    build()
+-    obj = finish()
+-    export(obj)
+-    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+-    preview(obj)
+-    print('DONE', flush=True)
+-
+-
+-if __name__ == '__main__':
+-    main()
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py
+diff --git a/Art/tools/blender_kit_ch2_arena.py b/Art/tools/blender_kit_ch2_arena.py
+index 1c11b4bf5eb4c698e41b3b0acf2cfa6c3d893af0..0d1d8982ac56eec64f1a5fdeb47907b3a8fb877d
+--- a/Art/tools/blender_kit_ch2_arena.py
++++ b/Art/tools/blender_kit_ch2_arena.py
+@@ -1,487 +1,399 @@
+-# 챕터 2 보스 경기장: 석재 철도 전차대 피트, 십자 목재 교량과 철로를 만들고 FBX/미리보기로 저장합니다.
+-# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b -P Art/tools/blender_kit_ch2_arena.py
+-"""One deterministic metre-scale Arena; grey role materials, top-centred origin.
+-
+-Independent closed slabs are intentional, as in the landmark kit. The preview
+-uses temporary role colours AFTER export, restoring all shaders afterwards.
+-"""
+-
+-import math
+-import random
+-from array import array
+-from fractions import Fraction
+-from pathlib import Path
+-
+-import bmesh
+-import bpy
+-from mathutils import Euler, Matrix, Vector
+-
+-
+-ROOT = Path(__file__).resolve().parents[2]
+-OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx'
+-PREVIEW = ROOT / 'Art/tools/specs/kit_ch2_arena_preview.png'
+-ROLES = set('stone stone_dark wood wood_dark iron iron_dark rail_steel brass'.split())
+-MATERIALS = {}
+-PARTS = []
+-SERIAL = 0
+-TAU = math.tau
+-
+-
+-def setup_materials():
+-    for name in sorted(ROLES):
+-        mat = bpy.data.materials.new(name)
+-        mat.use_nodes = True
+-        mat.diffuse_color = (.5, .5, .5, 1)
+-        shader = mat.node_tree.nodes['Principled BSDF']
+-        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+-        shader.inputs['Roughness'].default_value = .85
+-        shader.inputs['Metallic'].default_value = 0
+-        MATERIALS[name] = mat
+-
+-
+-def mesh(label, verts, faces, role, bevel=False):
+-    global SERIAL
+-    assert role in ROLES
+-    SERIAL += 1
+-    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
+-    data.from_pydata(verts, [], faces)
+-    data.update()
+-    obj = bpy.data.objects.new(data.name, data)
+-    bpy.context.collection.objects.link(obj)
+-    data.materials.append(MATERIALS[role])
+-    if bevel:
+-        # Same 25 mm, two-segment upper-perimeter bevel as the landmark kit.
+-        # Reserve it for the exposed plates and hub; repeated thin inlays and
+-        # wedge seams retain their hand-authored topology to meet the budget.
+-        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
+-        mod.width = .025
+-        mod.segments = 2
+-        mod.affect = 'EDGES'
+-        mod.use_clamp_overlap = True
+-        mod.limit_method = 'WEIGHT'
+-        weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
+-        top = max(v.co.z for v in data.vertices)
+-        for edge in data.edges:
+-            if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
+-                weights.data[edge.index].value = 1
+-    PARTS.append(obj)
+-    return obj
+-
+-
+-def slab(label, outline, bottom, top, role, bevel=False):
+-    n = len(outline)
+-    verts = [(x, y, z) for z in (bottom, top) for x, y in outline]
+-    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+-    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+-    return mesh(label, verts, faces, role, bevel)
+-
+-
+-def box(label, loc, size, role, angle=0, bevel=False):
+-    x, y, z = (s / 2 for s in size)
+-    obj = slab(label, [(-x, -y), (x, -y), (x, y), (-x, y)], -z, z, role, bevel)
+-    obj.data.transform(Matrix.Translation(Vector(loc)) @
+-                       Euler((0, 0, angle)).to_matrix().to_4x4())
+-    return obj
+-
+-
+-def polar(radius, angle):
+-    return (radius * math.cos(angle), radius * math.sin(angle))
+-
+-
+-def disc(label, radius, bottom, top, role, bevel=False):
+-    return slab(label, [polar(radius, j * TAU / 24) for j in range(24)],
+-                bottom, top, role, bevel)
+-
+-
+-def ring(label, inner, outer, bottom, top, role):
+-    n = 72
+-    verts = [(r * math.cos(j * TAU / n), r * math.sin(j * TAU / n), z)
+-             for r, z in ((inner, bottom), (outer, bottom),
+-                          (outer, top), (inner, top)) for j in range(n)]
+-    faces = [(k * n + j, k * n + (j + 1) % n,
+-              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+-             for k in range(4) for j in range(n)]
+-    return mesh(label, verts, faces, role)
+-
+-
+-def wedge(label, inner, outer, a, b, bottom, top, role, gap=0):
+-    # Offset the rays by half the gap to keep the coping joints constant-width.
+-    # Two arc segments per block retain the kit's chunky circular silhouette.
+-    ai, ao = math.asin(gap / (2 * inner)), math.asin(gap / (2 * outer))
+-    outer_arc = [polar(outer, a + ao + (b - a - 2 * ao) * j / 2) for j in range(3)]
+-    inner_arc = [polar(inner, a + ai + (b - a - 2 * ai) * j / 2) for j in range(3)]
+-    return slab(label, outer_arc + inner_arc[::-1], bottom, top, role)
+-
+-
+-def difference(obj, cutter):
+-    bpy.context.view_layer.objects.active = obj
+-    mod = obj.modifiers.new('Inset without coplanar overlay', 'BOOLEAN')
+-    mod.operation = 'DIFFERENCE'
+-    mod.solver = 'EXACT'
+-    mod.object = cutter
+-    bpy.ops.object.modifier_apply(modifier=mod.name)
+-
+-
+-def remove_part(obj):
+-    PARTS.remove(obj)
+-    bpy.data.objects.remove(obj, do_unlink=True)
+-
+-
+-def paving():
+-    # Shared course boundaries keep the entire floor a closed manifold shell.
+-    # Counts change only every four courses, keeping economical rectangular
+-    # setts about 0.9 m tangentially x 0.6 m radially at the outside of a group.
+-    rng = random.Random(20261118)
+-    courses = 26
+-    counts = [16 * (1 + k // 4) for k in range(courses)]
+-    boundaries = [{Fraction(0)}]
+-    for k in range(1, courses):
+-        boundaries.append({Fraction(j, counts[k - 1]) for j in range(counts[k - 1])} |
+-                          {Fraction(j, counts[k]) for j in range(counts[k])})
+-    boundaries.append({Fraction(j, counts[-1]) for j in range(counts[-1])})
+-    verts, faces, roles = [], [], []
+-    indices = {}
+-
+-    def vertex(radius, turn, z):
+-        x, y = polar(radius, float(turn) * TAU)
+-        key = tuple(round(v, 7) for v in (x, y, z))
+-        if key not in indices:
+-            indices[key] = len(verts)
+-            verts.append((x, y, z))
+-        return indices[key]
+-
+-    for k, count in enumerate(counts):
+-        inner, outer = 15.4 * k / courses, 15.4 * (k + 1) / courses
+-        for j in range(count):
+-            a, b = Fraction(j, count), Fraction(j + 1, count)
+-            outer_turns = [a] + sorted(t for t in boundaries[k + 1] if a < t < b) + [b]
+-            face = [vertex(outer, t % 1, -.08) for t in outer_turns]
+-            if k:
+-                inner_turns = [a] + sorted(t for t in boundaries[k] if a < t < b) + [b]
+-                face += [vertex(inner, t % 1, -.08) for t in reversed(inner_turns)]
+-            else:
+-                face.append(vertex(0, 0, -.08))
+-            faces.append(face)
+-            roles.append('stone_dark' if rng.random() < 1 / 6 else 'stone')
+-    outer = sorted(boundaries[-1])
+-    top = [vertex(15.4, t, -.08) for t in outer]
+-    bottom = [vertex(15.4, t, -.3) for t in outer]
+-    faces.append(tuple(reversed(bottom)))
+-    roles.append('stone')
+-    for j in range(len(outer)):
+-        nxt = (j + 1) % len(outer)
+-        faces.append((bottom[j], bottom[nxt], top[nxt], top[j]))
+-        roles.append('stone')
+-    obj = mesh('Concentric laid stone setts', verts, faces, 'stone')
+-    obj.data.materials.append(MATERIALS['stone_dark'])
+-    for face, role in zip(obj.data.polygons, roles):
+-        face.material_index = int(role == 'stone_dark')
+-    obj['sett_count'] = sum(counts)
+-    return obj
+-
+-
+-def deck_surface(start, stop, angle, rng):
+-    # One continuous solid deck with face-assigned flush rail heads and plates.
+-    # This keeps the exact top at Z=0 without overlapping coplanar surfaces.
+-    # Planks are .45 m along the deck, with .04 m dark inset seams. They span
+-    # the deck transversely. Plates span under both rails every 1.2 m.
+-    edges = {start, stop}
+-    for j in range(64):
+-        a = -15.5 + j * .49
+-        for x in (a, min(a + .45, 15.5)):
+-            if start < x < stop:
+-                edges.add(round(x, 6))
+-    plate_centres = [j * 1.2 for j in range(-12, 13)]
+-    for centre in plate_centres:
+-        for x in (centre - .10, centre + .10):
+-            if start < x < stop:
+-                edges.add(round(x, 6))
+-    xs = sorted(edges)
+-    ys = [-1.42, -.81, -.69, .69, .81, 1.42]
+-    stride = len(ys)
+-    verts = [(x, y, 0) for x in xs for y in ys]
+-    faces, roles = [], []
+-    boards = ['wood_dark' if rng.random() < .7 else 'wood' for j in range(64)]
+-    for i in range(len(xs) - 1):
+-        x = (xs[i] + xs[i + 1]) / 2
+-        board = min(63, int((x + 15.5) / .49))
+-        seam = (x + 15.5) - board * .49 > .45
+-        plate = any(abs(x - centre) < .100001 for centre in plate_centres)
+-        for j in range(stride - 1):
+-            a, b = i * stride + j, (i + 1) * stride + j
+-            faces.append((a, b, b + 1, a + 1))
+-            role = 'wood_dark' if seam else boards[board]
+-            if plate:
+-                role = 'iron_dark'
+-            if j in (1, 3):
+-                role = 'rail_steel'
+-            roles.append(role)
+-    # Reuse all boundary vertices on the walls and bottom, with no T-junctions.
+-    perimeter = ([i * stride for i in range(len(xs))] +
+-                 [(len(xs) - 1) * stride + j for j in range(1, stride)] +
+-                 [i * stride + stride - 1 for i in reversed(range(len(xs) - 1))] +
+-                 list(reversed(range(1, stride - 1))))
+-    bottom = []
+-    for index in perimeter:
+-        x, y, z = verts[index]
+-        bottom.append(len(verts))
+-        verts.append((x, y, -.075))
+-    faces.append(tuple(reversed(bottom)))
+-    roles.append('wood_dark')
+-    for i, a in enumerate(perimeter):
+-        nxt = (i + 1) % len(perimeter)
+-        faces.append((bottom[i], bottom[nxt], perimeter[nxt], a))
+-        roles.append('wood_dark')
+-    obj = mesh('Transverse planks and flush railway hardware', verts, faces, 'wood')
+-    slots = ['wood'] + sorted(ROLES - {'wood'})
+-    for name in slots[1:]:
+-        obj.data.materials.append(MATERIALS[name])
+-    for face, role in zip(obj.data.polygons, roles):
+-        face.material_index = slots.index(role)
+-    obj.data.transform(Matrix.Rotation(angle, 4, 'Z'))
+-    # Dissolve only coplanar faces with the same material. Rail/plate/plank
+-    # boundaries survive, while invisible subdivisions inside a role disappear.
+-    bm = bmesh.new()
+-    bm.from_mesh(obj.data)
+-    bm.normal_update()
+-    bmesh.ops.dissolve_limit(bm, angle_limit=.001, use_dissolve_boundaries=False,
+-                            verts=list(bm.verts), edges=list(bm.edges),
+-                            delimit={'MATERIAL'})
+-    bm.to_mesh(obj.data)
+-    bm.free()
+-    return obj
+-
+-
+-def build():
+-    rng = random.Random(20261118)
+-    paving()
+-    # The middle vertex of each outer arc includes the cardinal extrema.
+-    rim = []
+-    for j in range(24):
+-        a = j * TAU / 24 - TAU / 48
+-        rim.append(wedge('Stone coping block', 15.4, 16, a, a + TAU / 24,
+-                         -.3, 0, 'stone', gap=.025))
+-    # The 31 m decks extend 0.1 m beyond the pit at each end. Seat those ends
+-    # in the coping, preserving the top-centred origin without z-fighting.
+-    for angle, indices in ((0, (0, 12)), (math.pi / 2, (6, 18))):
+-        cutter = box('Temporary coping bridge seat', (0, 0, -.02),
+-                     (31, 3.2, .12), 'stone', angle)
+-        for index in indices:
+-            difference(rim[index], cutter)
+-        remove_part(cutter)
+-    for hour in range(12):
+-        a = math.pi / 2 - hour * TAU / 12
+-        x, y = polar(15.7, a)
+-        cutter = box('Temporary stud recess', (x, y, 0), (.35, .35, .05), 'stone', a)
+-        difference(rim[(6 - hour * 2) % 24], cutter)
+-        remove_part(cutter)
+-        box('Inset brass hour stud', (x, y, -.0125), (.35, .35, .025), 'brass', a)
+-
+-    ring('Outer wheel ring rail', 14.53, 14.67, -.065, -.03, 'rail_steel')
+-    for j in range(36):
+-        a = j * TAU / 36
+-        x, y = polar(14.6, a)
+-        box('Outer wheel rail base plate', (x, y, -.068), (.34, .46, .020),
+-            'iron_dark', a)
+-
+-    start = len(PARTS)
+-    deck_surface(-15.5, 15.5, 0, rng)
+-    for lo, hi in ((-15.5, -1.6), (1.6, 15.5)):
+-        deck_surface(lo, hi, math.pi / 2, rng)
+-    for angle, intervals in ((0, ((-15.5, 15.5),)),
+-                             (math.pi / 2, ((-15.5, -1.6), (1.6, 15.5)))):
+-        c, s = math.cos(angle), math.sin(angle)
+-        for lo, hi in intervals:
+-            for offset in (-1.51, 1.51):
+-                d = (lo + hi) / 2
+-                box('Iron bridge edge girder', (d * c - offset * s, d * s + offset * c, -.04),
+-                    (hi - lo, .18, .08), 'iron', angle, bevel=True)
+-    decks = PARTS[start:]
+-    cutter = disc('Temporary king-pin socket', 1.8, -.2, .1, 'iron_dark')
+-    for obj in decks:
+-        # Apply the kit bevel before cutting the central socket.
+-        bpy.context.view_layer.objects.active = obj
+-        for mod in list(obj.modifiers):
+-            bpy.ops.object.modifier_apply(modifier=mod.name)
+-        difference(obj, cutter)
+-    remove_part(cutter)
+-    disc('Iron king-pin disc', 1.8, -.078, -.012, 'iron_dark')
+-    # A single closed toothed outline avoids coplanar faces between teeth/cap.
+-    teeth = []
+-    for j in range(12):
+-        for fraction, radius in ((0, .9), (.22, 1.0), (.62, 1.0), (.84, .9)):
+-            teeth.append(polar(radius, (j + fraction) * TAU / 12))
+-    slab('Brass king-pin cap with twelve low teeth', teeth, -.012, 0, 'brass')
+-
+-
+-def triangles(obj):
+-    obj.data.calc_loop_triangles()
+-    return len(obj.data.loop_triangles)
+-
+-
+-def finish():
+-    bpy.ops.object.select_all(action='DESELECT')
+-    for obj in PARTS:
+-        obj.select_set(True)
+-        bpy.context.view_layer.objects.active = obj
+-        for mod in list(obj.modifiers):
+-            bpy.ops.object.modifier_apply(modifier=mod.name)
+-        obj.select_set(False)
+-    for obj in PARTS:
+-        obj.select_set(True)
+-    bpy.context.view_layer.objects.active = PARTS[0]
+-    bpy.ops.object.join()
+-    obj = bpy.context.object
+-    obj.name = 'Arena'
+-    obj.data.name = 'Arena_Mesh'
+-    bm = bmesh.new()
+-    bm.from_mesh(obj.data)
+-    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+-    assert all(e.is_manifold for e in bm.edges), 'Open/non-manifold slab'
+-    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate face'
+-    # Lock the same tessellation for the renderer, FBX and Unity importer.
+-    bmesh.ops.triangulate(bm, faces=list(bm.faces), ngon_method='BEAUTY')
+-    assert all(e.is_manifold for e in bm.edges), 'Non-manifold triangulation'
+-    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate triangle'
+-    bm.to_mesh(obj.data)
+-    bm.free()
+-    for face in obj.data.polygons:
+-        face.use_smooth = False
+-    obj.data.update()
+-    obj.location = (0, 0, 0)
+-    obj.rotation_euler = (0, 0, 0)
+-    obj.scale = (1, 1, 1)
+-    bpy.context.view_layer.update()
+-    assert triangles(obj) <= 9000, triangles(obj)
+-    assert all(abs(obj.dimensions[i] - (32, 32, .3)[i]) < .001 for i in range(3)), tuple(obj.dimensions)
+-    assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-6
+-    assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-6
+-    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+-    assert set(m.name for m in obj.data.materials) == ROLES
+-    obj['dimensions_m'] = [32, 32, .3]
+-    obj['front'] = '+Y'
+-    obj['chapter'] = 'The Stopped Station'
+-    obj['origin_rule'] = 'top center'
+-    obj['solid_obstacle'] = False
+-    obj['rail_gauge_m'] = 1.5
+-    obj['triangle_count'] = triangles(obj)
+-    obj['design_revision'] = '2026-11-18 railway turntable pit'
+-    obj['pit_floor_z_m'] = -.08
+-    obj['ring_rail_radius_m'] = 14.6
+-    obj['bridge_width_m'] = 3.2
+-    obj['bridge_length_m'] = 31.0
+-    obj['rail_head_width_m'] = .12
+-    return obj
+-
+-
+-def export(obj):
+-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+-    bpy.ops.object.select_all(action='DESELECT')
+-    obj.select_set(True)
+-    bpy.context.view_layer.objects.active = obj
+-    assert len(bpy.context.scene.objects) == 1
+-    for mat in obj.data.materials:
+-        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+-    bpy.ops.export_scene.fbx(
+-        filepath=str(OUTPUT), use_selection=True,
+-        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+-        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+-        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+-    )
+-    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 1024
+-    print(f'EXPORTED Arena {triangles(obj)} '
+-          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+-
+-
+-def preview(obj):
+-    # Render-only palette, using precisely one colour per exported role.
+-    palette = {
+-        'stone': (.43, .405, .36), 'stone_dark': (.355, .34, .305),
+-        'wood': (.20, .135, .085), 'wood_dark': (.115, .085, .060),
+-        'iron': (.16, .18, .185), 'iron_dark': (.055, .065, .068),
+-        'rail_steel': (.52, .58, .60), 'brass': (.53, .34, .11),
+-    }
+-    helpers = []
+-    scene = bpy.context.scene
+-    scene.render.engine = 'CYCLES'
+-    scene.cycles.samples = 24
+-    scene.cycles.use_denoising = True
+-    scene.render.resolution_x = 900
+-    scene.render.resolution_y = 900
+-    scene.render.resolution_percentage = 100
+-    scene.render.image_settings.file_format = 'PNG'
+-    scene.render.film_transparent = False
+-    scene.view_settings.view_transform = 'Standard'
+-    scene.world = bpy.data.worlds.new('Preview world')
+-    scene.world.use_nodes = True
+-    scene.world.node_tree.nodes['Background'].inputs['Color'].default_value = (.10, .115, .13, 1)
+-    scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value = .7
+-    for name, colour in palette.items():
+-        mat = MATERIALS[name]
+-        mat.diffuse_color = (*colour, 1)
+-        mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*colour, 1)
+-    try:
+-        light = bpy.data.objects.new('Preview sun', bpy.data.lights.new('Preview sun', 'SUN'))
+-        scene.collection.objects.link(light)
+-        helpers.append(light)
+-        light.data.energy = 2.5
+-        light.data.angle = math.radians(15)
+-        light.rotation_euler = (math.radians(25), math.radians(-20), math.radians(-25))
+-        camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
+-        scene.collection.objects.link(camera)
+-        helpers.append(camera)
+-        camera.data.type = 'ORTHO'
+-        camera.data.ortho_scale = 36
+-        scene.camera = camera
+-        pixels = array('f', [0]) * (1800 * 900 * 4)
+-        for index, elevation in enumerate((90, 55)):
+-            a = math.radians(elevation)
+-            camera.location = (0, -60 * math.cos(a), 60 * math.sin(a))
+-            camera.rotation_euler = (Vector((0, 0, -.1)) - camera.location).to_track_quat('-Z', 'Y').to_euler()
+-            # Save each view temporarily so pixel data remains accessible on
+-            # headless Blender builds that expose no Render Result pixels.
+-            temp = PREVIEW.with_name(f'.arena_preview_{index}.png')
+-            scene.render.filepath = str(temp)
+-            bpy.ops.render.render(write_still=True)
+-            im = bpy.data.images.load(str(temp), check_existing=False)
+-            src = array('f', [0]) * (900 * 900 * 4)
+-            im.pixels.foreach_get(src)
+-            for row in range(900):
+-                start = (row * 1800 + index * 900) * 4
+-                pixels[start:start + 3600] = src[row * 3600:(row + 1) * 3600]
+-            bpy.data.images.remove(im)
+-            temp.unlink()
+-        sheet = bpy.data.images.new('Arena top and 55 degree preview', width=1800, height=900)
+-        sheet.pixels.foreach_set(pixels)
+-        sheet.filepath_raw = str(PREVIEW)
+-        sheet.file_format = 'PNG'
+-        sheet.save()
+-        print(f'PREVIEW {PREVIEW}', flush=True)
+-    finally:
+-        for mat in MATERIALS.values():
+-            mat.diffuse_color = (.5, .5, .5, 1)
+-            mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.5, .5, .5, 1)
+-        scene.camera = None
+-        for helper in helpers:
+-            bpy.data.objects.remove(helper, do_unlink=True)
+-    assert len(scene.objects) == 1 and scene.objects[0] == obj
+-
+-
+-def main():
+-    bpy.ops.wm.read_factory_settings(use_empty=True)
+-    # Remove unused startup materials so role names never acquire .001 suffixes.
+-    for mat in list(bpy.data.materials):
+-        bpy.data.materials.remove(mat)
+-    bpy.context.scene.unit_settings.system = 'METRIC'
+-    bpy.context.scene.unit_settings.scale_length = 1
+-    setup_materials()
+-    build()
+-    obj = finish()
+-    export(obj)
+-    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+-    preview(obj)
+-    print('DONE', flush=True)
+-
+-
+-if __name__ == '__main__':
+-    main()
++# 챕터 2 보스 경기장: 바닥 타일을 드러내는 거대 시계 부품을 만들고 FBX와 미리보기를 저장합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b -P Art/tools/blender_kit_ch2_arena.py
++"""Revision 3: open clock, metres, +Y = twelve, bottom-centred origin.
++
++Closed components are joined as in the landmark kit; there is no face/deck.
++Role shaders stay grey in the FBX. Preview colours/floor are render-only.
++"""
++import math
++from array import array
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx'
++PREVIEW = ROOT / 'Art/tools/specs/kit_ch2_arena_preview.png'
++ROLES = set('stone stone_dark iron iron_dark rail_steel brass'.split())
++MATERIALS, PARTS = {}, []
++TAU = math.tau
++
++
++def setup_materials():
++    for name in sorted(ROLES):
++        mat = bpy.data.materials.new(name)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes['Principled BSDF']
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .85
++        shader.inputs['Metallic'].default_value = 0
++        MATERIALS[name] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    assert role in ROLES
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATERIALS[role])
++    if bevel:
++        # Landmark-kit 25 mm / two segment bevel, exposed top perimeter only.
++        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.affect = 'EDGES'
++        mod.use_clamp_overlap = True
++        mod.limit_method = 'WEIGHT'
++        weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
++        top = max(v.co.z for v in data.vertices)
++        for edge in data.edges:
++            if all(abs(data.vertices[i].co.z - top) < 1e-6 for i in edge.vertices):
++                weights.data[edge.index].value = 1
++    PARTS.append(obj)
++    return obj
++
++
++def polar(radius, angle):
++    return radius * math.cos(angle), radius * math.sin(angle)
++
++
++def slab(label, outline, bottom, top, role, bevel=False):
++    n = len(outline)
++    verts = [(x, y, z) for z in (bottom, top) for x, y in outline]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def transform(obj, x=0, y=0, angle=0):
++    obj.data.transform(Matrix.Translation((x, y, 0)) @ Matrix.Rotation(angle, 4, 'Z'))
++    return obj
++
++
++def box(label, x, y, sx, sy, bottom, top, role, angle=0, bevel=False):
++    return transform(slab(label, [(-sx / 2, -sy / 2), (sx / 2, -sy / 2),
++                                 (sx / 2, sy / 2), (-sx / 2, sy / 2)],
++                          bottom, top, role, bevel), x, y, angle)
++
++
++def disc(label, radius, bottom, top, role, n=24, bevel=False):
++    return slab(label, [polar(radius, j * TAU / n) for j in range(n)],
++                bottom, top, role, bevel)
++
++
++def ring(label, inner, outer, bottom, top, role, n=96):
++    verts = [(r * math.cos(j * TAU / n), r * math.sin(j * TAU / n), z)
++             for r, z in ((inner, bottom), (outer, bottom), (outer, top), (inner, top))
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return mesh(label, verts, faces, role)
++
++
++def boolean(obj, cutter, operation='DIFFERENCE'):
++    bpy.context.view_layer.objects.active = obj
++    mod = obj.modifiers.new('Real recessed clock hardware', 'BOOLEAN')
++    mod.operation, mod.solver, mod.object = operation, 'EXACT', cutter
++    bpy.ops.object.modifier_apply(modifier=mod.name)
++
++
++def discard(obj):
++    PARTS.remove(obj)
++    bpy.data.objects.remove(obj, do_unlink=True)
++
++
++def coping():
++    blocks = []
++    for j in range(24):
++        a, b = j * TAU / 24 - TAU / 48, j * TAU / 24 + TAU / 48
++        arcs = []
++        for radius in (16, 15):
++            gap = math.asin(.025 / (2 * radius))
++            arcs.append([polar(radius, a + gap + (b - a - 2 * gap) * k / 4)
++                         for k in range(5)])
++        # Cardinal points are block centres, guaranteeing exactly 32 m.
++        blocks.append(slab('Stone coping block', arcs[0] + arcs[1][::-1],
++                           0, .25, 'stone'))
++    ring('Thin dark inner vertical lip', 14.97, 15.005, .015, .18, 'stone_dark')
++    for hour in range(12):
++        a = math.pi / 2 - hour * TAU / 12
++        block = blocks[(6 - 2 * hour) % 24]
++        offsets = (-.475, .475) if hour % 3 == 0 else (0,)
++        collars, cutters = [], []
++        for offset in offsets:
++            # Twin chord separation = .95 m. Radius 15.45 keeps each .54 m
++            # collar within radius 16; its small inward overhang is intentional.
++            x, y = polar(15.45, a + math.asin(offset / 15.45))
++            cut = transform(disc('Temporary round socket', .42, .08, .35,
++                                 'iron_dark', n=16), x, y)
++            boolean(block, cut)
++            cutters.append(cut)
++            collars.append(transform(ring('Brass socket collar', .42, .54,
++                                           .235, .26, 'brass', n=16), x, y))
++        if len(collars) == 2:
++            # Union the touching twin collars and reopen both bores.
++            boolean(collars[0], collars[1], 'UNION')
++            discard(collars[1])
++            for cut in cutters:
++                boolean(collars[0], cut)
++        for cut in cutters:
++            discard(cut)
++    for hour in range(12):
++        for minute in range(1, 5):
++            a = math.pi / 2 - (hour + minute / 5) * TAU / 12
++            x, y = polar(15.5, a)
++            cut = box('Temporary minute notch', x, y, .1, .35,
++                      .235, .30, 'iron_dark', a)
++            index = int(math.floor((a + TAU / 48) / (TAU / 24))) % 24
++            boolean(blocks[index], cut)
++            discard(cut)
++    for block in blocks:
++        block.data.materials.append(MATERIALS['iron_dark'])
++        for face in block.data.polygons:
++            if face.normal.z > .99 and (abs(face.center.z - .08) < 1e-5 or
++                                         abs(face.center.z - .235) < 1e-5):
++                face.material_index = 1
++
++
++def rails():
++    # Four radial arms; the hub interrupts both orthogonal track pairs.
++    end = math.sqrt(14.4 ** 2 - .81 ** 2)
++    for angle in (0, math.pi / 2, math.pi, 3 * math.pi / 2):
++        for offset in (-.75, .75):
++            rail = box('Charge path rail', (1.6 + end) / 2, offset,
++                       end - 1.6, .12, 0, .05, 'rail_steel')
++            transform(rail, angle=angle)
++        for j in range(11):
++            plate = box('Track tie plate', 1.9 + j * 1.2, 0,
++                        .22, 2.2, 0, .02, 'iron_dark')
++            transform(plate, angle=angle)
++
++
++def check_hand_clearance(obj):
++    """Clip the footprint against all eight rail rectangles; no area overlaps."""
++    poly = [(v.co.x, v.co.y) for v in obj.data.vertices[:len(obj.data.vertices) // 2]]
++    end = math.sqrt(14.4 ** 2 - .81 ** 2)
++    for axis in (0, 1):
++        for sign in (-1, 1):
++            for offset in (-.75, .75):
++                bounds = [(min(sign * 1.6, sign * end), max(sign * 1.6, sign * end)),
++                          (offset - .06, offset + .06)]
++                if axis:
++                    bounds.reverse()
++                clipped = poly[:]
++                for dimension in (0, 1):
++                    for cut, keep_greater in ((bounds[dimension][0], True),
++                                               (bounds[dimension][1], False)):
++                        result = []
++                        for a, b in zip(clipped, clipped[1:] + clipped[:1]):
++                            ia = a[dimension] >= cut if keep_greater else a[dimension] <= cut
++                            ib = b[dimension] >= cut if keep_greater else b[dimension] <= cut
++                            if ia:
++                                result.append(a)
++                            if ia != ib:
++                                t = (cut - a[dimension]) / (b[dimension] - a[dimension])
++                                result.append(tuple(a[k] + t * (b[k] - a[k]) for k in (0, 1)))
++                        clipped = result
++                assert len(clipped) < 3, (obj.name, 'hand overlaps charge rail')
++
++
++def hand(label, angle, length, root_width, end_width, tip_length, spade=False):
++    # Narrow necks clear the rails beside the hub. The .9/.6 m broad blades
++    # start at r=2.5; short pointed counterweight tails end at r=-1.8.
++    body_end = length - tip_length
++    outline = [(-1.8, 0), (-1.35, -.14), (1.15, -.08), (2.1, -.08),
++               (2.5, -root_width / 2), (body_end, -end_width / 2),
++               (body_end, end_width / 2), (2.5, root_width / 2),
++               (2.1, .08), (1.15, .08), (-1.35, .14)]
++    body = transform(slab(label + ' blade and tail', outline, .025, .065,
++                          'iron_dark', bevel=True), angle=angle)
++    if spade:
++        tip = [(body_end, -.15), (body_end + .22, -.48),
++               (body_end + .63, -.43), (length, 0),
++               (body_end + .63, .43), (body_end + .22, .48), (body_end, .15)]
++    else:
++        tip = [(body_end, -.10), (body_end - .18, -.53),
++               (length, 0), (body_end - .18, .53), (body_end, .10)]
++    head = transform(slab(label + ' brass tip', tip, .025, .065,
++                          'brass', bevel=True), angle=angle)
++    for obj in (body, head):
++        check_hand_clearance(obj)
++
++
++def build():
++    coping()
++    ring('Brass chapter ring', 14.4, 14.6, 0, .03, 'brass')
++    rails()
++    hand('Ten oclock hour hand', math.radians(150), 8.5, .9, .3, 1.15, spade=True)
++    hand('Two oclock minute hand', math.radians(30), 13, .6, .2, 1.35)
++    teeth = []
++    for j in range(12):
++        for fraction, radius in ((0, 1.5), (.20, 1.65), (.60, 1.65), (.80, 1.5)):
++            teeth.append(polar(radius, (j + fraction) * TAU / 12))
++    slab('Brass hub with twelve low gear teeth', teeth, 0, .08, 'brass', bevel=True)
++    disc('Dark central pin', .5, .08, .22, 'iron_dark', n=24, bevel=True)
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish():
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = 'Arena', 'Arena_Mesh'
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert all(e.is_manifold for e in bm.edges), 'Open mesh component'
++    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate face'
++    bmesh.ops.triangulate(bm, faces=list(bm.faces), ngon_method='BEAUTY')
++    assert all(e.is_manifold for e in bm.edges), 'Non-manifold triangulation'
++    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate triangle'
++    bm.to_mesh(obj.data)
++    bm.free()
++    for face in obj.data.polygons:
++        face.use_smooth = False
++    obj.data.update()
++    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
++    bpy.context.view_layer.update()
++    assert triangles(obj) <= 9000, triangles(obj)
++    assert all(abs(obj.dimensions[i] - (32, 32, .26)[i]) < .001 for i in range(3)), tuple(obj.dimensions)
++    assert abs(min(v.co.z for v in obj.data.vertices)) < 1e-6
++    assert all(v.co.z >= -1e-6 and all(math.isfinite(c) for c in v.co) for v in obj.data.vertices)
++    assert set(m.name for m in obj.data.materials) <= ROLES
++    hit, *_ = obj.ray_cast(Vector((7, -7, 2)), Vector((0, 0, -1)))
++    assert not hit, 'The room tiles must remain visible'
++    obj['dimensions_m'] = [32, 32, .26]
++    obj['front'], obj['origin_rule'] = '+Y', 'bottom center'
++    obj['chapter'], obj['solid_obstacle'] = 'The Stopped Station', False
++    obj['triangle_count'], obj['rail_gauge_m'] = triangles(obj), 1.5
++    obj['design_revision'] = '3 / 2026-11-18 / open floor clock'
++    obj['socket_count'], obj['minute_notch_count'] = 16, 48
++    return obj
++
++
++def export(obj):
++    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    assert len(bpy.context.scene.objects) == 1
++    for mat in obj.data.materials:
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    bpy.ops.export_scene.fbx(
++        filepath=str(OUTPUT), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 1024
++    print(f'EXPORTED Arena {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++
++
++def preview(obj):
++    palette = {
++        'stone': (.43, .405, .36), 'stone_dark': (.20, .195, .18),
++        'iron': (.16, .18, .185), 'iron_dark': (.045, .055, .060),
++        'rail_steel': (.37, .45, .49), 'brass': (.64, .405, .12),
++    }
++    helpers = []
++    scene = bpy.context.scene
++    scene.render.engine = 'CYCLES'
++    scene.cycles.samples, scene.cycles.use_denoising = 24, True
++    scene.render.resolution_x = scene.render.resolution_y = 900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    scene.world = bpy.data.worlds.new('Preview world')
++    scene.world.use_nodes = True
++    scene.world.node_tree.nodes['Background'].inputs['Color'].default_value = (.32, .32, .32, 1)
++    scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value = .7
++    for name, colour in palette.items():
++        MATERIALS[name].diffuse_color = (*colour, 1)
++        MATERIALS[name].node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*colour, 1)
++    try:
++        bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 0, -.003))
++        plane = bpy.context.object
++        plane.name = 'Render only warm grey beige room tiles'
++        helpers.append(plane)
++        floor = bpy.data.materials.new('Preview floor only')
++        floor.use_nodes = True
++        floor.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.62, .56, .48, 1)
++        floor.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = .9
++        plane.data.materials.append(floor)
++        light = bpy.data.objects.new('Preview sun', bpy.data.lights.new('Preview sun', 'SUN'))
++        scene.collection.objects.link(light)
++        helpers.append(light)
++        light.data.energy, light.data.angle = 1.6, math.radians(15)
++        light.rotation_euler = (math.radians(25), math.radians(-20), math.radians(-25))
++        camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        camera.data.type, camera.data.ortho_scale = 'ORTHO', 36
++        scene.camera = camera
++        pixels = array('f', [0]) * (1800 * 900 * 4)
++        for index, elevation in enumerate((90, 55)):
++            a = math.radians(elevation)
++            camera.location = (0, -60 * math.cos(a), 60 * math.sin(a))
++            camera.rotation_euler = (Vector((0, 0, 0)) - camera.location).to_track_quat('-Z', 'Y').to_euler()
++            temp = PREVIEW.with_name(f'.arena_preview_{index}.png')
++            scene.render.filepath = str(temp)
++            bpy.ops.render.render(write_still=True)
++            im = bpy.data.images.load(str(temp), check_existing=False)
++            src = array('f', [0]) * (900 * 900 * 4)
++            im.pixels.foreach_get(src)
++            for row in range(900):
++                start = (row * 1800 + index * 900) * 4
++                pixels[start:start + 3600] = src[row * 3600:(row + 1) * 3600]
++            bpy.data.images.remove(im)
++            temp.unlink()
++        sheet = bpy.data.images.new('Arena top and 55 degree preview', width=1800, height=900)
++        sheet.pixels.foreach_set(pixels)
++        sheet.filepath_raw, sheet.file_format = str(PREVIEW), 'PNG'
++        sheet.save()
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        for mat in MATERIALS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++            mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        scene.camera = None
++        for helper in helpers:
++            bpy.data.objects.remove(helper, do_unlink=True)
++    assert len(scene.objects) == 1 and scene.objects[0] == obj
++
++
++def main():
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    bpy.context.scene.unit_settings.system = 'METRIC'
++    bpy.context.scene.unit_settings.scale_length = 1
++    setup_materials()
++    build()
++    obj = finish()
++    export(obj)
++    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++    preview(obj)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b -P Art/tools/blender_kit_ch2_arena.py" in C:\Project\Cat_Tang
+ succeeded in 2978ms:
+09:31:17 - tripo_addon - [task.py:31] - INFO - WebSocket server started on port 60600
+09:31:17 - tripo_addon - [ws_server.py:186] - INFO - WebSocket server running on ws://127.0.0.1:60600
+09:31:17 - tripo_addon - [ws_server.py:195] - INFO - Heartbeat monitoring started (timeout: 120s)
+09:31:17 - tripo_addon - [ws_server.py:128] - INFO - Stopping WebSocket server...
+09:31:17 - tripo_addon - [task.py:39] - INFO - WebSocket server stop requested
+09:31:17 - tripo_addon - [ws_server.py:215] - INFO - Cancelled 1 pending tasks
+09:31:17 - tripo_addon - [ws_server.py:103] - INFO - Event loop closed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py:27: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py", line 399, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py", line 391, in main
+    obj = finish()
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py", line 265, in finish
+    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate face'
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Degenerate face
+[Tripo3D] Log file: C:\Users\user\AppData\Local\Temp\tripo3d_blender_bridge.log
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py
+diff --git a/Art/tools/blender_kit_ch2_arena.py b/Art/tools/blender_kit_ch2_arena.py
+index 1c11b4bf5eb4c698e41b3b0acf2cfa6c3d893af0..8eb251602be3c44d24889877544b1e5f29313879
+--- a/Art/tools/blender_kit_ch2_arena.py
++++ b/Art/tools/blender_kit_ch2_arena.py
+@@ -1,487 +1,407 @@
+-# 챕터 2 보스 경기장: 석재 철도 전차대 피트, 십자 목재 교량과 철로를 만들고 FBX/미리보기로 저장합니다.
+-# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b -P Art/tools/blender_kit_ch2_arena.py
+-"""One deterministic metre-scale Arena; grey role materials, top-centred origin.
+-
+-Independent closed slabs are intentional, as in the landmark kit. The preview
+-uses temporary role colours AFTER export, restoring all shaders afterwards.
+-"""
+-
+-import math
+-import random
+-from array import array
+-from fractions import Fraction
+-from pathlib import Path
+-
+-import bmesh
+-import bpy
+-from mathutils import Euler, Matrix, Vector
+-
+-
+-ROOT = Path(__file__).resolve().parents[2]
+-OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx'
+-PREVIEW = ROOT / 'Art/tools/specs/kit_ch2_arena_preview.png'
+-ROLES = set('stone stone_dark wood wood_dark iron iron_dark rail_steel brass'.split())
+-MATERIALS = {}
+-PARTS = []
+-SERIAL = 0
+-TAU = math.tau
+-
+-
+-def setup_materials():
+-    for name in sorted(ROLES):
+-        mat = bpy.data.materials.new(name)
+-        mat.use_nodes = True
+-        mat.diffuse_color = (.5, .5, .5, 1)
+-        shader = mat.node_tree.nodes['Principled BSDF']
+-        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+-        shader.inputs['Roughness'].default_value = .85
+-        shader.inputs['Metallic'].default_value = 0
+-        MATERIALS[name] = mat
+-
+-
+-def mesh(label, verts, faces, role, bevel=False):
+-    global SERIAL
+-    assert role in ROLES
+-    SERIAL += 1
+-    data = bpy.data.meshes.new(f'{label}_{SERIAL}')
+-    data.from_pydata(verts, [], faces)
+-    data.update()
+-    obj = bpy.data.objects.new(data.name, data)
+-    bpy.context.collection.objects.link(obj)
+-    data.materials.append(MATERIALS[role])
+-    if bevel:
+-        # Same 25 mm, two-segment upper-perimeter bevel as the landmark kit.
+-        # Reserve it for the exposed plates and hub; repeated thin inlays and
+-        # wedge seams retain their hand-authored topology to meet the budget.
+-        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
+-        mod.width = .025
+-        mod.segments = 2
+-        mod.affect = 'EDGES'
+-        mod.use_clamp_overlap = True
+-        mod.limit_method = 'WEIGHT'
+-        weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
+-        top = max(v.co.z for v in data.vertices)
+-        for edge in data.edges:
+-            if all(abs(data.vertices[i].co.z - top) < 1e-5 for i in edge.vertices):
+-                weights.data[edge.index].value = 1
+-    PARTS.append(obj)
+-    return obj
+-
+-
+-def slab(label, outline, bottom, top, role, bevel=False):
+-    n = len(outline)
+-    verts = [(x, y, z) for z in (bottom, top) for x, y in outline]
+-    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+-    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+-    return mesh(label, verts, faces, role, bevel)
+-
+-
+-def box(label, loc, size, role, angle=0, bevel=False):
+-    x, y, z = (s / 2 for s in size)
+-    obj = slab(label, [(-x, -y), (x, -y), (x, y), (-x, y)], -z, z, role, bevel)
+-    obj.data.transform(Matrix.Translation(Vector(loc)) @
+-                       Euler((0, 0, angle)).to_matrix().to_4x4())
+-    return obj
+-
+-
+-def polar(radius, angle):
+-    return (radius * math.cos(angle), radius * math.sin(angle))
+-
+-
+-def disc(label, radius, bottom, top, role, bevel=False):
+-    return slab(label, [polar(radius, j * TAU / 24) for j in range(24)],
+-                bottom, top, role, bevel)
+-
+-
+-def ring(label, inner, outer, bottom, top, role):
+-    n = 72
+-    verts = [(r * math.cos(j * TAU / n), r * math.sin(j * TAU / n), z)
+-             for r, z in ((inner, bottom), (outer, bottom),
+-                          (outer, top), (inner, top)) for j in range(n)]
+-    faces = [(k * n + j, k * n + (j + 1) % n,
+-              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+-             for k in range(4) for j in range(n)]
+-    return mesh(label, verts, faces, role)
+-
+-
+-def wedge(label, inner, outer, a, b, bottom, top, role, gap=0):
+-    # Offset the rays by half the gap to keep the coping joints constant-width.
+-    # Two arc segments per block retain the kit's chunky circular silhouette.
+-    ai, ao = math.asin(gap / (2 * inner)), math.asin(gap / (2 * outer))
+-    outer_arc = [polar(outer, a + ao + (b - a - 2 * ao) * j / 2) for j in range(3)]
+-    inner_arc = [polar(inner, a + ai + (b - a - 2 * ai) * j / 2) for j in range(3)]
+-    return slab(label, outer_arc + inner_arc[::-1], bottom, top, role)
+-
+-
+-def difference(obj, cutter):
+-    bpy.context.view_layer.objects.active = obj
+-    mod = obj.modifiers.new('Inset without coplanar overlay', 'BOOLEAN')
+-    mod.operation = 'DIFFERENCE'
+-    mod.solver = 'EXACT'
+-    mod.object = cutter
+-    bpy.ops.object.modifier_apply(modifier=mod.name)
+-
+-
+-def remove_part(obj):
+-    PARTS.remove(obj)
+-    bpy.data.objects.remove(obj, do_unlink=True)
+-
+-
+-def paving():
+-    # Shared course boundaries keep the entire floor a closed manifold shell.
+-    # Counts change only every four courses, keeping economical rectangular
+-    # setts about 0.9 m tangentially x 0.6 m radially at the outside of a group.
+-    rng = random.Random(20261118)
+-    courses = 26
+-    counts = [16 * (1 + k // 4) for k in range(courses)]
+-    boundaries = [{Fraction(0)}]
+-    for k in range(1, courses):
+-        boundaries.append({Fraction(j, counts[k - 1]) for j in range(counts[k - 1])} |
+-                          {Fraction(j, counts[k]) for j in range(counts[k])})
+-    boundaries.append({Fraction(j, counts[-1]) for j in range(counts[-1])})
+-    verts, faces, roles = [], [], []
+-    indices = {}
+-
+-    def vertex(radius, turn, z):
+-        x, y = polar(radius, float(turn) * TAU)
+-        key = tuple(round(v, 7) for v in (x, y, z))
+-        if key not in indices:
+-            indices[key] = len(verts)
+-            verts.append((x, y, z))
+-        return indices[key]
+-
+-    for k, count in enumerate(counts):
+-        inner, outer = 15.4 * k / courses, 15.4 * (k + 1) / courses
+-        for j in range(count):
+-            a, b = Fraction(j, count), Fraction(j + 1, count)
+-            outer_turns = [a] + sorted(t for t in boundaries[k + 1] if a < t < b) + [b]
+-            face = [vertex(outer, t % 1, -.08) for t in outer_turns]
+-            if k:
+-                inner_turns = [a] + sorted(t for t in boundaries[k] if a < t < b) + [b]
+-                face += [vertex(inner, t % 1, -.08) for t in reversed(inner_turns)]
+-            else:
+-                face.append(vertex(0, 0, -.08))
+-            faces.append(face)
+-            roles.append('stone_dark' if rng.random() < 1 / 6 else 'stone')
+-    outer = sorted(boundaries[-1])
+-    top = [vertex(15.4, t, -.08) for t in outer]
+-    bottom = [vertex(15.4, t, -.3) for t in outer]
+-    faces.append(tuple(reversed(bottom)))
+-    roles.append('stone')
+-    for j in range(len(outer)):
+-        nxt = (j + 1) % len(outer)
+-        faces.append((bottom[j], bottom[nxt], top[nxt], top[j]))
+-        roles.append('stone')
+-    obj = mesh('Concentric laid stone setts', verts, faces, 'stone')
+-    obj.data.materials.append(MATERIALS['stone_dark'])
+-    for face, role in zip(obj.data.polygons, roles):
+-        face.material_index = int(role == 'stone_dark')
+-    obj['sett_count'] = sum(counts)
+-    return obj
+-
+-
+-def deck_surface(start, stop, angle, rng):
+-    # One continuous solid deck with face-assigned flush rail heads and plates.
+-    # This keeps the exact top at Z=0 without overlapping coplanar surfaces.
+-    # Planks are .45 m along the deck, with .04 m dark inset seams. They span
+-    # the deck transversely. Plates span under both rails every 1.2 m.
+-    edges = {start, stop}
+-    for j in range(64):
+-        a = -15.5 + j * .49
+-        for x in (a, min(a + .45, 15.5)):
+-            if start < x < stop:
+-                edges.add(round(x, 6))
+-    plate_centres = [j * 1.2 for j in range(-12, 13)]
+-    for centre in plate_centres:
+-        for x in (centre - .10, centre + .10):
+-            if start < x < stop:
+-                edges.add(round(x, 6))
+-    xs = sorted(edges)
+-    ys = [-1.42, -.81, -.69, .69, .81, 1.42]
+-    stride = len(ys)
+-    verts = [(x, y, 0) for x in xs for y in ys]
+-    faces, roles = [], []
+-    boards = ['wood_dark' if rng.random() < .7 else 'wood' for j in range(64)]
+-    for i in range(len(xs) - 1):
+-        x = (xs[i] + xs[i + 1]) / 2
+-        board = min(63, int((x + 15.5) / .49))
+-        seam = (x + 15.5) - board * .49 > .45
+-        plate = any(abs(x - centre) < .100001 for centre in plate_centres)
+-        for j in range(stride - 1):
+-            a, b = i * stride + j, (i + 1) * stride + j
+-            faces.append((a, b, b + 1, a + 1))
+-            role = 'wood_dark' if seam else boards[board]
+-            if plate:
+-                role = 'iron_dark'
+-            if j in (1, 3):
+-                role = 'rail_steel'
+-            roles.append(role)
+-    # Reuse all boundary vertices on the walls and bottom, with no T-junctions.
+-    perimeter = ([i * stride for i in range(len(xs))] +
+-                 [(len(xs) - 1) * stride + j for j in range(1, stride)] +
+-                 [i * stride + stride - 1 for i in reversed(range(len(xs) - 1))] +
+-                 list(reversed(range(1, stride - 1))))
+-    bottom = []
+-    for index in perimeter:
+-        x, y, z = verts[index]
+-        bottom.append(len(verts))
+-        verts.append((x, y, -.075))
+-    faces.append(tuple(reversed(bottom)))
+-    roles.append('wood_dark')
+-    for i, a in enumerate(perimeter):
+-        nxt = (i + 1) % len(perimeter)
+-        faces.append((bottom[i], bottom[nxt], perimeter[nxt], a))
+-        roles.append('wood_dark')
+-    obj = mesh('Transverse planks and flush railway hardware', verts, faces, 'wood')
+-    slots = ['wood'] + sorted(ROLES - {'wood'})
+-    for name in slots[1:]:
+-        obj.data.materials.append(MATERIALS[name])
+-    for face, role in zip(obj.data.polygons, roles):
+-        face.material_index = slots.index(role)
+-    obj.data.transform(Matrix.Rotation(angle, 4, 'Z'))
+-    # Dissolve only coplanar faces with the same material. Rail/plate/plank
+-    # boundaries survive, while invisible subdivisions inside a role disappear.
+-    bm = bmesh.new()
+-    bm.from_mesh(obj.data)
+-    bm.normal_update()
+-    bmesh.ops.dissolve_limit(bm, angle_limit=.001, use_dissolve_boundaries=False,
+-                            verts=list(bm.verts), edges=list(bm.edges),
+-                            delimit={'MATERIAL'})
+-    bm.to_mesh(obj.data)
+-    bm.free()
+-    return obj
+-
+-
+-def build():
+-    rng = random.Random(20261118)
+-    paving()
+-    # The middle vertex of each outer arc includes the cardinal extrema.
+-    rim = []
+-    for j in range(24):
+-        a = j * TAU / 24 - TAU / 48
+-        rim.append(wedge('Stone coping block', 15.4, 16, a, a + TAU / 24,
+-                         -.3, 0, 'stone', gap=.025))
+-    # The 31 m decks extend 0.1 m beyond the pit at each end. Seat those ends
+-    # in the coping, preserving the top-centred origin without z-fighting.
+-    for angle, indices in ((0, (0, 12)), (math.pi / 2, (6, 18))):
+-        cutter = box('Temporary coping bridge seat', (0, 0, -.02),
+-                     (31, 3.2, .12), 'stone', angle)
+-        for index in indices:
+-            difference(rim[index], cutter)
+-        remove_part(cutter)
+-    for hour in range(12):
+-        a = math.pi / 2 - hour * TAU / 12
+-        x, y = polar(15.7, a)
+-        cutter = box('Temporary stud recess', (x, y, 0), (.35, .35, .05), 'stone', a)
+-        difference(rim[(6 - hour * 2) % 24], cutter)
+-        remove_part(cutter)
+-        box('Inset brass hour stud', (x, y, -.0125), (.35, .35, .025), 'brass', a)
+-
+-    ring('Outer wheel ring rail', 14.53, 14.67, -.065, -.03, 'rail_steel')
+-    for j in range(36):
+-        a = j * TAU / 36
+-        x, y = polar(14.6, a)
+-        box('Outer wheel rail base plate', (x, y, -.068), (.34, .46, .020),
+-            'iron_dark', a)
+-
+-    start = len(PARTS)
+-    deck_surface(-15.5, 15.5, 0, rng)
+-    for lo, hi in ((-15.5, -1.6), (1.6, 15.5)):
+-        deck_surface(lo, hi, math.pi / 2, rng)
+-    for angle, intervals in ((0, ((-15.5, 15.5),)),
+-                             (math.pi / 2, ((-15.5, -1.6), (1.6, 15.5)))):
+-        c, s = math.cos(angle), math.sin(angle)
+-        for lo, hi in intervals:
+-            for offset in (-1.51, 1.51):
+-                d = (lo + hi) / 2
+-                box('Iron bridge edge girder', (d * c - offset * s, d * s + offset * c, -.04),
+-                    (hi - lo, .18, .08), 'iron', angle, bevel=True)
+-    decks = PARTS[start:]
+-    cutter = disc('Temporary king-pin socket', 1.8, -.2, .1, 'iron_dark')
+-    for obj in decks:
+-        # Apply the kit bevel before cutting the central socket.
+-        bpy.context.view_layer.objects.active = obj
+-        for mod in list(obj.modifiers):
+-            bpy.ops.object.modifier_apply(modifier=mod.name)
+-        difference(obj, cutter)
+-    remove_part(cutter)
+-    disc('Iron king-pin disc', 1.8, -.078, -.012, 'iron_dark')
+-    # A single closed toothed outline avoids coplanar faces between teeth/cap.
+-    teeth = []
+-    for j in range(12):
+-        for fraction, radius in ((0, .9), (.22, 1.0), (.62, 1.0), (.84, .9)):
+-            teeth.append(polar(radius, (j + fraction) * TAU / 12))
+-    slab('Brass king-pin cap with twelve low teeth', teeth, -.012, 0, 'brass')
+-
+-
+-def triangles(obj):
+-    obj.data.calc_loop_triangles()
+-    return len(obj.data.loop_triangles)
+-
+-
+-def finish():
+-    bpy.ops.object.select_all(action='DESELECT')
+-    for obj in PARTS:
+-        obj.select_set(True)
+-        bpy.context.view_layer.objects.active = obj
+-        for mod in list(obj.modifiers):
+-            bpy.ops.object.modifier_apply(modifier=mod.name)
+-        obj.select_set(False)
+-    for obj in PARTS:
+-        obj.select_set(True)
+-    bpy.context.view_layer.objects.active = PARTS[0]
+-    bpy.ops.object.join()
+-    obj = bpy.context.object
+-    obj.name = 'Arena'
+-    obj.data.name = 'Arena_Mesh'
+-    bm = bmesh.new()
+-    bm.from_mesh(obj.data)
+-    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+-    assert all(e.is_manifold for e in bm.edges), 'Open/non-manifold slab'
+-    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate face'
+-    # Lock the same tessellation for the renderer, FBX and Unity importer.
+-    bmesh.ops.triangulate(bm, faces=list(bm.faces), ngon_method='BEAUTY')
+-    assert all(e.is_manifold for e in bm.edges), 'Non-manifold triangulation'
+-    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate triangle'
+-    bm.to_mesh(obj.data)
+-    bm.free()
+-    for face in obj.data.polygons:
+-        face.use_smooth = False
+-    obj.data.update()
+-    obj.location = (0, 0, 0)
+-    obj.rotation_euler = (0, 0, 0)
+-    obj.scale = (1, 1, 1)
+-    bpy.context.view_layer.update()
+-    assert triangles(obj) <= 9000, triangles(obj)
+-    assert all(abs(obj.dimensions[i] - (32, 32, .3)[i]) < .001 for i in range(3)), tuple(obj.dimensions)
+-    assert abs(max(v.co.z for v in obj.data.vertices)) < 1e-6
+-    assert abs(min(v.co.z for v in obj.data.vertices) + .3) < 1e-6
+-    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+-    assert set(m.name for m in obj.data.materials) == ROLES
+-    obj['dimensions_m'] = [32, 32, .3]
+-    obj['front'] = '+Y'
+-    obj['chapter'] = 'The Stopped Station'
+-    obj['origin_rule'] = 'top center'
+-    obj['solid_obstacle'] = False
+-    obj['rail_gauge_m'] = 1.5
+-    obj['triangle_count'] = triangles(obj)
+-    obj['design_revision'] = '2026-11-18 railway turntable pit'
+-    obj['pit_floor_z_m'] = -.08
+-    obj['ring_rail_radius_m'] = 14.6
+-    obj['bridge_width_m'] = 3.2
+-    obj['bridge_length_m'] = 31.0
+-    obj['rail_head_width_m'] = .12
+-    return obj
+-
+-
+-def export(obj):
+-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+-    bpy.ops.object.select_all(action='DESELECT')
+-    obj.select_set(True)
+-    bpy.context.view_layer.objects.active = obj
+-    assert len(bpy.context.scene.objects) == 1
+-    for mat in obj.data.materials:
+-        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+-    bpy.ops.export_scene.fbx(
+-        filepath=str(OUTPUT), use_selection=True,
+-        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+-        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+-        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+-    )
+-    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 1024
+-    print(f'EXPORTED Arena {triangles(obj)} '
+-          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+-
+-
+-def preview(obj):
+-    # Render-only palette, using precisely one colour per exported role.
+-    palette = {
+-        'stone': (.43, .405, .36), 'stone_dark': (.355, .34, .305),
+-        'wood': (.20, .135, .085), 'wood_dark': (.115, .085, .060),
+-        'iron': (.16, .18, .185), 'iron_dark': (.055, .065, .068),
+-        'rail_steel': (.52, .58, .60), 'brass': (.53, .34, .11),
+-    }
+-    helpers = []
+-    scene = bpy.context.scene
+-    scene.render.engine = 'CYCLES'
+-    scene.cycles.samples = 24
+-    scene.cycles.use_denoising = True
+-    scene.render.resolution_x = 900
+-    scene.render.resolution_y = 900
+-    scene.render.resolution_percentage = 100
+-    scene.render.image_settings.file_format = 'PNG'
+-    scene.render.film_transparent = False
+-    scene.view_settings.view_transform = 'Standard'
+-    scene.world = bpy.data.worlds.new('Preview world')
+-    scene.world.use_nodes = True
+-    scene.world.node_tree.nodes['Background'].inputs['Color'].default_value = (.10, .115, .13, 1)
+-    scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value = .7
+-    for name, colour in palette.items():
+-        mat = MATERIALS[name]
+-        mat.diffuse_color = (*colour, 1)
+-        mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*colour, 1)
+-    try:
+-        light = bpy.data.objects.new('Preview sun', bpy.data.lights.new('Preview sun', 'SUN'))
+-        scene.collection.objects.link(light)
+-        helpers.append(light)
+-        light.data.energy = 2.5
+-        light.data.angle = math.radians(15)
+-        light.rotation_euler = (math.radians(25), math.radians(-20), math.radians(-25))
+-        camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
+-        scene.collection.objects.link(camera)
+-        helpers.append(camera)
+-        camera.data.type = 'ORTHO'
+-        camera.data.ortho_scale = 36
+-        scene.camera = camera
+-        pixels = array('f', [0]) * (1800 * 900 * 4)
+-        for index, elevation in enumerate((90, 55)):
+-            a = math.radians(elevation)
+-            camera.location = (0, -60 * math.cos(a), 60 * math.sin(a))
+-            camera.rotation_euler = (Vector((0, 0, -.1)) - camera.location).to_track_quat('-Z', 'Y').to_euler()
+-            # Save each view temporarily so pixel data remains accessible on
+-            # headless Blender builds that expose no Render Result pixels.
+-            temp = PREVIEW.with_name(f'.arena_preview_{index}.png')
+-            scene.render.filepath = str(temp)
+-            bpy.ops.render.render(write_still=True)
+-            im = bpy.data.images.load(str(temp), check_existing=False)
+-            src = array('f', [0]) * (900 * 900 * 4)
+-            im.pixels.foreach_get(src)
+-            for row in range(900):
+-                start = (row * 1800 + index * 900) * 4
+-                pixels[start:start + 3600] = src[row * 3600:(row + 1) * 3600]
+-            bpy.data.images.remove(im)
+-            temp.unlink()
+-        sheet = bpy.data.images.new('Arena top and 55 degree preview', width=1800, height=900)
+-        sheet.pixels.foreach_set(pixels)
+-        sheet.filepath_raw = str(PREVIEW)
+-        sheet.file_format = 'PNG'
+-        sheet.save()
+-        print(f'PREVIEW {PREVIEW}', flush=True)
+-    finally:
+-        for mat in MATERIALS.values():
+-            mat.diffuse_color = (.5, .5, .5, 1)
+-            mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.5, .5, .5, 1)
+-        scene.camera = None
+-        for helper in helpers:
+-            bpy.data.objects.remove(helper, do_unlink=True)
+-    assert len(scene.objects) == 1 and scene.objects[0] == obj
+-
+-
+-def main():
+-    bpy.ops.wm.read_factory_settings(use_empty=True)
+-    # Remove unused startup materials so role names never acquire .001 suffixes.
+-    for mat in list(bpy.data.materials):
+-        bpy.data.materials.remove(mat)
+-    bpy.context.scene.unit_settings.system = 'METRIC'
+-    bpy.context.scene.unit_settings.scale_length = 1
+-    setup_materials()
+-    build()
+-    obj = finish()
+-    export(obj)
+-    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+-    preview(obj)
+-    print('DONE', flush=True)
+-
+-
+-if __name__ == '__main__':
+-    main()
++# 챕터 2 보스 경기장: 바닥 타일을 드러내는 거대 시계 부품을 만들고 FBX와 미리보기를 저장합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b -P Art/tools/blender_kit_ch2_arena.py
++"""Revision 3: open clock, metres, +Y = twelve, bottom-centred origin.
++
++Closed components are joined as in the landmark kit; there is no face/deck.
++Role shaders stay grey in the FBX. Preview colours/floor are render-only.
++"""
++import math
++from array import array
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx'
++PREVIEW = ROOT / 'Art/tools/specs/kit_ch2_arena_preview.png'
++ROLES = set('stone stone_dark iron iron_dark rail_steel brass'.split())
++MATERIALS, PARTS = {}, []
++TAU = math.tau
++
++
++def setup_materials():
++    for name in sorted(ROLES):
++        mat = bpy.data.materials.new(name)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes['Principled BSDF']
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .85
++        shader.inputs['Metallic'].default_value = 0
++        MATERIALS[name] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    assert role in ROLES
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATERIALS[role])
++    if bevel:
++        # Landmark-kit 25 mm / two segment bevel, exposed top perimeter only.
++        mod = obj.modifiers.new('Chunky softened edges 25mm', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.affect = 'EDGES'
++        mod.use_clamp_overlap = True
++        mod.limit_method = 'WEIGHT'
++        weights = data.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
++        top = max(v.co.z for v in data.vertices)
++        for edge in data.edges:
++            if all(abs(data.vertices[i].co.z - top) < 1e-6 for i in edge.vertices):
++                weights.data[edge.index].value = 1
++    PARTS.append(obj)
++    return obj
++
++
++def polar(radius, angle):
++    return radius * math.cos(angle), radius * math.sin(angle)
++
++
++def slab(label, outline, bottom, top, role, bevel=False):
++    n = len(outline)
++    verts = [(x, y, z) for z in (bottom, top) for x, y in outline]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def transform(obj, x=0, y=0, angle=0):
++    obj.data.transform(Matrix.Translation((x, y, 0)) @ Matrix.Rotation(angle, 4, 'Z'))
++    return obj
++
++
++def box(label, x, y, sx, sy, bottom, top, role, angle=0, bevel=False):
++    return transform(slab(label, [(-sx / 2, -sy / 2), (sx / 2, -sy / 2),
++                                 (sx / 2, sy / 2), (-sx / 2, sy / 2)],
++                          bottom, top, role, bevel), x, y, angle)
++
++
++def disc(label, radius, bottom, top, role, n=24, bevel=False):
++    return slab(label, [polar(radius, j * TAU / n) for j in range(n)],
++                bottom, top, role, bevel)
++
++
++def ring(label, inner, outer, bottom, top, role, n=96):
++    verts = [(r * math.cos(j * TAU / n), r * math.sin(j * TAU / n), z)
++             for r, z in ((inner, bottom), (outer, bottom), (outer, top), (inner, top))
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return mesh(label, verts, faces, role)
++
++
++def boolean(obj, cutter, operation='DIFFERENCE'):
++    bpy.context.view_layer.objects.active = obj
++    mod = obj.modifiers.new('Real recessed clock hardware', 'BOOLEAN')
++    mod.operation, mod.solver, mod.object = operation, 'EXACT', cutter
++    bpy.ops.object.modifier_apply(modifier=mod.name)
++
++
++def discard(obj):
++    PARTS.remove(obj)
++    bpy.data.objects.remove(obj, do_unlink=True)
++
++
++def coping():
++    blocks = []
++    for j in range(24):
++        a, b = j * TAU / 24 - TAU / 48, j * TAU / 24 + TAU / 48
++        arcs = []
++        for radius in (16, 15):
++            gap = math.asin(.025 / (2 * radius))
++            arcs.append([polar(radius, a + gap + (b - a - 2 * gap) * k / 4)
++                         for k in range(5)])
++        # Cardinal points are block centres, guaranteeing exactly 32 m.
++        blocks.append(slab('Stone coping block', arcs[0] + arcs[1][::-1],
++                           0, .25, 'stone'))
++    ring('Thin dark inner vertical lip', 14.97, 15.005, .015, .18, 'stone_dark')
++    for hour in range(12):
++        a = math.pi / 2 - hour * TAU / 12
++        block = blocks[(6 - 2 * hour) % 24]
++        offsets = (-.475, .475) if hour % 3 == 0 else (0,)
++        collars, cutters = [], []
++        for offset in offsets:
++            # Twin chord separation = .95 m. Radius 15.45 keeps each .54 m
++            # collar within radius 16; its small inward overhang is intentional.
++            x, y = polar(15.45, a + math.asin(offset / 15.45))
++            cut = transform(disc('Temporary round socket', .42, .08, .35,
++                                 'iron_dark', n=16), x, y)
++            boolean(block, cut)
++            cutters.append(cut)
++            collars.append(transform(ring('Brass socket collar', .42, .54,
++                                           .235, .26, 'brass', n=16), x, y))
++        if len(collars) == 2:
++            # Union the touching twin collars and reopen both bores.
++            boolean(collars[0], collars[1], 'UNION')
++            discard(collars[1])
++            for cut in cutters:
++                boolean(collars[0], cut)
++        for cut in cutters:
++            discard(cut)
++    for hour in range(12):
++        for minute in range(1, 5):
++            a = math.pi / 2 - (hour + minute / 5) * TAU / 12
++            x, y = polar(15.5, a)
++            cut = box('Temporary minute notch', x, y, .1, .35,
++                      .235, .30, 'iron_dark', a)
++            index = int(math.floor((a + TAU / 48) / (TAU / 24))) % 24
++            boolean(blocks[index], cut)
++            discard(cut)
++    for block in blocks:
++        block.data.materials.append(MATERIALS['iron_dark'])
++        for face in block.data.polygons:
++            if face.normal.z > .99 and (abs(face.center.z - .08) < 1e-5 or
++                                         abs(face.center.z - .235) < 1e-5):
++                face.material_index = 1
++
++
++def rails():
++    # Four radial arms; the hub interrupts both orthogonal track pairs.
++    end = math.sqrt(14.4 ** 2 - .81 ** 2)
++    for angle in (0, math.pi / 2, math.pi, 3 * math.pi / 2):
++        for offset in (-.75, .75):
++            rail = box('Charge path rail', (1.6 + end) / 2, offset,
++                       end - 1.6, .12, 0, .05, 'rail_steel')
++            transform(rail, angle=angle)
++        for j in range(11):
++            plate = box('Track tie plate', 1.9 + j * 1.2, 0,
++                        .22, 2.2, 0, .02, 'iron_dark')
++            transform(plate, angle=angle)
++
++
++def check_hand_clearance(obj):
++    """Clip the footprint against all eight rail rectangles; no area overlaps."""
++    poly = [(v.co.x, v.co.y) for v in obj.data.vertices[:len(obj.data.vertices) // 2]]
++    end = math.sqrt(14.4 ** 2 - .81 ** 2)
++    for axis in (0, 1):
++        for sign in (-1, 1):
++            for offset in (-.75, .75):
++                bounds = [(min(sign * 1.6, sign * end), max(sign * 1.6, sign * end)),
++                          (offset - .06, offset + .06)]
++                if axis:
++                    bounds.reverse()
++                clipped = poly[:]
++                for dimension in (0, 1):
++                    for cut, keep_greater in ((bounds[dimension][0], True),
++                                               (bounds[dimension][1], False)):
++                        result = []
++                        for a, b in zip(clipped, clipped[1:] + clipped[:1]):
++                            ia = a[dimension] >= cut if keep_greater else a[dimension] <= cut
++                            ib = b[dimension] >= cut if keep_greater else b[dimension] <= cut
++                            if ia:
++                                result.append(a)
++                            if ia != ib:
++                                t = (cut - a[dimension]) / (b[dimension] - a[dimension])
++                                result.append(tuple(a[k] + t * (b[k] - a[k]) for k in (0, 1)))
++                        clipped = result
++                assert len(clipped) < 3, (obj.name, 'hand overlaps charge rail')
++
++
++def hand(label, angle, length, root_width, end_width, tip_length, spade=False):
++    # Narrow necks clear the rails beside the hub. The .9/.6 m broad blades
++    # start at r=2.5; short pointed counterweight tails end at r=-1.8.
++    body_end = length - tip_length
++    outline = [(-1.8, 0), (-1.35, -.14), (1.15, -.08), (2.1, -.08),
++               (2.5, -root_width / 2), (body_end, -end_width / 2),
++               (body_end, end_width / 2), (2.5, root_width / 2),
++               (2.1, .08), (1.15, .08), (-1.35, .14)]
++    body = transform(slab(label + ' blade and tail', outline, .025, .065,
++                          'iron_dark', bevel=True), angle=angle)
++    if spade:
++        tip = [(body_end, -.15), (body_end + .22, -.48),
++               (body_end + .63, -.43), (length, 0),
++               (body_end + .63, .43), (body_end + .22, .48), (body_end, .15)]
++    else:
++        tip = [(body_end, -.10), (body_end - .18, -.53),
++               (length, 0), (body_end - .18, .53), (body_end, .10)]
++    head = transform(slab(label + ' brass tip', tip, .025, .065,
++                          'brass', bevel=True), angle=angle)
++    for obj in (body, head):
++        check_hand_clearance(obj)
++
++
++def build():
++    coping()
++    ring('Brass chapter ring', 14.4, 14.6, 0, .03, 'brass')
++    rails()
++    hand('Ten oclock hour hand', math.radians(150), 8.5, .9, .3, 1.15, spade=True)
++    hand('Two oclock minute hand', math.radians(30), 13, .6, .2, 1.35)
++    teeth = []
++    for j in range(12):
++        for fraction, radius in ((0, 1.5), (.20, 1.65), (.60, 1.65), (.80, 1.5)):
++            teeth.append(polar(radius, (j + fraction) * TAU / 12))
++    slab('Brass hub with twelve low gear teeth', teeth, 0, .08, 'brass', bevel=True)
++    disc('Dark central pin', .5, .08, .22, 'iron_dark', n=24, bevel=True)
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish():
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        check = bmesh.new()
++        check.from_mesh(obj.data)
++        tiny = [f for f in check.faces if f.calc_area() <= 1e-10]
++        if tiny:
++            print('CLEANUP', obj.name, 'zero-area boolean faces', len(tiny), flush=True)
++            bmesh.ops.dissolve_degenerate(check, dist=1e-6, edges=list(check.edges))
++            check.to_mesh(obj.data)
++        check.free()
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = 'Arena', 'Arena_Mesh'
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert all(e.is_manifold for e in bm.edges), 'Open mesh component'
++    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate face'
++    bmesh.ops.triangulate(bm, faces=list(bm.faces), ngon_method='BEAUTY')
++    assert all(e.is_manifold for e in bm.edges), 'Non-manifold triangulation'
++    assert all(f.calc_area() > 1e-10 for f in bm.faces), 'Degenerate triangle'
++    bm.to_mesh(obj.data)
++    bm.free()
++    for face in obj.data.polygons:
++        face.use_smooth = False
++    obj.data.update()
++    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
++    bpy.context.view_layer.update()
++    assert triangles(obj) <= 9000, triangles(obj)
++    assert all(abs(obj.dimensions[i] - (32, 32, .26)[i]) < .001 for i in range(3)), tuple(obj.dimensions)
++    assert abs(min(v.co.z for v in obj.data.vertices)) < 1e-6
++    assert all(v.co.z >= -1e-6 and all(math.isfinite(c) for c in v.co) for v in obj.data.vertices)
++    assert set(m.name for m in obj.data.materials) <= ROLES
++    hit, *_ = obj.ray_cast(Vector((7, -7, 2)), Vector((0, 0, -1)))
++    assert not hit, 'The room tiles must remain visible'
++    obj['dimensions_m'] = [32, 32, .26]
++    obj['front'], obj['origin_rule'] = '+Y', 'bottom center'
++    obj['chapter'], obj['solid_obstacle'] = 'The Stopped Station', False
++    obj['triangle_count'], obj['rail_gauge_m'] = triangles(obj), 1.5
++    obj['design_revision'] = '3 / 2026-11-18 / open floor clock'
++    obj['socket_count'], obj['minute_notch_count'] = 16, 48
++    return obj
++
++
++def export(obj):
++    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    assert len(bpy.context.scene.objects) == 1
++    for mat in obj.data.materials:
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    bpy.ops.export_scene.fbx(
++        filepath=str(OUTPUT), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert OUTPUT.is_file() and OUTPUT.stat().st_size > 1024
++    print(f'EXPORTED Arena {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++
++
++def preview(obj):
++    palette = {
++        'stone': (.43, .405, .36), 'stone_dark': (.20, .195, .18),
++        'iron': (.16, .18, .185), 'iron_dark': (.045, .055, .060),
++        'rail_steel': (.37, .45, .49), 'brass': (.64, .405, .12),
++    }
++    helpers = []
++    scene = bpy.context.scene
++    scene.render.engine = 'CYCLES'
++    scene.cycles.samples, scene.cycles.use_denoising = 24, True
++    scene.render.resolution_x = scene.render.resolution_y = 900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    scene.world = bpy.data.worlds.new('Preview world')
++    scene.world.use_nodes = True
++    scene.world.node_tree.nodes['Background'].inputs['Color'].default_value = (.32, .32, .32, 1)
++    scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value = .7
++    for name, colour in palette.items():
++        MATERIALS[name].diffuse_color = (*colour, 1)
++        MATERIALS[name].node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (*colour, 1)
++    try:
++        bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 0, -.003))
++        plane = bpy.context.object
++        plane.name = 'Render only warm grey beige room tiles'
++        helpers.append(plane)
++        floor = bpy.data.materials.new('Preview floor only')
++        floor.use_nodes = True
++        floor.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.62, .56, .48, 1)
++        floor.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = .9
++        plane.data.materials.append(floor)
++        light = bpy.data.objects.new('Preview sun', bpy.data.lights.new('Preview sun', 'SUN'))
++        scene.collection.objects.link(light)
++        helpers.append(light)
++        light.data.energy, light.data.angle = 1.6, math.radians(15)
++        light.rotation_euler = (math.radians(25), math.radians(-20), math.radians(-25))
++        camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        camera.data.type, camera.data.ortho_scale = 'ORTHO', 36
++        scene.camera = camera
++        pixels = array('f', [0]) * (1800 * 900 * 4)
++        for index, elevation in enumerate((90, 55)):
++            a = math.radians(elevation)
++            camera.location = (0, -60 * math.cos(a), 60 * math.sin(a))
++            camera.rotation_euler = (Vector((0, 0, 0)) - camera.location).to_track_quat('-Z', 'Y').to_euler()
++            temp = PREVIEW.with_name(f'.arena_preview_{index}.png')
++            scene.render.filepath = str(temp)
++            bpy.ops.render.render(write_still=True)
++            im = bpy.data.images.load(str(temp), check_existing=False)
++            src = array('f', [0]) * (900 * 900 * 4)
++            im.pixels.foreach_get(src)
++            for row in range(900):
++                start = (row * 1800 + index * 900) * 4
++                pixels[start:start + 3600] = src[row * 3600:(row + 1) * 3600]
++            bpy.data.images.remove(im)
++            temp.unlink()
++        sheet = bpy.data.images.new('Arena top and 55 degree preview', width=1800, height=900)
++        sheet.pixels.foreach_set(pixels)
++        sheet.filepath_raw, sheet.file_format = str(PREVIEW), 'PNG'
++        sheet.save()
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        for mat in MATERIALS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++            mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        scene.camera = None
++        for helper in helpers:
++            bpy.data.objects.remove(helper, do_unlink=True)
++    assert len(scene.objects) == 1 and scene.objects[0] == obj
++
++
++def main():
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    bpy.context.scene.unit_settings.system = 'METRIC'
++    bpy.context.scene.unit_settings.scale_length = 1
++    setup_materials()
++    build()
++    obj = finish()
++    export(obj)
++    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++    preview(obj)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b -P Art/tools/blender_kit_ch2_arena.py" in C:\Project\Cat_Tang
+ succeeded in 12300ms:
+09:31:30 - tripo_addon - [task.py:31] - INFO - WebSocket server started on port 60600
+09:31:30 - tripo_addon - [ws_server.py:186] - INFO - WebSocket server running on ws://127.0.0.1:60600
+09:31:30 - tripo_addon - [ws_server.py:195] - INFO - Heartbeat monitoring started (timeout: 120s)
+09:31:30 - tripo_addon - [ws_server.py:128] - INFO - Stopping WebSocket server...
+09:31:30 - tripo_addon - [task.py:39] - INFO - WebSocket server stop requested
+09:31:30 - tripo_addon - [ws_server.py:215] - INFO - Cancelled 1 pending tasks
+09:31:30 - tripo_addon - [ws_server.py:103] - INFO - Event loop closed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py:27: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+[Tripo3D] Log file: C:\Users\user\AppData\Local\Temp\tripo3d_blender_bridge.log
+CLEANUP Brass socket collar zero-area boolean faces 2
+CLEANUP Brass socket collar.003 zero-area boolean faces 4
+CLEANUP Brass socket collar.006 zero-area boolean faces 2
+CLEANUP Brass socket collar.009 zero-area boolean faces 4
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch2\\Kit_Arena.fbx'
+export finished in 0.1106 sec.
+EXPORTED Arena 8432 (32.0, 32.0, 0.26)
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py:334: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py:346: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  floor.use_nodes = True
+00:07.625  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\.arena_preview_0.png'
+00:11.984  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\.arena_preview_1.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\kit_ch2_arena_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+The export passes the geometry checks at 8,432 triangles and 32 × 32 × 0.26 m. I’ve inspected both preview views: the open floor, clock hands, cardinal double sockets, and charge rails read clearly. I’ll now check the exported FBX for its mesh name, bounds, materials, and manifold geometry.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr \"import bpy,bmesh; from mathutils import Vector; bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False); bpy.ops.import_scene.fbx(filepath=r'C:/Project/Cat_Tang/Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx'); objects=list(bpy.context.scene.objects); assert len(objects)==1 and objects[0].type=='MESH'; obj=objects[0]; assert obj.name=='Arena'; obj.data.calc_loop_triangles(); assert len(obj.data.loop_triangles)==8432; points=[obj.matrix_world @ v.co for v in obj.data.vertices]; lo=Vector([min(v[i] for v in points) for i in range(3)]); hi=Vector([max(v[i] for v in points) for i in range(3)]); assert all(abs((hi-lo)[i]-(32,32,.26)[i])<.001 for i in range(3)),(lo,hi); assert abs(lo.z)<1e-5; assert obj.location.length<1e-5; roles={'stone','stone_dark','iron','iron_dark','rail_steel','brass'}; assert all(m.name in roles for m in obj.data.materials); assert all(all(abs(c-.5)<1e-5 for c in m.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value[:3]) for m in obj.data.materials); bm=bmesh.new(); bm.from_mesh(obj.data); assert all(e.is_manifold for e in bm.edges); assert all(f.calc_area()>1e-10 for f in bm.faces); bm.free(); print('FBX VERIFIED',obj.name,len(obj.data.loop_triangles),tuple(round(c,4) for c in hi-lo),'origin',tuple(round(c,4) for c in obj.location),'materials',[m.name for m in obj.data.materials]);\"" in C:\Project\Cat_Tang
+ succeeded in 1721ms:
+FBX version: 7400
+FBX VERIFIED Arena 8432 (32.0, 32.0, 0.26) origin (0.0, 0.0, 0.0) materials ['stone', 'iron_dark', 'stone_dark', 'brass', 'rail_steel']
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Item Art/tools/blender_kit_ch2_arena.py,Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx,Art/tools/specs/kit_ch2_arena_preview.png | Select-Object FullName,Length,LastWriteTime; Get-ChildItem Art/tools/specs -Filter '.arena_preview*'" in C:\Project\Cat_Tang
+ succeeded in 230ms:
+
+FullName                                                          Length LastWriteTime        
+--------                                                          ------ -------------        
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch2_arena.py             18167 2026-11-18 오전 9:31:27
+C:\Project\Cat_Tang\Game\Assets\Art\Characters\Ch2\Kit_Arena.fbx  144572 2026-11-18 오전 9:31:31
+C:\Project\Cat_Tang\Art\tools\specs\kit_ch2_arena_preview.png    1591797 2026-11-18 오전 9:31:40
+
+
+
+codex
+Created revision 3 and ran Blender headless.
+
+- [Python script](Art/tools/blender_kit_ch2_arena.py)
+- [Arena FBX](Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx)
+- [Inspected preview: top-down + 55°](Art/tools/specs/kit_ch2_arena_preview.png)
+
+Verified by FBX reimport: one manifold mesh named `Arena`, **8,432 triangles**, **32 × 32 × 0.26 m**, bottom-center origin, and grey role materials. No filled clock face.
+
+No C#, other scripts, or git changes.
+tokens used
+52,265
+Created revision 3 and ran Blender headless.
+
+- [Python script](Art/tools/blender_kit_ch2_arena.py)
+- [Arena FBX](Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx)
+- [Inspected preview: top-down + 55°](Art/tools/specs/kit_ch2_arena_preview.png)
+
+Verified by FBX reimport: one manifold mesh named `Arena`, **8,432 triangles**, **32 × 32 × 0.26 m**, bottom-center origin, and grey role materials. No filled clock face.
+
+No C#, other scripts, or git changes.
+exit 0

@@ -1,0 +1,3797 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1ecf4-a95b-72b2-8cf9-523636dc34d9
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch3_bossprops.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_bossprops.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece.
+Read `Art/tools/specs/_ch3_common.md` and `Art/tools/specs/_ch3_detail_v2.md` first (materials, coordinates, export, detail rules: rich, many colors, ornate). Each piece = ONE joined mesh, its own FBX `Game/Assets/Art/Characters/Ch3/Kit_<Name>.fbx`, origin at bottom center unless stated.
+
+## Pieces (W x D x H in m)
+1. `MerchantMask` (0.62 x 0.25 x 0.42, origin at the BACK CENTER of the mask, front = +Y): an ornate Venetian half mask for a cat face: `ivory` face plate covering the eyes and nose bridge with two almond eye holes, `gold` filigree swirls around the eyes, a small `gold` sun crest on the forehead with a `gem_amber`, `rose_gold` trim along the edge, two short `cloth_rose` ribbons trailing from the sides, a small `mirror` diamond on each cheek.
+2. `SwordBox` (1.6 x 1.6 x 1.4): a magician sword box that drops from above: `wood` box with `coral` painted panels, `gold` corner caps and stars, 4 dark slots (one centered on each side) where swords come out, a `gold` star latch on top.
+3. `MagicSword` (0.18 x 1.8 x 0.08, origin at the HILT end, blade pointing +Y, lying flat): long thin `ivory` blade with a `gold` fuller line, `gold` cross guard with a `gem_rose`, `coral` grip.
+4. `MirrorPanel` (6.0 x 0.25 x 2.6): a free-standing mirror wall panel (the magician mirror box trap): big `mirror` face on BOTH sides in a `gold` frame with `rose_gold` beads, short `marble` feet.
+5. `Dove` (0.9 x 0.8 x 0.35, origin at body center, beak toward +Y): a stylized glowing dove of light: `crystal` body, `crystal_core` wing tips, `gold` beak, wings spread in a V.
+6. `NumberCard` (0.9 x 0.05 x 1.3, origin bottom center, face = +Y): a big playing card held up by clones: `ivory` face with an ornate `gold` border, an empty central round `tile_cream` medallion (the game draws the number there), `coral` back with a `gold` clock pattern.
+7. `MemoryShard` (1.0 x 1.0 x 2.2): floating memory shard: a tall faceted `crystal_rose` and `crystal` bipyramid with a `crystal_core` center, a `gold` ring orbiting it at mid height (attached by two thin spokes), floating 0.4 m above the origin (nothing below Z 0.4 except one small `stardust` bit).
+8. `Facade_Curtain` (8 m wide exactly, depth 1.6, height 5.5, a wall module tiled along a wall, front +Y): theater stage back wall: heavy `cloth_rose` velvet curtains in deep folds (`coral` on the fold tops), a scalloped valance on top with `gold` trim and tassels, a `marble` stage lip 0.5 m high along the bottom front with `glaze_teal` tiles and a `gold` line, two `gold` lantern brackets with `window_lit` lamps.
+9. `Facade_MirrorHall` (6 m wide exactly, depth 1.2, height 4.5): theater side wall made of 3 full height `mirror` panels in tall arched `gold` frames, `ivory` pilasters with `gold` capitals between them, `marble` skirting with `glaze_teal` tiles.
+10. `Altar` (diameter 40 m, height 0.25, origin at CENTER, top surface at Z 0.0 and the body sinks below): the boss arena rim of the mirror altar. ONLY an outer ring band from radius 17.5 to 20 (the inside stays open so the game mirror floor shows): `marble` ring with a `gold` inner edge, 12 raised blocky `gold` roman numeral plaques I to XII evenly around it (XII toward +Y), `glaze_teal` tile segments between them, a thin `rose_gold` outer lip, and 8 small `crystal` clusters standing on the ring offset 22.5 degrees from the numerals. Inside the open area: 4 thin `gold` spokes (0.15 wide, 0.03 high) from radius 4 to 17.5 along +X, -X, +Y, -Y lying flush on the floor, and a central flat 4 m `gold` and `ivory` compass rose medallion (0.04 high). Under about 12000 triangles.
+
+Render ONE preview PNG of all pieces (Workbench, a distinct colour per material; the Altar may be shown scaled down) to `Art/tools/specs/blender_kit_ch3_bossprops_preview.png`.
+
+codex
+먼저 공통 규격과 디테일 규칙을 읽고, 10개 소품을 생성·내보내는 단일 스크립트를 작성한 뒤 Blender로 실행해 FBX와 프리뷰를 확인하겠습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content Art/tools/specs/_ch3_common.md; Get-Content Art/tools/specs/_ch3_detail_v2.md; rg --files -g AGENTS.md -g '*blender*' Art/tools" in C:\Project\Cat_Tang
+ exited 1 in 1556ms:
+## Common rules (chapter 3 "Mirage Desert = Mirror World")
+Setting: a dreamlike MIRROR WORLD beyond a desert mirage (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+The floor is a calm mirror lake that reflects a pink sunset sky; around it: rose sandstone rocks, ruined white marble colonnades with gold trim, gold-framed standing mirrors, glowing memory crystals, small fountains, floating mirror shards. Mood: serene, magical, sunset (peach / rose / cream / gold, teal only for water, white glow for crystals).
+Signature accent: GOLD ornate trim and frames, broken marble, and pale glowing crystal. Chunky silhouettes, no tiny detail, slightly hand-made irregularity (seeded random per piece, `random.seed(<fixed>)`). BEVEL modifier (0.02-0.05, 2 segments) on stone / marble / gold parts.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`sandstone`, `sandstone_light`, `sandstone_dark`, `rock`, `rock_dark`, `sand`, `marble`, `marble_dark`, `gold`, `gold_dark`, `mirror`, `mirror_back`, `crystal`, `crystal_core`, `water`, `water_foam`, `cloud`, `cloud_shade`, `cloth_rose`, `stardust`, `wood`, `roof_tile`, `window_lit`.
+`mirror` = the reflective glass face of every mirror. `mirror_back` = the dull back board of a mirror. `crystal` = pale crystal body, `crystal_core` = glowing inner crystal. `stardust` = tiny glowing floating bits. `water` = water surface, `water_foam` = ripples / splash.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece (unless the piece says otherwise).
+Each piece = ONE joined mesh object named exactly as listed, exported to its own FBX `Game/Assets/Art/Characters/Ch3/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end.
+Use `Art/tools/blender_kit_ch2_props.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+Finally render ONE preview PNG of all pieces laid out in a row (Workbench engine, flat MATERIAL color with a distinct viewport color per material name so pieces are readable, camera ~55 deg from above-front, 1600x900) to `Art/tools/specs/<script name without .py>_preview.png`. The preview is only for review; it must not change the exported FBX files.
+## DETAIL PASS v2 (chapter 3) ??read together with `_ch3_common.md`
+The user saw the first version in game and said: "too many objects are a single flat color; carve them more ornately / richer, like high-end 3D".
+In game every object is seen from ~55 deg above at small size with a cel shader and black outlines, so richness must come from MANY DISTINCT COLOR REGIONS and CARVED GEOMETRY that reads at a glance ??not from tiny noise.
+
+### Rules for every piece in this pass
+- Every piece uses AT LEAST 5 different role materials (big landmarks and walls 6-8), and no single material may cover more than ~55% of the visible surface. Break large plain surfaces into bands, panels, insets and trims of different materials.
+- Carve: moldings (stacked bevelled bands) at bases and tops, fluting on columns, recessed panels, relief friezes (repeating raised motifs: sun discs, waves, stars, crescent moons, clock dials), chamfered / bevelled edges everywhere (bevel 0.02-0.06, 2-3 segments), scroll / curl ornaments in gold, studs and rivets, cracks rendered as inset grooves in a darker material.
+- Mosaic and inlays: rows of small square or diamond tiles in `glaze_teal` / `coral` / `ivory` set into stone; gem studs (`gem_rose`, small octahedra/cabochons) on gold frames and crests; thin `gold` lines separating bands.
+- Gold is the signature: ornate frames with layered profiles, filigree curls, sun-ray crests, finials, and gold caps on crystal bases.
+- Crystals: multi-tone ??outer `crystal`, inner `crystal_core`, a few `crystal_rose` prisms mixed in, gold or bronze collar where they meet rock.
+- Stone: mix `sandstone`, `sandstone_light`, `sandstone_dark`, `rock` per block / boulder (not one material for the whole wall); blocks slightly offset and rotated so joints read as carved grooves.
+- Still chunky and cel-shaded: no detail thinner than ~0.04 m, no noisy micro-displacement. Triangle budget: roughly 2x the previous limit is fine (up to ~6000 for props, ~8000 for walls / landmarks / MerchantMirror).
+
+### New role material names allowed in this pass (in addition to the common list)
+`glaze_teal` (glazed teal tile), `coral` (warm coral tile/paint), `ivory`, `bronze`, `rose_gold`, `gem_rose` (pink gem), `gem_amber` (amber gem), `crystal_rose` (pink crystal), `tile_cream`.
+Everything else stays as in `_ch3_common.md` (grey materials named by role, same coordinates, same FBX paths and export settings, same footprints / heights / origins / piece names). Re-render the preview PNG at the end.
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:92
++ ... _common.md; Get-Content Art/tools/specs/_ch3_detail_v2.md; rg --files ...
++                                                                ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Path AGENTS.md,Art/AGENTS.md,Art/tools/AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName }; Get-Content Art/tools/blender_kit_ch2_props.py -TotalCount 230; Get-ChildItem Art/tools -Filter '"'*ch3*.py' | Select-Object -ExpandProperty Name; git status --short; Test-Path 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'" in C:\Project\Cat_Tang
+ succeeded in 402ms:
+# 硫덉텣 ??쓽 ?꾪닾 ?뚰뭹怨??꾪룓臾?10醫낆쓣 ?뚯깋 ??븷 ?ъ쭏濡?留뚮뱾??FBX濡??대낫?낅땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch2_props.py
+"""Deterministic, metre-scale chapter-two props. Requires only stock Blender."""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch2'
+ROLES = (
+    'wood', 'wood_dark', 'wood_light', 'iron', 'iron_dark', 'rust', 'brass',
+    'rail_steel', 'brick', 'brick_dark', 'stone', 'stone_dark', 'roof_tin',
+    'soot', 'coal', 'window', 'window_lit', 'glass_lamp', 'canvas', 'leather',
+    'leather_dark', 'cloth_red', 'paint_cream', 'paint_green', 'clock_face',
+    'steam', 'signal_red', 'signal_amber', 'signal_green',
+)
+HARD = {'wood', 'wood_dark', 'wood_light', 'iron', 'iron_dark', 'rust',
+        'brass', 'rail_steel', 'roof_tin', 'paint_cream'}
+MATS = {}
+PARTS = []
+RNG = random.Random(0)
+
+
+def setup_materials():
+    for name in ROLES:
+        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        nodes = mat.node_tree.nodes
+        nodes.clear()
+        shader = nodes.new('ShaderNodeBsdfPrincipled')
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Roughness'].default_value = .85
+        shader.inputs['Metallic'].default_value = 0
+        output = nodes.new('ShaderNodeOutputMaterial')
+        mat.node_tree.links.new(shader.outputs['BSDF'], output.inputs['Surface'])
+        MATS[name] = mat
+
+
+def mesh(label, verts, faces, mat, bevel=False):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[mat])
+    if bevel:
+        mod = obj.modifiers.new('Soft cast and worn edges', 'BEVEL')
+        mod.width = .025
+        mod.segments = 2
+        mod.limit_method = 'ANGLE'
+        mod.angle_limit = math.radians(60)
+    PARTS.append(obj)
+    return obj
+
+
+def move(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, mat, rot=(0, 0, 0), bevel=True):
+    x, y, z = (s / 2 for s in size)
+    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
+             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    return move(mesh(label, verts, faces, mat, bevel), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, mat, n=12, top=None,
+             rot=(0, 0, 0), bevel=True):
+    top = radius if top is None else top
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for r, z in [(radius, -depth / 2), (top, depth / 2)]
+             for j in range(n)]
+    faces = [tuple(reversed(range(n))), tuple(range(n, n * 2))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return move(mesh(label, verts, faces, mat, bevel and mat in HARD), loc, rot)
+
+
+def rod(label, a, b, radius, mat, n=6, bevel=False):
+    a, b = Vector(a), Vector(b)
+    obj = cylinder(label, (0, 0, 0), radius, (b - a).length, mat,
+                   n=n, bevel=bevel)
+    obj.data.transform(Matrix.Translation((a + b) / 2) @
+                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
+    return obj
+
+
+def beam(label, a, b, width, depth, mat, bevel=True):
+    a, b = Vector(a), Vector(b)
+    obj = box(label, (0, 0, 0), (width, depth, (b - a).length), mat,
+              bevel=bevel)
+    obj.data.transform(Matrix.Translation((a + b) / 2) @
+                       (b - a).to_track_quat('Z', 'Y').to_matrix().to_4x4())
+    return obj
+
+
+def hoop(label, loc, radius, thickness, depth, mat, axis='Z', n=16,
+         bevel=True):
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for z, r in [(-depth / 2, radius - thickness), (-depth / 2, radius),
+                          (depth / 2, radius), (depth / 2, radius - thickness)]
+             for j in range(n)]
+    faces = [(k * n + j, k * n + (j + 1) % n,
+              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+             for k in range(4) for j in range(n)]
+    rotation = {'X': (0, math.pi / 2, 0), 'Y': (math.pi / 2, 0, 0),
+                'Z': (0, 0, 0)}[axis]
+    return move(mesh(label, verts, faces, mat, bevel and mat in HARD), loc, rotation)
+
+
+def tube(label, points, radius, mat, n=6, bevel=True):
+    verts = []
+    previous = None
+    for i, point in enumerate(points):
+        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
+                   Vector(points[max(i - 1, 0)])).normalized()
+        reference = Vector((1, 0, 0)) if abs(tangent.y) > .9 else Vector((0, 1, 0))
+        basis = reference.cross(tangent)
+        if previous is not None:
+            basis = previous - tangent * previous.dot(tangent)
+        basis.normalize()
+        other = tangent.cross(basis)
+        previous = basis
+        for j in range(n):
+            angle = j * math.tau / n
+            verts.append(tuple(Vector(point) + radius *
+                               (basis * math.cos(angle) + other * math.sin(angle))))
+    faces = [tuple(reversed(range(n)))]
+    faces += [(i * n + j, i * n + (j + 1) % n,
+               (i + 1) * n + (j + 1) % n, (i + 1) * n + j)
+              for i in range(len(points) - 1) for j in range(n)]
+    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
+    return mesh(label, verts, faces, mat, bevel and mat in HARD)
+
+
+def lump(label, loc, size, mat, irregular=.08, subdivisions=1):
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=subdivisions, radius=1)
+    for vert in bm.verts:
+        vert.co *= 1 + RNG.uniform(-irregular, irregular)
+        vert.co = Vector(loc) + Vector(tuple(vert.co[i] * size[i] / 2
+                                             for i in range(3)))
+    bm.verts.ensure_lookup_table()
+    obj = mesh(label, [tuple(v.co) for v in bm.verts],
+               [tuple(v.index for v in f.verts) for f in bm.faces], mat)
+    bm.free()
+    return obj
+
+
+def extrude_y(label, profile, y0, y1, mat, bevel=True):
+    """Closed X/Z polygon extruded along Y, with intact coplanar end faces."""
+    n = len(profile)
+    verts = [(x, y, z) for y in (y0, y1) for x, z in profile]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return mesh(label, verts, faces, mat, bevel)
+
+
+def clock_face(x, y, z, radius, side=1, detailed=True):
+    cylinder('Clock dial', (x, y, z), radius * .91, .018, 'clock_face',
+             n=24, rot=(math.pi / 2, 0, 0), bevel=False)
+    hoop('Brass clock rim', (x, y, z), radius, radius * .09, .04,
+         'brass', 'Y', n=24, bevel=False)
+    surface = y + side * .017
+    if detailed:
+        for i in range(12):
+            angle = i * math.tau / 12
+            inner = radius * (.68 if i % 3 == 0 else .77)
+            beam('Clock hour marker',
+                 (x - side * inner * math.sin(angle), surface, z + inner * math.cos(angle)),
+                 (x - side * radius * .85 * math.sin(angle), surface,
+                  z + radius * .85 * math.cos(angle)),
+                 radius * .045, .012, 'iron_dark', bevel=False)
+    # 11:59. The hour hand has advanced to half a degree before twelve.
+    for angle, length, width in [(-.5, .51, .065), (-6, .74, .045)]:
+        angle = math.radians(angle)
+        beam('Frozen clock hand', (x, surface + side * .012, z),
+             (x - side * radius * length * math.sin(angle), surface + side * .012,
+              z + radius * length * math.cos(angle)),
+             radius * width, .012, 'iron_dark', bevel=False)
+    cylinder('Clock pin', (x, surface + side * .019, z), radius * .065, .018,
+             'brass', n=8, rot=(math.pi / 2, 0, 0), bevel=False)
+
+
+def steam_valve():
+    box('Floor casting', (0, -.28, .055), (1, .24, .11), 'iron')
+    cylinder('Pipe floor flange', (0, -.28, .14), .22, .12, 'rust', n=12)
+    cylinder('Cast steam riser', (0, -.28, .63), .125, .94, 'iron', n=12)
+    for z in (.28, .89):
+        cylinder('Rusted pipe collar', (0, -.28, z), .155, .09, 'rust', n=12)
+    rod('Valve spindle', (0, -.28, .99), (0, -.28, 1.22), .065, 'brass', bevel=True)
+    hoop('Large valve wheel', (0, -.28, 1.11), .49, .075, .075, 'brass', 'Y', n=20)
+    cylinder('Wheel hub', (0, -.28, 1.11), .105, .105, 'brass', n=10,
+             rot=(math.pi / 2, 0, 0))
+    for i in range(4):
+        angle = i * math.tau / 4 + math.pi / 4
+        rod('Valve wheel spoke', (0, -.28, 1.11),
+            (.43 * math.cos(angle), -.28, 1.11 + .43 * math.sin(angle)),
+            .036, 'brass', n=6)
+    rod('Steam outlet neck', (0, -.28, .69), (0, -.035, .69), .09, 'iron', bevel=True)
+    hoop('Open nozzle rim', (0, -.015, .69), .115, .032, .07, 'iron', 'Y', n=12)
+    cylinder('Nozzle dark bore', (0, -.04, .69), .081, .01, 'iron_dark',
+             n=12, rot=(math.pi / 2, 0, 0), bevel=False)
+    rod('Gauge mounting elbow', (.08, -.28, .58), (.28, -.24, .61), .035, 'brass')
+    cylinder('Pressure gauge housing', (.28, -.20, .67), .16, .10, 'brass',
+             n=16, rot=(math.pi / 2, 0, 0))
+    cylinder('Pressure gauge dial', (.28, -.14, .67), .132, .012, 'clock_face',
+             n=16, rot=(math.pi / 2, 0, 0), bevel=False)
+    beam('Gauge needle', (.28, -.126, .67), (.22, -.126, .75), .016, .012,
+         'iron_dark', bevel=False)
+    for dx, dz in [(-.09, .04), (0, .10), (.09, .04)]:
+        box('Gauge scale mark', (.28 + dx, -.126, .67 + dz), (.016, .012, .025),
+            'iron_dark', bevel=False)
+    # The puff centre is exactly 0.30 m in front of the outlet face (Y=.02).
+    for loc, size in [((0, .32, .69), (.21, .16, .21)),
+                      ((-.075, .30, .75), (.16, .15, .17)),
+                      ((.065, .33, .76), (.18, .14, .18))]:
+        lump('Frozen steam sphere', loc, size, 'steam', .025, subdivisions=2)
+
+
+blender_kit_ch3_landmarks.py
+blender_kit_ch3_props.py
+blender_kit_ch3_walls.py
+ground_texture_ch3.py
+ M Art/tools/blender_bake_fx.py
+ M Art/tools/blender_fx.py
+ M Game/Assets/Art/Shaders/CatTangToon.shader
+ M Game/Assets/Data/Tables/Chapter.csv
+ M Game/Assets/Data/Tables/Costume.csv
+ M Game/Assets/Data/Tables/Effect.csv
+ M Game/Assets/Data/Tables/Enum.csv
+ M Game/Assets/Data/Tables/TraitTier.csv
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/ModelPalette.cs
+ M Game/Assets/Scripts/Core/Tables.cs
+ M Game/Assets/Scripts/Game/BossBrain.cs
+ M Game/Assets/Scripts/Game/Ch2Bosses.cs
+ M Game/Assets/Scripts/Game/Ch2Kit.cs
+ M Game/Assets/Scripts/Game/Effects.cs
+ M Game/Assets/Scripts/Game/Enemy.cs
+ M Game/Assets/Scripts/Game/EnemyCh2.cs
+ M Game/Assets/Scripts/Game/EnemyFactory.cs
+ M Game/Assets/Scripts/Game/EnemyHpBar.cs
+ M Game/Assets/Scripts/Game/EnemyMoves.cs
+ M Game/Assets/Scripts/Game/EnemyProjectile.cs
+ M Game/Assets/Scripts/Game/ExtraFx.cs
+ M Game/Assets/Scripts/Game/FxPart.cs
+ M Game/Assets/Scripts/Game/GunkataFx.cs
+ M Game/Assets/Scripts/Game/Health.cs
+ M Game/Assets/Scripts/Game/Kit.cs
+ M Game/Assets/Scripts/Game/PlayerController.cs
+ M Game/Assets/Scripts/Game/Revolver.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RoomDoor.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M Game/Assets/Scripts/Game/RunManagerXp.cs
+ M Game/Assets/Scripts/UI/CursorTip.cs
+ M Game/Assets/Scripts/UI/GameUI.cs
+ M Game/Assets/Scripts/UI/InventoryScreen.cs
+ M Game/Assets/Scripts/UI/UIKit.cs
+ M HANDOFF.md
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+ M "docs/Cat_Tang_\353\252\251\353\241\235_\354\264\210\354\225\210.md"
+ M "docs/Cat_Tang_\354\264\235_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\273\250\354\205\211_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234.md"
+ M docs/data/Cat_Tang_Data.xlsx
+ M docs/tools/build_ch2_ppt.js
+ M docs/tools/build_docs.py
+ M docs/tools/build_level_ppts.js
+ M docs/tools/build_tables.py
+?? .tripo/
+?? Art/tools/__pycache__/
+?? Art/tools/blender_kit_ch2_arena.py
+?? Art/tools/blender_kit_ch3_landmarks.py
+?? Art/tools/blender_kit_ch3_props.py
+?? Art/tools/blender_kit_ch3_walls.py
+?? Art/tools/ground_texture_ch3.py
+?? Art/tools/memclock_v2.py
+?? Art/tools/memshatter.py
+?? Art/tools/specs/_ch3_common.md
+?? Art/tools/specs/_ch3_detail_v2.md
+?? Art/tools/specs/blender_kit_ch3_landmarks_preview.png
+?? Art/tools/specs/blender_kit_ch3_props_preview.png
+?? Art/tools/specs/blender_kit_ch3_walls_preview.png
+?? Art/tools/specs/ch3_concept_spec.md
+?? Art/tools/specs/kit_ch2_arena.log
+?? Art/tools/specs/kit_ch2_arena_preview.png
+?? Art/tools/specs/kit_ch2_arena_spec.md
+?? Art/tools/specs/kit_ch2_arena_v2.log
+?? Art/tools/specs/kit_ch2_arena_v3.log
+?? Art/tools/specs/kit_ch3_bosses.log
+?? Art/tools/specs/kit_ch3_bosses_spec.md
+?? Art/tools/specs/kit_ch3_bossprops.log
+?? Art/tools/specs/kit_ch3_bossprops_spec.md
+?? Art/tools/specs/kit_ch3_landmarks.log
+?? Art/tools/specs/kit_ch3_landmarks_spec.md
+?? Art/tools/specs/kit_ch3_landmarks_v2.log
+?? Art/tools/specs/kit_ch3_landmarks_v2_spec.md
+?? Art/tools/specs/kit_ch3_props.log
+?? Art/tools/specs/kit_ch3_props_spec.md
+?? Art/tools/specs/kit_ch3_props_v2.log
+?? Art/tools/specs/kit_ch3_props_v2_spec.md
+?? Art/tools/specs/kit_ch3_shore_v2.log
+?? Art/tools/specs/kit_ch3_shore_v2_spec.md
+?? Art/tools/specs/kit_ch3_walls.log
+?? Art/tools/specs/kit_ch3_walls_spec.md
+?? Art/tools/specs/kit_ch3_walls_v2.log
+?? Art/tools/specs/kit_ch3_walls_v2_spec.md
+?? Art/tools/specs/ui_bell_spec.md
+?? Art/tools/specs/ui_memory_clock_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Art/tripo_input/ch3/
+?? Art/tripo_input/merchant/
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat.meta
+?? Game/Assets/Art/Characters/Ch3.meta
+?? Game/Assets/Art/Characters/Ch3/
+?? Game/Assets/Art/Characters/Merchant.meta
+?? Game/Assets/Art/Characters/Merchant/
+?? Game/Assets/Art/Env/Ch3.meta
+?? Game/Assets/Art/Env/Ch3/
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx.meta
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab.meta
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png.meta
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab.meta
+?? Game/Assets/Resources/Kit/Ch3.meta
+?? Game/Assets/Resources/Kit/Ch3/
+?? Game/Assets/Resources/Merchants.meta
+?? Game/Assets/Resources/Merchants/
+?? Game/Assets/Resources/UI/bell_icon.png
+?? Game/Assets/Resources/UI/bell_icon.png.meta
+?? Game/Assets/Resources/UI/memory_clock.png
+?? Game/Assets/Resources/UI/memory_clock.png.meta
+?? Game/Assets/Resources/UI/merchant_arrow.png
+?? Game/Assets/Resources/UI/merchant_arrow.png.meta
+?? Game/Assets/Scripts/Game/Ch3Kit.cs
+?? Game/Assets/Scripts/Game/Ch3Kit.cs.meta
+?? Game/Assets/Scripts/Game/EnemyCh3.cs
+?? Game/Assets/Scripts/Game/EnemyCh3.cs.meta
+?? Game/Assets/Scripts/Game/MemoryClock.cs
+?? Game/Assets/Scripts/Game/MemoryClock.cs.meta
+?? Game/Assets/Scripts/Game/MirrorReflection.cs
+?? Game/Assets/Scripts/Game/MirrorReflection.cs.meta
+?? Game/Assets/Scripts/Game/MirrorShard.cs
+?? Game/Assets/Scripts/Game/MirrorShard.cs.meta
+?? Game/Assets/Scripts/UI/EdgeMarker.cs
+?? Game/Assets/Scripts/UI/EdgeMarker.cs.meta
+?? Game/Assets/Scripts/UI/Terms.cs
+?? Game/Assets/Scripts/UI/Terms.cs.meta
+?? Game/Assets/Shaders/CatTangMirrorFloor.shader
+?? Game/Assets/Shaders/CatTangMirrorFloor.shader.meta
+?? Game/Assets/Shaders/CatTangMirrorGhost.shader
+?? Game/Assets/_Recovery.meta
+?? Game/Assets/_Recovery/
+?? "docs/1159_2\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_3\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? "docs/1159_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? docs/images/ch3/
+?? docs/images/fx_preview/
+?? docs/images/ui_src/merchant_arrow.png
+?? docs/images/ui_src/prompts/merchant_arrow.log
+?? docs/images/ui_src/prompts/merchant_arrow.txt
+?? docs/tools/build_ch3_ppt.js
+?? docs/tools/ui_merchant_cut.py
+True
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/blender_kit_ch3_props.py -TotalCount 140; Get-Content Art/tools/blender_kit_ch3_props.py -Tail 160; Get-ChildItem -Path C:/AGENTS.md,C:/Project/AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName }' in C:\Project\Cat_Tang
+ exited 1 in 290ms:
+# 嫄곗슱 ?멸퀎 ?꾪닾 ?뚰뭹 10醫낆쓣 留뚮뱾怨?FBX? 寃?좎슜 誘몃━蹂닿린瑜??대낫?낅땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_props.py
+"""Stock Blender 5.x, deterministic metre-scale meshes; no external dependencies."""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
+PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_props_preview.png'
+ROLES = (
+    'sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
+    'sand', 'marble', 'marble_dark', 'gold', 'gold_dark', 'mirror',
+    'mirror_back', 'crystal', 'crystal_core', 'water', 'water_foam', 'cloud',
+    'cloud_shade', 'cloth_rose', 'stardust', 'wood', 'roof_tile', 'window_lit',
+    'glaze_teal', 'coral', 'ivory', 'bronze', 'rose_gold', 'gem_rose',
+    'gem_amber', 'crystal_rose', 'tile_cream',
+)
+HARD = {'sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
+        'marble', 'marble_dark', 'gold', 'gold_dark', 'ivory', 'bronze',
+        'rose_gold', 'glaze_teal', 'coral', 'tile_cream'}
+PALETTE = {
+    'sandstone': (.67, .32, .38), 'sandstone_light': (.94, .62, .59),
+    'sandstone_dark': (.35, .14, .23), 'rock': (.45, .31, .40),
+    'rock_dark': (.22, .17, .24), 'sand': (.83, .53, .39),
+    'marble': (.91, .87, .78), 'marble_dark': (.43, .43, .51),
+    'gold': (.94, .61, .18), 'gold_dark': (.43, .25, .07),
+    'mirror': (.47, .71, .83), 'mirror_back': (.23, .23, .34),
+    'crystal': (.71, .86, .96), 'crystal_core': (1.0, .97, .85),
+    'water': (.15, .53, .58), 'water_foam': (.73, .97, .92),
+    'cloth_rose': (.64, .18, .33), 'stardust': (1.0, .81, .44),
+    'glaze_teal': (.05, .52, .51), 'coral': (.94, .34, .29),
+    'ivory': (.99, .92, .70), 'bronze': (.49, .28, .14),
+    'rose_gold': (.89, .48, .39), 'gem_rose': (.94, .13, .43),
+    'gem_amber': (1.0, .44, .04), 'crystal_rose': (.86, .43, .73),
+    'tile_cream': (.93, .76, .58),
+}
+MATS = {}
+PARTS = []
+
+
+def setup_materials():
+    for role in ROLES:
+        mat = bpy.data.materials.new(role)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        nodes = mat.node_tree.nodes
+        nodes.clear()
+        shader = nodes.new('ShaderNodeBsdfPrincipled')
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Metallic'].default_value = 0
+        shader.inputs['Roughness'].default_value = .8
+        output = nodes.new('ShaderNodeOutputMaterial')
+        mat.node_tree.links.new(shader.outputs['BSDF'], output.inputs['Surface'])
+        MATS[role] = mat
+
+
+def mesh(label, vertices, faces, role, bevel=True):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(vertices, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[role])
+    if bevel and role in HARD:
+        mod = obj.modifiers.new('Soft worn edges', 'BEVEL')
+        mod.width, mod.segments = .02, 2
+        mod.limit_method = 'ANGLE'
+        # Preserve broad faceting; soften the silhouette and hard right angles.
+        mod.angle_limit = math.radians(70)
+    PARTS.append(obj)
+    return obj
+
+
+def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, role, rot=(0, 0, 0)):
+    x, y, z = (v / 2 for v in size)
+    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
+             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    return place(mesh(label, verts, faces, role), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, role, n=16, top=None,
+             rot=(0, 0, 0), bevel=True):
+    top = radius if top is None else top
+    verts = [(r * math.cos(j * math.tau / n),
+              r * math.sin(j * math.tau / n), z)
+             for r, z in ((radius, -depth / 2), (top, depth / 2))
+             for j in range(n)]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return place(mesh(label, verts, faces, role, bevel), loc, rot)
+
+
+def lathe(label, profile, role, n=24, loc=(0, 0, 0), rot=(0, 0, 0)):
+    """Revolve a closed radial/Z section: bowls and bands are genuinely hollow."""
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for r, z in profile for j in range(n)]
+    faces = [(k * n + j, k * n + (j + 1) % n,
+              ((k + 1) % len(profile)) * n + (j + 1) % n,
+              ((k + 1) % len(profile)) * n + j)
+             for k in range(len(profile)) for j in range(n)]
+    return place(mesh(label, verts, faces, role), loc, rot)
+
+
+def ring(label, radius, width, z, height, role, n=24, loc=(0, 0, 0), rot=(0, 0, 0)):
+    return lathe(label, [(radius - width, z), (radius, z),
+                         (radius, z + height), (radius - width, z + height)],
+                 role, n, loc, rot)
+
+
+def tube(label, points, radius, role, n=6):
+    verts = []
+    previous = None
+    for i, point in enumerate(points):
+        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
+                   Vector(points[max(i - 1, 0)])).normalized()
+        ref = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
+        side = ref.cross(tangent).normalized()
+        if previous is not None:
+            side = (previous - tangent * previous.dot(tangent)).normalized()
+        other = tangent.cross(side)
+        previous = side
+        for j in range(n):
+            a = math.tau * j / n
+            verts.append(tuple(Vector(point) + radius *
+                               (side * math.cos(a) + other * math.sin(a))))
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name, obj.data.name = name, name + '_Mesh'
+    # Weld nothing: disconnected floating dust and scattered ground bits survive.
+    count = triangles(obj)
+    budget = 8000 if name == 'MerchantMirror' else 6000
+    if count > budget:
+        mod = obj.modifiers.new('Preserve material regions within triangle budget', 'DECIMATE')
+        mod.ratio = (budget - 100) / count
+        mod.delimit = {'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj) <= budget, (name, triangles(obj))
+
+    low, high = bounds(obj)
+    centre = (low + high) / 2
+    span = high - low
+    # The shard and ripple have deliberate air under them, not a raised origin.
+    floor = .6 if name == 'MirrorShard' else (.005 if name == 'Ripple' else 0)
+    top = dimensions[2]
+    for v in obj.data.vertices:
+        v.co.x = (v.co.x - centre.x) * dimensions[0] / span.x
+        v.co.y = (v.co.y - centre.y) * dimensions[1] / span.y
+        v.co.z = floor + (v.co.z - low.z) * (top - floor) / span.z
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
+    bm.to_mesh(obj.data)
+    bm.free()
+    for poly in obj.data.polygons:
+        poly.use_smooth = False
+    obj.data.update()
+    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
+    bpy.context.view_layer.update()
+    low, high = bounds(obj)
+    assert abs(low.z - floor) < 1e-5 and abs(high.z - top) < 1e-5, name
+    assert all(abs(obj.dimensions[i] - dimensions[i]) < 1e-4 for i in (0, 1)), name
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
+    assert all(mat.name in ROLES for mat in obj.data.materials), name
+    used_roles = {obj.data.materials[p.material_index].name for p in obj.data.polygons}
+    assert name == 'Ripple' or len(used_roles) >= 5, (name, used_roles)
+    for mat in obj.data.materials:
+        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+    obj['chapter'], obj['front'] = 'Mirage Desert / Mirror World', '+Y'
+    obj['footprint_and_top_m'], obj['triangle_count'] = list(dimensions), triangles(obj)
+    obj['collision'] = name not in {'Pebbles3', 'CrystalBits', 'Ripple'}
+    if name == 'MemoryCrystal':
+        obj['interactive'] = 'shootable explosive'
+    if name == 'MirrorShard':
+        obj['floor_clearance_m'], obj['reflective_faces'] = .6, '+Y / -Y'
+    destination = OUTPUT / f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size > 1024, destination
+    print(f'EXPORTED {name} {triangles(obj)} '
+          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+    return obj
+
+
+def preview(objects):
+    """Export is already complete. Only the review image uses viewport colours."""
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = str(PREVIEW)
+    scene.render.film_transparent = False
+    scene.view_settings.view_transform = 'Standard'
+    shade = scene.display.shading
+    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
+    shade.show_shadows = False
+    shade.show_cavity = True
+    shade.cavity_type = 'BOTH'
+    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.3, 1.0
+    shade.show_specular_highlight = False
+    shade.background_type, shade.background_color = 'WORLD', (.045, .055, .08)
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new('Review background')
+    scene.world.color = (.045, .055, .08)
+    helpers = []
+    old_locations = [obj.location.copy() for obj in objects]
+    try:
+        for role, mat in MATS.items():
+            mat.diffuse_color = (*PALETTE.get(role, (.5, .5, .5)), 1)
+        total = sum(spec[1][0] for spec in SPECS) + .65 * (len(objects) - 1)
+        x = -total / 2
+        for obj, (_, dims, _) in zip(objects, SPECS):
+            obj.location.x = x + dims[0] / 2
+            x += dims[0] + .65
+        camera = bpy.data.objects.new('Review camera only', bpy.data.cameras.new('Review camera only'))
+        scene.collection.objects.link(camera)
+        helpers.append(camera)
+        scene.camera = camera
+        camera.data.type, camera.data.ortho_scale = 'ORTHO', total + 1.0
+        elevation = math.radians(55)
+        target = Vector((0, 0, .8))
+        camera.location = target + Vector((0, 30 * math.cos(elevation), 30 * math.sin(elevation)))
+        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
+        # Camera-facing captions are review-only and never enter an FBX.
+        for obj in objects:
+            text_data = bpy.data.curves.new('Review caption', 'FONT')
+            text_data.body, text_data.align_x, text_data.size = obj.name, 'CENTER', .19
+            text_data.materials.append(MATS['crystal_core'])
+            label = bpy.data.objects.new('Review label ' + obj.name, text_data)
+            scene.collection.objects.link(label)
+            label.location = (obj.location.x, 1.52, -.05)
+            label.rotation_euler = camera.rotation_euler
+            helpers.append(label)
+        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
+        print(f'PREVIEW {PREVIEW}', flush=True)
+    finally:
+        scene.camera = None
+        for helper in helpers:
+            bpy.data.objects.remove(helper, do_unlink=True)
+        for obj, loc in zip(objects, old_locations):
+            obj.location = loc
+        for mat in MATS.values():
+            mat.diffuse_color = (.5, .5, .5, 1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials):
+        bpy.data.materials.remove(mat)
+    scene = bpy.context.scene
+    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
+    setup_materials()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    exported = []
+    for index, (name, dimensions, build) in enumerate(SPECS):
+        PARTS = []
+        random.seed(33117 + index * 7919)
+        build()
+        exported.append(finish(name, dimensions))
+    assert len(scene.objects) == 10 and all(obj.type == 'MESH' for obj in scene.objects)
+    preview(exported)
+    assert len(scene.objects) == 10 and all(obj.type == 'MESH' for obj in scene.objects)
+    print('DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()
+
+codex
+마스크의 눈 구멍, 검 상자의 네 슬롯, 양면 거울을 실제 형상으로 만들고 있습니다. 제단은 반지름 17.5~20m의 열린 링으로 구성하며, 0.25m 두께의 본체 위로 숫자와 수정 장식이 올라오도록 해석했습니다.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py
+diff --git a/Art/tools/blender_kit_ch3_bossprops.py b/Art/tools/blender_kit_ch3_bossprops.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e47e2f42d09103184435bc22595e1b8309dc714
+--- /dev/null
++++ b/Art/tools/blender_kit_ch3_bossprops.py
+@@ -0,0 +1,855 @@
++# 3장 보스 소품 10종과 재질별 색상 미리보기를 생성합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_bossprops.py
++"""Standalone Blender 5.x builder. Exported role materials are always grey.
++
++The altar's 0.25 m dimension describes its submerged ring body. Its raised
++numerals, compass relief and crystal clusters extend above the floor at Z=0.
++Preview transforms and colours are temporary and are applied after exporting.
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_bossprops_preview.png'
++PALETTE = {
++    'ivory': (.96, .87, .65), 'gold': (.96, .61, .12),
++    'gold_dark': (.20, .095, .025), 'rose_gold': (.81, .40, .31),
++    'gem_amber': (1.0, .35, .035), 'gem_rose': (.87, .06, .32),
++    'cloth_rose': (.45, .055, .17), 'mirror': (.32, .64, .79),
++    'mirror_back': (.14, .19, .27), 'wood': (.26, .105, .07),
++    'coral': (.91, .24, .22), 'marble': (.82, .83, .79),
++    'marble_dark': (.26, .31, .39), 'glaze_teal': (.025, .43, .40),
++    'crystal': (.56, .79, .97), 'crystal_core': (.95, .99, 1.0),
++    'crystal_rose': (.80, .32, .61), 'stardust': (1.0, .83, .41),
++    'tile_cream': (.79, .64, .44), 'bronze': (.43, .23, .075),
++    'window_lit': (1.0, .73, .27),
++}
++MATERIALS = {}
++VERTICES, FACES, FACE_ROLES = [], [], []
++TAU = math.tau
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        nodes = mat.node_tree.nodes
++        nodes.clear()
++        bsdf = nodes.new('ShaderNodeBsdfPrincipled')
++        bsdf.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        bsdf.inputs['Roughness'].default_value = .8
++        out = nodes.new('ShaderNodeOutputMaterial')
++        mat.node_tree.links.new(bsdf.outputs['BSDF'], out.inputs['Surface'])
++        MATERIALS[role] = mat
++
++
++def add(verts, faces, role, bevel=0, loc=(0, 0, 0), rot=(0, 0, 0), segments=2):
++    """Append closed geometry, baking local bevels before the final mesh join."""
++    if bevel:
++        bm = bmesh.new()
++        bv = [bm.verts.new(v) for v in verts]
++        for face in faces:
++            bm.faces.new([bv[i] for i in face])
++        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=bevel,
++                        segments=segments, affect='EDGES', clamp_overlap=True)
++        bm.verts.ensure_lookup_table()
++        bm.verts.index_update()
++        verts = [tuple(v.co) for v in bm.verts]
++        faces = [tuple(v.index for v in f.verts) for f in bm.faces]
++        bm.free()
++    transform = Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4()
++    offset = len(VERTICES)
++    VERTICES.extend(tuple(transform @ Vector(v)) for v in verts)
++    FACES.extend(tuple(offset + i for i in f) for f in faces)
++    FACE_ROLES.extend([role] * len(faces) if isinstance(role, str) else role)
++
++
++def box(loc, size, role, rot=(0, 0, 0), bevel=.02, segments=2):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    add(verts, faces, role, min(bevel, min(size) * .22), loc, rot, segments)
++
++
++def prism(profile, low, high, role, axis='Y', bevel=0,
++          loc=(0, 0, 0), rot=(0, 0, 0)):
++    """Extrude a 2D outline in X/Z (Y axis) or X/Y (Z axis)."""
++    if axis == 'Y':
++        verts = [(x, d, z) for d in (low, high) for x, z in profile]
++    else:
++        verts = [(x, y, d) for d in (low, high) for x, y in profile]
++    n = len(profile)
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def cylinder(loc, radius, depth, role, n=16, rot=(0, 0, 0), bevel=0):
++    verts = [(radius * math.cos(TAU * i / n), radius * math.sin(TAU * i / n), z)
++             for z in (-depth / 2, depth / 2) for i in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def ring(loc, outer, width, depth, role, n=32, rot=(0, 0, 0), bevel=0):
++    section = [(outer - width, -depth / 2), (outer, -depth / 2),
++               (outer, depth / 2), (outer - width, depth / 2)]
++    verts = [(r * math.cos(TAU * i / n), r * math.sin(TAU * i / n), z)
++             for r, z in section for i in range(n)]
++    faces = [(k * n + i, k * n + (i + 1) % n,
++              ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++             for k in range(4) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def tube(points, radius, role, n=6):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
++                   Vector(points[max(i - 1, 0)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        side = reference.cross(tangent).normalized()
++        other = tangent.cross(side)
++        for j in range(n):
++            a = TAU * j / n
++            verts.append(tuple(Vector(point) + radius *
++                               (math.cos(a) * side + math.sin(a) * other)))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(k * n + j, k * n + (j + 1) % n,
++               (k + 1) * n + (j + 1) % n, (k + 1) * n + j)
++              for k in range(len(points) - 1) for j in range(n)]
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    add(verts, faces, role)
++
++
++def beam(a, b, width, depth, role, bevel=.02):
++    a, b = Vector(a), Vector(b)
++    rotation = (b - a).to_track_quat('Z', 'Y').to_euler()
++    box((a + b) / 2, (width, depth, (b - a).length), role, rotation, bevel)
++
++
++def jewel(loc, size, role, n=6, secondary=None):
++    x, y, z = (s / 2 for s in size)
++    verts = [(0, 0, -z), (0, 0, z)]
++    verts += [(x * math.cos(TAU * i / n), y * math.sin(TAU * i / n), 0)
++              for i in range(n)]
++    faces, roles = [], []
++    for i in range(n):
++        faces.extend([(0, 2 + (i + 1) % n, 2 + i),
++                      (1, 2 + i, 2 + (i + 1) % n)])
++        roles.extend([role, secondary if secondary and i % 3 == 0 else role])
++    add(verts, faces, roles, loc=loc)
++
++
++def ellipsoid(loc, size, role, n=12, rows=6):
++    verts = [(0, 0, -size[2] / 2), (0, 0, size[2] / 2)]
++    for j in range(1, rows):
++        latitude = -math.pi / 2 + j * math.pi / rows
++        for i in range(n):
++            a = TAU * i / n
++            verts.append((size[0] / 2 * math.cos(latitude) * math.cos(a),
++                          size[1] / 2 * math.cos(latitude) * math.sin(a),
++                          size[2] / 2 * math.sin(latitude)))
++    faces = [(0, 2 + (i + 1) % n, 2 + i) for i in range(n)]
++    faces += [(2 + k * n + i, 2 + k * n + (i + 1) % n,
++               2 + (k + 1) * n + (i + 1) % n, 2 + (k + 1) * n + i)
++              for k in range(rows - 2) for i in range(n)]
++    last = 2 + (rows - 2) * n
++    faces += [(1, last + i, last + (i + 1) % n) for i in range(n)]
++    add(verts, faces, role, loc=loc)
++
++
++def star(loc, radius, role='gold', axis='Y', points=5, depth=.04, rot=(0, 0, 0)):
++    profile = []
++    for i in range(points * 2):
++        angle = math.pi / 2 + i * math.pi / points
++        r = radius if i % 2 == 0 else radius * .44
++        profile.append((r * math.cos(angle), r * math.sin(angle)))
++    prism(profile, -depth / 2, depth / 2, role, axis, loc=loc, rot=rot)
++
++
++def scroll(x, y, z, size, sign=1, role='gold'):
++    points = []
++    for i in range(20):
++        t = i / 19
++        angle = -.5 * math.pi + t * TAU * 1.18
++        r = size * (1 - .83 * t)
++        points.append((x + sign * r * math.cos(angle), y,
++                       z + r * math.sin(angle)))
++    tube(points, max(.006, size * .12), role)
++
++
++def face_frame(cx, y, bottom, width, height, role='gold', thickness=.07):
++    box((cx - width / 2, y, bottom + height / 2), (thickness, .055, height), role)
++    box((cx + width / 2, y, bottom + height / 2), (thickness, .055, height), role)
++    for z in (bottom, bottom + height):
++        box((cx, y, z), (width + thickness, .055, thickness), role)
++
++
++def merchant_mask():
++    # Two thick annuli produce real almond-shaped eye openings on both sides.
++    for sign in (-1, 1):
++        n, verts = 24, []
++        for y, outer in ((.045, True), (.045, False), (.09, False), (.09, True)):
++            for i in range(n):
++                a = TAU * i / n
++                rx, rz = (.143, .107) if outer else (.082, .039)
++                x = sign * .124 + rx * math.cos(a)
++                z = rz * math.sin(a) * abs(math.sin(a)) ** .15
++                curve = .07 * (1 - (abs(x) / .29) ** 1.5)
++                verts.append((x, y + curve, z))
++        faces = [(k * n + i, k * n + (i + 1) % n,
++                  ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++                 for k in range(4) for i in range(n)]
++        add(verts, faces, 'ivory')
++        for radius_x, radius_z, role, y in [(.147, .111, 'rose_gold', .115),
++                                            (.090, .047, 'gold', .17)]:
++            points = [(sign * .124 + radius_x * math.cos(TAU * i / 24),
++                       y - .035 * abs(math.cos(TAU * i / 24)),
++                       radius_z * math.sin(TAU * i / 24)) for i in range(25)]
++            tube(points, .009, role)
++        scroll(sign * .165, .165, .075, .042, sign)
++        scroll(sign * .205, .125, -.067, .035, -sign)
++        jewel((sign * .208, .15, -.082), (.051, .035, .051), 'mirror', n=4)
++        prism([(sign * .252, .025), (sign * .31, -.07),
++               (sign * .295, -.18), (sign * .256, -.137)],
++              0, .027, 'cloth_rose')
++        tube([(sign * .264, .032, -.03), (sign * .292, .032, -.10),
++              (sign * .278, .032, -.15)], .007, 'rose_gold')
++    prism([(-.055, .081), (.055, .081), (.038, -.012),
++           (.025, -.105), (0, -.137), (-.025, -.105), (-.038, -.012)],
++          .09, .20, 'ivory', bevel=.005)
++    tube([(-.034, .205, -.075), (0, .225, -.11), (.034, .205, -.075)], .009, 'gold')
++    star((0, .13, .142), .063, points=10, depth=.026)
++    cylinder((0, .154, .142), .032, .016, 'rose_gold', 12, (math.pi / 2, 0, 0))
++    jewel((0, .18, .142), (.041, .044, .041), 'gem_amber', n=8)
++
++
++def sword_box():
++    box((0, 0, .09), (1.6, 1.6, .18), 'wood')
++    box((0, 0, 1.24), (1.6, 1.6, .16), 'wood')
++    # Four independently constructed wall openings, each with a recessed bore.
++    for side in range(4):
++        angle = side * math.pi / 2
++        matrix = Euler((0, 0, angle)).to_matrix()
++
++        def wall_box(x, y, z, size, role, bevel=.02):
++            box(matrix @ Vector((x, y, z)), size, role, (0, 0, angle), bevel)
++
++        for x in (-.52, .52):
++            wall_box(x, .72, .67, (.50, .16, .98), 'wood')
++            wall_box(x, .813, .67, (.39, .04, .80), 'coral')
++        for z, height in ((.365, .37), (.995, .33)):
++            wall_box(0, .72, z, (.55, .16, height), 'wood')
++            wall_box(0, .814, z, (.49, .04, height - .06), 'coral')
++        wall_box(0, .625, .69, (.57, .035, .20), 'gold_dark', 0)
++        for z in (.575, .805):
++            wall_box(0, .831, z, (.64, .04, .04), 'rose_gold')
++        for x in (-.32, .32):
++            wall_box(x, .831, .69, (.04, .04, .27), 'gold')
++        for z in (.19, 1.18):
++            wall_box(0, .825, z, (1.50, .055, .065), 'gold')
++        for x in (-.53, .53):
++            center = matrix @ Vector((x, .85, .70))
++            star(center, .145, 'ivory', rot=(0, 0, angle))
++            center = matrix @ Vector((x, .883, .70))
++            jewel(center, (.075, .055, .075), 'gem_rose', n=4)
++        for x in (-.72, .72):
++            wall_box(x, .83, .69, (.08, .065, .96), 'rose_gold')
++            for z in (.28, 1.1):
++                center = matrix @ Vector((x, .88, z))
++                jewel(center, (.09, .06, .09), 'glaze_teal', n=4)
++    for x in (-.72, .72):
++        for y in (-.72, .72):
++            for z in (.16, 1.23):
++                box((x, y, z), (.18, .18, .19), 'gold')
++    box((0, 0, 1.34), (1.30, 1.30, .06), 'coral')
++    for angle in (0, math.pi / 2):
++        box((0, 0, 1.38), (.09, 1.34, .035), 'rose_gold', (0, 0, angle))
++    star((0, 0, 1.43), .28, axis='Z', depth=.09)
++    jewel((0, 0, 1.50), (.14, .14, .11), 'gem_amber')
++
++
++def magic_sword():
++    # Cross-section has a central ridge and contrasting side facets.
++    profile = [(-.044, .35), (.044, .35), (.039, 1.52), (0, 1.80), (-.039, 1.52)]
++    prism(profile, -.024, .024, 'ivory', axis='Z', bevel=.003)
++    for sign in (-1, 1):
++        prism([(sign * .027, .40), (sign * .040, .40),
++               (sign * .035, 1.49), (0, 1.75), (sign * .024, 1.49)],
++              .025, .03, 'rose_gold', axis='Z')
++    prism([(-.010, .39), (.010, .39), (.010, 1.48), (0, 1.70), (-.010, 1.48)],
++          .027, .035, 'gold', axis='Z')
++    for y in (.66, .96, 1.26):
++        star((0, y, .038), .019, 'crystal_core', 'Z', points=4, depth=.006)
++    cylinder((0, .17, 0), .031, .25, 'coral', 10, (math.pi / 2, 0, 0))
++    for y in (.07, .125, .18, .235, .285):
++        ring((0, y, 0), .034, .008, .024, 'rose_gold', 10, (math.pi / 2, 0, 0))
++    prism([(-.09, .295), (-.09, .35), (-.04, .375),
++           (0, .35), (.04, .375), (.09, .35), (.09, .295), (0, .32)],
++          -.033, .033, 'gold', axis='Z', bevel=.005)
++    jewel((0, .33, .032), (.052, .052, .033), 'gem_rose', n=6)
++    jewel((0, .026, 0), (.065, .052, .072), 'gem_amber', n=8)
++
++
++def mirror_panel():
++    box((0, 0, 1.41), (5.84, .13, 2.16), 'mirror_back')
++    for sign in (-1, 1):
++        y = sign * .08
++        box((0, y, 1.42), (5.25, .018, 1.67), 'mirror', bevel=.008)
++        face_frame(0, sign * .105, .46, 5.70, 1.99, 'rose_gold', .13)
++        face_frame(0, sign * .125, .55, 5.40, 1.78, 'gold', .095)
++        for x in (-2.84, 2.84):
++            box((x, sign * .07, 1.42), (.20, .11, 2.10), 'ivory')
++        for z in (.36, 2.49):
++            box((0, sign * .065, z), (6, .11, .18), 'gold')
++            box((0, sign * .13, z), (5.92, .035, .055), 'glaze_teal')
++            for i in range(19):
++                jewel((-2.70 + i * .30, sign * .15, z),
++                      (.095, .07, .095), 'rose_gold', n=6)
++        for x in (-2.50, 2.50):
++            for z, direction in ((.77, 1), (2.06, -1)):
++                scroll(x, sign * .13, z, .18, direction * (1 if x > 0 else -1))
++                jewel((x, sign * .17, z), (.13, .07, .13), 'gem_rose')
++        star((0, sign * .15, 2.48), .16, 'ivory', points=8, depth=.025)
++    for x in (-2.35, 2.35):
++        box((x, 0, .115), (.68, .25, .23), 'marble', bevel=.035)
++        box((x, 0, .27), (.43, .21, .12), 'rose_gold')
++        box((x, .132, .13), (.38, .025, .08), 'glaze_teal')
++
++
++def dove():
++    ellipsoid((0, 0, 0), (.22, .39, .24), 'crystal')
++    ellipsoid((0, .225, .065), (.15, .17, .15), 'crystal_core')
++    # Broad, individually faceted pinions make a V in plan and elevation.
++    for sign in (-1, 1):
++        for i in range(5):
++            root = (sign * .055, .04 - i * .033)
++            tip = (sign * (.35 + .022 * i), .19 - i * .10)
++            profile = [root, (tip[0] - sign * .055, tip[1] + .065),
++                       tip, (tip[0] - sign * .018, tip[1] - .07),
++                       (root[0], root[1] - .055)]
++            prism(profile, .015 + i * .006, .07 + i * .006,
++                  'crystal_core' if i % 2 == 0 else 'crystal', 'Z',
++                  rot=(0, -sign * .22, 0))
++            jewel((tip[0] * .86, tip[1], .12), (.075, .10, .055),
++                  'crystal_rose' if i in (1, 3) else 'stardust', n=4)
++        tube([(sign * .055, .06, .085), (sign * .20, .10, .13),
++              (sign * .33, .14, .17)], .014, 'gold')
++        jewel((sign * .061, .285, .088), (.021, .025, .025), 'gem_amber', n=4)
++    for i in (-1, 0, 1):
++        prism([(-.035 + i * .045, -.14), (.035 + i * .045, -.14),
++               (.055 + i * .065, -.37), (-.055 + i * .065, -.37)],
++              -.03, .015, 'crystal_rose' if i else 'crystal_core', 'Z')
++    prism([(-.029, .27), (.029, .27), (0, .40)], -.005, .035, 'gold', 'Z')
++    ellipsoid((0, .095, -.033), (.16, .12, .15), 'crystal_core')
++    ring((0, .10, -.017), .087, .014, .018, 'rose_gold', 16, (math.pi / 2, 0, 0))
++
++
++def number_card():
++    box((0, 0, .65), (.9, .025, 1.3), 'ivory', bevel=.025)
++    box((0, -.018, .65), (.84, .012, 1.24), 'coral', bevel=.02)
++    for sign in (-1, 1):
++        y = sign * .027
++        face_frame(0, y, .075, .77, 1.15, 'gold', .034)
++        face_frame(0, y, .12, .68, 1.06, 'rose_gold', .016)
++        for x in (-.31, .31):
++            for z in (.18, 1.12):
++                scroll(x, y, z, .055, 1 if x > 0 else -1)
++                jewel((x, y + sign * .006, z), (.041, .014, .041), 'gem_rose', 4)
++    cylinder((0, .023, .65), .30, .012, 'tile_cream', 48, (math.pi / 2, 0, 0))
++    ring((0, .031, .65), .326, .026, .012, 'gold', 48, (math.pi / 2, 0, 0))
++    for z in (.19, 1.11):
++        star((0, .031, z), .068, 'coral', points=4, depth=.009)
++    # Back clock is raised entirely on the negative-Y face.
++    for radius in (.34, .27):
++        ring((0, -.030, .65), radius, .018, .010, 'gold', 40, (math.pi / 2, 0, 0))
++    for i in range(12):
++        a = TAU * i / 12
++        beam((.28 * math.sin(a), -.038, .65 + .28 * math.cos(a)),
++             (.315 * math.sin(a), -.038, .65 + .315 * math.cos(a)),
++             .019, .010, 'ivory', bevel=0)
++    beam((0, -.04, .65), (-.12, -.04, .80), .025, .012, 'gold', 0)
++    beam((0, -.04, .65), (.19, -.04, .69), .018, .012, 'gold', 0)
++    jewel((0, -.042, .65), (.06, .018, .06), 'gem_amber')
++    for z in (.22, 1.08):
++        star((0, -.03, z), .095, 'ivory', points=8, depth=.01)
++
++
++def memory_shard():
++    # The main bipyramid begins at Z=.4. Only the single dust diamond is lower.
++    jewel((0, 0, 1.30), (.63, .57, 1.80), 'crystal', 8, 'crystal_rose')
++    jewel((0, .18, 1.30), (.28, .20, .82), 'crystal_core', 6, 'crystal_rose')
++    ring((0, 0, 1.17), .50, .050, .060, 'gold', 40, (.30, .10, 0))
++    for sign in (-1, 1):
++        tube([(sign * .22, 0, 1.17), (sign * .46, 0, 1.17)], .022, 'rose_gold')
++        jewel((sign * .48, 0, 1.19), (.11, .11, .17), 'gem_rose')
++    ring((0, 0, .66), .11, .035, .065, 'gold', 8)
++    for sign in (-1, 1):
++        jewel((sign * .27, -.20, .77), (.13, .13, .37), 'crystal_rose', 5, 'crystal_core')
++    jewel((.12, .07, .035), (.055, .055, .070), 'stardust', 4)
++
++
++def curtain():
++    box((0, -.02, .25), (8, 1.56, .50), 'marble', bevel=.04)
++    box((0, .765, .27), (8, .05, .36), 'marble_dark')
++    for i in range(25):
++        x = -3.84 + i * .32
++        box((x, .796, .27), (.27, .025, .25), 'glaze_teal', bevel=.014)
++        if i % 2 == 0:
++            star((x, .815, .27), .071, 'ivory', points=4, depth=.018)
++    for z in (.065, .475):
++        box((0, .79, z), (8, .05, .045), 'gold')
++    box((0, .04, .51), (8, 1.50, .04), 'rose_gold')
++    # A closed, corrugated velvet volume. Coral ridges are broad raised folds.
++    count = 120
++    xs = [-4 + 8 * i / count for i in range(count + 1)]
++    front = [-.12 + .28 * math.cos(TAU * 10 * i / count) for i in range(count + 1)]
++    verts = []
++    for back in (False, True):
++        for top in (False, True):
++            for i, x in enumerate(xs):
++                z = 5.27 if top else .54 + .05 * (1 - math.cos(TAU * i / 12))
++                verts.append((x, front[i] - (.075 if back else 0), z))
++    row = count + 1
++    faces, roles = [], []
++    for side in range(2):
++        for i in range(count):
++            offset = side * row * 2
++            faces.append((offset + i, offset + i + 1,
++                          offset + row + i + 1, offset + row + i))
++            roles.append('coral' if not side and i % 12 in (0, 1, 10, 11) else 'cloth_rose')
++    for i in range(count):
++        faces.extend([(i, 2 * row + i, 2 * row + i + 1, i + 1),
++                      (row + i, row + i + 1, 3 * row + i + 1, 3 * row + i)])
++        roles.extend(['cloth_rose', 'cloth_rose'])
++    faces.extend([(0, row, 3 * row, 2 * row),
++                  (count, 2 * row + count, 3 * row + count, row + count)])
++    roles.extend(['cloth_rose', 'cloth_rose'])
++    add(verts, faces, roles)
++    for i in range(10):
++        cx = -3.6 + i * .8
++        profile = [(cx - .4, 5.34), (cx + .4, 5.34)]
++        scallop = []
++        for j in range(13):
++            x = cx + .4 - .8 * j / 12
++            z = 4.98 - .39 * math.sin(math.pi * j / 12)
++            profile.append((x, z))
++            scallop.append((x, .31, z))
++        prism(profile, .17, .29, 'cloth_rose')
++        tube(scallop, .032, 'gold')
++        tube([(cx, .33, 4.59), (cx, .33, 4.39)], .034, 'rose_gold')
++        jewel((cx, .33, 4.34), (.12, .12, .20), 'gold', 6)
++        for sign in (-1, 1):
++            tube([(cx + sign * .075, .33, 4.41),
++                  (cx + sign * .065, .33, 4.24)], .024, 'gold')
++    for z, height, role in ((5.32, .14, 'rose_gold'), (5.44, .12, 'gold')):
++        box((0, .03, z), (8, .55, height), role)
++    for i in range(20):
++        star((-3.8 + i * .4, .325, 5.34), .075, 'ivory', points=4, depth=.035)
++    for x in (-3.13, 3.13):
++        box((x, .11, 3.78), (.20, .16, .45), 'gold')
++        tube([(x, .15, 3.80), (x, .58, 3.80), (x, .69, 3.62)], .045, 'gold')
++        scroll(x, .34, 3.73, .16, 1 if x > 0 else -1, 'rose_gold')
++        box((x, .59, 3.28), (.30, .31, .45), 'window_lit')
++        for z in (3.02, 3.53):
++            box((x, .59, z), (.39, .39, .09), 'gold')
++        for dx in (-.16, .16):
++            box((x + dx, .76, 3.28), (.045, .045, .48), 'rose_gold')
++        jewel((x, .59, 3.64), (.20, .20, .18), 'gem_amber')
++
++
++def arch_outline(cx, bottom, spring, radius, n=20):
++    return [(cx - radius, bottom), (cx + radius, bottom)] + [
++        (cx + radius * math.cos(math.pi * i / n),
++         spring + radius * math.sin(math.pi * i / n)) for i in range(n + 1)]
++
++
++def arch_band(cx, y, bottom, spring, radius, width, role):
++    outer = arch_outline(cx, bottom, spring, radius)
++    inner = arch_outline(cx, bottom + width, spring, radius - width)
++    n = len(outer)
++    verts = [(x, yy, z) for yy, profile in ((y - .06, outer), (y - .06, inner),
++                                           (y + .06, inner), (y + .06, outer))
++             for x, z in profile]
++    faces = [(k * n + i, k * n + (i + 1) % n,
++              ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++             for k in range(4) for i in range(n)]
++    add(verts, faces, role)
++
++
++def mirror_hall():
++    box((0, -.43, 2.25), (6, .30, 4.5), 'marble_dark')
++    for z, depth, height, role in ((.16, 1.2, .32, 'marble'),
++                                   (.39, 1.05, .14, 'rose_gold'),
++                                   (4.37, .94, .26, 'marble'),
++                                   (4.22, .86, .065, 'gold')):
++        box((0, -.02, z), (6, depth, height), role, bevel=.03)
++    for i in range(24):
++        x = -2.875 + .25 * i
++        box((x, .596, .17), (.20, .025, .18), 'glaze_teal', bevel=.014)
++    for cx in (-1.98, 0, 1.98):
++        prism(arch_outline(cx, .47, 3.35, .80), -.29, -.20, 'mirror_back')
++        prism(arch_outline(cx, .58, 3.35, .69), -.195, -.17, 'mirror')
++        arch_band(cx, -.12, .49, 3.35, .84, .12, 'gold')
++        arch_band(cx, -.04, .57, 3.35, .72, .045, 'rose_gold')
++        for j in range(13):
++            a = j * math.pi / 12
++            jewel((cx + .785 * math.cos(a), -.025, 3.35 + .785 * math.sin(a)),
++                  (.09, .075, .09), 'rose_gold', 6)
++        for side in (-1, 1):
++            for z in (.85, 1.45, 2.05, 2.65, 3.25):
++                jewel((cx + side * .785, -.025, z), (.09, .075, .09), 'gem_rose', 4)
++            scroll(cx + side * .50, -.09, .84, .14, side)
++        star((cx, -.035, 4.10), .14, 'gold', points=8, depth=.055)
++        jewel((cx, .015, 4.10), (.11, .08, .11), 'gem_amber')
++    for x in (-2.90, -.99, .99, 2.90):
++        box((x, -.04, .59), (.20, .60, .25), 'ivory')
++        # Fluted prism with alternating radial recesses.
++        n = 16
++        verts = [(x + (.105 if i % 2 else .075) * math.cos(TAU * i / n),
++                  -.06 + (.22 if i % 2 else .185) * math.sin(TAU * i / n), z)
++                 for z in (.72, 3.91) for i in range(n)]
++        faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++        faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++        add(verts, faces, 'ivory')
++        for z in (.75, 3.91, 4.04):
++            box((x, -.035, z), (.21, .59, .09), 'gold')
++        jewel((x, .27, 4.04), (.13, .08, .13), 'gem_rose')
++
++
++def sector(inner, outer, a0, a1, low, high, role, n=6):
++    profile = [(outer * math.sin(a0 + (a1 - a0) * i / n),
++                outer * math.cos(a0 + (a1 - a0) * i / n)) for i in range(n + 1)]
++    profile += [(inner * math.sin(a0 + (a1 - a0) * i / n),
++                 inner * math.cos(a0 + (a1 - a0) * i / n)) for i in reversed(range(n + 1))]
++    prism(profile, low, high, role, 'Z')
++
++
++def roman_plaque(number, angle):
++    center = Vector((18.72 * math.sin(angle), 18.72 * math.cos(angle), 0))
++    rotation = -angle
++    transform = Euler((0, 0, rotation)).to_matrix()
++    box(center + Vector((0, 0, .020)), (1.80, .93, .04),
++        'rose_gold', (0, 0, rotation), bevel=.018)
++    box(center + Vector((0, 0, .045)), (1.62, .78, .035),
++        'ivory', (0, 0, rotation), bevel=.014)
++    glyphs = {'I': [((0, -.29), (0, .29))],
++              'V': [((-.17, .29), (0, -.29)), ((0, -.29), (.17, .29))],
++              'X': [((-.17, -.29), (.17, .29)), ((-.17, .29), (.17, -.29))]}
++    widths = {'I': .16, 'V': .40, 'X': .40}
++    text = ('I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII')[number - 1]
++    total = sum(widths[g] for g in text) + .11 * (len(text) - 1)
++    cursor = -total / 2
++    for glyph in text:
++        cx = cursor + widths[glyph] / 2
++        for a, b in glyphs[glyph]:
++            start = center + transform @ Vector((cx + a[0], a[1], .095))
++            end = center + transform @ Vector((cx + b[0], b[1], .095))
++            beam(start, end, .115, .065, 'gold', bevel=0)
++        cursor += widths[glyph] + .11
++
++
++def altar():
++    # Continuous open annulus. No disc or hidden underlay spans the arena.
++    ring((0, 0, -.125), 20, 2.5, .25, 'marble', 128)
++    ring((0, 0, -.045), 20, .15, .09, 'rose_gold', 128)
++    ring((0, 0, -.035), 17.68, .18, .07, 'gold', 128)
++    ring((0, 0, -.018), 19.81, .075, .036, 'gold', 128)
++    for i in range(12):
++        a = i * TAU / 12
++        roman_plaque(12 if i == 0 else i, a)
++        sector(17.92, 19.69, a + .075, a + TAU / 12 - .075,
++               -.012, .001, 'glaze_teal', 5)
++        mid = a + math.pi / 12
++        for r in (18.13, 19.48):
++            star((r * math.sin(mid), r * math.cos(mid), .017), .14,
++                 'tile_cream', 'Z', points=4, depth=.025)
++    for i in range(8):
++        a = math.radians(22.5) + i * math.pi / 4
++        x, y = 18.80 * math.sin(a), 18.80 * math.cos(a)
++        cylinder((x, y, .035), .26, .07, 'gold', 8)
++        for j in range(3):
++            dx, dy = ((0, 0), (.19, .035), (-.13, -.14))[j]
++            height = (.62, .40, .33)[j]
++            jewel((x + dx, y + dy, .06 + height / 2),
++                  (.23, .23, height), 'crystal' if j != 1 else 'crystal_rose',
++                  5, 'crystal_core')
++    for a in (0, math.pi / 2, math.pi, 3 * math.pi / 2):
++        box((10.75 * math.sin(a), 10.75 * math.cos(a), .015),
++            (.15, 13.5, .03), 'gold', (0, 0, -a), bevel=0)
++    cylinder((0, 0, .018), 2, .036, 'ivory', 64)
++    ring((0, 0, .020), 2, .10, .04, 'gold', 64)
++    ring((0, 0, .025), 1.71, .045, .025, 'rose_gold', 64)
++    for i in range(8):
++        a = TAU * i / 8
++        r = 1.60 if i % 2 == 0 else 1.18
++        tip = (r * math.sin(a), r * math.cos(a))
++        left = (.27 * math.sin(a - math.pi / 2), .27 * math.cos(a - math.pi / 2))
++        right = (.27 * math.sin(a + math.pi / 2), .27 * math.cos(a + math.pi / 2))
++        prism([(0, 0), left, tip], .036, .04, 'gold', 'Z')
++        prism([(0, 0), tip, right], .036, .04, 'tile_cream', 'Z')
++    cylinder((0, 0, .030), .21, .020, 'gold', 16)
++
++
++SPECS = [
++    ('MerchantMask', (.62, .25, .42), merchant_mask, 'BACK_CENTER', 6000),
++    ('SwordBox', (1.6, 1.6, 1.4), sword_box, 'BOTTOM_CENTER', 6000),
++    ('MagicSword', (.18, 1.8, .08), magic_sword, 'HILT', 6000),
++    ('MirrorPanel', (6, .25, 2.6), mirror_panel, 'BOTTOM_CENTER', 8000),
++    ('Dove', (.9, .8, .35), dove, 'BODY_CENTER', 6000),
++    ('NumberCard', (.9, .05, 1.3), number_card, 'BOTTOM_CENTER', 6000),
++    ('MemoryShard', (1, 1, 2.2), memory_shard, 'BOTTOM_CENTER', 6000),
++    ('Facade_Curtain', (8, 1.6, 5.5), curtain, 'BOTTOM_CENTER', 8000),
++    ('Facade_MirrorHall', (6, 1.2, 4.5), mirror_hall, 'BOTTOM_CENTER', 8000),
++    ('Altar', (40, 40, .25), altar, 'CENTER_FLOOR', 12000),
++]
++
++
++def bounds(obj):
++    coords = [v.co for v in obj.data.vertices]
++    return (Vector(tuple(min(v[i] for v in coords) for i in range(3))),
++            Vector(tuple(max(v[i] for v in coords) for i in range(3))))
++
++
++def triangle_count(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dimensions, origin, budget):
++    data = bpy.data.meshes.new(name + '_Mesh')
++    data.from_pydata(VERTICES, [], FACES)
++    data.update()
++    used = list(dict.fromkeys(FACE_ROLES))
++    for role in used:
++        data.materials.append(MATERIALS[role])
++    indices = {role: i for i, role in enumerate(used)}
++    for poly, role in zip(data.polygons, FACE_ROLES):
++        poly.material_index = indices[role]
++    obj = bpy.data.objects.new(name, data)
++    bpy.context.collection.objects.link(obj)
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    count = triangle_count(obj)
++    if count > budget:
++        modifier = obj.modifiers.new('Retain material boundaries within budget', 'DECIMATE')
++        modifier.ratio = (budget - 150) / count
++        modifier.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=modifier.name)
++    low, high = bounds(obj)
++    span = high - low
++    center = (low + high) / 2
++    if origin != 'CENTER_FLOOR':
++        for vertex in obj.data.vertices:
++            point = vertex.co.copy()
++            point.x = (point.x - center.x) * dimensions[0] / span.x
++            if origin == 'HILT':
++                point.y = (point.y - low.y) * dimensions[1] / span.y
++                point.z *= dimensions[2] / span.z
++            elif origin == 'BACK_CENTER':
++                point.y = (point.y - low.y) * dimensions[1] / span.y
++                point.z = (point.z - center.z) * dimensions[2] / span.z
++            elif origin == 'BODY_CENTER':
++                point.y *= dimensions[1] / span.y
++                point.z *= dimensions[2] / span.z
++            else:
++                point.y = (point.y - center.y) * dimensions[1] / span.y
++                point.z = (point.z - low.z) * dimensions[2] / span.z
++            vertex.co = point
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert all(edge.is_manifold for edge in bm.edges), (name, 'open mesh component')
++    bm.to_mesh(obj.data)
++    bm.free()
++    obj.data.update()
++    bpy.context.view_layer.update()
++    low, high = bounds(obj)
++    count = triangle_count(obj)
++    assert count <= budget, (name, count, budget)
++    assert len(used) >= 5, (name, used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    if origin == 'CENTER_FLOOR':
++        assert abs(low.z + .25) < 1e-5
++        assert abs(low.x + 20) < 1e-5 and abs(high.x - 20) < 1e-5
++        assert abs(low.y + 20) < 1e-5 and abs(high.y - 20) < 1e-5
++        # Every below-floor vertex belongs to the ring, never an interior disc.
++        assert all(math.hypot(v.co.x, v.co.y) >= 17.499
++                   for v in obj.data.vertices if v.co.z < -.001)
++    else:
++        assert all(abs(obj.dimensions[i] - dimensions[i]) < 1e-4 for i in range(3)), name
++    if name == 'MemoryShard':
++        assert all(v.co.z >= .3999 for p in obj.data.polygons
++                   if obj.data.materials[p.material_index].name != 'stardust'
++                   for v in (obj.data.vertices[i] for i in p.vertices))
++        obj['floor_clearance_m'] = .4
++    if origin == 'BOTTOM_CENTER':
++        assert abs(low.z) < 1e-5, name
++    if origin == 'BACK_CENTER':
++        assert abs(low.y) < 1e-5, name
++    if origin == 'HILT':
++        assert abs(low.y) < 1e-5 and high.y > 1.7999, name
++    obj['origin_convention'] = origin
++    obj['front'] = '+Y'
++    obj['triangle_count'] = count
++    obj['specified_dimensions_m'] = list(dimensions)
++    if name == 'Altar':
++        obj['ring_inner_radius_m'], obj['body_thickness_m'] = 17.5, .25
++        obj['floor_z_m'], obj['compass_diameter_m'] = 0, 4
++    destination = OUTPUT / ('Kit_' + name + '.fbx')
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++        use_custom_props=True,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024
++    print(f'EXPORTED {name} {count} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def verify_exports(objects):
++    """Round-trip each actual FBX and check one mesh, role names and dimensions."""
++    for original in objects:
++        before = set(bpy.data.objects)
++        bpy.ops.import_scene.fbx(filepath=str(OUTPUT / f'Kit_{original.name}.fbx'))
++        imported = set(bpy.data.objects) - before
++        assert len(imported) == 1, (original.name, 'FBX object count', len(imported))
++        copy = imported.pop()
++        assert copy.type == 'MESH' and len(copy.data.vertices) > 0
++        assert all(abs(copy.dimensions[i] - original.dimensions[i]) < .002 for i in range(3))
++        assert len(copy.data.materials) == len(original.data.materials)
++        for mat in copy.data.materials:
++            assert mat.name.rsplit('.', 1)[0] in PALETTE
++            bsdf = next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
++            assert all(abs(c - .5) < .001 for c in bsdf.inputs['Base Color'].default_value[:3])
++        mesh_data = copy.data
++        bpy.data.objects.remove(copy, do_unlink=True)
++        bpy.data.meshes.remove(mesh_data)
++    print('VERIFIED 10 single-mesh FBX round trips', flush=True)
++
++
++def preview(objects):
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.show_shadows = False
++    shade.show_cavity, shade.cavity_type = True, 'BOTH'
++    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.4, 1.1
++    shade.show_specular_highlight = False
++    shade.show_object_outline = True
++    shade.object_outline_color = (.045, .04, .06)
++    shade.background_type = 'WORLD'
++    scene.world = bpy.data.worlds.new('Preview background')
++    scene.world.color = (.035, .045, .065)
++    # Review-only magnification keeps the small handheld props legible in a row.
++    scales = [3.3, 1.25, 1.45, .80, 2.45, 1.9, 1.25, .72, .76, .15]
++    widths = [obj.dimensions.x * scale for obj, scale in zip(objects, scales)]
++    widths[2] = 1.8 * scales[2]
++    gap = .56
++    total = sum(widths) + gap * (len(objects) - 1)
++    cursor = -total / 2
++    saved = [(o.location.copy(), o.rotation_euler.copy(), o.scale.copy()) for o in objects]
++    helpers = []
++    try:
++        for role, mat in MATERIALS.items():
++            mat.diffuse_color = (*PALETTE[role], 1)
++        for i, (obj, scale, width) in enumerate(zip(objects, scales, widths)):
++            obj.scale = (scale,) * 3
++            obj.location = (cursor + width / 2, 0, 0)
++            if i == 2:
++                obj.rotation_euler.z = math.pi / 2
++                obj.location.x += .9 * scale
++                obj.location.z = .25
++            if i == 0:
++                obj.location.z = .9
++            if i == 4:
++                obj.location.z = .65
++            if i == 5:
++                # Expose the clock back with a review-only inset alongside it.
++                pass
++            cursor += width + gap
++        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type = 'ORTHO'
++        camera.data.ortho_scale = total + 1.5
++        target = Vector((0, 0, 1.15))
++        elevation = math.radians(55)
++        camera.location = target + Vector((0, 40 * math.cos(elevation), 40 * math.sin(elevation)))
++        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
++        for obj in objects:
++            text = bpy.data.curves.new('Review caption', 'FONT')
++            text.body = obj.name
++            text.align_x, text.size = 'CENTER', .20
++            text.materials.append(MATERIALS['crystal_core'])
++            label = bpy.data.objects.new('Review caption ' + obj.name, text)
++            scene.collection.objects.link(label)
++            label.location = (obj.location.x, 1.7, -.30)
++            if obj.name == 'Altar':
++                label.location.y = 3.5
++            label.rotation_euler = camera.rotation_euler
++            helpers.append(label)
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        scene.camera = None
++        for helper in helpers:
++            bpy.data.objects.remove(helper, do_unlink=True)
++        for obj, (loc, rot, scale) in zip(objects, saved):
++            obj.location, obj.rotation_euler, obj.scale = loc, rot, scale
++        for mat in MATERIALS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++
++
++def main():
++    global VERTICES, FACES, FACE_ROLES
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
++    materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = []
++    for index, (name, dimensions, build, origin, budget) in enumerate(SPECS):
++        VERTICES, FACES, FACE_ROLES = [], [], []
++        random.seed(33129 + index * 7919)
++        build()
++        objects.append(finish(name, dimensions, origin, budget))
++    verify_exports(objects)
++    assert len(scene.objects) == 10 and all(o.type == 'MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects) == 10 and all(o.type == 'MESH' for o in scene.objects)
++    assert all(tuple(m.diffuse_color) == (.5, .5, .5, 1) for m in MATERIALS.values())
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_bossprops.py" in C:\Project\Cat_Tang
+ succeeded in 2986ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py:43: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MerchantMask.fbx'
+export finished in 0.0077 sec.
+EXPORTED MerchantMask 2940 (0.62, 0.25, 0.42)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_SwordBox.fbx'
+export finished in 0.0077 sec.
+EXPORTED SwordBox 5196 (1.6, 1.6, 1.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MagicSword.fbx'
+export finished in 0.0056 sec.
+EXPORTED MagicSword 856 (0.18, 1.8, 0.08)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MirrorPanel.fbx'
+export finished in 0.0085 sec.
+EXPORTED MirrorPanel 5236 (6.0, 0.25, 2.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Dove.fbx'
+export finished in 0.0058 sec.
+EXPORTED Dove 852 (0.9, 0.8, 0.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_NumberCard.fbx'
+export finished in 0.0068 sec.
+EXPORTED NumberCard 4600 (0.9, 0.05, 1.3)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MemoryShard.fbx'
+export finished in 0.0060 sec.
+EXPORTED MemoryShard 504 (1.0, 1.0, 2.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Facade_Curtain.fbx'
+export finished in 0.0102 sec.
+EXPORTED Facade_Curtain 7888 (8.0, 1.6, 5.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Facade_MirrorHall.fbx'
+export finished in 0.0085 sec.
+EXPORTED Facade_MirrorHall 6960 (6.0, 1.2, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Altar.fbx'
+export finished in 0.0097 sec.
+EXPORTED Altar 9132 (40.0, 40.0, 0.93)
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py", line 855, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py", line 846, in main
+    verify_exports(objects)
+    ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py", line 736, in verify_exports
+    assert all(abs(copy.dimensions[i] - original.dimensions[i]) < .002 for i in range(3))
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+FBX version: 7400
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py
+diff --git a/Art/tools/blender_kit_ch3_bossprops.py b/Art/tools/blender_kit_ch3_bossprops.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..bf656d2fd47d43a2506787ecca40b02ab7339ae3
+--- /dev/null
++++ b/Art/tools/blender_kit_ch3_bossprops.py
+@@ -0,0 +1,857 @@
++# 3장 보스 소품 10종과 재질별 색상 미리보기를 생성합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_bossprops.py
++"""Standalone Blender 5.x builder. Exported role materials are always grey.
++
++The altar's 0.25 m dimension describes its submerged ring body. Its raised
++numerals, compass relief and crystal clusters extend above the floor at Z=0.
++Preview transforms and colours are temporary and are applied after exporting.
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_bossprops_preview.png'
++PALETTE = {
++    'ivory': (.96, .87, .65), 'gold': (.96, .61, .12),
++    'gold_dark': (.20, .095, .025), 'rose_gold': (.81, .40, .31),
++    'gem_amber': (1.0, .35, .035), 'gem_rose': (.87, .06, .32),
++    'cloth_rose': (.45, .055, .17), 'mirror': (.32, .64, .79),
++    'mirror_back': (.14, .19, .27), 'wood': (.26, .105, .07),
++    'coral': (.91, .24, .22), 'marble': (.82, .83, .79),
++    'marble_dark': (.26, .31, .39), 'glaze_teal': (.025, .43, .40),
++    'crystal': (.56, .79, .97), 'crystal_core': (.95, .99, 1.0),
++    'crystal_rose': (.80, .32, .61), 'stardust': (1.0, .83, .41),
++    'tile_cream': (.79, .64, .44), 'bronze': (.43, .23, .075),
++    'window_lit': (1.0, .73, .27),
++}
++MATERIALS = {}
++VERTICES, FACES, FACE_ROLES = [], [], []
++TAU = math.tau
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        nodes = mat.node_tree.nodes
++        nodes.clear()
++        bsdf = nodes.new('ShaderNodeBsdfPrincipled')
++        bsdf.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        bsdf.inputs['Roughness'].default_value = .8
++        out = nodes.new('ShaderNodeOutputMaterial')
++        mat.node_tree.links.new(bsdf.outputs['BSDF'], out.inputs['Surface'])
++        MATERIALS[role] = mat
++
++
++def add(verts, faces, role, bevel=0, loc=(0, 0, 0), rot=(0, 0, 0), segments=2):
++    """Append closed geometry, baking local bevels before the final mesh join."""
++    if bevel:
++        bm = bmesh.new()
++        bv = [bm.verts.new(v) for v in verts]
++        for face in faces:
++            bm.faces.new([bv[i] for i in face])
++        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=bevel,
++                        segments=segments, affect='EDGES', clamp_overlap=True)
++        bm.verts.ensure_lookup_table()
++        bm.verts.index_update()
++        verts = [tuple(v.co) for v in bm.verts]
++        faces = [tuple(v.index for v in f.verts) for f in bm.faces]
++        bm.free()
++    transform = Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4()
++    offset = len(VERTICES)
++    VERTICES.extend(tuple(transform @ Vector(v)) for v in verts)
++    FACES.extend(tuple(offset + i for i in f) for f in faces)
++    FACE_ROLES.extend([role] * len(faces) if isinstance(role, str) else role)
++
++
++def box(loc, size, role, rot=(0, 0, 0), bevel=.02, segments=2):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    add(verts, faces, role, min(bevel, min(size) * .22), loc, rot, segments)
++
++
++def prism(profile, low, high, role, axis='Y', bevel=0,
++          loc=(0, 0, 0), rot=(0, 0, 0)):
++    """Extrude a 2D outline in X/Z (Y axis) or X/Y (Z axis)."""
++    if axis == 'Y':
++        verts = [(x, d, z) for d in (low, high) for x, z in profile]
++    else:
++        verts = [(x, y, d) for d in (low, high) for x, y in profile]
++    n = len(profile)
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def cylinder(loc, radius, depth, role, n=16, rot=(0, 0, 0), bevel=0):
++    verts = [(radius * math.cos(TAU * i / n), radius * math.sin(TAU * i / n), z)
++             for z in (-depth / 2, depth / 2) for i in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def ring(loc, outer, width, depth, role, n=32, rot=(0, 0, 0), bevel=0):
++    section = [(outer - width, -depth / 2), (outer, -depth / 2),
++               (outer, depth / 2), (outer - width, depth / 2)]
++    verts = [(r * math.cos(TAU * i / n), r * math.sin(TAU * i / n), z)
++             for r, z in section for i in range(n)]
++    faces = [(k * n + i, k * n + (i + 1) % n,
++              ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++             for k in range(4) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def tube(points, radius, role, n=6):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
++                   Vector(points[max(i - 1, 0)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        side = reference.cross(tangent).normalized()
++        other = tangent.cross(side)
++        for j in range(n):
++            a = TAU * j / n
++            verts.append(tuple(Vector(point) + radius *
++                               (math.cos(a) * side + math.sin(a) * other)))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(k * n + j, k * n + (j + 1) % n,
++               (k + 1) * n + (j + 1) % n, (k + 1) * n + j)
++              for k in range(len(points) - 1) for j in range(n)]
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    add(verts, faces, role)
++
++
++def beam(a, b, width, depth, role, bevel=.02):
++    a, b = Vector(a), Vector(b)
++    rotation = (b - a).to_track_quat('Z', 'Y').to_euler()
++    box((a + b) / 2, (width, depth, (b - a).length), role, rotation, bevel)
++
++
++def jewel(loc, size, role, n=6, secondary=None):
++    x, y, z = (s / 2 for s in size)
++    verts = [(0, 0, -z), (0, 0, z)]
++    verts += [(x * math.cos(TAU * i / n), y * math.sin(TAU * i / n), 0)
++              for i in range(n)]
++    faces, roles = [], []
++    for i in range(n):
++        faces.extend([(0, 2 + (i + 1) % n, 2 + i),
++                      (1, 2 + i, 2 + (i + 1) % n)])
++        roles.extend([role, secondary if secondary and i % 3 == 0 else role])
++    add(verts, faces, roles, loc=loc)
++
++
++def ellipsoid(loc, size, role, n=12, rows=6):
++    verts = [(0, 0, -size[2] / 2), (0, 0, size[2] / 2)]
++    for j in range(1, rows):
++        latitude = -math.pi / 2 + j * math.pi / rows
++        for i in range(n):
++            a = TAU * i / n
++            verts.append((size[0] / 2 * math.cos(latitude) * math.cos(a),
++                          size[1] / 2 * math.cos(latitude) * math.sin(a),
++                          size[2] / 2 * math.sin(latitude)))
++    faces = [(0, 2 + (i + 1) % n, 2 + i) for i in range(n)]
++    faces += [(2 + k * n + i, 2 + k * n + (i + 1) % n,
++               2 + (k + 1) * n + (i + 1) % n, 2 + (k + 1) * n + i)
++              for k in range(rows - 2) for i in range(n)]
++    last = 2 + (rows - 2) * n
++    faces += [(1, last + i, last + (i + 1) % n) for i in range(n)]
++    add(verts, faces, role, loc=loc)
++
++
++def star(loc, radius, role='gold', axis='Y', points=5, depth=.04, rot=(0, 0, 0)):
++    profile = []
++    for i in range(points * 2):
++        angle = math.pi / 2 + i * math.pi / points
++        r = radius if i % 2 == 0 else radius * .44
++        profile.append((r * math.cos(angle), r * math.sin(angle)))
++    prism(profile, -depth / 2, depth / 2, role, axis, loc=loc, rot=rot)
++
++
++def scroll(x, y, z, size, sign=1, role='gold'):
++    points = []
++    for i in range(20):
++        t = i / 19
++        angle = -.5 * math.pi + t * TAU * 1.18
++        r = size * (1 - .83 * t)
++        points.append((x + sign * r * math.cos(angle), y,
++                       z + r * math.sin(angle)))
++    tube(points, max(.006, size * .12), role)
++
++
++def face_frame(cx, y, bottom, width, height, role='gold', thickness=.07):
++    box((cx - width / 2, y, bottom + height / 2), (thickness, .055, height), role)
++    box((cx + width / 2, y, bottom + height / 2), (thickness, .055, height), role)
++    for z in (bottom, bottom + height):
++        box((cx, y, z), (width + thickness, .055, thickness), role)
++
++
++def merchant_mask():
++    # Two thick annuli produce real almond-shaped eye openings on both sides.
++    for sign in (-1, 1):
++        n, verts = 24, []
++        for y, outer in ((.045, True), (.045, False), (.09, False), (.09, True)):
++            for i in range(n):
++                a = TAU * i / n
++                rx, rz = (.143, .107) if outer else (.082, .039)
++                x = sign * .124 + rx * math.cos(a)
++                z = rz * math.sin(a) * abs(math.sin(a)) ** .15
++                curve = .07 * (1 - (abs(x) / .29) ** 1.5)
++                verts.append((x, y + curve, z))
++        faces = [(k * n + i, k * n + (i + 1) % n,
++                  ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++                 for k in range(4) for i in range(n)]
++        add(verts, faces, 'ivory')
++        for radius_x, radius_z, role, y in [(.147, .111, 'rose_gold', .115),
++                                            (.090, .047, 'gold', .17)]:
++            points = [(sign * .124 + radius_x * math.cos(TAU * i / 24),
++                       y - .035 * abs(math.cos(TAU * i / 24)),
++                       radius_z * math.sin(TAU * i / 24)) for i in range(25)]
++            tube(points, .009, role)
++        scroll(sign * .165, .165, .075, .042, sign)
++        scroll(sign * .205, .125, -.067, .035, -sign)
++        jewel((sign * .208, .15, -.082), (.051, .035, .051), 'mirror', n=4)
++        prism([(sign * .252, .025), (sign * .31, -.07),
++               (sign * .295, -.18), (sign * .256, -.137)],
++              0, .027, 'cloth_rose')
++        tube([(sign * .264, .032, -.03), (sign * .292, .032, -.10),
++              (sign * .278, .032, -.15)], .007, 'rose_gold')
++    prism([(-.055, .081), (.055, .081), (.038, -.012),
++           (.025, -.105), (0, -.137), (-.025, -.105), (-.038, -.012)],
++          .09, .20, 'ivory', bevel=.005)
++    tube([(-.034, .205, -.075), (0, .225, -.11), (.034, .205, -.075)], .009, 'gold')
++    star((0, .13, .142), .063, points=10, depth=.026)
++    cylinder((0, .154, .142), .032, .016, 'rose_gold', 12, (math.pi / 2, 0, 0))
++    jewel((0, .18, .142), (.041, .044, .041), 'gem_amber', n=8)
++
++
++def sword_box():
++    box((0, 0, .09), (1.6, 1.6, .18), 'wood')
++    box((0, 0, 1.24), (1.6, 1.6, .16), 'wood')
++    # Four independently constructed wall openings, each with a recessed bore.
++    for side in range(4):
++        angle = side * math.pi / 2
++        matrix = Euler((0, 0, angle)).to_matrix()
++
++        def wall_box(x, y, z, size, role, bevel=.02):
++            box(matrix @ Vector((x, y, z)), size, role, (0, 0, angle), bevel)
++
++        for x in (-.52, .52):
++            wall_box(x, .72, .67, (.50, .16, .98), 'wood')
++            wall_box(x, .813, .67, (.39, .04, .80), 'coral')
++        for z, height in ((.365, .37), (.995, .33)):
++            wall_box(0, .72, z, (.55, .16, height), 'wood')
++            wall_box(0, .814, z, (.49, .04, height - .06), 'coral')
++        wall_box(0, .625, .69, (.57, .035, .20), 'gold_dark', 0)
++        for z in (.575, .805):
++            wall_box(0, .831, z, (.64, .04, .04), 'rose_gold')
++        for x in (-.32, .32):
++            wall_box(x, .831, .69, (.04, .04, .27), 'gold')
++        for z in (.19, 1.18):
++            wall_box(0, .825, z, (1.50, .055, .065), 'gold')
++        for x in (-.53, .53):
++            center = matrix @ Vector((x, .85, .70))
++            star(center, .145, 'ivory', rot=(0, 0, angle))
++            center = matrix @ Vector((x, .883, .70))
++            jewel(center, (.075, .055, .075), 'gem_rose', n=4)
++        for x in (-.72, .72):
++            wall_box(x, .83, .69, (.08, .065, .96), 'rose_gold')
++            for z in (.28, 1.1):
++                center = matrix @ Vector((x, .88, z))
++                jewel(center, (.09, .06, .09), 'glaze_teal', n=4)
++    for x in (-.72, .72):
++        for y in (-.72, .72):
++            for z in (.16, 1.23):
++                box((x, y, z), (.18, .18, .19), 'gold')
++    box((0, 0, 1.34), (1.30, 1.30, .06), 'coral')
++    for angle in (0, math.pi / 2):
++        box((0, 0, 1.38), (.09, 1.34, .035), 'rose_gold', (0, 0, angle))
++    star((0, 0, 1.43), .28, axis='Z', depth=.09)
++    jewel((0, 0, 1.50), (.14, .14, .11), 'gem_amber')
++
++
++def magic_sword():
++    # Cross-section has a central ridge and contrasting side facets.
++    profile = [(-.044, .35), (.044, .35), (.039, 1.52), (0, 1.80), (-.039, 1.52)]
++    prism(profile, -.024, .024, 'ivory', axis='Z', bevel=.003)
++    for sign in (-1, 1):
++        prism([(sign * .027, .40), (sign * .040, .40),
++               (sign * .035, 1.49), (0, 1.75), (sign * .024, 1.49)],
++              .025, .03, 'rose_gold', axis='Z')
++    prism([(-.010, .39), (.010, .39), (.010, 1.48), (0, 1.70), (-.010, 1.48)],
++          .027, .035, 'gold', axis='Z')
++    for y in (.66, .96, 1.26):
++        star((0, y, .038), .019, 'crystal_core', 'Z', points=4, depth=.006)
++    cylinder((0, .17, 0), .031, .25, 'coral', 10, (math.pi / 2, 0, 0))
++    for y in (.07, .125, .18, .235, .285):
++        ring((0, y, 0), .034, .008, .024, 'rose_gold', 10, (math.pi / 2, 0, 0))
++    prism([(-.09, .295), (-.09, .35), (-.04, .375),
++           (0, .35), (.04, .375), (.09, .35), (.09, .295), (0, .32)],
++          -.033, .033, 'gold', axis='Z', bevel=.005)
++    jewel((0, .33, .032), (.052, .052, .033), 'gem_rose', n=6)
++    jewel((0, .026, 0), (.065, .052, .072), 'gem_amber', n=8)
++
++
++def mirror_panel():
++    box((0, 0, 1.41), (5.84, .13, 2.16), 'mirror_back')
++    for sign in (-1, 1):
++        y = sign * .08
++        box((0, y, 1.42), (5.25, .018, 1.67), 'mirror', bevel=.008)
++        face_frame(0, sign * .105, .46, 5.70, 1.99, 'rose_gold', .13)
++        face_frame(0, sign * .125, .55, 5.40, 1.78, 'gold', .095)
++        for x in (-2.84, 2.84):
++            box((x, sign * .07, 1.42), (.20, .11, 2.10), 'ivory')
++        for z in (.36, 2.49):
++            box((0, sign * .065, z), (6, .11, .18), 'gold')
++            box((0, sign * .13, z), (5.92, .035, .055), 'glaze_teal')
++            for i in range(19):
++                jewel((-2.70 + i * .30, sign * .15, z),
++                      (.095, .07, .095), 'rose_gold', n=6)
++        for x in (-2.50, 2.50):
++            for z, direction in ((.77, 1), (2.06, -1)):
++                scroll(x, sign * .13, z, .18, direction * (1 if x > 0 else -1))
++                jewel((x, sign * .17, z), (.13, .07, .13), 'gem_rose')
++        star((0, sign * .15, 2.48), .16, 'ivory', points=8, depth=.025)
++    for x in (-2.35, 2.35):
++        box((x, 0, .115), (.68, .25, .23), 'marble', bevel=.035)
++        box((x, 0, .27), (.43, .21, .12), 'rose_gold')
++        box((x, .132, .13), (.38, .025, .08), 'glaze_teal')
++
++
++def dove():
++    ellipsoid((0, 0, 0), (.22, .39, .24), 'crystal')
++    ellipsoid((0, .225, .065), (.15, .17, .15), 'crystal_core')
++    # Broad, individually faceted pinions make a V in plan and elevation.
++    for sign in (-1, 1):
++        for i in range(5):
++            root = (sign * .055, .04 - i * .033)
++            tip = (sign * (.35 + .022 * i), .19 - i * .10)
++            profile = [root, (tip[0] - sign * .055, tip[1] + .065),
++                       tip, (tip[0] - sign * .018, tip[1] - .07),
++                       (root[0], root[1] - .055)]
++            prism(profile, .015 + i * .006, .07 + i * .006,
++                  'crystal_core' if i % 2 == 0 else 'crystal', 'Z',
++                  rot=(0, -sign * .22, 0))
++            jewel((tip[0] * .86, tip[1], .12), (.075, .10, .055),
++                  'crystal_rose' if i in (1, 3) else 'stardust', n=4)
++        tube([(sign * .055, .06, .085), (sign * .20, .10, .13),
++              (sign * .33, .14, .17)], .014, 'gold')
++        jewel((sign * .061, .285, .088), (.021, .025, .025), 'gem_amber', n=4)
++    for i in (-1, 0, 1):
++        prism([(-.035 + i * .045, -.14), (.035 + i * .045, -.14),
++               (.055 + i * .065, -.37), (-.055 + i * .065, -.37)],
++              -.03, .015, 'crystal_rose' if i else 'crystal_core', 'Z')
++    prism([(-.029, .27), (.029, .27), (0, .40)], -.005, .035, 'gold', 'Z')
++    ellipsoid((0, .095, -.033), (.16, .12, .15), 'crystal_core')
++    ring((0, .10, -.017), .087, .014, .018, 'rose_gold', 16, (math.pi / 2, 0, 0))
++
++
++def number_card():
++    box((0, 0, .65), (.9, .025, 1.3), 'ivory', bevel=.025)
++    box((0, -.018, .65), (.84, .012, 1.24), 'coral', bevel=.02)
++    for sign in (-1, 1):
++        y = sign * .027
++        face_frame(0, y, .075, .77, 1.15, 'gold', .034)
++        face_frame(0, y, .12, .68, 1.06, 'rose_gold', .016)
++        for x in (-.31, .31):
++            for z in (.18, 1.12):
++                scroll(x, y, z, .055, 1 if x > 0 else -1)
++                jewel((x, y + sign * .006, z), (.041, .014, .041), 'gem_rose', 4)
++    cylinder((0, .023, .65), .30, .012, 'tile_cream', 48, (math.pi / 2, 0, 0))
++    ring((0, .031, .65), .326, .026, .012, 'gold', 48, (math.pi / 2, 0, 0))
++    for z in (.19, 1.11):
++        star((0, .031, z), .068, 'coral', points=4, depth=.009)
++    # Back clock is raised entirely on the negative-Y face.
++    for radius in (.34, .27):
++        ring((0, -.030, .65), radius, .018, .010, 'gold', 40, (math.pi / 2, 0, 0))
++    for i in range(12):
++        a = TAU * i / 12
++        beam((.28 * math.sin(a), -.038, .65 + .28 * math.cos(a)),
++             (.315 * math.sin(a), -.038, .65 + .315 * math.cos(a)),
++             .019, .010, 'ivory', bevel=0)
++    beam((0, -.04, .65), (-.12, -.04, .80), .025, .012, 'gold', 0)
++    beam((0, -.04, .65), (.19, -.04, .69), .018, .012, 'gold', 0)
++    jewel((0, -.042, .65), (.06, .018, .06), 'gem_amber')
++    for z in (.22, 1.08):
++        star((0, -.03, z), .095, 'ivory', points=8, depth=.01)
++
++
++def memory_shard():
++    # The main bipyramid begins at Z=.4. Only the single dust diamond is lower.
++    jewel((0, 0, 1.30), (.63, .57, 1.80), 'crystal', 8, 'crystal_rose')
++    jewel((0, .18, 1.30), (.28, .20, .82), 'crystal_core', 6, 'crystal_rose')
++    ring((0, 0, 1.17), .50, .050, .060, 'gold', 40, (.30, .10, 0))
++    for sign in (-1, 1):
++        tube([(sign * .22, 0, 1.17), (sign * .46, 0, 1.17)], .022, 'rose_gold')
++        jewel((sign * .48, 0, 1.19), (.11, .11, .17), 'gem_rose')
++    ring((0, 0, .66), .11, .035, .065, 'gold', 8)
++    for sign in (-1, 1):
++        jewel((sign * .27, -.20, .77), (.13, .13, .37), 'crystal_rose', 5, 'crystal_core')
++    jewel((.12, .07, .035), (.055, .055, .070), 'stardust', 4)
++
++
++def curtain():
++    box((0, -.02, .25), (8, 1.56, .50), 'marble', bevel=.04)
++    box((0, .765, .27), (8, .05, .36), 'marble_dark')
++    for i in range(25):
++        x = -3.84 + i * .32
++        box((x, .796, .27), (.27, .025, .25), 'glaze_teal', bevel=.014)
++        if i % 2 == 0:
++            star((x, .815, .27), .071, 'ivory', points=4, depth=.018)
++    for z in (.065, .475):
++        box((0, .79, z), (8, .05, .045), 'gold')
++    box((0, .04, .51), (8, 1.50, .04), 'rose_gold')
++    # A closed, corrugated velvet volume. Coral ridges are broad raised folds.
++    count = 120
++    xs = [-4 + 8 * i / count for i in range(count + 1)]
++    front = [-.12 + .28 * math.cos(TAU * 10 * i / count) for i in range(count + 1)]
++    verts = []
++    for back in (False, True):
++        for top in (False, True):
++            for i, x in enumerate(xs):
++                z = 5.27 if top else .54 + .05 * (1 - math.cos(TAU * i / 12))
++                verts.append((x, front[i] - (.075 if back else 0), z))
++    row = count + 1
++    faces, roles = [], []
++    for side in range(2):
++        for i in range(count):
++            offset = side * row * 2
++            faces.append((offset + i, offset + i + 1,
++                          offset + row + i + 1, offset + row + i))
++            roles.append('coral' if not side and i % 12 in (0, 1, 10, 11) else 'cloth_rose')
++    for i in range(count):
++        faces.extend([(i, 2 * row + i, 2 * row + i + 1, i + 1),
++                      (row + i, row + i + 1, 3 * row + i + 1, 3 * row + i)])
++        roles.extend(['cloth_rose', 'cloth_rose'])
++    faces.extend([(0, row, 3 * row, 2 * row),
++                  (count, 2 * row + count, 3 * row + count, row + count)])
++    roles.extend(['cloth_rose', 'cloth_rose'])
++    add(verts, faces, roles)
++    for i in range(10):
++        cx = -3.6 + i * .8
++        profile = [(cx - .4, 5.34), (cx + .4, 5.34)]
++        scallop = []
++        for j in range(13):
++            x = cx + .4 - .8 * j / 12
++            z = 4.98 - .39 * math.sin(math.pi * j / 12)
++            profile.append((x, z))
++            scallop.append((x, .31, z))
++        prism(profile, .17, .29, 'cloth_rose')
++        tube(scallop, .032, 'gold')
++        tube([(cx, .33, 4.59), (cx, .33, 4.39)], .034, 'rose_gold')
++        jewel((cx, .33, 4.34), (.12, .12, .20), 'gold', 6)
++        for sign in (-1, 1):
++            tube([(cx + sign * .075, .33, 4.41),
++                  (cx + sign * .065, .33, 4.24)], .024, 'gold')
++    for z, height, role in ((5.32, .14, 'rose_gold'), (5.44, .12, 'gold')):
++        box((0, .03, z), (8, .55, height), role)
++    for i in range(20):
++        star((-3.8 + i * .4, .325, 5.34), .075, 'ivory', points=4, depth=.035)
++    for x in (-3.13, 3.13):
++        box((x, .11, 3.78), (.20, .16, .45), 'gold')
++        tube([(x, .15, 3.80), (x, .58, 3.80), (x, .69, 3.62)], .045, 'gold')
++        scroll(x, .34, 3.73, .16, 1 if x > 0 else -1, 'rose_gold')
++        box((x, .59, 3.28), (.30, .31, .45), 'window_lit')
++        for z in (3.02, 3.53):
++            box((x, .59, z), (.39, .39, .09), 'gold')
++        for dx in (-.16, .16):
++            box((x + dx, .76, 3.28), (.045, .045, .48), 'rose_gold')
++        jewel((x, .59, 3.64), (.20, .20, .18), 'gem_amber')
++
++
++def arch_outline(cx, bottom, spring, radius, n=20):
++    return [(cx - radius, bottom), (cx + radius, bottom)] + [
++        (cx + radius * math.cos(math.pi * i / n),
++         spring + radius * math.sin(math.pi * i / n)) for i in range(n + 1)]
++
++
++def arch_band(cx, y, bottom, spring, radius, width, role):
++    outer = arch_outline(cx, bottom, spring, radius)
++    inner = arch_outline(cx, bottom + width, spring, radius - width)
++    n = len(outer)
++    verts = [(x, yy, z) for yy, profile in ((y - .06, outer), (y - .06, inner),
++                                           (y + .06, inner), (y + .06, outer))
++             for x, z in profile]
++    faces = [(k * n + i, k * n + (i + 1) % n,
++              ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++             for k in range(4) for i in range(n)]
++    add(verts, faces, role)
++
++
++def mirror_hall():
++    box((0, -.43, 2.25), (6, .30, 4.5), 'marble_dark')
++    for z, depth, height, role in ((.16, 1.2, .32, 'marble'),
++                                   (.39, 1.05, .14, 'rose_gold'),
++                                   (4.37, .94, .26, 'marble'),
++                                   (4.22, .86, .065, 'gold')):
++        box((0, -.02, z), (6, depth, height), role, bevel=.03)
++    for i in range(24):
++        x = -2.875 + .25 * i
++        box((x, .596, .17), (.20, .025, .18), 'glaze_teal', bevel=.014)
++    for cx in (-1.98, 0, 1.98):
++        prism(arch_outline(cx, .47, 3.35, .80), -.29, -.20, 'mirror_back')
++        prism(arch_outline(cx, .58, 3.35, .69), -.195, -.17, 'mirror')
++        arch_band(cx, -.12, .49, 3.35, .84, .12, 'gold')
++        arch_band(cx, -.04, .57, 3.35, .72, .045, 'rose_gold')
++        for j in range(13):
++            a = j * math.pi / 12
++            jewel((cx + .785 * math.cos(a), -.025, 3.35 + .785 * math.sin(a)),
++                  (.09, .075, .09), 'rose_gold', 6)
++        for side in (-1, 1):
++            for z in (.85, 1.45, 2.05, 2.65, 3.25):
++                jewel((cx + side * .785, -.025, z), (.09, .075, .09), 'gem_rose', 4)
++            scroll(cx + side * .50, -.09, .84, .14, side)
++        star((cx, -.035, 4.10), .14, 'gold', points=8, depth=.055)
++        jewel((cx, .015, 4.10), (.11, .08, .11), 'gem_amber')
++    for x in (-2.90, -.99, .99, 2.90):
++        box((x, -.04, .59), (.20, .60, .25), 'ivory')
++        # Fluted prism with alternating radial recesses.
++        n = 16
++        verts = [(x + (.105 if i % 2 else .075) * math.cos(TAU * i / n),
++                  -.06 + (.22 if i % 2 else .185) * math.sin(TAU * i / n), z)
++                 for z in (.72, 3.91) for i in range(n)]
++        faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++        faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++        add(verts, faces, 'ivory')
++        for z in (.75, 3.91, 4.04):
++            box((x, -.035, z), (.21, .59, .09), 'gold')
++        jewel((x, .27, 4.04), (.13, .08, .13), 'gem_rose')
++
++
++def sector(inner, outer, a0, a1, low, high, role, n=6):
++    profile = [(outer * math.sin(a0 + (a1 - a0) * i / n),
++                outer * math.cos(a0 + (a1 - a0) * i / n)) for i in range(n + 1)]
++    profile += [(inner * math.sin(a0 + (a1 - a0) * i / n),
++                 inner * math.cos(a0 + (a1 - a0) * i / n)) for i in reversed(range(n + 1))]
++    prism(profile, low, high, role, 'Z')
++
++
++def roman_plaque(number, angle):
++    center = Vector((18.72 * math.sin(angle), 18.72 * math.cos(angle), 0))
++    rotation = -angle
++    transform = Euler((0, 0, rotation)).to_matrix()
++    box(center + Vector((0, 0, .020)), (1.80, .93, .04),
++        'rose_gold', (0, 0, rotation), bevel=.018)
++    box(center + Vector((0, 0, .045)), (1.62, .78, .035),
++        'ivory', (0, 0, rotation), bevel=.014)
++    glyphs = {'I': [((0, -.29), (0, .29))],
++              'V': [((-.17, .29), (0, -.29)), ((0, -.29), (.17, .29))],
++              'X': [((-.17, -.29), (.17, .29)), ((-.17, .29), (.17, -.29))]}
++    widths = {'I': .16, 'V': .40, 'X': .40}
++    text = ('I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII')[number - 1]
++    total = sum(widths[g] for g in text) + .11 * (len(text) - 1)
++    cursor = -total / 2
++    for glyph in text:
++        cx = cursor + widths[glyph] / 2
++        for a, b in glyphs[glyph]:
++            start = center + transform @ Vector((cx + a[0], a[1], .095))
++            end = center + transform @ Vector((cx + b[0], b[1], .095))
++            beam(start, end, .115, .065, 'gold', bevel=0)
++        cursor += widths[glyph] + .11
++
++
++def altar():
++    # Continuous open annulus. No disc or hidden underlay spans the arena.
++    ring((0, 0, -.125), 20, 2.5, .25, 'marble', 128)
++    ring((0, 0, -.045), 20, .15, .09, 'rose_gold', 128)
++    ring((0, 0, -.035), 17.68, .18, .07, 'gold', 128)
++    ring((0, 0, -.018), 19.81, .075, .036, 'gold', 128)
++    for i in range(12):
++        a = i * TAU / 12
++        roman_plaque(12 if i == 0 else i, a)
++        sector(17.92, 19.69, a + .075, a + TAU / 12 - .075,
++               -.012, .001, 'glaze_teal', 5)
++        mid = a + math.pi / 12
++        for r in (18.13, 19.48):
++            star((r * math.sin(mid), r * math.cos(mid), .017), .14,
++                 'tile_cream', 'Z', points=4, depth=.025)
++    for i in range(8):
++        a = math.radians(22.5) + i * math.pi / 4
++        x, y = 18.80 * math.sin(a), 18.80 * math.cos(a)
++        cylinder((x, y, .035), .26, .07, 'gold', 8)
++        for j in range(3):
++            dx, dy = ((0, 0), (.19, .035), (-.13, -.14))[j]
++            height = (.62, .40, .33)[j]
++            jewel((x + dx, y + dy, .06 + height / 2),
++                  (.23, .23, height), 'crystal' if j != 1 else 'crystal_rose',
++                  5, 'crystal_core')
++    for a in (0, math.pi / 2, math.pi, 3 * math.pi / 2):
++        box((10.75 * math.sin(a), 10.75 * math.cos(a), .015),
++            (.15, 13.5, .03), 'gold', (0, 0, -a), bevel=0)
++    cylinder((0, 0, .018), 2, .036, 'ivory', 64)
++    ring((0, 0, .020), 2, .10, .04, 'gold', 64)
++    ring((0, 0, .025), 1.71, .045, .025, 'rose_gold', 64)
++    for i in range(8):
++        a = TAU * i / 8
++        r = 1.60 if i % 2 == 0 else 1.18
++        tip = (r * math.sin(a), r * math.cos(a))
++        left = (.27 * math.sin(a - math.pi / 2), .27 * math.cos(a - math.pi / 2))
++        right = (.27 * math.sin(a + math.pi / 2), .27 * math.cos(a + math.pi / 2))
++        prism([(0, 0), left, tip], .036, .04, 'gold', 'Z')
++        prism([(0, 0), tip, right], .036, .04, 'tile_cream', 'Z')
++    cylinder((0, 0, .030), .21, .020, 'gold', 16)
++
++
++SPECS = [
++    ('MerchantMask', (.62, .25, .42), merchant_mask, 'BACK_CENTER', 6000),
++    ('SwordBox', (1.6, 1.6, 1.4), sword_box, 'BOTTOM_CENTER', 6000),
++    ('MagicSword', (.18, 1.8, .08), magic_sword, 'HILT', 6000),
++    ('MirrorPanel', (6, .25, 2.6), mirror_panel, 'BOTTOM_CENTER', 8000),
++    ('Dove', (.9, .8, .35), dove, 'BODY_CENTER', 6000),
++    ('NumberCard', (.9, .05, 1.3), number_card, 'BOTTOM_CENTER', 6000),
++    ('MemoryShard', (1, 1, 2.2), memory_shard, 'BOTTOM_CENTER', 6000),
++    ('Facade_Curtain', (8, 1.6, 5.5), curtain, 'BOTTOM_CENTER', 8000),
++    ('Facade_MirrorHall', (6, 1.2, 4.5), mirror_hall, 'BOTTOM_CENTER', 8000),
++    ('Altar', (40, 40, .25), altar, 'CENTER_FLOOR', 12000),
++]
++
++
++def bounds(obj):
++    coords = [v.co for v in obj.data.vertices]
++    return (Vector(tuple(min(v[i] for v in coords) for i in range(3))),
++            Vector(tuple(max(v[i] for v in coords) for i in range(3))))
++
++
++def triangle_count(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dimensions, origin, budget):
++    data = bpy.data.meshes.new(name + '_Mesh')
++    data.from_pydata(VERTICES, [], FACES)
++    data.update()
++    used = list(dict.fromkeys(FACE_ROLES))
++    for role in used:
++        data.materials.append(MATERIALS[role])
++    indices = {role: i for i, role in enumerate(used)}
++    for poly, role in zip(data.polygons, FACE_ROLES):
++        poly.material_index = indices[role]
++    obj = bpy.data.objects.new(name, data)
++    bpy.context.collection.objects.link(obj)
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    count = triangle_count(obj)
++    if count > budget:
++        modifier = obj.modifiers.new('Retain material boundaries within budget', 'DECIMATE')
++        modifier.ratio = (budget - 150) / count
++        modifier.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=modifier.name)
++    low, high = bounds(obj)
++    span = high - low
++    center = (low + high) / 2
++    if origin != 'CENTER_FLOOR':
++        for vertex in obj.data.vertices:
++            point = vertex.co.copy()
++            point.x = (point.x - center.x) * dimensions[0] / span.x
++            if origin == 'HILT':
++                point.y = (point.y - low.y) * dimensions[1] / span.y
++                point.z *= dimensions[2] / span.z
++            elif origin == 'BACK_CENTER':
++                point.y = (point.y - low.y) * dimensions[1] / span.y
++                point.z = (point.z - center.z) * dimensions[2] / span.z
++            elif origin == 'BODY_CENTER':
++                point.y *= dimensions[1] / span.y
++                point.z *= dimensions[2] / span.z
++            else:
++                point.y = (point.y - center.y) * dimensions[1] / span.y
++                point.z = (point.z - low.z) * dimensions[2] / span.z
++            vertex.co = point
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert all(edge.is_manifold for edge in bm.edges), (name, 'open mesh component')
++    bm.to_mesh(obj.data)
++    bm.free()
++    obj.data.update()
++    bpy.context.view_layer.update()
++    low, high = bounds(obj)
++    count = triangle_count(obj)
++    assert count <= budget, (name, count, budget)
++    assert len(used) >= 5, (name, used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    if origin == 'CENTER_FLOOR':
++        assert abs(low.z + .25) < 1e-5
++        assert abs(low.x + 20) < 1e-5 and abs(high.x - 20) < 1e-5
++        assert abs(low.y + 20) < 1e-5 and abs(high.y - 20) < 1e-5
++        # Every below-floor vertex belongs to the ring, never an interior disc.
++        assert all(math.hypot(v.co.x, v.co.y) >= 17.499
++                   for v in obj.data.vertices if v.co.z < -.001)
++    else:
++        assert all(abs(obj.dimensions[i] - dimensions[i]) < 1e-4 for i in range(3)), name
++    if name == 'MemoryShard':
++        assert all(v.co.z >= .3999 for p in obj.data.polygons
++                   if obj.data.materials[p.material_index].name != 'stardust'
++                   for v in (obj.data.vertices[i] for i in p.vertices))
++        obj['floor_clearance_m'] = .4
++    if origin == 'BOTTOM_CENTER':
++        assert abs(low.z) < 1e-5, name
++    if origin == 'BACK_CENTER':
++        assert abs(low.y) < 1e-5, name
++    if origin == 'HILT':
++        assert abs(low.y) < 1e-5 and high.y > 1.7999, name
++    obj['origin_convention'] = origin
++    obj['front'] = '+Y'
++    obj['triangle_count'] = count
++    obj['specified_dimensions_m'] = list(dimensions)
++    if name == 'Altar':
++        obj['ring_inner_radius_m'], obj['body_thickness_m'] = 17.5, .25
++        obj['floor_z_m'], obj['compass_diameter_m'] = 0, 4
++    destination = OUTPUT / ('Kit_' + name + '.fbx')
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++        use_custom_props=True,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024
++    print(f'EXPORTED {name} {count} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def verify_exports(objects):
++    """Round-trip each actual FBX and check one mesh, role names and dimensions."""
++    for original in objects:
++        before = set(bpy.data.objects)
++        bpy.ops.import_scene.fbx(filepath=str(OUTPUT / f'Kit_{original.name}.fbx'))
++        imported = set(bpy.data.objects) - before
++        assert len(imported) == 1, (original.name, 'FBX object count', len(imported))
++        copy = imported.pop()
++        assert copy.type == 'MESH' and len(copy.data.vertices) > 0
++        bpy.context.view_layer.update()
++        world_corners = [copy.matrix_world @ Vector(v) for v in copy.bound_box]
++        exported_size = [max(v[i] for v in world_corners) - min(v[i] for v in world_corners)
++                         for i in range(3)]
++        assert all(abs(exported_size[i] - original.dimensions[i]) < .002 for i in range(3)), (
++            original.name, exported_size, tuple(original.dimensions))
++        assert len(copy.data.materials) == len(original.data.materials)
++        for mat in copy.data.materials:
++            assert mat.name.rsplit('.', 1)[0] in PALETTE
++            bsdf = next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
++            assert all(abs(c - .5) < .001 for c in bsdf.inputs['Base Color'].default_value[:3])
++        mesh_data = copy.data
++        bpy.data.objects.remove(copy, do_unlink=True)
++        bpy.data.meshes.remove(mesh_data)
++    print('VERIFIED 10 single-mesh FBX round trips', flush=True)
++
++
++def preview(objects):
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.show_shadows = False
++    shade.show_cavity, shade.cavity_type = True, 'BOTH'
++    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.4, 1.1
++    shade.show_specular_highlight = False
++    shade.show_object_outline = True
++    shade.object_outline_color = (.045, .04, .06)
++    shade.background_type = 'WORLD'
++    scene.world = bpy.data.worlds.new('Preview background')
++    scene.world.color = (.035, .045, .065)
++    # Review-only magnification keeps the small handheld props legible in a row.
++    scales = [3.3, 1.25, 1.45, .80, 2.45, 1.9, 1.25, .72, .76, .15]
++    widths = [obj.dimensions.x * scale for obj, scale in zip(objects, scales)]
++    widths[2] = 1.8 * scales[2]
++    gap = .56
++    total = sum(widths) + gap * (len(objects) - 1)
++    cursor = -total / 2
++    saved = [(o.location.copy(), o.rotation_euler.copy(), o.scale.copy()) for o in objects]
++    helpers = []
++    try:
++        for role, mat in MATERIALS.items():
++            mat.diffuse_color = (*PALETTE[role], 1)
++        for i, (obj, scale, width) in enumerate(zip(objects, scales, widths)):
++            obj.scale = (scale,) * 3
++            obj.location = (cursor + width / 2, 0, 0)
++            if i == 2:
++                obj.rotation_euler.z = math.pi / 2
++                obj.location.x += .9 * scale
++                obj.location.z = .25
++            if i == 0:
++                obj.location.z = .9
++            if i == 4:
++                obj.location.z = .65
++            cursor += width + gap
++        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type = 'ORTHO'
++        camera.data.ortho_scale = total + 1.5
++        target = Vector((0, 0, 1.15))
++        elevation = math.radians(55)
++        camera.location = target + Vector((0, 40 * math.cos(elevation), 40 * math.sin(elevation)))
++        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
++        for obj in objects:
++            text = bpy.data.curves.new('Review caption', 'FONT')
++            text.body = obj.name
++            text.align_x, text.size = 'CENTER', .20
++            text.materials.append(MATERIALS['crystal_core'])
++            label = bpy.data.objects.new('Review caption ' + obj.name, text)
++            scene.collection.objects.link(label)
++            label.location = (obj.location.x, 1.7, -.30)
++            if obj.name == 'Altar':
++                label.location.y = 3.5
++            label.rotation_euler = camera.rotation_euler
++            helpers.append(label)
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        scene.camera = None
++        for helper in helpers:
++            bpy.data.objects.remove(helper, do_unlink=True)
++        for obj, (loc, rot, scale) in zip(objects, saved):
++            obj.location, obj.rotation_euler, obj.scale = loc, rot, scale
++        for mat in MATERIALS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++
++
++def main():
++    global VERTICES, FACES, FACE_ROLES
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
++    materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = []
++    for index, (name, dimensions, build, origin, budget) in enumerate(SPECS):
++        VERTICES, FACES, FACE_ROLES = [], [], []
++        random.seed(33129 + index * 7919)
++        build()
++        objects.append(finish(name, dimensions, origin, budget))
++    verify_exports(objects)
++    assert len(scene.objects) == 10 and all(o.type == 'MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects) == 10 and all(o.type == 'MESH' for o in scene.objects)
++    assert all(tuple(m.diffuse_color) == (.5, .5, .5, 1) for m in MATERIALS.values())
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_bossprops.py" in C:\Project\Cat_Tang
+ succeeded in 4943ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py:43: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MerchantMask.fbx'
+export finished in 0.0072 sec.
+EXPORTED MerchantMask 2940 (0.62, 0.25, 0.42)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_SwordBox.fbx'
+export finished in 0.0081 sec.
+EXPORTED SwordBox 5196 (1.6, 1.6, 1.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MagicSword.fbx'
+export finished in 0.0054 sec.
+EXPORTED MagicSword 856 (0.18, 1.8, 0.08)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MirrorPanel.fbx'
+export finished in 0.0082 sec.
+EXPORTED MirrorPanel 5236 (6.0, 0.25, 2.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Dove.fbx'
+export finished in 0.0059 sec.
+EXPORTED Dove 852 (0.9, 0.8, 0.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_NumberCard.fbx'
+export finished in 0.0082 sec.
+EXPORTED NumberCard 4600 (0.9, 0.05, 1.3)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MemoryShard.fbx'
+export finished in 0.0065 sec.
+EXPORTED MemoryShard 504 (1.0, 1.0, 2.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Facade_Curtain.fbx'
+export finished in 0.0110 sec.
+EXPORTED Facade_Curtain 7888 (8.0, 1.6, 5.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Facade_MirrorHall.fbx'
+export finished in 0.0106 sec.
+EXPORTED Facade_MirrorHall 6960 (6.0, 1.2, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Altar.fbx'
+export finished in 0.0100 sec.
+EXPORTED Altar 9132 (40.0, 40.0, 0.93)
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+VERIFIED 10 single-mesh FBX round trips
+00:04.312  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_bossprops_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_bossprops_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+All 10 FBXs now export and pass single-mesh re-import checks. The Altar has 9,132 triangles. I’m checking the rendered preview and material coverage before finishing.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$auditCode = @'"'
+import bpy, math
+from mathutils import Vector
+from pathlib import Path
+bpy.ops.wm.read_factory_settings(use_empty=True)
+view = Vector((0, math.cos(math.radians(55)), math.sin(math.radians(55))))
+for path in sorted(Path('Game/Assets/Art/Characters/Ch3').glob('Kit_*.fbx')):
+    if path.stem[4:] not in {'MerchantMask','SwordBox','MagicSword','MirrorPanel','Dove','NumberCard','MemoryShard','Facade_Curtain','Facade_MirrorHall','Altar'}:
+        continue
+    bpy.ops.import_scene.fbx(filepath=str(path))
+    obj = bpy.context.selected_objects[0]
+    obj.data.calc_loop_triangles()
+    amounts = {}
+    for tri in obj.data.loop_triangles:
+        a,b,c = (obj.matrix_world @ obj.data.vertices[i].co for i in tri.vertices)
+        weight = max(0, (b-a).cross(c-a).dot(view) / 2)
+        role = obj.data.materials[tri.material_index].name.rsplit('.', 1)[0]
+        amounts[role] = amounts.get(role, 0) + weight
+    total = sum(amounts.values())
+    print('COVERAGE', path.stem, sorted([(k,round(v/total,3)) for k,v in amounts.items()],key=lambda p:-p[1])[:4])
+    bpy.data.objects.remove(obj, do_unlink=True)
+'@
+& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr "'$auditCode' in C:\Project\Cat_Tang
+ succeeded in 2797ms:
+FBX version: 7400
+COVERAGE Kit_Altar [('marble', 0.526), ('glaze_teal', 0.256), ('gold', 0.088), ('rose_gold', 0.077)]
+FBX version: 7400
+COVERAGE Kit_Dove [('crystal_core', 0.475), ('crystal', 0.352), ('crystal_rose', 0.09), ('gold', 0.036)]
+FBX version: 7400
+COVERAGE Kit_Facade_Curtain [('cloth_rose', 0.293), ('rose_gold', 0.228), ('marble', 0.198), ('coral', 0.115)]
+FBX version: 7400
+COVERAGE Kit_Facade_MirrorHall [('marble_dark', 0.256), ('marble', 0.185), ('mirror_back', 0.151), ('gold', 0.132)]
+FBX version: 7400
+COVERAGE Kit_MagicSword [('ivory', 0.494), ('rose_gold', 0.216), ('gold', 0.186), ('coral', 0.077)]
+FBX version: 7400
+COVERAGE Kit_MemoryShard [('crystal', 0.346), ('gold', 0.314), ('crystal_rose', 0.197), ('crystal_core', 0.089)]
+FBX version: 7400
+COVERAGE Kit_MerchantMask [('ivory', 0.561), ('gold', 0.184), ('rose_gold', 0.176), ('cloth_rose', 0.064)]
+FBX version: 7400
+COVERAGE Kit_MirrorPanel [('mirror', 0.338), ('mirror_back', 0.254), ('gold', 0.207), ('rose_gold', 0.112)]
+FBX version: 7400
+COVERAGE Kit_NumberCard [('ivory', 0.364), ('coral', 0.316), ('gold', 0.167), ('tile_cream', 0.085)]
+FBX version: 7400
+COVERAGE Kit_SwordBox [('wood', 0.589), ('coral', 0.217), ('gold', 0.1), ('rose_gold', 0.062)]
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py
+diff --git a/Art/tools/blender_kit_ch3_bossprops.py b/Art/tools/blender_kit_ch3_bossprops.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..ac1531a656a65c1f4d9c3b2d8f04378151e3726d
+--- /dev/null
++++ b/Art/tools/blender_kit_ch3_bossprops.py
+@@ -0,0 +1,857 @@
++# 3장 보스 소품 10종과 재질별 색상 미리보기를 생성합니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_bossprops.py
++"""Standalone Blender 5.x builder. Exported role materials are always grey.
++
++The altar's 0.25 m dimension describes its submerged ring body. Its raised
++numerals, compass relief and crystal clusters extend above the floor at Z=0.
++Preview transforms and colours are temporary and are applied after exporting.
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_bossprops_preview.png'
++PALETTE = {
++    'ivory': (.96, .87, .65), 'gold': (.96, .61, .12),
++    'gold_dark': (.20, .095, .025), 'rose_gold': (.81, .40, .31),
++    'gem_amber': (1.0, .35, .035), 'gem_rose': (.87, .06, .32),
++    'cloth_rose': (.45, .055, .17), 'mirror': (.32, .64, .79),
++    'mirror_back': (.14, .19, .27), 'wood': (.26, .105, .07),
++    'coral': (.91, .24, .22), 'marble': (.82, .83, .79),
++    'marble_dark': (.26, .31, .39), 'glaze_teal': (.025, .43, .40),
++    'crystal': (.56, .79, .97), 'crystal_core': (.95, .99, 1.0),
++    'crystal_rose': (.80, .32, .61), 'stardust': (1.0, .83, .41),
++    'tile_cream': (.79, .64, .44), 'bronze': (.43, .23, .075),
++    'window_lit': (1.0, .73, .27),
++}
++MATERIALS = {}
++VERTICES, FACES, FACE_ROLES = [], [], []
++TAU = math.tau
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        nodes = mat.node_tree.nodes
++        nodes.clear()
++        bsdf = nodes.new('ShaderNodeBsdfPrincipled')
++        bsdf.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        bsdf.inputs['Roughness'].default_value = .8
++        out = nodes.new('ShaderNodeOutputMaterial')
++        mat.node_tree.links.new(bsdf.outputs['BSDF'], out.inputs['Surface'])
++        MATERIALS[role] = mat
++
++
++def add(verts, faces, role, bevel=0, loc=(0, 0, 0), rot=(0, 0, 0), segments=2):
++    """Append closed geometry, baking local bevels before the final mesh join."""
++    if bevel:
++        bm = bmesh.new()
++        bv = [bm.verts.new(v) for v in verts]
++        for face in faces:
++            bm.faces.new([bv[i] for i in face])
++        bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=bevel,
++                        segments=segments, affect='EDGES', clamp_overlap=True)
++        bm.verts.ensure_lookup_table()
++        bm.verts.index_update()
++        verts = [tuple(v.co) for v in bm.verts]
++        faces = [tuple(v.index for v in f.verts) for f in bm.faces]
++        bm.free()
++    transform = Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4()
++    offset = len(VERTICES)
++    VERTICES.extend(tuple(transform @ Vector(v)) for v in verts)
++    FACES.extend(tuple(offset + i for i in f) for f in faces)
++    FACE_ROLES.extend([role] * len(faces) if isinstance(role, str) else role)
++
++
++def box(loc, size, role, rot=(0, 0, 0), bevel=.02, segments=2):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    add(verts, faces, role, min(bevel, min(size) * .22), loc, rot, segments)
++
++
++def prism(profile, low, high, role, axis='Y', bevel=0,
++          loc=(0, 0, 0), rot=(0, 0, 0)):
++    """Extrude a 2D outline in X/Z (Y axis) or X/Y (Z axis)."""
++    if axis == 'Y':
++        verts = [(x, d, z) for d in (low, high) for x, z in profile]
++    else:
++        verts = [(x, y, d) for d in (low, high) for x, y in profile]
++    n = len(profile)
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def cylinder(loc, radius, depth, role, n=16, rot=(0, 0, 0), bevel=0):
++    verts = [(radius * math.cos(TAU * i / n), radius * math.sin(TAU * i / n), z)
++             for z in (-depth / 2, depth / 2) for i in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def ring(loc, outer, width, depth, role, n=32, rot=(0, 0, 0), bevel=0):
++    section = [(outer - width, -depth / 2), (outer, -depth / 2),
++               (outer, depth / 2), (outer - width, depth / 2)]
++    verts = [(r * math.cos(TAU * i / n), r * math.sin(TAU * i / n), z)
++             for r, z in section for i in range(n)]
++    faces = [(k * n + i, k * n + (i + 1) % n,
++              ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++             for k in range(4) for i in range(n)]
++    add(verts, faces, role, bevel, loc, rot)
++
++
++def tube(points, radius, role, n=6):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
++                   Vector(points[max(i - 1, 0)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        side = reference.cross(tangent).normalized()
++        other = tangent.cross(side)
++        for j in range(n):
++            a = TAU * j / n
++            verts.append(tuple(Vector(point) + radius *
++                               (math.cos(a) * side + math.sin(a) * other)))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(k * n + j, k * n + (j + 1) % n,
++               (k + 1) * n + (j + 1) % n, (k + 1) * n + j)
++              for k in range(len(points) - 1) for j in range(n)]
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    add(verts, faces, role)
++
++
++def beam(a, b, width, depth, role, bevel=.02):
++    a, b = Vector(a), Vector(b)
++    rotation = (b - a).to_track_quat('Z', 'Y').to_euler()
++    box((a + b) / 2, (width, depth, (b - a).length), role, rotation, bevel)
++
++
++def jewel(loc, size, role, n=6, secondary=None):
++    x, y, z = (s / 2 for s in size)
++    verts = [(0, 0, -z), (0, 0, z)]
++    verts += [(x * math.cos(TAU * i / n), y * math.sin(TAU * i / n), 0)
++              for i in range(n)]
++    faces, roles = [], []
++    for i in range(n):
++        faces.extend([(0, 2 + (i + 1) % n, 2 + i),
++                      (1, 2 + i, 2 + (i + 1) % n)])
++        roles.extend([role, secondary if secondary and i % 3 == 0 else role])
++    add(verts, faces, roles, loc=loc)
++
++
++def ellipsoid(loc, size, role, n=12, rows=6):
++    verts = [(0, 0, -size[2] / 2), (0, 0, size[2] / 2)]
++    for j in range(1, rows):
++        latitude = -math.pi / 2 + j * math.pi / rows
++        for i in range(n):
++            a = TAU * i / n
++            verts.append((size[0] / 2 * math.cos(latitude) * math.cos(a),
++                          size[1] / 2 * math.cos(latitude) * math.sin(a),
++                          size[2] / 2 * math.sin(latitude)))
++    faces = [(0, 2 + (i + 1) % n, 2 + i) for i in range(n)]
++    faces += [(2 + k * n + i, 2 + k * n + (i + 1) % n,
++               2 + (k + 1) * n + (i + 1) % n, 2 + (k + 1) * n + i)
++              for k in range(rows - 2) for i in range(n)]
++    last = 2 + (rows - 2) * n
++    faces += [(1, last + i, last + (i + 1) % n) for i in range(n)]
++    add(verts, faces, role, loc=loc)
++
++
++def star(loc, radius, role='gold', axis='Y', points=5, depth=.04, rot=(0, 0, 0)):
++    profile = []
++    for i in range(points * 2):
++        angle = math.pi / 2 + i * math.pi / points
++        r = radius if i % 2 == 0 else radius * .44
++        profile.append((r * math.cos(angle), r * math.sin(angle)))
++    prism(profile, -depth / 2, depth / 2, role, axis, loc=loc, rot=rot)
++
++
++def scroll(x, y, z, size, sign=1, role='gold'):
++    points = []
++    for i in range(20):
++        t = i / 19
++        angle = -.5 * math.pi + t * TAU * 1.18
++        r = size * (1 - .83 * t)
++        points.append((x + sign * r * math.cos(angle), y,
++                       z + r * math.sin(angle)))
++    tube(points, max(.006, size * .12), role)
++
++
++def face_frame(cx, y, bottom, width, height, role='gold', thickness=.07):
++    box((cx - width / 2, y, bottom + height / 2), (thickness, .055, height), role)
++    box((cx + width / 2, y, bottom + height / 2), (thickness, .055, height), role)
++    for z in (bottom, bottom + height):
++        box((cx, y, z), (width + thickness, .055, thickness), role)
++
++
++def merchant_mask():
++    # Two thick annuli produce real almond-shaped eye openings on both sides.
++    for sign in (-1, 1):
++        n, verts = 24, []
++        for y, outer in ((.045, True), (.045, False), (.09, False), (.09, True)):
++            for i in range(n):
++                a = TAU * i / n
++                rx, rz = (.143, .107) if outer else (.082, .039)
++                x = sign * .124 + rx * math.cos(a)
++                z = rz * math.sin(a) * abs(math.sin(a)) ** .15
++                curve = .07 * (1 - (abs(x) / .29) ** 1.5)
++                verts.append((x, y + curve, z))
++        faces = [(k * n + i, k * n + (i + 1) % n,
++                  ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++                 for k in range(4) for i in range(n)]
++        add(verts, faces, 'ivory')
++        for radius_x, radius_z, role, y in [(.147, .111, 'rose_gold', .115),
++                                            (.090, .047, 'gold', .17)]:
++            points = [(sign * .124 + radius_x * math.cos(TAU * i / 24),
++                       y - .035 * abs(math.cos(TAU * i / 24)),
++                       radius_z * math.sin(TAU * i / 24)) for i in range(25)]
++            tube(points, .009, role)
++        scroll(sign * .165, .165, .075, .042, sign)
++        scroll(sign * .205, .125, -.067, .035, -sign)
++        jewel((sign * .208, .15, -.082), (.051, .035, .051), 'mirror', n=4)
++        prism([(sign * .252, .025), (sign * .31, -.07),
++               (sign * .295, -.18), (sign * .256, -.137)],
++              0, .027, 'cloth_rose')
++        tube([(sign * .264, .032, -.03), (sign * .292, .032, -.10),
++              (sign * .278, .032, -.15)], .007, 'rose_gold')
++    prism([(-.055, .081), (.055, .081), (.038, -.012),
++           (.025, -.105), (0, -.137), (-.025, -.105), (-.038, -.012)],
++          .09, .20, 'ivory', bevel=.005)
++    tube([(-.034, .205, -.075), (0, .225, -.11), (.034, .205, -.075)], .009, 'gold')
++    star((0, .13, .142), .063, points=10, depth=.026)
++    cylinder((0, .154, .142), .032, .016, 'rose_gold', 12, (math.pi / 2, 0, 0))
++    jewel((0, .18, .142), (.041, .044, .041), 'gem_amber', n=8)
++
++
++def sword_box():
++    box((0, 0, .09), (1.6, 1.6, .18), 'wood')
++    box((0, 0, 1.24), (1.6, 1.6, .16), 'wood')
++    # Four independently constructed wall openings, each with a recessed bore.
++    for side in range(4):
++        angle = side * math.pi / 2
++        matrix = Euler((0, 0, angle)).to_matrix()
++
++        def wall_box(x, y, z, size, role, bevel=.02):
++            box(matrix @ Vector((x, y, z)), size, role, (0, 0, angle), bevel)
++
++        for x in (-.52, .52):
++            wall_box(x, .72, .67, (.50, .16, .98), 'wood')
++            wall_box(x, .813, .67, (.39, .04, .80), 'coral')
++        for z, height in ((.365, .37), (.995, .33)):
++            wall_box(0, .72, z, (.55, .16, height), 'wood')
++            wall_box(0, .814, z, (.49, .04, height - .06), 'coral')
++        wall_box(0, .625, .69, (.57, .035, .20), 'gold_dark', 0)
++        for z in (.575, .805):
++            wall_box(0, .831, z, (.64, .04, .04), 'rose_gold')
++        for x in (-.32, .32):
++            wall_box(x, .831, .69, (.04, .04, .27), 'gold')
++        for z in (.19, 1.18):
++            wall_box(0, .825, z, (1.50, .055, .065), 'gold')
++        for x in (-.53, .53):
++            center = matrix @ Vector((x, .85, .70))
++            star(center, .145, 'ivory', rot=(0, 0, angle))
++            center = matrix @ Vector((x, .883, .70))
++            jewel(center, (.075, .055, .075), 'gem_rose', n=4)
++        for x in (-.72, .72):
++            wall_box(x, .83, .69, (.08, .065, .96), 'rose_gold')
++            for z in (.28, 1.1):
++                center = matrix @ Vector((x, .88, z))
++                jewel(center, (.09, .06, .09), 'glaze_teal', n=4)
++    for x in (-.72, .72):
++        for y in (-.72, .72):
++            for z in (.16, 1.23):
++                box((x, y, z), (.18, .18, .19), 'gold')
++    box((0, 0, 1.34), (1.30, 1.30, .06), 'coral')
++    for angle in (0, math.pi / 2):
++        box((0, 0, 1.38), (.09, 1.34, .035), 'rose_gold', (0, 0, angle))
++    star((0, 0, 1.43), .28, axis='Z', depth=.09)
++    jewel((0, 0, 1.50), (.14, .14, .11), 'gem_amber')
++
++
++def magic_sword():
++    # Cross-section has a central ridge and contrasting side facets.
++    profile = [(-.044, .35), (.044, .35), (.039, 1.52), (0, 1.80), (-.039, 1.52)]
++    prism(profile, -.024, .024, 'ivory', axis='Z', bevel=.003)
++    for sign in (-1, 1):
++        prism([(sign * .027, .40), (sign * .040, .40),
++               (sign * .035, 1.49), (0, 1.75), (sign * .024, 1.49)],
++              .025, .03, 'rose_gold', axis='Z')
++    prism([(-.010, .39), (.010, .39), (.010, 1.48), (0, 1.70), (-.010, 1.48)],
++          .027, .035, 'gold', axis='Z')
++    for y in (.66, .96, 1.26):
++        star((0, y, .038), .019, 'crystal_core', 'Z', points=4, depth=.006)
++    cylinder((0, .17, 0), .031, .25, 'coral', 10, (math.pi / 2, 0, 0))
++    for y in (.07, .125, .18, .235, .285):
++        ring((0, y, 0), .034, .008, .024, 'rose_gold', 10, (math.pi / 2, 0, 0))
++    prism([(-.09, .295), (-.09, .35), (-.04, .375),
++           (0, .35), (.04, .375), (.09, .35), (.09, .295), (0, .32)],
++          -.033, .033, 'gold', axis='Z', bevel=.005)
++    jewel((0, .33, .032), (.052, .052, .033), 'gem_rose', n=6)
++    jewel((0, .026, 0), (.065, .052, .072), 'gem_amber', n=8)
++
++
++def mirror_panel():
++    box((0, 0, 1.41), (5.84, .13, 2.16), 'mirror_back')
++    for sign in (-1, 1):
++        y = sign * .08
++        box((0, y, 1.42), (5.25, .018, 1.67), 'mirror', bevel=.008)
++        face_frame(0, sign * .105, .46, 5.70, 1.99, 'rose_gold', .13)
++        face_frame(0, sign * .125, .55, 5.40, 1.78, 'gold', .095)
++        for x in (-2.84, 2.84):
++            box((x, sign * .07, 1.42), (.20, .11, 2.10), 'ivory')
++        for z in (.36, 2.49):
++            box((0, sign * .065, z), (6, .11, .18), 'gold')
++            box((0, sign * .13, z), (5.92, .035, .055), 'glaze_teal')
++            for i in range(19):
++                jewel((-2.70 + i * .30, sign * .15, z),
++                      (.095, .07, .095), 'rose_gold', n=6)
++        for x in (-2.50, 2.50):
++            for z, direction in ((.77, 1), (2.06, -1)):
++                scroll(x, sign * .13, z, .18, direction * (1 if x > 0 else -1))
++                jewel((x, sign * .17, z), (.13, .07, .13), 'gem_rose')
++        star((0, sign * .15, 2.48), .16, 'ivory', points=8, depth=.025)
++    for x in (-2.35, 2.35):
++        box((x, 0, .115), (.68, .25, .23), 'marble', bevel=.035)
++        box((x, 0, .27), (.43, .21, .12), 'rose_gold')
++        box((x, .132, .13), (.38, .025, .08), 'glaze_teal')
++
++
++def dove():
++    ellipsoid((0, 0, 0), (.22, .39, .24), 'crystal')
++    ellipsoid((0, .225, .065), (.15, .17, .15), 'crystal_core')
++    # Broad, individually faceted pinions make a V in plan and elevation.
++    for sign in (-1, 1):
++        for i in range(5):
++            root = (sign * .055, .04 - i * .033)
++            tip = (sign * (.35 + .022 * i), .19 - i * .10)
++            profile = [root, (tip[0] - sign * .055, tip[1] + .065),
++                       tip, (tip[0] - sign * .018, tip[1] - .07),
++                       (root[0], root[1] - .055)]
++            prism(profile, .015 + i * .006, .07 + i * .006,
++                  'crystal_core' if i % 2 == 0 else 'crystal', 'Z',
++                  rot=(0, -sign * .22, 0))
++            jewel((tip[0] * .86, tip[1], .12), (.075, .10, .055),
++                  'crystal_rose' if i in (1, 3) else 'stardust', n=4)
++        tube([(sign * .055, .06, .085), (sign * .20, .10, .13),
++              (sign * .33, .14, .17)], .014, 'gold')
++        jewel((sign * .061, .285, .088), (.021, .025, .025), 'gem_amber', n=4)
++    for i in (-1, 0, 1):
++        prism([(-.035 + i * .045, -.14), (.035 + i * .045, -.14),
++               (.055 + i * .065, -.37), (-.055 + i * .065, -.37)],
++              -.03, .015, 'crystal_rose' if i else 'crystal_core', 'Z')
++    prism([(-.029, .27), (.029, .27), (0, .40)], -.005, .035, 'gold', 'Z')
++    ellipsoid((0, .095, -.033), (.16, .12, .15), 'crystal_core')
++    ring((0, .10, -.017), .087, .014, .018, 'rose_gold', 16, (math.pi / 2, 0, 0))
++
++
++def number_card():
++    box((0, 0, .65), (.9, .025, 1.3), 'ivory', bevel=.025)
++    box((0, -.018, .65), (.84, .012, 1.24), 'coral', bevel=.02)
++    for sign in (-1, 1):
++        y = sign * .027
++        face_frame(0, y, .075, .77, 1.15, 'gold', .034)
++        face_frame(0, y, .12, .68, 1.06, 'rose_gold', .016)
++        for x in (-.31, .31):
++            for z in (.18, 1.12):
++                scroll(x, y, z, .055, 1 if x > 0 else -1)
++                jewel((x, y + sign * .006, z), (.041, .014, .041), 'gem_rose', 4)
++    cylinder((0, .023, .65), .30, .012, 'tile_cream', 48, (math.pi / 2, 0, 0))
++    ring((0, .031, .65), .326, .026, .012, 'gold', 48, (math.pi / 2, 0, 0))
++    for z in (.19, 1.11):
++        star((0, .031, z), .068, 'coral', points=4, depth=.009)
++    # Back clock is raised entirely on the negative-Y face.
++    for radius in (.34, .27):
++        ring((0, -.030, .65), radius, .018, .010, 'gold', 40, (math.pi / 2, 0, 0))
++    for i in range(12):
++        a = TAU * i / 12
++        beam((.28 * math.sin(a), -.038, .65 + .28 * math.cos(a)),
++             (.315 * math.sin(a), -.038, .65 + .315 * math.cos(a)),
++             .019, .010, 'ivory', bevel=0)
++    beam((0, -.04, .65), (-.12, -.04, .80), .025, .012, 'gold', 0)
++    beam((0, -.04, .65), (.19, -.04, .69), .018, .012, 'gold', 0)
++    jewel((0, -.042, .65), (.06, .018, .06), 'gem_amber')
++    for z in (.22, 1.08):
++        star((0, -.03, z), .095, 'ivory', points=8, depth=.01)
++
++
++def memory_shard():
++    # The main bipyramid begins at Z=.4. Only the single dust diamond is lower.
++    jewel((0, 0, 1.30), (.63, .57, 1.80), 'crystal', 8, 'crystal_rose')
++    jewel((0, .18, 1.30), (.28, .20, .82), 'crystal_core', 6, 'crystal_rose')
++    ring((0, 0, 1.17), .50, .050, .060, 'gold', 40, (.30, .10, 0))
++    for sign in (-1, 1):
++        tube([(sign * .22, 0, 1.17), (sign * .46, 0, 1.17)], .022, 'rose_gold')
++        jewel((sign * .48, 0, 1.19), (.11, .11, .17), 'gem_rose')
++    ring((0, 0, .66), .11, .035, .065, 'gold', 8)
++    for sign in (-1, 1):
++        jewel((sign * .27, -.20, .77), (.13, .13, .37), 'crystal_rose', 5, 'crystal_core')
++    jewel((.12, .07, .035), (.055, .055, .070), 'stardust', 4)
++
++
++def curtain():
++    box((0, -.02, .25), (8, 1.56, .50), 'marble', bevel=.04)
++    box((0, .765, .27), (8, .05, .36), 'marble_dark')
++    for i in range(25):
++        x = -3.84 + i * .32
++        box((x, .796, .27), (.27, .025, .25), 'glaze_teal', bevel=.014)
++        if i % 2 == 0:
++            star((x, .815, .27), .071, 'ivory', points=4, depth=.018)
++    for z in (.065, .475):
++        box((0, .79, z), (8, .05, .045), 'gold')
++    box((0, .04, .51), (8, 1.50, .04), 'rose_gold')
++    # A closed, corrugated velvet volume. Coral ridges are broad raised folds.
++    count = 120
++    xs = [-4 + 8 * i / count for i in range(count + 1)]
++    front = [-.12 + .28 * math.cos(TAU * 10 * i / count) for i in range(count + 1)]
++    verts = []
++    for back in (False, True):
++        for top in (False, True):
++            for i, x in enumerate(xs):
++                z = 5.27 if top else .54 + .05 * (1 - math.cos(TAU * i / 12))
++                verts.append((x, front[i] - (.075 if back else 0), z))
++    row = count + 1
++    faces, roles = [], []
++    for side in range(2):
++        for i in range(count):
++            offset = side * row * 2
++            faces.append((offset + i, offset + i + 1,
++                          offset + row + i + 1, offset + row + i))
++            roles.append('coral' if not side and i % 12 in (0, 1, 10, 11) else 'cloth_rose')
++    for i in range(count):
++        faces.extend([(i, 2 * row + i, 2 * row + i + 1, i + 1),
++                      (row + i, row + i + 1, 3 * row + i + 1, 3 * row + i)])
++        roles.extend(['cloth_rose', 'cloth_rose'])
++    faces.extend([(0, row, 3 * row, 2 * row),
++                  (count, 2 * row + count, 3 * row + count, row + count)])
++    roles.extend(['cloth_rose', 'cloth_rose'])
++    add(verts, faces, roles)
++    for i in range(10):
++        cx = -3.6 + i * .8
++        profile = [(cx - .4, 5.34), (cx + .4, 5.34)]
++        scallop = []
++        for j in range(13):
++            x = cx + .4 - .8 * j / 12
++            z = 4.98 - .39 * math.sin(math.pi * j / 12)
++            profile.append((x, z))
++            scallop.append((x, .31, z))
++        prism(profile, .17, .29, 'cloth_rose')
++        tube(scallop, .032, 'gold')
++        tube([(cx, .33, 4.59), (cx, .33, 4.39)], .034, 'rose_gold')
++        jewel((cx, .33, 4.34), (.12, .12, .20), 'gold', 6)
++        for sign in (-1, 1):
++            tube([(cx + sign * .075, .33, 4.41),
++                  (cx + sign * .065, .33, 4.24)], .024, 'gold')
++    for z, height, role in ((5.32, .14, 'rose_gold'), (5.44, .12, 'gold')):
++        box((0, .03, z), (8, .55, height), role)
++    for i in range(20):
++        star((-3.8 + i * .4, .325, 5.34), .075, 'ivory', points=4, depth=.035)
++    for x in (-3.13, 3.13):
++        box((x, .11, 3.78), (.20, .16, .45), 'gold')
++        tube([(x, .15, 3.80), (x, .58, 3.80), (x, .69, 3.62)], .045, 'gold')
++        scroll(x, .34, 3.73, .16, 1 if x > 0 else -1, 'rose_gold')
++        box((x, .59, 3.28), (.30, .31, .45), 'window_lit')
++        for z in (3.02, 3.53):
++            box((x, .59, z), (.39, .39, .09), 'gold')
++        for dx in (-.16, .16):
++            box((x + dx, .76, 3.28), (.045, .045, .48), 'rose_gold')
++        jewel((x, .59, 3.64), (.20, .20, .18), 'gem_amber')
++
++
++def arch_outline(cx, bottom, spring, radius, n=20):
++    return [(cx - radius, bottom), (cx + radius, bottom)] + [
++        (cx + radius * math.cos(math.pi * i / n),
++         spring + radius * math.sin(math.pi * i / n)) for i in range(n + 1)]
++
++
++def arch_band(cx, y, bottom, spring, radius, width, role):
++    outer = arch_outline(cx, bottom, spring, radius)
++    inner = arch_outline(cx, bottom + width, spring, radius - width)
++    n = len(outer)
++    verts = [(x, yy, z) for yy, profile in ((y - .06, outer), (y - .06, inner),
++                                           (y + .06, inner), (y + .06, outer))
++             for x, z in profile]
++    faces = [(k * n + i, k * n + (i + 1) % n,
++              ((k + 1) % 4) * n + (i + 1) % n, ((k + 1) % 4) * n + i)
++             for k in range(4) for i in range(n)]
++    add(verts, faces, role)
++
++
++def mirror_hall():
++    box((0, -.43, 2.25), (6, .30, 4.5), 'marble_dark')
++    for z, depth, height, role in ((.16, 1.2, .32, 'marble'),
++                                   (.39, 1.05, .14, 'rose_gold'),
++                                   (4.37, .94, .26, 'marble'),
++                                   (4.22, .86, .065, 'gold')):
++        box((0, -.02, z), (6, depth, height), role, bevel=.03)
++    for i in range(24):
++        x = -2.875 + .25 * i
++        box((x, .596, .17), (.20, .025, .18), 'glaze_teal', bevel=.014)
++    for cx in (-1.98, 0, 1.98):
++        prism(arch_outline(cx, .47, 3.35, .80), -.29, -.20, 'mirror_back')
++        prism(arch_outline(cx, .58, 3.35, .69), -.195, -.17, 'mirror')
++        arch_band(cx, -.12, .49, 3.35, .84, .12, 'gold')
++        arch_band(cx, -.04, .57, 3.35, .72, .045, 'rose_gold')
++        for j in range(13):
++            a = j * math.pi / 12
++            jewel((cx + .785 * math.cos(a), -.025, 3.35 + .785 * math.sin(a)),
++                  (.09, .075, .09), 'rose_gold', 6)
++        for side in (-1, 1):
++            for z in (.85, 1.45, 2.05, 2.65, 3.25):
++                jewel((cx + side * .785, -.025, z), (.09, .075, .09), 'gem_rose', 4)
++            scroll(cx + side * .50, -.09, .84, .14, side)
++        star((cx, -.035, 4.10), .14, 'gold', points=8, depth=.055)
++        jewel((cx, .015, 4.10), (.11, .08, .11), 'gem_amber')
++    for x in (-2.90, -.99, .99, 2.90):
++        box((x, -.04, .59), (.20, .60, .25), 'ivory')
++        # Fluted prism with alternating radial recesses.
++        n = 16
++        verts = [(x + (.105 if i % 2 else .075) * math.cos(TAU * i / n),
++                  -.06 + (.22 if i % 2 else .185) * math.sin(TAU * i / n), z)
++                 for z in (.72, 3.91) for i in range(n)]
++        faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++        faces += [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)]
++        add(verts, faces, 'ivory')
++        for z in (.75, 3.91, 4.04):
++            box((x, -.035, z), (.21, .59, .09), 'gold')
++        jewel((x, .27, 4.04), (.13, .08, .13), 'gem_rose')
++
++
++def sector(inner, outer, a0, a1, low, high, role, n=6):
++    profile = [(outer * math.sin(a0 + (a1 - a0) * i / n),
++                outer * math.cos(a0 + (a1 - a0) * i / n)) for i in range(n + 1)]
++    profile += [(inner * math.sin(a0 + (a1 - a0) * i / n),
++                 inner * math.cos(a0 + (a1 - a0) * i / n)) for i in reversed(range(n + 1))]
++    prism(profile, low, high, role, 'Z')
++
++
++def roman_plaque(number, angle):
++    center = Vector((18.72 * math.sin(angle), 18.72 * math.cos(angle), 0))
++    rotation = -angle
++    transform = Euler((0, 0, rotation)).to_matrix()
++    box(center + Vector((0, 0, .020)), (1.80, .93, .04),
++        'rose_gold', (0, 0, rotation), bevel=.018)
++    box(center + Vector((0, 0, .045)), (1.62, .78, .035),
++        'ivory', (0, 0, rotation), bevel=.014)
++    glyphs = {'I': [((0, -.29), (0, .29))],
++              'V': [((-.17, .29), (0, -.29)), ((0, -.29), (.17, .29))],
++              'X': [((-.17, -.29), (.17, .29)), ((-.17, .29), (.17, -.29))]}
++    widths = {'I': .16, 'V': .40, 'X': .40}
++    text = ('I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII')[number - 1]
++    total = sum(widths[g] for g in text) + .11 * (len(text) - 1)
++    cursor = -total / 2
++    for glyph in text:
++        cx = cursor + widths[glyph] / 2
++        for a, b in glyphs[glyph]:
++            start = center + transform @ Vector((cx + a[0], a[1], .095))
++            end = center + transform @ Vector((cx + b[0], b[1], .095))
++            beam(start, end, .115, .065, 'gold', bevel=0)
++        cursor += widths[glyph] + .11
++
++
++def altar():
++    # Continuous open annulus. No disc or hidden underlay spans the arena.
++    ring((0, 0, -.125), 20, 2.5, .25, 'marble', 128)
++    ring((0, 0, -.045), 20, .15, .09, 'rose_gold', 128)
++    ring((0, 0, -.035), 17.68, .18, .07, 'gold', 128)
++    ring((0, 0, -.018), 19.81, .075, .036, 'gold', 128)
++    for i in range(12):
++        a = i * TAU / 12
++        roman_plaque(12 if i == 0 else i, a)
++        sector(17.92, 19.69, a + .075, a + TAU / 12 - .075,
++               -.012, .001, 'glaze_teal', 5)
++        mid = a + math.pi / 12
++        for r in (18.13, 19.48):
++            star((r * math.sin(mid), r * math.cos(mid), .017), .14,
++                 'tile_cream', 'Z', points=4, depth=.025)
++    for i in range(8):
++        a = math.radians(22.5) + i * math.pi / 4
++        x, y = 18.80 * math.sin(a), 18.80 * math.cos(a)
++        cylinder((x, y, .035), .26, .07, 'gold', 8)
++        for j in range(3):
++            dx, dy = ((0, 0), (.19, .035), (-.13, -.14))[j]
++            height = (.62, .40, .33)[j]
++            jewel((x + dx, y + dy, .06 + height / 2),
++                  (.23, .23, height), 'crystal' if j != 1 else 'crystal_rose',
++                  5, 'crystal_core')
++    for a in (0, math.pi / 2, math.pi, 3 * math.pi / 2):
++        box((10.75 * math.sin(a), 10.75 * math.cos(a), .015),
++            (.15, 13.5, .03), 'gold', (0, 0, -a), bevel=0)
++    cylinder((0, 0, .018), 2, .036, 'ivory', 64)
++    ring((0, 0, .020), 2, .10, .04, 'gold', 64)
++    ring((0, 0, .025), 1.71, .045, .025, 'rose_gold', 64)
++    for i in range(8):
++        a = TAU * i / 8
++        r = 1.60 if i % 2 == 0 else 1.18
++        tip = (r * math.sin(a), r * math.cos(a))
++        left = (.27 * math.sin(a - math.pi / 2), .27 * math.cos(a - math.pi / 2))
++        right = (.27 * math.sin(a + math.pi / 2), .27 * math.cos(a + math.pi / 2))
++        prism([(0, 0), left, tip], .036, .04, 'gold', 'Z')
++        prism([(0, 0), tip, right], .036, .04, 'tile_cream', 'Z')
++    cylinder((0, 0, .030), .21, .020, 'gold', 16)
++
++
++SPECS = [
++    ('MerchantMask', (.62, .25, .42), merchant_mask, 'BACK_CENTER', 6000),
++    ('SwordBox', (1.6, 1.6, 1.4), sword_box, 'BOTTOM_CENTER', 6000),
++    ('MagicSword', (.18, 1.8, .08), magic_sword, 'HILT', 6000),
++    ('MirrorPanel', (6, .25, 2.6), mirror_panel, 'BOTTOM_CENTER', 8000),
++    ('Dove', (.9, .8, .35), dove, 'BODY_CENTER', 6000),
++    ('NumberCard', (.9, .05, 1.3), number_card, 'BOTTOM_CENTER', 6000),
++    ('MemoryShard', (1, 1, 2.2), memory_shard, 'BOTTOM_CENTER', 6000),
++    ('Facade_Curtain', (8, 1.6, 5.5), curtain, 'BOTTOM_CENTER', 8000),
++    ('Facade_MirrorHall', (6, 1.2, 4.5), mirror_hall, 'BOTTOM_CENTER', 8000),
++    ('Altar', (40, 40, .25), altar, 'CENTER_FLOOR', 12000),
++]
++
++
++def bounds(obj):
++    coords = [v.co for v in obj.data.vertices]
++    return (Vector(tuple(min(v[i] for v in coords) for i in range(3))),
++            Vector(tuple(max(v[i] for v in coords) for i in range(3))))
++
++
++def triangle_count(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def finish(name, dimensions, origin, budget):
++    data = bpy.data.meshes.new(name + '_Mesh')
++    data.from_pydata(VERTICES, [], FACES)
++    data.update()
++    used = list(dict.fromkeys(FACE_ROLES))
++    for role in used:
++        data.materials.append(MATERIALS[role])
++    indices = {role: i for i, role in enumerate(used)}
++    for poly, role in zip(data.polygons, FACE_ROLES):
++        poly.material_index = indices[role]
++    obj = bpy.data.objects.new(name, data)
++    bpy.context.collection.objects.link(obj)
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    count = triangle_count(obj)
++    if count > budget:
++        modifier = obj.modifiers.new('Retain material boundaries within budget', 'DECIMATE')
++        modifier.ratio = (budget - 150) / count
++        modifier.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=modifier.name)
++    low, high = bounds(obj)
++    span = high - low
++    center = (low + high) / 2
++    if origin != 'CENTER_FLOOR':
++        for vertex in obj.data.vertices:
++            point = vertex.co.copy()
++            point.x = (point.x - center.x) * dimensions[0] / span.x
++            if origin == 'HILT':
++                point.y = (point.y - low.y) * dimensions[1] / span.y
++                point.z *= dimensions[2] / span.z
++            elif origin == 'BACK_CENTER':
++                point.y = (point.y - low.y) * dimensions[1] / span.y
++                point.z = (point.z - center.z) * dimensions[2] / span.z
++            elif origin == 'BODY_CENTER':
++                point.y *= dimensions[1] / span.y
++                point.z *= dimensions[2] / span.z
++            else:
++                point.y = (point.y - center.y) * dimensions[1] / span.y
++                point.z = (point.z - low.z) * dimensions[2] / span.z
++            vertex.co = point
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert all(edge.is_manifold for edge in bm.edges), (name, 'open mesh component')
++    bm.to_mesh(obj.data)
++    bm.free()
++    obj.data.update()
++    bpy.context.view_layer.update()
++    low, high = bounds(obj)
++    count = triangle_count(obj)
++    assert count <= budget, (name, count, budget)
++    assert len(used) >= 5, (name, used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    if origin == 'CENTER_FLOOR':
++        assert abs(low.z + .25) < 1e-5
++        assert abs(low.x + 20) < 1e-5 and abs(high.x - 20) < 1e-5
++        assert abs(low.y + 20) < 1e-5 and abs(high.y - 20) < 1e-5
++        # Every below-floor vertex belongs to the ring, never an interior disc.
++        assert all(math.hypot(v.co.x, v.co.y) >= 17.499
++                   for v in obj.data.vertices if v.co.z < -.001)
++    else:
++        assert all(abs(obj.dimensions[i] - dimensions[i]) < 1e-4 for i in range(3)), name
++    if name == 'MemoryShard':
++        assert all(v.co.z >= .3999 for p in obj.data.polygons
++                   if obj.data.materials[p.material_index].name != 'stardust'
++                   for v in (obj.data.vertices[i] for i in p.vertices))
++        obj['floor_clearance_m'] = .4
++    if origin == 'BOTTOM_CENTER':
++        assert abs(low.z) < 1e-5, name
++    if origin == 'BACK_CENTER':
++        assert abs(low.y) < 1e-5, name
++    if origin == 'HILT':
++        assert abs(low.y) < 1e-5 and high.y > 1.7999, name
++    obj['origin_convention'] = origin
++    obj['front'] = '+Y'
++    obj['triangle_count'] = count
++    obj['specified_dimensions_m'] = list(dimensions)
++    if name == 'Altar':
++        obj['ring_inner_radius_m'], obj['body_thickness_m'] = 17.5, .25
++        obj['floor_z_m'], obj['compass_diameter_m'] = 0, 4
++    destination = OUTPUT / ('Kit_' + name + '.fbx')
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++        use_custom_props=True,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024
++    print(f'EXPORTED {name} {count} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def verify_exports(objects):
++    """Round-trip each actual FBX and check one mesh, role names and dimensions."""
++    for original in objects:
++        before = set(bpy.data.objects)
++        bpy.ops.import_scene.fbx(filepath=str(OUTPUT / f'Kit_{original.name}.fbx'))
++        imported = set(bpy.data.objects) - before
++        assert len(imported) == 1, (original.name, 'FBX object count', len(imported))
++        copy = imported.pop()
++        assert copy.type == 'MESH' and len(copy.data.vertices) > 0
++        bpy.context.view_layer.update()
++        world_corners = [copy.matrix_world @ Vector(v) for v in copy.bound_box]
++        exported_size = [max(v[i] for v in world_corners) - min(v[i] for v in world_corners)
++                         for i in range(3)]
++        assert all(abs(exported_size[i] - original.dimensions[i]) < .002 for i in range(3)), (
++            original.name, exported_size, tuple(original.dimensions))
++        assert len(copy.data.materials) == len(original.data.materials)
++        for mat in copy.data.materials:
++            assert mat.name.rsplit('.', 1)[0] in PALETTE
++            bsdf = next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
++            assert all(abs(c - .5) < .001 for c in bsdf.inputs['Base Color'].default_value[:3])
++        mesh_data = copy.data
++        bpy.data.objects.remove(copy, do_unlink=True)
++        bpy.data.meshes.remove(mesh_data)
++    print('VERIFIED 10 single-mesh FBX round trips', flush=True)
++
++
++def preview(objects):
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.show_shadows = False
++    shade.show_cavity, shade.cavity_type = True, 'BOTH'
++    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.4, 1.1
++    shade.show_specular_highlight = False
++    shade.show_object_outline = True
++    shade.object_outline_color = (.045, .04, .06)
++    shade.background_type = 'WORLD'
++    scene.world = bpy.data.worlds.new('Preview background')
++    scene.world.color = (.035, .045, .065)
++    # Review-only magnification keeps the small handheld props legible in a row.
++    scales = [3.3, 1.25, 1.45, .80, 2.45, 1.9, 1.25, .72, .76, .15]
++    widths = [obj.dimensions.x * scale for obj, scale in zip(objects, scales)]
++    widths[2] = 1.8 * scales[2]
++    gap = .56
++    total = sum(widths) + gap * (len(objects) - 1)
++    cursor = -total / 2
++    saved = [(o.location.copy(), o.rotation_euler.copy(), o.scale.copy()) for o in objects]
++    helpers = []
++    try:
++        for role, mat in MATERIALS.items():
++            mat.diffuse_color = (*PALETTE[role], 1)
++        for i, (obj, scale, width) in enumerate(zip(objects, scales, widths)):
++            obj.scale = (scale,) * 3
++            obj.location = (cursor + width / 2, 0, 0)
++            if i == 2:
++                obj.rotation_euler.z = math.pi / 2
++                obj.location.x += .9 * scale
++                obj.location.z = .25
++            if i == 0:
++                obj.location.z = .9
++            if i == 4:
++                obj.location.z = .65
++            cursor += width + gap
++        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type = 'ORTHO'
++        camera.data.ortho_scale = total + 1.5
++        target = Vector((0, 0, 1.15))
++        elevation = math.radians(55)
++        camera.location = target + Vector((0, 40 * math.cos(elevation), 40 * math.sin(elevation)))
++        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
++        for obj in objects:
++            text = bpy.data.curves.new('Review caption', 'FONT')
++            text.body = obj.name
++            text.align_x, text.size = 'CENTER', .28
++            text.materials.append(MATERIALS['crystal_core'])
++            label = bpy.data.objects.new('Review caption ' + obj.name, text)
++            scene.collection.objects.link(label)
++            label.location = (obj.location.x, 1.7, -.30)
++            if obj.name == 'Altar':
++                label.location.y = 3.5
++            label.rotation_euler = camera.rotation_euler
++            helpers.append(label)
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        scene.camera = None
++        for helper in helpers:
++            bpy.data.objects.remove(helper, do_unlink=True)
++        for obj, (loc, rot, scale) in zip(objects, saved):
++            obj.location, obj.rotation_euler, obj.scale = loc, rot, scale
++        for mat in MATERIALS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++
++
++def main():
++    global VERTICES, FACES, FACE_ROLES
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
++    materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = []
++    for index, (name, dimensions, build, origin, budget) in enumerate(SPECS):
++        VERTICES, FACES, FACE_ROLES = [], [], []
++        random.seed(33129 + index * 7919)
++        build()
++        objects.append(finish(name, dimensions, origin, budget))
++    verify_exports(objects)
++    assert len(scene.objects) == 10 and all(o.type == 'MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects) == 10 and all(o.type == 'MESH' for o in scene.objects)
++    assert all(tuple(m.diffuse_color) == (.5, .5, .5, 1) for m in MATERIALS.values())
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch3_bossprops.py" in C:\Project\Cat_Tang
+ succeeded in 4070ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch3_bossprops.py:43: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MerchantMask.fbx'
+export finished in 0.0066 sec.
+EXPORTED MerchantMask 2940 (0.62, 0.25, 0.42)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_SwordBox.fbx'
+export finished in 0.0078 sec.
+EXPORTED SwordBox 5196 (1.6, 1.6, 1.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MagicSword.fbx'
+export finished in 0.0054 sec.
+EXPORTED MagicSword 856 (0.18, 1.8, 0.08)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MirrorPanel.fbx'
+export finished in 0.0073 sec.
+EXPORTED MirrorPanel 5236 (6.0, 0.25, 2.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Dove.fbx'
+export finished in 0.0057 sec.
+EXPORTED Dove 852 (0.9, 0.8, 0.35)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_NumberCard.fbx'
+export finished in 0.0070 sec.
+EXPORTED NumberCard 4600 (0.9, 0.05, 1.3)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_MemoryShard.fbx'
+export finished in 0.0055 sec.
+EXPORTED MemoryShard 504 (1.0, 1.0, 2.2)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Facade_Curtain.fbx'
+export finished in 0.0097 sec.
+EXPORTED Facade_Curtain 7888 (8.0, 1.6, 5.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Facade_MirrorHall.fbx'
+export finished in 0.0085 sec.
+EXPORTED Facade_MirrorHall 6960 (6.0, 1.2, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch3\\Kit_Altar.fbx'
+export finished in 0.0095 sec.
+EXPORTED Altar 9132 (40.0, 40.0, 0.93)
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+FBX version: 7400
+VERIFIED 10 single-mesh FBX round trips
+00:03.688  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_bossprops_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch3_bossprops_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Item Art/tools/blender_kit_ch3_bossprops.py,Art/tools/specs/blender_kit_ch3_bossprops_preview.png | Select-Object Name,Length; Get-ChildItem Game/Assets/Art/Characters/Ch3/Kit_*.fbx | Where-Object { $_.BaseName -match '"'"'^Kit_(MerchantMask|SwordBox|MagicSword|MirrorPanel|Dove|NumberCard|MemoryShard|Facade_Curtain|Facade_MirrorHall|Altar)$'"' } | Select-Object Name,Length" in C:\Project\Cat_Tang
+ succeeded in 319ms:
+
+Name                                   Length
+----                                   ------
+blender_kit_ch3_bossprops.py            39769
+blender_kit_ch3_bossprops_preview.png 1536688
+Kit_Altar.fbx                          114044
+Kit_Dove.fbx                            34092
+Kit_Facade_Curtain.fbx                 100636
+Kit_Facade_MirrorHall.fbx               94748
+Kit_MagicSword.fbx                      31276
+Kit_MemoryShard.fbx                     29900
+Kit_MerchantMask.fbx                    61436
+Kit_MirrorPanel.fbx                     77468
+Kit_NumberCard.fbx                      71740
+Kit_SwordBox.fbx                        68316
+
+
+
+codex
+Created [the script](C:/Project/Cat_Tang/Art/tools/blender_kit_ch3_bossprops.py) and ran the requested command successfully through `DONE`.
+
+- Exported all 10 FBXs and verified each by re-importing.
+- Generated the [1600×900 preview](C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch3_bossprops_preview.png).
+- Altar uses 9,132 triangles.
+
+Altar’s 0.25m specifies the submerged body thickness, with ornaments extending above Z=0. The preview uses per-piece display scaling.
+tokens used
+55,624
+Created [the script](C:/Project/Cat_Tang/Art/tools/blender_kit_ch3_bossprops.py) and ran the requested command successfully through `DONE`.
+
+- Exported all 10 FBXs and verified each by re-importing.
+- Generated the [1600×900 preview](C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch3_bossprops_preview.png).
+- Altar uses 9,132 triangles.
+
+Altar’s 0.25m specifies the submerged body thickness, with ornaments extending above Z=0. The preview uses per-piece display scaling.

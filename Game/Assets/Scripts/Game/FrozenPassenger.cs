@@ -18,7 +18,7 @@ namespace CatTang
         };
         public static readonly List<FrozenPassenger> All = new();
 
-        static readonly Color DustCol = new(0.78f, 0.76f, 0.72f);
+        static readonly Color DustCol = FxBurst.MistDust;
         static readonly Color GlowCol = new(0.85f, 0.95f, 1f);
 
         readonly List<Renderer> body = new();

@@ -140,6 +140,7 @@ namespace CatTang
             var layout = new StageLayout { root = new GameObject(boss ? "Stage_Boss" : "Stage").transform };
             layout.root.position = origin;
             var rnd = new System.Random(seed);
+            MirrorReflection.Ensure(Ch3Kit.Is(ch) && Ch3Kit.GroundName() == "Ground");   // 3장 거울 호수 바닥: 실시간 반사 (구름 바닥 스테이지는 끔)
             var cells = new List<Vector2Int> { Vector2Int.zero };
             if (!boss)
                 while (cells.Count < roomCount)
@@ -153,7 +154,7 @@ namespace CatTang
                     cells.Add(pick);
                 }
             var cellSize = CellSize;
-            var roomSize = sizeOverride ?? (boss ? new Vector2(34, 30) : RoomSize);
+            var roomSize = sizeOverride ?? (boss ? (Ch2Kit.Is(ch) ? Ch2Kit.BossRoomSize : Ch3Kit.Is(ch) ? Ch3Kit.BossRoomSize : new Vector2(34, 30)) : RoomSize);   // 3장 보스 = 거울 제단 지름 40m   // 2장 보스 = 전차대 지름 32m가 들어가게
             var floor = Mat(boss ? Color.Lerp(ch.Floor, new Color(0.3f, 0.25f, 0.45f), 0.45f) : ch.Floor, 0);
             var wall = Mat(ch.Wall, 4);
             var gateM = Mat(new Color(0.85f, 0.62f, 0.25f), 4);
@@ -179,7 +180,7 @@ namespace CatTang
                 info.farSide = next.HasValue ? new Vector3(next.Value.x, 0, next.Value.y) : (prev.HasValue ? new Vector3(-prev.Value.x, 0, -prev.Value.y) : Vector3.forward);
                 float hw = roomSize.x / 2, hd = roomSize.y / 2;
                 var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(roomSize.x, 0.2f, roomSize.y), floor);
-                if (!Kit.TileFloor(ch, info.root, roomSize, floorGo, seed + i))
+                if (!Kit.TileFloor(ch, info.root, roomSize, floorGo, seed + i, Ch3Kit.Is(ch) ? Ch3Kit.GroundName() : "Ground"))
                 {
                     Prim(PrimitiveType.Cylinder, "FloorClock", info.root, new Vector3(0, 0.005f, 0), new Vector3(roomSize.y * 0.55f, 0.01f, roomSize.y * 0.55f), ring, false);
                     Prim(PrimitiveType.Cylinder, "FloorClockIn", info.root, new Vector3(0, 0.012f, 0), new Vector3(roomSize.y * 0.5f, 0.01f, roomSize.y * 0.5f), floor, false);
@@ -224,6 +225,7 @@ namespace CatTang
                     }
                 }
                 if (!boss) AddShape(ch, info, rnd);
+                if (!boss && ch != null && ch.Id == 3) MirrorShard.SpawnSet(ch, info, rnd);   // 3장: 떠다니는 거울 조각 3개
                 if (KitProps(ch, info, hw, hd, rnd, boss)) { layout.rooms.Add(info); continue; }
                 int props = boss ? 8 : 7;
                 for (int k = 0; k < props; k++)
@@ -268,6 +270,12 @@ namespace CatTang
                 // 2장: 장소별 지형지물 (크기는 프리팹 경계로 잼). 객차 방은 객차를 나란히
                 Ch2Kit.Coaches(ch, info, rnd);
                 foreach (var n in Ch2Kit.Landmarks())
+                    if (Kit.Has(ch, n)) { var lb = Kit.LocalBounds(Kit.Prefab(ch, n)); pool.Add((n, lb.size.x, lb.size.z)); }
+            }
+            else if (Ch3Kit.Is(ch))
+            {
+                // 3장: 장소별 지형지물 (크기는 프리팹 경계로 잼)
+                foreach (var n in Ch3Kit.Landmarks())
                     if (Kit.Has(ch, n)) { var lb = Kit.LocalBounds(Kit.Prefab(ch, n)); pool.Add((n, lb.size.x, lb.size.z)); }
             }
             else
@@ -324,9 +332,18 @@ namespace CatTang
         {
             var rnd = new System.Random(seed + 77);
             var size = SaloonSize;
+            if (Ch3Kit.Is(ch))
+            {
+                // 3장 거울 극장 (2026-11-18 사용자: 훨씬 크게) 36×32m: 들어오는 쪽 벽은 제자리(복도와 맞음), 나머지 방향으로 넓힘.
+                // 옆 · 뒤 칸 방과는 복도 10m 틈 안에서 늘어나 겹치지 않음. 뒷문 복도는 CellDepth - hd - 12 = 6m
+                size = Ch3Kit.TheaterSize;
+                float extra = Mathf.Abs(entrance.x) > 0.5f ? (size.x - RoomSize.x) / 2 : (size.y - RoomSize.y) / 2;
+                center -= entrance * extra;
+            }
             var info = new RoomInfo { center = center, size = size, midBoss = true, farSide = Vector3.forward };
             bool hall2 = Ch2Kit.Is(ch);                                      // 2장: 대합실 (태엽 역장)
-            info.root = new GameObject(hall2 ? "WaitingHall" : "Saloon").transform;
+            bool hall3 = Ch3Kit.Is(ch);                                      // 3장: 거울 극장 (신기루 마술사) — 뒷벽 무대 커튼, 양옆 거울 벽, 바닥 거울, 장애물 없음
+            info.root = new GameObject(hall3 ? "MirrorTheater" : hall2 ? "WaitingHall" : "Saloon").transform;
             info.root.SetParent(layout.root, false);
             info.root.position = center;
             float hw = size.x / 2, hd = size.y / 2;
@@ -334,8 +351,8 @@ namespace CatTang
             var gateM = Mat(new Color(0.55f, 0.33f, 0.19f), 4);
             var floorM = Mat(new Color(0.5f, 0.32f, 0.2f), 0);
             var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(size.x, 0.2f, size.y), floorM);
-            Kit.TileFloor(ch, info.root, size, floorGo, seed, hall2 ? "Ground" : "SaloonFloor", false);
-            string innerWall = hall2 ? "Wall" : "PlankWall";
+            Kit.TileFloor(ch, info.root, size, floorGo, seed, hall2 || hall3 ? "Ground" : "SaloonFloor", false);
+            string innerWall = hall3 ? "Facade_MirrorHall" : hall2 ? "Wall" : "PlankWall";
             var ent = new Vector2Int(Mathf.RoundToInt(entrance.x), Mathf.RoundToInt(entrance.z));
             var back = new Vector2Int(0, 1);
             foreach (var side in new[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
@@ -350,12 +367,13 @@ namespace CatTang
                     Kit.TileWall(ch, Prim(PrimitiveType.Cube, "Wall", info.root, pos, horizontal ? new Vector3(len, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, len), wall), inward, innerWall);
                     continue;
                 }
+                string sideWall = hall3 && side == back ? "Facade_Curtain" : innerWall;   // 거울 극장 뒷벽 = 무대 커튼
                 float seg = len / 2 - 2.3f;
                 for (int k = -1; k <= 1; k += 2)
                 {
                     var off = horizontal ? new Vector3(k * (2.3f + seg / 2), 0, 0) : new Vector3(0, 0, k * (2.3f + seg / 2));
                     var cube = Prim(PrimitiveType.Cube, "Wall", info.root, pos + off, horizontal ? new Vector3(seg, 2.5f, 0.6f) : new Vector3(0.6f, 2.5f, seg), wall);
-                    Kit.TileWall(ch, cube, inward, innerWall);
+                    Kit.TileWall(ch, cube, inward, sideWall);
                     if (side == ent) Kit.TileWall(ch, cube, -inward, "Wall", false);     // 바깥에서 보면 술집 건물 정면 (2장 대합실도 낮은 벽 — 높은 역 건물은 카메라를 가림)
                 }
                 // 문: 여닫이 술집 문(장식) + 막는 문짝(평소 닫힘 → RunManager가 열어 줌)
@@ -380,6 +398,7 @@ namespace CatTang
                 }
             }
             if (hall2) { Ch2Kit.WaitingHall(ch, info, hw, hd, rnd); layout.rooms.Add(info); return; }
+            if (hall3) { layout.rooms.Add(info); return; }                    // 거울 극장: 장애물 없음 (거울 시계 기믹 공간)
             // 실내 소품: 뒷벽 양쪽 카운터(보스가 그 사이에서 나옴), 모서리 술통 더미, 화약통 · 상자
             Kit.Place(ch, "BarCounter", info.root, new Vector3(-7f, 0, hd - 2.2f), 180f);
             Kit.Place(ch, "BarCounter", info.root, new Vector3(7f, 0, hd - 2.2f), 180f);
@@ -403,6 +422,7 @@ namespace CatTang
         {
             var root = info.root;
             if (Ch2Kit.Is(ch)) { Ch2Kit.Props(ch, info, hw, hd, rnd, boss); return true; }
+            if (Ch3Kit.Is(ch)) { Ch3Kit.Props(ch, info, hw, hd, rnd, boss); return true; }
             if (!Kit.Has(ch, "Keg")) return false;
             var spots = new List<Vector3>();
             for (float x = -hw + 3f; x <= hw - 3f; x += 3f)
@@ -470,31 +490,69 @@ namespace CatTang
             return d;
         }
 
-        /// <summary>상인: 큰 모자 쓴 도형 사람 + 수레</summary>
+        /// <summary>
+        /// 상인: 바닥에서 장사 자리(1장 술집 카운터 · 2장 매표 창구, 키트 없으면 수레)가 솟고 그 뒤에 상인이 섬 (2026-11-18 사용자: 카운터만 솟고 상인 모습이 안 나옴).
+        /// 상인 모델 = Resources/Merchants/Ch{장}_Merchant 프리팹 (Tripo). 없으면 3장 이상은 고양이 모델을 좌우 반전(거울 속 고양이), 그 외엔 임시 도형 사람.
+        /// </summary>
         public static GameObject MerchantNpc(Transform root, Vector3 pos)
         {
             var go = new GameObject("Merchant");
             go.transform.SetParent(root, false);
             go.transform.localPosition = pos;
-            // 1장: 한쪽 바닥에서 술집 카운터가 솟아오르며 상인 등장 (키트가 있을 때)
             var rm = RunManager.Instance;
-            // 2장: 바닥에서 매표 창구(매표소 직원)가 솟아오름
-            string counter = rm && Kit.Has(rm.Chapter, "TicketBooth") ? "TicketBooth" : "BarCounter";
-            if (rm && Kit.Has(rm.Chapter, counter))
+            // 장사 자리는 늘 카메라(남쪽)를 보고, 상인은 그 뒤(북쪽)에 섬 → 위에서 내려다봐도 카운터 너머 상인이 보임
+            var dir = Vector3.back;
+            float yaw = 180f;
+            string counter = rm && Kit.Has(rm.Chapter, "MerchantMirror") ? "MerchantMirror" : rm && Kit.Has(rm.Chapter, "TicketBooth") ? "TicketBooth" : "BarCounter";
+            var stall = rm ? Kit.Place(rm.Chapter, counter, go.transform, Vector3.zero, yaw) : null;
+            // 상인이 서는 곳: 카운터는 그 뒤(손님 반대쪽). 지붕 있는 매표 창구는 위에서 안 보여서 창구 옆에 나와 섬
+            Vector3 spot = -dir * 1.0f;
+            if (stall)
             {
-                var dir = Effects.Flat(-pos).normalized;
-                Kit.Place(rm.Chapter, counter, go.transform, Vector3.zero, Quaternion.LookRotation(dir.sqrMagnitude > 0 ? dir : Vector3.forward).eulerAngles.y);
-                go.AddComponent<RiseUp>();
-                Interactable.WorldIcon(go.transform, "UI/coin", new Vector3(0, 3.3f, 0), 0.8f);
-                return go;
+                var bb = Kit.LocalBounds(stall);
+                if (counter == "TicketBooth") spot = Vector3.right * (bb.size.x * 0.5f + 0.75f) + dir * 0.2f;
+                else if (counter == "MerchantMirror") spot = dir * Mathf.Clamp(bb.size.z * 0.5f - 0.45f, 0.3f, 1.2f) + Vector3.up * 0.35f;   // 3장: 선 거울 앞 발판 위 (거울에서 막 걸어 나온 거울 속 고양이)
+                else spot = -dir * Mathf.Clamp(Mathf.Min(bb.size.x, bb.size.z) * 0.5f + 0.55f, 0.8f, 2.2f);
             }
-            Prim(PrimitiveType.Capsule, "Body", go.transform, new Vector3(0, 0.9f, 0), new Vector3(0.9f, 0.9f, 0.9f), Mat(new Color(0.4f, 0.55f, 0.45f), 5), true);
-            Prim(PrimitiveType.Sphere, "Head", go.transform, new Vector3(0, 2.0f, 0), Vector3.one * 0.7f, Mat(new Color(0.9f, 0.78f, 0.62f), 5), false);
-            Prim(PrimitiveType.Cylinder, "Hat", go.transform, new Vector3(0, 2.35f, 0), new Vector3(1.4f, 0.04f, 1.4f), Mat(new Color(0.35f, 0.25f, 0.18f), 5), false);
-            Prim(PrimitiveType.Cylinder, "HatTop", go.transform, new Vector3(0, 2.55f, 0), new Vector3(0.6f, 0.2f, 0.6f), Mat(new Color(0.35f, 0.25f, 0.18f), 5), false);
-            Prim(PrimitiveType.Cube, "Cart", go.transform, new Vector3(-1.4f, 0.5f, 0), new Vector3(1.4f, 0.8f, 1.0f), Mat(new Color(0.7f, 0.5f, 0.3f)), true);
-            Interactable.WorldIcon(go.transform, "UI/coin", new Vector3(0, 3.3f, 0), 0.8f);
+            else Prim(PrimitiveType.Cube, "Cart", go.transform, new Vector3(0, 0.5f, 0), new Vector3(2.2f, 1.0f, 1.0f), Mat(new Color(0.7f, 0.5f, 0.3f)), true, new Vector3(0, yaw, 0));
+            MerchantFigure(go.transform, rm ? rm.chapter : 1, spot, yaw);
+            go.AddComponent<RiseUp>();
+            Interactable.WorldIcon(go.transform, "UI/coin", new Vector3(0, 3.6f, 0), 0.8f);
             return go;
+        }
+
+        static GameObject MerchantFigure(Transform parent, int chapter, Vector3 localPos, float yaw)
+        {
+            GameObject fig = null;
+            bool ghost = false;
+            var prefab = Resources.Load<GameObject>($"Merchants/Ch{chapter}_Merchant");
+            if (prefab) fig = Object.Instantiate(prefab, parent, false);
+            else if (chapter >= 3 && PlayerController.Instance && PlayerController.Instance.model)
+            {
+                // 거울 속 고양이: 고양이 모델을 복제해 좌우 반전 (움직이는 스크립트는 떼고 그림 · 애니메이터만)
+                fig = Object.Instantiate(PlayerController.Instance.model.gameObject, parent, false);
+                foreach (var mb in fig.GetComponentsInChildren<MonoBehaviour>(true)) Object.Destroy(mb);
+                foreach (var c in fig.GetComponentsInChildren<Collider>(true)) Object.Destroy(c);
+                var ls = fig.transform.localScale; fig.transform.localScale = new Vector3(-Mathf.Abs(ls.x), ls.y, ls.z);
+                ghost = true;
+            }
+            if (!fig)
+            {
+                // 임시 도형 사람 (Tripo 상인 모델이 들어오기 전까지)
+                fig = new GameObject("MerchantShape");
+                fig.transform.SetParent(parent, false);
+                var cloth = chapter == 2 ? new Color(0.22f, 0.3f, 0.45f) : new Color(0.75f, 0.72f, 0.66f);
+                Prim(PrimitiveType.Capsule, "Body", fig.transform, new Vector3(0, 0.9f, 0), new Vector3(0.8f, 0.9f, 0.8f), Mat(cloth, 5), false);
+                Prim(PrimitiveType.Cube, "Vest", fig.transform, new Vector3(0, 1.15f, 0.2f), new Vector3(0.62f, 0.7f, 0.42f), Mat(new Color(0.35f, 0.18f, 0.12f), 5), false);
+                Prim(PrimitiveType.Sphere, "Head", fig.transform, new Vector3(0, 2.0f, 0), Vector3.one * 0.65f, Mat(new Color(0.9f, 0.78f, 0.62f), 5), false);
+                Prim(PrimitiveType.Cylinder, "Hat", fig.transform, new Vector3(0, 2.3f, 0), new Vector3(chapter == 2 ? 0.75f : 1.2f, 0.04f, chapter == 2 ? 0.75f : 1.2f), Mat(new Color(0.2f, 0.16f, 0.14f), 5), false);
+                Prim(PrimitiveType.Cylinder, "HatTop", fig.transform, new Vector3(0, 2.48f, 0), new Vector3(0.6f, 0.18f, 0.6f), Mat(new Color(0.2f, 0.16f, 0.14f), 5), false);
+            }
+            fig.name = "MerchantFigure";
+            fig.transform.localPosition = localPos;
+            fig.transform.localRotation = Quaternion.Euler(0, yaw, 0);
+            if (ghost) MirrorGhost.Apply(fig);   // 거울 속 고양이: 반투명 거울빛 몸 + 가면 + 오라 (2026-11-18 사용자)
+            return fig;
         }
     }
 }

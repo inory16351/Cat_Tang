@@ -144,7 +144,7 @@ namespace CatTang
                     else
                     {
                         landed = true;
-                        FxBurst.Spawn(new Vector3(transform.position.x, groundY + 0.1f, transform.position.z), 1f, FxBurst.Kind.Dust, new Color(0.92f, 0.8f, 0.55f));
+                        FxBurst.Spawn(new Vector3(transform.position.x, groundY + 0.1f, transform.position.z), 1f, FxBurst.Kind.Dust, FxBurst.MistDust);
                     }
                 }
                 return;
@@ -171,6 +171,7 @@ namespace CatTang
         {
             float amount = p.health.maxHp * HealPct;
             p.health.Heal(amount);
+            Sfx.Play("heart", 0.8f, 0.02f);
             FxBurst.Spawn(p.transform.position + Vector3.up * 1f, 2f, FxBurst.Kind.Gold, Red);
             FindFirstObjectByType<GameUI>()?.Toast($"체력 +{Mathf.RoundToInt(amount)}");
             Destroy(gameObject);

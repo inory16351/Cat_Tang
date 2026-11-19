@@ -1,43 +1,83 @@
-// 판이 끝나도 남는 것 (PlayerPrefs 저장)
-// - 시간의 조각, 기억(성장 노드) 단계
-// - 챕터 클리어, 마을 시설 해금 · 레벨
-// - 총포상: 해금한 총 · 시작 총 / 탄약 공방: 탄 풀 / 의상실: 해금 코스튬 · 선택
-using System.Collections.Generic;
+// 판이 끝나도 남는 것 (PlayerPrefs 저장, 저장 슬롯 3개 — 2026-11-18 사용자: 메인 로비에서 슬롯 고르기)
+// - 시간의 조각, 기억(능력치) 단계, 챕터 클리어
+// - 해금 (2026-11-18 사용자: 시설 레벨 없앰, 여타 로그라이크처럼 새 아이템 해금이 주요 성장):
+//   총포상 · 탄약 공방 = 해금 묶음(Unlock 표)을 조각으로 사면 묶음 안 아이템이 드랍 · 상점 · 시작 총에 풀림 (세피리아식)
+//   의상실 = 코스튬마다 업적 조건을 채우면 조각으로 구매
+//   기억의 방 = 능력치 노드, 챕터를 넘을수록 노드가 더 열림
+using System;
 using UnityEngine;
 
 namespace CatTang
 {
     public static class Meta
     {
-        const string P = "cattang.";
+        // ---------- 저장 슬롯 ----------
+        public const int SlotCount = 3;
+        const string Root = "cattang.";
+        public static int ActiveSlot
+        {
+            get => Mathf.Clamp(PlayerPrefs.GetInt(Root + "slot", 1), 1, SlotCount);
+            set { PlayerPrefs.SetInt(Root + "slot", Mathf.Clamp(value, 1, SlotCount)); PlayerPrefs.Save(); }
+        }
+        // 슬롯을 지우면 세대(gen)를 올려 새 키 묶음을 씀 (PlayerPrefs는 키 목록을 못 얻음)
+        static int Gen(int s) => PlayerPrefs.GetInt($"{Root}s{s}.gen", 0);
+        static string SlotPrefix(int s) => $"{Root}s{s}g{Gen(s)}.";
+        static string P => SlotPrefix(ActiveSlot);
+
+        public static bool SlotUsed(int s) => PlayerPrefs.GetInt(SlotPrefix(s) + "used", 0) == 1;
+        public static int SlotChapters(int s) => PlayerPrefs.GetInt(SlotPrefix(s) + "chapters", 0);
+        public static int SlotShards(int s) => PlayerPrefs.GetInt(SlotPrefix(s) + "shards", 0);
+        public static int SlotRuns(int s) => PlayerPrefs.GetInt(SlotPrefix(s) + "runs", 0);
+        public static string SlotLastPlayed(int s) => PlayerPrefs.GetString(SlotPrefix(s) + "last", "");
+
+        /// <summary>슬롯을 골라 시작 (빈 슬롯이면 새로 만듦)</summary>
+        public static void BeginSlot(int s)
+        {
+            ActiveSlot = s;
+            if (!SlotUsed(s)) PlayerPrefs.SetInt(P + "used", 1);
+            Touch();
+        }
+
+        public static void DeleteSlot(int s)
+        {
+            PlayerPrefs.SetInt($"{Root}s{s}.gen", Gen(s) + 1);
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>마지막 플레이 시각 기록 + 저장</summary>
+        static void Touch()
+        {
+            PlayerPrefs.SetString(P + "last", DateTime.Now.ToString("yyyy.MM.dd HH:mm"));
+            PlayerPrefs.Save();
+        }
+
+        public static void RunEnded()
+        {
+            PlayerPrefs.SetInt(P + "runs", SlotRuns(ActiveSlot) + 1);
+            Touch();
+        }
 
         // ---------- 시간의 조각 ----------
         public static int Shards
         {
             get => PlayerPrefs.GetInt(P + "shards", 0);
-            set { PlayerPrefs.SetInt(P + "shards", Mathf.Max(0, value)); PlayerPrefs.Save(); }
+            set { PlayerPrefs.SetInt(P + "shards", Mathf.Max(0, value)); Touch(); }
         }
 
-        // ---------- 기억 (성장 노드) ----------
+        // ---------- 기억 (능력치 노드) ----------
         public static int Level(int nodeId) => PlayerPrefs.GetInt(P + "memory." + nodeId, 0);
         public static int CostOf(MemoryNodeDef n) => n.BaseCost * (Level(n.Id) + 1);
 
-        /// <summary>기억의 방 레벨이 오르면 찍을 수 있는 노드가 늘어남 (1: 앞 3개, 2: 5개, 3: 전부)</summary>
-        public static bool NodeAvailable(MemoryNodeDef n)
-        {
-            int idx = Tables.MemoryNodes.IndexOf(n);
-            int lv = FacilityLevel(Facility.MemoryRoom);
-            int open = lv >= 3 ? 99 : lv == 2 ? 5 : 3;
-            return idx < open;
-        }
+        /// <summary>챕터를 넘을수록 찍을 수 있는 노드가 늘어남 (처음 3개, 한 장마다 +2)</summary>
+        public static int MemoryNodesOpen => 3 + 2 * ChaptersCleared;
+        public static bool NodeAvailable(MemoryNodeDef n) => Tables.MemoryNodes.IndexOf(n) < MemoryNodesOpen;
 
         public static bool TryBuy(MemoryNodeDef n)
         {
-            int lv = Level(n.Id);
-            if (lv >= n.MaxLevel || !NodeAvailable(n) || Shards < CostOf(n)) return false;
-            Shards -= CostOf(n);
+            int lv = Level(n.Id), cost = CostOf(n);
+            if (lv >= n.MaxLevel || !NodeAvailable(n) || Shards < cost) return false;
             PlayerPrefs.SetInt(P + "memory." + n.Id, lv + 1);
-            PlayerPrefs.Save();
+            Shards -= cost;
             return true;
         }
 
@@ -54,74 +94,96 @@ namespace CatTang
         public static int ChaptersCleared
         {
             get => PlayerPrefs.GetInt(P + "chapters", 0);
-            set { PlayerPrefs.SetInt(P + "chapters", Mathf.Clamp(value, 0, ChapterCount)); PlayerPrefs.Save(); }
+            set { PlayerPrefs.SetInt(P + "chapters", Mathf.Clamp(value, 0, ChapterCount)); Touch(); }
         }
         public static void MarkChapterCleared(int chapter) { if (chapter > ChaptersCleared) ChaptersCleared = chapter; }
         public static int SelectedChapter = 1;                       // 마을 → 판 시작 때 넘김
 
-        // ---------- 마을 시설 ----------
+        // ---------- 마을 시설 (레벨 없음, 챕터로 열림) ----------
         public enum Facility { MemoryRoom, GunShop, AmmoWorkshop, Wardrobe }
         public static readonly string[] FacilityName = { "기억의 방", "총포상", "탄약 공방", "의상실" };
-        public static readonly int[] FacilityUnlockChapter = { 0, 1, 2, 3 };    // 그 챕터 보스를 넘으면 열림
-        public const int FacilityMaxLevel = 3;
-
+        public static readonly string[] FacilityNpc = { "태엽 풀린 뻐꾸기", "빈 외투 보안관", "모래시계 대장장이", "실타래 재봉사" };
+        // 2026-11-18 사용자: 장(맵)을 넘을 때마다 마을 섬 · NPC가 하나씩 열림 — 1장 = 기억의 방(노드 성장) · 2장 = 의상실 · 탄약 공방 · 3장 = 총포상
+        public static readonly int[] FacilityUnlockChapter = { 1, 3, 2, 2 };    // 그 챕터 보스를 넘으면 열림
         public static bool FacilityUnlocked(Facility f) => ChaptersCleared >= FacilityUnlockChapter[(int)f];
-        public static int FacilityLevel(Facility f) =>
-            FacilityUnlocked(f) ? Mathf.Max(1, PlayerPrefs.GetInt(P + "facility." + (int)f, 1)) : 0;
-        public static int FacilityUpgradeCost(Facility f) => 30 * FacilityLevel(f);
 
-        public static bool TryUpgradeFacility(Facility f)
+        // ---------- 마을 이야기 (본 대화 기록) ----------
+        public static bool StorySeen(string key) => PlayerPrefs.GetInt(P + "story." + key, 0) == 1;
+        public static void MarkStory(string key) { PlayerPrefs.SetInt(P + "story." + key, 1); Touch(); }
+        /// <summary>이 슬롯에서 판을 한 번도 안 했음 → 새로 시작하면 마을을 거치지 않고 바로 1장 전투부터</summary>
+        public static bool FirstRunPending => SlotRuns(ActiveSlot) == 0 && ChaptersCleared == 0;
+
+        // ---------- 해금 묶음 (총포상 · 탄약 공방) ----------
+        // 2026-11-18 사용자: 지금 있는 총탄 · 총은 기본 해금, 묶음 구매는 앞으로 새로 만들 것만 (Unlock.csv는 비워 둠)
+        public static bool GroupOwned(UnlockGroupDef g) => g.Cost <= 0 || PlayerPrefs.GetInt(P + "group." + g.Id, 0) == 1;
+        public static bool GroupAvailable(UnlockGroupDef g) => ChaptersCleared >= g.ReqChapter;
+
+        public static bool TryBuyGroup(UnlockGroupDef g)
         {
-            int lv = FacilityLevel(f);
-            if (lv <= 0 || lv >= FacilityMaxLevel || Shards < FacilityUpgradeCost(f)) return false;
-            Shards -= FacilityUpgradeCost(f);
-            PlayerPrefs.SetInt(P + "facility." + (int)f, lv + 1);
-            PlayerPrefs.Save();
+            if (GroupOwned(g) || !GroupAvailable(g) || Shards < g.Cost) return false;
+            PlayerPrefs.SetInt(P + "group." + g.Id, 1);
+            Shards -= g.Cost;
             return true;
         }
 
-        // ---------- 총포상 ----------
-        public static bool GunUnlocked(int id) => id == 2001 || PlayerPrefs.GetInt(P + "gun." + id, 0) == 1;
-        public static int GunUnlockCost(GunDef g) => g.Grade switch { "Common" => 15, "Rare" => 30, "Epic" => 50, _ => 80 };
-        public static bool TryUnlockGun(GunDef g)
+        /// <summary>아이템이 풀렸는지: 그 아이템이 든 묶음을 하나라도 가졌으면. 어느 묶음에도 없는 아이템은 처음부터 풀림</summary>
+        public static bool ItemUnlocked(int id)
         {
-            if (GunUnlocked(g.Id) || !FacilityUnlocked(Facility.GunShop) || Shards < GunUnlockCost(g)) return false;
-            // 총포상 레벨에 따라 살 수 있는 등급: 1 일반 · 2 희귀까지 · 3 전부
-            int lv = FacilityLevel(Facility.GunShop);
-            if ((g.Grade == "Rare" && lv < 2) || ((g.Grade == "Epic" || g.Grade == "Legendary") && lv < 3)) return false;
-            Shards -= GunUnlockCost(g);
-            PlayerPrefs.SetInt(P + "gun." + g.Id, 1);
-            PlayerPrefs.Save();
-            return true;
+            bool listed = false;
+            foreach (var g in Tables.UnlockGroups)
+            {
+                if (!g.Items.Contains(id)) continue;
+                listed = true;
+                if (GroupOwned(g)) return true;
+            }
+            return !listed;
         }
-        public static int StartGunRight { get => PlayerPrefs.GetInt(P + "startgun.r", 2001); set { PlayerPrefs.SetInt(P + "startgun.r", value); PlayerPrefs.Save(); } }
-        public static int StartGunLeft { get => PlayerPrefs.GetInt(P + "startgun.l", 2001); set { PlayerPrefs.SetInt(P + "startgun.l", value); PlayerPrefs.Save(); } }
+        public static bool BulletUnlocked(int id) => id == 1000 || ItemUnlocked(id);
+        public static bool GunUnlocked(int id) => id == 2001 || ItemUnlocked(id);
 
-        // ---------- 탄약 공방: 드랍 · 상점 탄 풀 ----------
-        /// <summary>기본: 일반 · 희귀. 공방 1: +영웅, 2: +전설, 3: 판 시작 때 연산 1개</summary>
-        public static bool GradeInPool(string grade)
-        {
-            int lv = FacilityLevel(Facility.AmmoWorkshop);
-            return grade switch { "Common" => true, "Rare" => true, "Epic" => lv >= 1, "Legendary" => lv >= 2, _ => false };
-        }
-        public static bool StartWithOp => FacilityLevel(Facility.AmmoWorkshop) >= 3;
+        public static int StartGunRight { get => PlayerPrefs.GetInt(P + "startgun.r", 2001); set { PlayerPrefs.SetInt(P + "startgun.r", value); Touch(); } }
+        public static int StartGunLeft { get => PlayerPrefs.GetInt(P + "startgun.l", 2001); set { PlayerPrefs.SetInt(P + "startgun.l", value); Touch(); } }
 
-        // ---------- 의상실 ----------
+        // ---------- 업적 카운터 (코스튬 해금 조건) ----------
+        public static int Count(string key) => PlayerPrefs.GetInt(P + "count." + key, 0);
+        /// <summary>판 도중 자주 불려서 저장(Save)은 판 끝 · 조각 변화 때 같이 됨</summary>
+        public static void AddCount(string key, int n = 1) => PlayerPrefs.SetInt(P + "count." + key, Count(key) + n);
+        public const string CountExecute = "execute", CountJustDodge = "justdodge", CountTraitTier6 = "tier6";
+
+        // ---------- 의상실: 조건을 채우면 구매 ----------
         public static bool CostumeUnlocked(int id) => id == 4001 || PlayerPrefs.GetInt(P + "costume." + id, 0) == 1;
-        public static bool TryUnlockCostume(int id, int cost)
+
+        /// <summary>코스튬 업적 진행 (지금 값, 목표)</summary>
+        public static (int now, int goal) CostumeProgress(CostumeDef c) => c.UnlockType switch
         {
-            if (CostumeUnlocked(id) || !FacilityUnlocked(Facility.Wardrobe) || Shards < cost) return false;
-            Shards -= cost;
-            PlayerPrefs.SetInt(P + "costume." + id, 1);
-            PlayerPrefs.Save();
+            "ClearZone" or "KillBoss" => (Mathf.Min(ChaptersCleared, c.UnlockValue), c.UnlockValue),
+            "ExecuteCount" => (Mathf.Min(Count(CountExecute), c.UnlockValue), c.UnlockValue),
+            "JustDodgeCount" => (Mathf.Min(Count(CountJustDodge), c.UnlockValue), c.UnlockValue),
+            "TraitTier6" => (Mathf.Min(Count(CountTraitTier6), 1), 1),
+            _ => (1, 1)
+        };
+        public static bool CostumeCondMet(CostumeDef c) { var (n, g) = CostumeProgress(c); return n >= g; }
+
+        public static string CostumeCondText(CostumeDef c) => c.UnlockType switch
+        {
+            "ClearZone" => $"{c.UnlockValue}장 첫 클리어",
+            "KillBoss" => $"{c.UnlockValue}장 보스 처치",
+            "ExecuteCount" => $"누적 처형 {c.UnlockValue}회",
+            "JustDodgeCount" => $"누적 극한 회피 {c.UnlockValue}회",
+            "TraitTier6" => "특성 6단계 1번 달성",
+            _ => "처음부터"
+        };
+
+        public static bool TryUnlockCostume(CostumeDef c)
+        {
+            if (CostumeUnlocked(c.Id) || !FacilityUnlocked(Facility.Wardrobe) || !CostumeCondMet(c) || Shards < c.Cost) return false;
+            PlayerPrefs.SetInt(P + "costume." + c.Id, 1);
+            Shards -= c.Cost;
             return true;
         }
-        public static int SelectedCostume { get => PlayerPrefs.GetInt(P + "costume.sel", 4001); set { PlayerPrefs.SetInt(P + "costume.sel", value); PlayerPrefs.Save(); } }
+        public static int SelectedCostume { get => PlayerPrefs.GetInt(P + "costume.sel", 4001); set { PlayerPrefs.SetInt(P + "costume.sel", value); Touch(); } }
 
-        public static void ResetAll()
-        {
-            PlayerPrefs.DeleteAll();
-            PlayerPrefs.Save();
-        }
+        /// <summary>지금 슬롯만 처음으로</summary>
+        public static void ResetAll() => DeleteSlot(ActiveSlot);
     }
 }

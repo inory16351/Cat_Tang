@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\enemy_die_v1.wav",
+  "source": {
+    "kind": "generate",
+    "title": "enemy_die",
+    "original_idea": "11:59 game SFX: enemy_die",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, clockwork monster, collapses into dark smoke: a soft whoomp poof with a fading ghostly hiss, smoke, cloth, small springs, close, dry.",
+    "sound_fields": {
+      "source": "clockwork monster",
+      "action": "collapses into dark smoke: a soft whoomp poof with a fading ghostly hiss",
+      "material": "smoke, cloth, small springs",
+      "space": "close, dry"
+    },
+    "bpm": null,
+    "seconds": 1.2,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 2,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "enemy_die_v1.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T10:10:15",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -3.65,
+    "raw_peak_dbfs": -3.65,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T10:10:15",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.589,
+  "steps": [
+    "trim_silence -45.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30.0 ms",
+    "peak normalize -1.0 dBFS (+2.65 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1186,
+  "file": "enemy_die_1.ogg"
+}

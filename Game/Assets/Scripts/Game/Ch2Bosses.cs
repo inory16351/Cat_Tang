@@ -1,6 +1,6 @@
 // 2장 보스 두 마리 (docs/Cat_Tang_레벨_디자인.md '태엽 역장' · '멈춘 기관차 거인')
 // 수치는 기획 값 그대로(2장 값은 이미 1장보다 25% 높게 잡혀 있어 챕터 피해 배율을 곱하지 않음)
-// 패턴 고르기 = 2장 규칙 '거리별 후보 70/30' (PatternPicker.PickWeighted), 직전 패턴 제외
+// 패턴 고르기 = 모든 보스 공통 규칙: 거리에 맞는 패턴 + 거리 무관 패턴 동일 확률, 직전 패턴 제외 (BossBrain · PatternPicker)
 //
 // - 중간 보스 '태엽 역장' (대합실 28×24m, 체력 2520 · 이속 3.5 · 가까움 5m)
 //   가까우면 신호봉 휘두르기 · 개찰 펀치 / 멀면 시간표 탄막 · 호루라기 열차 / 거리 무관 차장 호출(필드 2명 이하)
@@ -82,8 +82,6 @@ namespace CatTang
             Add("차장 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2);
             nextRed = Time.time + 12f;
         }
-
-        protected override BossPattern PickNext(bool near) => PatternPicker.PickWeighted(patterns, near, lastPattern);
 
         // 신호봉을 들고 고양이를 따라오며 거리를 좁힘
         protected override void Move(PlayerController p, Vector3 dir, float dist, float spd)
@@ -380,43 +378,66 @@ namespace CatTang
         }
     }
 
-    /// <summary>연기 링: 굴뚝에서 퍼지는 고리 (빈틈 1곳), 고양이가 고리 선에 닿으면 한 번 피해</summary>
+    /// <summary>
+    /// 연기 링: 굴뚝에서 퍼지는 고리 (빈틈 1곳), 고양이가 고리 앞 선에 닿으면 한 번 피해.
+    /// 겉모습 = 블렌더로 구운 연기 플립북(FX_SmokePuff, MCP로 만든 프리팹)이 고리 둘레에 늘어서 함께 퍼지며 부풂 + 앞 선을 알리는 옅은 줄
+    /// </summary>
     public class SmokeRing : MonoBehaviour
     {
-        float r, speed, dmg, maxR, gapHalf;
+        float r, speed, dmg, maxR, gapHalf, startAt;
         Vector3 gapDir;
-        bool hit;
+        bool hit, begun;
         LineRenderer lr;
-        const int Seg = 72;
+        readonly List<(Transform t, Vector3 dir)> puffs = new();
+        const int Seg = 72, Puffs = 30;
 
-        public static void Spawn(Vector3 at, float speed, float dmg, float maxR, Vector3 gapDir, float gapDeg = 45f)
+        /// <param name="delay">이만큼 기다렸다가 굴뚝에서 나옴 (3겹 연달아)</param>
+        public static void Spawn(Vector3 at, float speed, float dmg, float maxR, Vector3 gapDir, float gapDeg = 45f, float delay = 0f)
         {
             var go = new GameObject("SmokeRing");
             go.transform.position = new Vector3(at.x, 0.7f, at.z);
             var s = go.AddComponent<SmokeRing>();
             s.speed = speed; s.dmg = dmg; s.maxR = maxR; s.gapDir = Effects.Flat(gapDir).normalized; s.gapHalf = gapDeg / 2; s.r = 1.2f;
-            s.lr = go.AddComponent<LineRenderer>();
-            s.lr.sharedMaterial = Ch2Fx.LineMat();
-            s.lr.useWorldSpace = false;
-            s.lr.widthMultiplier = 0.55f;
-            s.lr.numCapVertices = 3;
-            s.lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            s.lr.startColor = s.lr.endColor = Ch2Fx.Smoke;
+            s.startAt = Time.time + delay;
+        }
+
+        void Begin()
+        {
+            begun = true;
+            lr = gameObject.AddComponent<LineRenderer>();
+            lr.sharedMaterial = Ch2Fx.LineMat();
+            lr.useWorldSpace = false;
+            lr.widthMultiplier = 0.22f;
+            lr.numCapVertices = 3;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // 연기 뭉치: 빈틈을 뺀 호에 고르게 (수명 = 링이 끝까지 퍼지는 시간)
+            float g0 = Mathf.Atan2(gapDir.x, gapDir.z) * Mathf.Rad2Deg;
+            for (int i = 0; i < Puffs; i++)
+            {
+                float a = (g0 + gapHalf + 6f + (360f - gapHalf * 2 - 12f) * (i + 0.5f) / Puffs) * Mathf.Deg2Rad;
+                var dir = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
+                var fx = FxEffect.Spawn("FX_SmokePuff", transform.position + dir * r, Quaternion.identity, Random.Range(1.5f, 1.9f));
+                if (fx) puffs.Add((fx.transform, dir));
+            }
+            FxBurst.Spawn(transform.position + Vector3.up * 5.5f, 1.8f, FxBurst.Kind.Dust, Ch2Fx.Smoke);
         }
 
         void Update()
         {
+            if (Time.time < startAt) return;
+            if (!begun) Begin();
             r += speed * Time.deltaTime;
             if (r > maxR) { Destroy(gameObject); return; }
-            // 빈틈을 뺀 호 (gapDir 기준)
+            foreach (var (t, dir) in puffs) if (t) t.position = new Vector3(transform.position.x, t.position.y, transform.position.z) + dir * r;
+            // 앞 선: 빈틈을 뺀 호
             float g0 = Mathf.Atan2(gapDir.x, gapDir.z) * Mathf.Rad2Deg;
             lr.positionCount = Seg + 1;
             for (int i = 0; i <= Seg; i++)
             {
                 float a = (g0 + gapHalf + (360f - gapHalf * 2) * i / Seg) * Mathf.Deg2Rad;
-                lr.SetPosition(i, new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a)) * r);
+                lr.SetPosition(i, new Vector3(Mathf.Sin(a) * r, -0.6f, Mathf.Cos(a) * r));          // 바닥 위 0.1m
             }
-            var c = Ch2Fx.Smoke; c.a = Mathf.Clamp01((maxR - r) / 3f) * 0.9f;
+            var c = Ch2Fx.Smoke; c.a = Mathf.Clamp01((maxR - r) / 3f) * 0.55f;
             lr.startColor = lr.endColor = c;
             if (hit) return;
             var p = PlayerController.Instance;
@@ -426,6 +447,11 @@ namespace CatTang
             if (Vector3.Angle(to, gapDir) <= gapHalf) return;           // 빈틈으로 빠짐
             hit = true;
             p.health.TakeDamage(dmg);
+        }
+
+        void OnDestroy()
+        {
+            foreach (var (t, _) in puffs) if (t) Destroy(t.gameObject);
         }
     }
 
@@ -438,7 +464,8 @@ namespace CatTang
         public override float PatternGap => 1.3f;
         public override string DisplayName => "멈춘 기관차 거인";
 
-        const float RingEvery = 3f, RingSpeed = 6f, RingDmg = 12f;
+        const float RingEvery = 5f, RingSpeed = 4.5f, RingDmg = 12f, RingLayerGap = 0.6f;   // 2026-11-18 사용자: 너무 잦고 빠름 → 5초마다 · 4.5m/초 (겹 사이 0.6초 = 약 2.7m 유지)
+        const int RingLayers = 3;
         const float DepartTime = 10f, DepartStun = 3f, DepartFailDmg = 0.4f;
         const int Coaches = 4;
         const float CoachLap = 6f, CoachDmg = 20f, CoachBand = 2f;
@@ -468,8 +495,6 @@ namespace CatTang
             Add("객차 회전", Reach.Any, CoachSpin, () => !phase2 && !coachesOrbit);
             nextRing = Time.time + 2f;
         }
-
-        protected override BossPattern PickNext(bool near) => PatternPicker.PickWeighted(patterns, near, lastPattern);
 
         void Start()
         {
@@ -517,11 +542,16 @@ namespace CatTang
 
         protected override void Always(PlayerController p, Vector3 dir, float dist)
         {
-            // 상시 연기 링: 3초마다 굴뚝에서, 빈틈 45° (방향은 무작위)
+            // 상시 연기 링 3겹 (2026-11-18 사용자: 거리로 컨트롤하는 감각): 5초마다 0.6초 간격으로 3개(4.5m/초, 사이 약 2.7m).
+            // 빈틈(45°)은 겹마다 같은 쪽으로 40~70° 밀림 → 거리를 조절하며 옆으로 비켜 빈틈 셋을 차례로 통과
             if (Time.time >= nextRing)
             {
-                SmokeRing.Spawn(transform.position, RingSpeed, RingDmg, 18f, Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward);
-                FxBurst.Spawn(transform.position + Vector3.up * 6.4f, 1.6f, FxBurst.Kind.Dust, Ch2Fx.Smoke);
+                float a = Random.Range(0f, 360f), turn = (Random.value < 0.5f ? -1f : 1f);
+                for (int k = 0; k < RingLayers; k++)
+                {
+                    SmokeRing.Spawn(transform.position, RingSpeed, RingDmg, 18f, Quaternion.Euler(0, a, 0) * Vector3.forward, 45f, k * RingLayerGap);
+                    a += turn * Random.Range(40f, 70f);
+                }
                 nextRing = Time.time + T(RingEvery);
             }
             // 2페이즈 진입: 객차를 떼어 냄 → 둘레 상시 회전
@@ -539,7 +569,7 @@ namespace CatTang
         {
             var rm = RunManager.Instance;
             var s = rm ? rm.RoomSize : new Vector2(24, 24);
-            return Mathf.Min(12f, Mathf.Min(s.x, s.y) / 2f) - CoachBand / 2f - 0.2f;
+            return Mathf.Min(Ch2Kit.BossArenaDiameter / 2f, Mathf.Min(s.x, s.y) / 2f) - CoachBand / 2f - 0.2f;   // 전차대 가장자리 (지름 32m → 약 14.8m)
         }
 
         Vector3 ArenaC() => RunManager.Instance ? RunManager.Instance.RoomCenter : transform.position;
@@ -793,6 +823,8 @@ namespace CatTang
                 float step = speed * hp.SlowMul * Time.deltaTime;
                 transform.position += d * step;
                 if (rm) transform.position = rm.ClampToRoom(transform.position, 2.5f);
+                var fromC = Effects.Flat(transform.position - ArenaC());                   // 원형 경기장 안으로
+                if (fromC.magnitude > ArenaR()) transform.position = ArenaC() + fromC.normalized * ArenaR();
                 run += step;
                 if (!hit && P && Effects.Flat(P.transform.position - transform.position).magnitude < width / 2 + 0.9f)
                 {

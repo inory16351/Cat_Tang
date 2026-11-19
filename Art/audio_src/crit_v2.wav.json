@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "crit",
+  "original_idea": "11:59 game SFX: crit",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, critical bullet hit, heavy punchy impact with a bright metallic ring and crunchy bass, steel and bone, cartoon, close mic, dry, game critical hit.",
+  "sound_fields": {
+    "source": "critical bullet hit",
+    "action": "heavy punchy impact with a bright metallic ring and crunchy bass",
+    "material": "steel and bone, cartoon",
+    "space": "close mic, dry, game critical hit"
+  },
+  "bpm": null,
+  "seconds": 0.8,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 2,
+  "seed": 1160,
+  "candidate": 2,
+  "file": "crit_v2.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-19T10:09:57",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -1.0,
+  "raw_peak_dbfs": -0.76,
+  "ceiling_gain_db": -0.24
+}

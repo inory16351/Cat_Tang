@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "player_hurt",
+  "original_idea": "11:59 game SFX: player_hurt",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, small cat, short pained yowl hiss as it gets hit, with a cushioned thud, cat voice, fur, close mic, dry.",
+  "sound_fields": {
+    "source": "small cat",
+    "action": "short pained yowl hiss as it gets hit, with a cushioned thud",
+    "material": "cat voice, fur",
+    "space": "close mic, dry"
+  },
+  "bpm": null,
+  "seconds": 0.7,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 2,
+  "seed": 1160,
+  "candidate": 2,
+  "file": "player_hurt_v2.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-19T10:10:33",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -10.66,
+  "raw_peak_dbfs": -10.66,
+  "ceiling_gain_db": 0.0
+}

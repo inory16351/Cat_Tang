@@ -51,6 +51,7 @@ namespace CatTang
             trail = Quad("Trail", new Color(1f, 0.95f, 0.85f, 1f), W, H, 0.0005f, 2);
             fill = Quad("Fill", new Color(0.86f, 0.24f, 0.22f, 1f), W, H, 0f, 3);
             lastHp = h.hp;
+            MemoryBadge.Attach(h, root, W);   // 추억 표식: 시계 + 개수 (2026-11-18)
         }
 
         static void SetBar(Transform t, float v)

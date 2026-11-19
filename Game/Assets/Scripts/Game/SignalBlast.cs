@@ -73,7 +73,7 @@ namespace CatTang
                 landed = true;
                 transform.position = to;
                 lamp.localRotation = Quaternion.identity;
-                FxBurst.Spawn(to + Vector3.up * 0.1f, 0.9f, FxBurst.Kind.Dust, new Color(0.7f, 0.62f, 0.55f));
+                FxBurst.Spawn(to + Vector3.up * 0.1f, 0.9f, FxBurst.Kind.Dust, FxBurst.MistDust);
             }
             float left = Flight + fuse - age;
             bool red = left <= RedTime;

@@ -1,0 +1,13 @@
+Create ONE image file named c3_water.png in the current directory (use your image generation tool and save it here; do not draw it with code — after generating you may only crop/resize/save).
+
+It is a game VFX sprite sheet: a horizontal strip of 8 equal frames, 8 columns x 1 row, total 2048x256 pixels (each frame 256x256).
+Background: perfectly flat solid magenta #FF00FF everywhere outside the effect (no gradient, no shadow, no glow onto the background, no frame borders, no grid lines, no text).
+
+Two attached images, use them together:
+- water_motion_ref.png = the MOTION and SHAPE reference (a rough 3D blockout). Follow its timing and silhouettes frame by frame: a fountain water column shooting UP from the bottom-center, its top blooming into a mushroom crown, droplets arcing out and falling, a low splash spreading sideways at the base, then everything dissolving. Do NOT copy its look (its blue pills with heavy black outlines look wrong in the game).
+- ch3_game_style_ref.png = the GAME it must fit (chapter 3 "mirror world": pastel lavender/pink/sky-blue reflective floor, cream marble and gold, soft dreamy light, Brawl-Stars-like clean cartoon shading). Match this game's look.
+
+Subject: a single cartoon WATER BURST from a magic fountain, seen from the game camera (front-ish, slightly from above), origin at the BOTTOM-CENTER of every frame.
+Look: glossy, juicy, semi-transparent-looking water — bright aqua/turquoise body with lighter cyan inner areas, crisp white foam caps and white highlight streaks, a few tiny soft pink/lavender sky reflections on the water surface, little white sparkle glints. Smooth flowing liquid shapes (curling sheets, teardrop droplets with tails, round splash beads), NOT pills, NOT rocks, NOT smoke. Thin outline in deep teal (#0E5A6E) only — no black outlines. Flat cel shading with 2–3 tones, like the game.
+Frames: 1 a small bulge and splash ring of foam at the bottom, 2 a thick water jet shooting up to about 60% height, 3 full column about 85% height with a foamy crown starting to burst, 4 the crown blooms into a wide mushroom of water sheets and droplets, 5 the column collapses while droplets fly out in arcs, 6 droplets fall, a wide low splash and ripples at the base, 7 scattered falling drops and thin foam on the ground, 8 a few tiny droplets and fading foam ring.
+Keep every frame fully inside its own 256x256 cell with a small margin; nothing crosses cell borders. The base of the water stays at the same bottom-center point in all frames (about 6% above the cell bottom).

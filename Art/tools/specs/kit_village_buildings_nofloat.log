@@ -1,0 +1,2991 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1ee61-a29c-7c73-8ffc-def7c505ba09
+--------
+user
+Edit ONE existing Blender script: `Art/tools/blender_kit_village_buildings.py` (do not edit any other file).
+Read `Art/tools/specs/_village_common.md` for context.
+
+Change requested by the user: the small DETACHED fragments floating ABOVE each object (little cubes / planks / shingles / gears / numerals / sand clumps / sparkles hovering over roofs, chimneys, signs, fence tops, tank tops, etc.) must be REMOVED from the models. The game now spawns them as slowly rising particles instead, so the static ones look wrong.
+
+Rules:
+- Remove every piece of geometry that is NOT physically connected to the object's body and sits above it (the rising "dissolve" fragments and their `sand_glow` / `stardust` trails above the object).
+- KEEP the dissolving look on the object itself: the jagged / broken / crumbling top edge, missing shingles, gaps, cracks, sagging melted clocks (`gold_drip`), and glowing `sand_glow` grains that are attached to or lying on the object. It should read as "the top is crumbling away" without anything floating.
+- Keep every piece name, width / footprint, origin, export path and export settings the same. Height will now be lower (the floating layers are gone) — that is expected.
+- Keep at least 5 role materials per piece.
+Then RUN `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_village_buildings.py` and fix errors until every piece exports, and re-render the preview PNG.
+Print `EXPORTED <Name> <tris> <dims>` per piece as before.
+
+codex
+요청한 스크립트와 공통 규격을 확인한 뒤, 본체에 붙은 붕괴 표현은 유지하면서 위에 떠 있는 조각과 궤적을 제거하겠습니다. 수정 후 Blender를 실행해 전체 내보내기와 미리보기 렌더를 확인하겠습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/specs/_village_common.md; Get-Content Art/tools/blender_kit_village_buildings.py' in C:\Project\Cat_Tang
+ succeeded in 296ms:
+## Common rules (main VILLAGE hub ??"a western town vanishing at dawn")
+Setting: the hub village of a top-down cel-shaded roguelite (camera ~55 deg looking down, objects read at small size, black outlines from the shader).
+The village is ONE big floating island hanging in an endless void at the last moment before dawn: a starry night sky with a faint milky way above and below, and a warm peach-gold glow rising at the horizon.
+The town is an old WESTERN frontier town (wooden false-front buildings, boardwalks, water tower, windpump, wagons, cactus) that is slowly VANISHING into time:
+- the UPPER parts of buildings and objects dissolve upward: roof edges, chimneys, signs and fence tops break into many small detached fragments (little cubes, planks, shingles, gears, clock hands, sand clumps) that float frozen ABOVE the object, getting smaller and sparser the higher they go (3-5 rising "layers" of fragments).
+- melting pocket-watch / clock motifs: clock faces sag and drip down walls in molten gold (`gold_drip`), cracked dials, frozen clock hands.
+- glowing grains of sand (`sand_glow`) trail from the dissolving parts.
+Mood: quiet, dreamlike, melancholic, beautiful. The objects themselves are WARM (weathered wood, brass, gold, cream, rust, rose-dawn paint) ??no purple/blue in object materials (the cold colors belong to the sky / void only).
+
+Signature accents: GOLD trim and filigree on signs and frames, brass clock parts, glowing lanterns and windows (`window_lit`, `lantern_glow`), floating fragments.
+Chunky silhouettes, slightly hand-made irregularity (seeded random per piece, `random.seed(<fixed>)`). BEVEL modifier (0.02-0.05, 2 segments) on wood / stone / metal parts. No detail thinner than ~0.04 m.
+
+### Richness rules (the user dislikes single-color blocky objects ??"brown boxes")
+- Every piece uses AT LEAST 5 different role materials (buildings and landmarks 6-8), and no single material may cover more than ~55% of the visible surface.
+- Break big plain surfaces into: board-and-batten planks with alternating `wood` / `wood_dark` / `wood_light` / `wood_weathered` boards, painted trim bands, corner posts, window frames, shutters, cornices with brackets and dentils, false-front crests with `gold` scroll ornaments, rivets/studs, `iron` hinges and bands, hanging signs with carved frames.
+- Clock motifs: brass bezels, `clock_face` dials with `iron` hands and `gold` numerals as small blocks, gears in `brass`.
+- Triangle budget: props up to ~6000 tris, buildings / landmarks up to ~12000 tris, island edge modules up to ~8000.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`wood`, `wood_dark`, `wood_light`, `wood_weathered`, `plank`, `roof_shingle`, `roof_tin`, `adobe`, `adobe_light`, `stone`, `stone_dark`, `rock`, `rock_dark`, `earth`, `root`, `sand`, `sand_glow`, `brass`, `gold`, `gold_drip`, `iron`, `rust`, `canvas`, `cloth_red`, `cloth_cream`, `paint_rose`, `paint_sage`, `glass`, `window_lit`, `lantern_glow`, `clock_face`, `cactus`, `cactus_dark`, `stardust`.
+`sand_glow` = glowing drifting sand grains / dissolving bits. `stardust` = tiny bright floating sparkles. `window_lit` = warm lit window glass. `lantern_glow` = lantern flame / bulb. `gold_drip` = molten melting gold of clocks. `earth` / `root` = soil strata and dangling roots under the island.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the side facing the player / the plaza), origin at the bottom center of each piece (unless the piece says otherwise).
+Each piece = ONE joined mesh object named exactly as listed, exported to its own FBX `Game/Assets/Art/Characters/Village/Kit_V_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Create the folder if missing. Clear the scene between pieces (or export selected only). No cameras/lights in the FBX. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end.
+Use `Art/tools/blender_kit_ch3_landmarks.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+Run with `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P <script>` and fix errors until every piece exports.
+Finally render ONE preview PNG of all pieces laid out in a row (Workbench engine, flat MATERIAL color with a distinct viewport color per material name so pieces are readable, camera ~55 deg from above-front, 1600x900) to `Art/tools/specs/<script name without .py>_preview.png`. The preview is only for review; it must not change the exported FBX files.
+# ?덈꼍???щ씪吏???쒕? 留덉쓣 ?쒖꽕 5醫? ?щ갑 ?몃꼍, 吏遺? ?쒓퀎 ?μ떇怨?寃?좎슜 ?대?吏.
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_village_buildings.py
+"""Deterministic village kit; stock Blender only. Metres, Z up, front +Y.
+
+Run exports first with neutral role materials, then renders a coloured review.
+The gate deliberately substitutes an open passage for the shops' closed door.
+No shared helpers, input assets, textures, or other source files are modified.
+"""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+from mathutils.bvhtree import BVHTree
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Village'
+PREVIEW = ROOT / 'Art/tools/specs/blender_kit_village_buildings_preview.png'
+ROLES = ('wood', 'wood_dark', 'wood_light', 'wood_weathered', 'plank',
+         'roof_shingle', 'roof_tin', 'stone', 'stone_dark', 'sand_glow',
+         'brass', 'gold', 'gold_drip', 'iron', 'rust', 'canvas', 'cloth_red',
+         'cloth_cream', 'paint_rose', 'paint_sage', 'glass', 'window_lit',
+         'lantern_glow', 'clock_face')
+SOFT = {'canvas', 'cloth_red', 'cloth_cream', 'glass', 'window_lit',
+        'lantern_glow', 'sand_glow', 'clock_face'}
+PALETTE = {
+    'wood': (.46, .25, .12), 'wood_dark': (.21, .105, .055),
+    'wood_light': (.76, .51, .28), 'wood_weathered': (.49, .40, .29),
+    'plank': (.63, .38, .20), 'roof_shingle': (.37, .24, .18),
+    'roof_tin': (.60, .53, .41), 'stone': (.60, .55, .45),
+    'stone_dark': (.30, .27, .22), 'sand_glow': (1, .77, .29),
+    'brass': (.72, .45, .13), 'gold': (1, .67, .17),
+    'gold_drip': (.96, .47, .055), 'iron': (.16, .17, .15),
+    'rust': (.54, .22, .10), 'canvas': (.81, .66, .43),
+    'cloth_red': (.67, .16, .105), 'cloth_cream': (.96, .87, .67),
+    'paint_rose': (.69, .36, .31), 'paint_sage': (.43, .51, .32),
+    'glass': (.67, .69, .54), 'window_lit': (1, .79, .40),
+    'lantern_glow': (1, .56, .16), 'clock_face': (.98, .91, .73),
+}
+MATS, PARTS = {}, []
+WOOD = ('wood', 'wood_weathered', 'wood_light', 'wood', 'wood_dark')
+TAU = math.tau
+
+
+def materials():
+    for role in ROLES:
+        mat = bpy.data.materials.new(role)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        nodes = mat.node_tree.nodes
+        nodes.clear()
+        shader = nodes.new('ShaderNodeBsdfPrincipled')
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Roughness'].default_value = .8
+        shader.inputs['Metallic'].default_value = 0
+        out = nodes.new('ShaderNodeOutputMaterial')
+        mat.node_tree.links.new(shader.outputs['BSDF'], out.inputs['Surface'])
+        MATS[role] = mat
+
+
+def mesh(label, verts, faces, role, bevel=True):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(verts, [], faces)
+    data.materials.append(MATS[role])
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    if bevel and role not in SOFT:
+        mod = obj.modifiers.new('Worn 0.02m edges / two segments', 'BEVEL')
+        mod.width, mod.segments = .02, 2
+        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(45)
+    PARTS.append(obj)
+    return obj
+
+
+def transform(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
+    x, y, z = (s / 2 for s in size)
+    return transform(mesh(label,
+        [(-x,-y,-z), (x,-y,-z), (x,y,-z), (-x,y,-z),
+         (-x,-y,z), (x,-y,z), (x,y,z), (-x,y,z)],
+        [(0,3,2,1), (4,5,6,7), (0,1,5,4), (1,2,6,5),
+         (2,3,7,6), (3,0,4,7)], role, bevel), loc, rot)
+
+
+def lathe(label, loc, rings, role, n=10, rot=(0, 0, 0), bevel=True):
+    verts = [(r*math.cos(j*TAU/n), r*math.sin(j*TAU/n), z)
+             for z, r in rings for j in range(n)]
+    faces = [tuple(reversed(range(n)))]
+    faces += [(k*n+j, k*n+(j+1)%n, (k+1)*n+(j+1)%n, (k+1)*n+j)
+              for k in range(len(rings)-1) for j in range(n)]
+    faces.append(tuple(range((len(rings)-1)*n, len(rings)*n)))
+    return transform(mesh(label, verts, faces, role, bevel), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, role, n=12, rot=(0, 0, 0), bevel=True):
+    return lathe(label, loc, [(-depth/2,radius), (depth/2,radius)],
+                 role, n, rot, bevel)
+
+
+def rod(label, a, b, radius, role, n=6, bevel=True):
+    a, b = Vector(a), Vector(b)
+    obj = cylinder(label, (0,0,0), radius, (b-a).length, role, n, bevel=bevel)
+    obj.data.transform(Matrix.Translation((a+b)/2) @
+                       (b-a).to_track_quat('Z','Y').to_matrix().to_4x4())
+    return obj
+
+
+def tube(label, points, radius, role, n=5):
+    verts = []
+    for i, point in enumerate(points):
+        tangent = (Vector(points[min(i+1,len(points)-1)]) -
+                   Vector(points[max(0,i-1)])).normalized()
+        ref = Vector((0,1,0)) if abs(tangent.y) < .9 else Vector((1,0,0))
+        u = ref.cross(tangent).normalized()
+        v = tangent.cross(u)
+        verts += [tuple(Vector(point)+radius*(u*math.cos(j*TAU/n)+v*math.sin(j*TAU/n)))
+                  for j in range(n)]
+    faces = [tuple(reversed(range(n)))]
+    faces += [(k*n+j,k*n+(j+1)%n,(k+1)*n+(j+1)%n,(k+1)*n+j)
+              for k in range(len(points)-1) for j in range(n)]
+    faces.append(tuple(range((len(points)-1)*n,len(points)*n)))
+    return mesh(label,verts,faces,role,bevel=False)
+
+
+def extrude(label, polygon, depth, role, y=0, bevel=True):
+    n = len(polygon)
+    verts = [(x,y+d,z) for d in (-depth/2,depth/2) for x,z in polygon]
+    faces = [tuple(reversed(range(n))), tuple(range(n,2*n))]
+    faces += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
+    return mesh(label,verts,faces,role,bevel)
+
+
+def ring(label, loc, radius, band, depth, role, n=24):
+    verts = [(r*math.cos(j*TAU/n),y,r*math.sin(j*TAU/n))
+             for r,y in ((radius-band,-depth/2),(radius,-depth/2),
+                         (radius,depth/2),(radius-band,depth/2)) for j in range(n)]
+    faces = [(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
+             for k in range(4) for j in range(n)]
+    return transform(mesh(label,verts,faces,role),loc)
+
+
+def scroll(loc, scale=.8, flip=1):
+    x,y,z = loc
+    points = []
+    for i in range(15):
+        t = i/14
+        angle = -.65+t*TAU*1.1
+        r = scale*(.45-.33*t)
+        points.append((x+flip*r*math.cos(angle),y,z+r*math.sin(angle)))
+    tube('Gold carved scroll',points,.045,'gold')
+
+
+def gear(loc, radius=.4, role='brass', teeth=10, rot=(0,0,0)):
+    # Extruded toothed annulus with an actual open centre, not a flat disc.
+    count = teeth*4
+    verts = []
+    for y, outer in ((-.055,False),(-.055,True),(.055,True),(.055,False)):
+        for i in range(count):
+            a = i*TAU/count
+            r = radius*(1 if i%4 in (1,2) else .79) if outer else radius*.38
+            verts.append((r*math.cos(a),y,r*math.sin(a)))
+    faces = [(k*count+i,k*count+(i+1)%count,((k+1)%4)*count+(i+1)%count,
+              ((k+1)%4)*count+i) for k in range(4) for i in range(count)]
+    return transform(mesh('Open clock gear',verts,faces,role,False),loc,rot)
+
+
+def dial(loc, radius, cracked=False, hour=10, minute=10):
+    x,y,z = loc
+    if cracked:
+        # Two closed, physically separated halves expose a real lightning crack.
+        for side in (-1,1):
+            arc = [(x+radius*math.cos(a),z+radius*math.sin(a))
+                   for a in [(-math.pi/2 if side==1 else math.pi/2)+j*math.pi/16
+                             for j in range(17)]]
+            zig = [(x+side*.045+dx*radius,z+zz*radius)
+                   for dx,zz in ((0,1),(.06,.55),(-.12,.27),(.09,-.08),
+                                 (-.07,-.5),(0,-1))]
+            if side == 1:
+                poly = arc+zig
+            else:
+                poly = arc+list(reversed(zig))
+            extrude('Split ivory clock dial',poly,.12,'clock_face',y,False)
+    else:
+        cylinder('Ivory clock dial',loc,radius,.12,'clock_face',32,(math.pi/2,0,0))
+    ring('Brass clock bezel',(x,y+.04,z),radius*1.12,radius*.12,.16,'brass',32)
+    for i in range(12):
+        a = i*TAU/12
+        box('Gold numeral block',(x+radius*.81*math.sin(a),y+.13,
+                                 z+radius*.81*math.cos(a)),
+            (.075,.065,.16 if i%3==0 else .10),'gold',(0,a,0))
+    for angle,length,width in (((hour+minute/60)*TAU/12,radius*.52,.085),
+                               (minute*TAU/60,radius*.73,.065)):
+        rod('Iron frozen clock hand',(x,y+.21,z),
+            (x+math.sin(angle)*length,y+.21,z+math.cos(angle)*length),
+            width/2,'iron')
+    cylinder('Clock axle',(x,y+.235,z),.10,.09,'brass',10,(math.pi/2,0,0))
+
+
+def drip(loc, length=.65):
+    x,y,z = loc
+    extrude('Sagging molten dial gold',
+            [(x-.15,z+.07),(x+.16,z+.02),(x+.12,z-.19),
+             (x+.07,z-length+.09),(x,z-length),(x-.06,z-length+.10),
+             (x-.08,z-.26)],.095,'gold_drip',y)
+
+
+def lantern(loc, scale=1):
+    x,y,z = loc
+    box('Lantern glowing bulb',(x,y,z),(.26*scale,.24*scale,.44*scale),'lantern_glow')
+    for zz in (-.28,.28):
+        box('Lantern iron cap',(x,y,z+zz*scale),(.40*scale,.36*scale,.10*scale),'iron')
+    for xx in (-.17,.17):
+        for yy in (-.15,.15):
+            rod('Lantern cage',(x+xx*scale,y+yy*scale,z-.23*scale),
+                (x+xx*scale,y+yy*scale,z+.23*scale),.025*scale,'brass')
+    ring('Lantern hanging loop',(x,y,z+.41*scale),.12*scale,.045,.07,'iron',12)
+
+
+def boardwalk(width, front, cx=0, gate=False):
+    # Exactly 1.2m along the complete +Y frontage. The gate has no threshold
+    # spanning its passage: only the two side landings receive boards/steps.
+    intervals = [(-width/2,width/2)] if not gate else [(-4.35,-2.25),(2.25,4.35)]
+    for lo,hi in intervals:
+        n = max(1,round((hi-lo)/.48))
+        for i in range(n):
+            x = cx+lo+(i+.5)*(hi-lo)/n
+            box('Front boardwalk / 1.2m deep',(x,front+.60,.14),
+                ((hi-lo)/n-.025,1.2,.16),WOOD[i%len(WOOD)])
+        box('Boardwalk front fascia',(cx+(lo+hi)/2,front+1.18,.12),
+            (hi-lo,.09,.22),'wood_dark')
+    for side in (-1,1):
+        if gate:
+            x,sw = side*3.3,1.9
+        else:
+            if side == -1:
+                continue
+            x,sw = 0,2.1
+        box('Lower entrance step',(x,front+1.47,.045),(sw,.36,.09),'wood_weathered')
+        box('Upper entrance step',(x,front+1.28,.11),(sw,.30,.10),'plank')
+
+
+def door(front, width=1.45, height=2.5, double=False):
+    box('Entrance dark reveal',(0,front+.025,.22+height/2),
+        (width+.16,.16,height+.08),'wood_dark')
+    n = 8 if double else 5
+    for i in range(n):
+        x = (i+.5)*width/n-width/2
+        box('Closed entrance door board',(x,front+.14,.22+height/2),
+            (width/n-.018,.15,height-.04),WOOD[(i+2)%len(WOOD)])
+    for x in (-width/2-.09,width/2+.09):
+        box('Door jamb',(x,front+.21,.22+height/2),(.16,.23,height+.22),'wood_light')
+    box('Door carved lintel',(0,front+.22,height+.35),(width+.43,.26,.22),'wood_light')
+    for side in (-1,1):
+        for zz in (.75,height-.25):
+            box('Iron strap hinge',(side*(width/2-.22),front+.245,zz),
+                (.42,.07,.095),'iron')
+            cylinder('Hinge pin',(side*(width/2-.045),front+.25,zz),.055,.22,'iron',8)
+        if double or side == 1:
+            knobx = side*(.14 if double else width*.29)
+            cylinder('Brass knob backplate',(knobx,front+.25,1.35),.10,.055,'brass',10,
+                     (math.pi/2,0,0))
+            cylinder('Brass door knob',(knobx,front+.32,1.35),.075,.11,'brass',10,
+                     (math.pi/2,0,0))
+    if double:
+        box('Barn centre stile',(0,front+.24,.22+height/2),(.085,.09,height),'iron')
+        for side in (-1,1):
+            rod('Barn diagonal door brace',(side*.12,front+.25,.42),
+                (side*(width/2-.14),front+.25,height+.04),.07,'wood_light')
+
+
+def window(label, u, y, z, width=1.3, height=1.55, shutters=False,
+           trim='wood_light', side=0):
+    """Build locally facing +Y, optionally rotate onto a side or rear wall."""
+    start = len(PARTS)
+    box(label+' lit inset',(0,0,0),(width,.08,height),'window_lit')
+    for x in (-width/2,width/2):
+        box(label+' upright',(x,.075,0),(.13,.16,height+.20),trim)
+    for zz in (-height/2,height/2):
+        box(label+' lintel sill',(0,.09,zz),(width+.24,.22,.13),trim)
+    box(label+' mullion',(0,.12,0),(.07,.12,height),'wood_dark')
+    box(label+' crossbar',(0,.12,0),(width,.12,.07),'wood_dark')
+    if shutters:
+        for s in (-1,1):
+            box('Rose shutter',(s*(width/2+.29),0,0),(.40,.12,height),'paint_rose')
+            for zz in (-height*.30,height*.30):
+                box('Shutter carved rail',(s*(width/2+.29),.08,zz),(.42,.08,.085),'cloth_cream')
+    for obj in PARTS[start:]:
+        transform(obj,(u,y,z),(0,0,side))
+
+
+def wall_boards(length, height, loc, rotation, holes, paint=None):
+    """Closed thick wall boards split around true window and door openings.
+
+    holes are (horizontal centre, bottom, width, height) in wall-local space.
+    """
+    n = math.ceil(length/.54)
+    pitch = length/n
+    for i in range(n):
+        u = -length/2+(i+.5)*pitch
+        # Clip each board exactly at the opening edges; dropping an entire
+        # intersecting board would leave visible slits beside the window frame.
+        rectangles = [(u-pitch/2+.011,u+pitch/2-.011,.24,height)]
+        for hu,hz,hw,hh in holes:
+            cut = []
+            for left,right,a,b in rectangles:
+                l,r = max(left,hu-hw/2),min(right,hu+hw/2)
+                low,high = max(a,hz),min(b,hz+hh)
+                if l>=r or low>=high:
+                    cut.append((left,right,a,b))
+                    continue
+                cut += [(left,l,a,b),(r,right,a,b),(l,r,a,low),(l,r,high,b)]
+            rectangles = [(l,r,a,b) for l,r,a,b in cut if r-l>.005 and b-a>.005]
+        for left,right,a,b in rectangles:
+            role = paint if paint and i%4 != 0 else WOOD[i%len(WOOD)]
+            obj = box('Alternating wall plank',((left+right)/2,0,(a+b)/2),
+                      (right-left,.15,b-a),role)
+            transform(obj,loc,(0,0,rotation))
+
+
+def shell(width, depth, height, front_holes, paint=None, cx=0):
+    front,back = depth/2-1.6,-depth/2
+    center = (front+back)/2
+    sideholes = [(center+.65,1.55,1.25,1.5)]
+    if height > 6:
+        sideholes += [(center-.9,4.55,1.25,1.5)]
+    # All four elevations are built rather than a solid cube with facade plates.
+    wall_boards(width,height,(cx,front,0),0,
+                [(u-cx,z,w,h) for u,z,w,h in front_holes],paint)
+    rearholes = [(-width*.25,1.55,1.2,1.5),(width*.25,1.55,1.2,1.5)]
+    if height > 6:
+        rearholes += [(-width*.25,4.55,1.2,1.5),(width*.25,4.55,1.2,1.5)]
+    wall_boards(width,height,(cx,back,0),math.pi,rearholes,paint)
+    for s in (-1,1):
+        # Local u maps to world Y with the appropriate sign.
+        holes = [((center-u)*s,z,w,h) for u,z,w,h in sideholes]
+        wall_boards(front-back,height,(cx+s*width/2,center,0),-s*math.pi/2,holes,paint)
+        for u,z,w,h in sideholes:
+            window('Side window',cx+s*(width/2+.08),u,z+h/2,w,h,
+                   trim='cloth_cream' if paint else 'wood_light',side=-s*math.pi/2)
+    for u,z,w,h in rearholes:
+        window('Rear window',cx-u,back-.09,z+h/2,w,h,trim='wood_light',side=math.pi)
+    box('Stone footing',(cx,center,.12),(width+.12,front-back+.12,.24),'stone_dark')
+    box('Ground floor',(cx,center,.23),(width,front-back,.12),'plank')
+    for x in (cx-width/2,cx+width/2):
+        for y in (front,back):
+            box('Full height corner post',(x,y,height/2),(.24,.25,height),'wood_dark')
+            box('Corner painted inset',(x,y+.14,height/2),(.12,.07,height-.28),
+                'cloth_cream' if paint else 'wood_light')
+    for z in (.38,height-.12):
+        for y in (front+.10,back-.10):
+            box('Front and rear trim band',(cx,y,z),(width+.18,.17,.17),
+                'cloth_cream' if paint else 'wood_light')
+        for x in (cx-width/2-.08,cx+width/2+.08):
+            box('Side trim band',(x,center,z),(.15,front-back,.17),
+                'cloth_cream' if paint else 'wood_light')
+    return front,back
+
+
+def roof(width, front, back, eave, rise, role, cx=0):
+    half = width/2+.22
+    run = math.sqrt(half*half+rise*rise)
+    angle = math.atan2(rise,half)
+    # Solid lower pitches; a few ridge tiles detach, exposing broken rafters.
+    for side in (-1,1):
+        for i in range(5):
+            t = (i+.5)/5
+            for j in range(4):
+                if i==4 and j in ((1,3) if side==1 else (0,2)):
+                    continue
+                y = back-.22+(j+.5)*(front-back+.44)/4
+                x,z = cx+side*half*(1-t),eave+rise*t
+                box('Overlapping roof panel',(x,y,z),
+                    (run/5+.055,(front-back+.44)/4-.025,.13),role,
+                    (0,side*angle,0))
+                if role == 'roof_tin' and i in (0,2):
+                    box('Standing tin seam',(x,y,z+.075),
+                        (run/5,.055,.055),'rust',(0,side*angle,0))
+        box('Eave fascia',(cx+side*half,(front+back)/2,eave-.05),
+            (.18,front-back+.60,.23),'wood_light')
+        for y in (back+.35,(front+back)/2,front-.25):
+            rod('Roof triangular rafter',(cx+side*half,y,eave-.14),
+                (cx+side*.16,y,eave+rise-.16),.07,'wood_dark')
+    # Front and rear closed gables, with separate trim and real depth.
+    for y in (back-.02,front+.02):
+        extrude('Complete roof gable',[(cx-width/2,eave-.16),
+                (cx+width/2,eave-.16),(cx,eave+rise-.18)],.16,
+                'wood_weathered',y)
+        for side in (-1,1):
+            rod('Gable rake trim',(cx+side*half,y,eave),
+                (cx+side*.12,y,eave+rise-.06),.075,'wood_light')
+    for j in (0,2):
+        box('Interrupted ridge cap',(cx,back+(j+.5)*(front-back)/4,eave+rise),
+            (.30,(front-back)/4-.08,.16),'brass')
+
+
+def crest(width, front, base, crown, paint='wood_light', cx=0):
+    # Jagged stepped skyline: the absent upper boards reappear in the fragments.
+    n = math.ceil(width/.57)
+    for i in range(n):
+        x = -width/2+(i+.5)*width/n
+        profile = 1-abs(x)/(width/2)
+        top = base+(crown-base)*(.54+.46*profile)
+        if i%5 == 1:
+            top -= .32
+        box('Broken false-front crest board',(cx+x,front+.06,(base+top)/2),
+            (width/n-.024,.22,top-base),paint if i%3 else 'wood_weathered')
+        if i%5 != 1:
+            box('Interrupted crest crown molding',(cx+x,front+.10,top+.015),
+                (width/n+.015,.32,.11),'gold' if i%3==0 else 'wood_light')
+    box('False-front cornice',(cx,front+.13,base+.11),(width+.26,.36,.23),'wood_dark')
+    box('Cornice gold line',(cx,front+.34,base+.16),(width+.34,.07,.07),'gold')
+    for i in range(max(3,round(width/.65))):
+        x = cx-width*.46+i*width*.92/(max(3,round(width/.65))-1)
+        box('Cornice dentil',(x,front+.24,base-.12),(.16,.28,.24),'wood_light')
+    for side in (-1,1):
+        scroll((cx+side*width*.34,front+.25,base+.74),.9,side)
+
+
+def porch(front, width=2.5, height=3.05):
+    box('Little entrance awning',(0,front+.63,height),(width,1.30,.16),
+        'roof_shingle',(-math.radians(7),0,0))
+    box('Porch carved front fascia',(0,front+1.23,height-.10),(width,.14,.24),'wood_light')
+    for side in (-1,1):
+        x = side*(width/2-.14)
+        box('Porch post',(x,front+1.13,(height+.22)/2),(.13,.14,height-.22),'wood_dark')
+        rod('Porch angled bracket',(x,front+1.12,height-.65),
+            (x,front+.67,height-.10),.065,'wood_light')
+
+
+def sign_bracket(x, front, z, reach=1):
+    box('Iron hanging sign wall plate',(x,front+.13,z-.22),(.16,.13,.74),'iron')
+    rod('Iron sign bracket',(x,front+.16,z),(x,front+reach,z),.055,'iron')
+    rod('Iron bracket diagonal',(x,front+.18,z-.46),(x,front+reach*.80,z),.045,'iron')
+    for yy in (front+reach*.5,front+reach*.91):
+        rod('Hanging sign chain',(x,yy,z-.03),(x,yy,z-.37),.025,'iron')
+    return front+reach*.75,z-.60
+
+
+def dissolve(width, back, front, start, top, roles, cx=0, clock_bits=False):
+    """Four rising layers, decreasing count/size; all above the solid 2/3.
+
+    Front and rear source tiles participate so the effect reads all around.
+    The topmost speck fixes the intended height without scaling entrances.
+    """
+    for layer,count in enumerate((15,11,7,4)):
+        f = layer/3
+        size = .44*(1-.67*f)
+        zbase = start+(top-start-.20)*f
+        for i in range(count):
+            x = cx+random.uniform(-width*.46,width*.46)
+            y = random.choice((front,back,(front+back)/2))+random.uniform(-.22,.22)
+            z = min(top-.16,zbase+random.uniform(0,.19))
+            if clock_bits and i%4==0:
+                gear((x,y,z),size*.65,'brass',8,
+                     (random.uniform(-.35,.35),random.uniform(-.3,.3),0))
+            else:
+                box('Floating broken plank / shingle',(x,y,z),
+                    (size*random.uniform(.8,1.5),size*.65,size*.32),
+                    roles[i%len(roles)],
+                    (random.uniform(-.5,.5),random.uniform(-.45,.45),random.uniform(-.4,.4)))
+            if i%2==0:
+                for k in range(3):
+                    box('Rising sand grain trail',(x+.055*k,y+.02*k,z-.18-k*.12),
+                        (.045,.045,.065-k*.007),'sand_glow',bevel=False)
+    box('Last vanishing sand grain',(cx+.25,(front+back)/2,top-.025),
+        (.05,.05,.05),'sand_glow',bevel=False)
+
+
+def chimney(x, y, bottom, top, fragment_top):
+    for row in range(max(1,round((top-bottom)/.32))):
+        z = bottom+.16+row*.32
+        for j in range(2):
+            xx = x+(j-.5)*.42
+            box('Chimney staggered masonry',(xx+(row%2)*.035,y,z),
+                (.40,.72,.30),'stone' if (row+j)%3 else 'stone_dark')
+    box('Rust chimney lip',(x,y,top+.05),(.98,.90,.16),'rust')
+    box('Open chimney dark flue',(x,y,top+.15),(.62,.54,.07),'stone_dark')
+    for layer,count in enumerate((4,3,2,1)):
+        for j in range(count):
+            t = layer/3
+            z = top+.35+(fragment_top-top-.50)*t
+            box('Dissolving chimney brick',(x+random.uniform(-.35,.35),y+random.uniform(-.3,.3),z),
+                (.28*(1-t*.65),.21*(1-t*.65),.13),'stone' if j%2 else 'rust',
+                (.1,j*.3,layer*.23))
+            box('Frozen chimney sand spark',(x+.12+layer*.09,y+.18,z+.12),
+                (.055,.055,.09),'sand_glow',bevel=False)
+
+
+def inn():
+    w,d,h = 10.4,8,6.55
+    front_holes = [(0,.22,1.5,2.5)]
+    front_holes += [(x,1.5,1.45,1.65) for x in (-3.4,3.4)]
+    front_holes += [(x,4.55,1.2,1.55) for x in (-3.4,-1.15,1.15,3.4)]
+    f,b = shell(w,d,h,front_holes)
+    roof(w,f,b,h,1.25,'roof_shingle')
+    crest(w,f,h,8.55,'paint_rose')
+    boardwalk(w,f)
+    door(f)
+    for x in (-3.4,3.4):
+        window('Inn ground window',x,f+.11,2.325,1.45,1.65,True)
+    for x in (-3.4,-1.15,1.15,3.4):
+        window('Inn second floor window',x,f+.11,5.325,1.2,1.55,True)
+    # Full-width second-storey balcony doubles as the entrance porch roof.
+    for i in range(19):
+        box('Balcony floorboard',(-4.9+(i+.5)*9.8/19,f+.68,3.58),
+            (9.8/19-.018,1.35,.14),WOOD[i%len(WOOD)])
+    for x in (-4.85,-2.4,2.4,4.85):
+        box('Balcony lower support post',(x,f+1.14,1.91),(.18,.18,3.36),'wood_dark')
+        rod('Balcony corbel',(x,f+1.13,2.96),(x,f+.57,3.53),.09,'wood_light')
+    for x in (-4.85,-2.4,0,2.4,4.85):
+        box('Balcony railing newel',(x,f+1.25,4.14),(.18,.18,1.14),'paint_rose')
+        cylinder('Balcony brass post cap',(x,f+1.25,4.76),.12,.10,'brass',8)
+    for i in range(25):
+        box('Balcony railing baluster',(-4.75+i*9.5/24,f+1.25,4.12),(.065,.075,.85),'wood_light')
+    for z in (3.76,4.61):
+        box('Balcony full front rail',(0,f+1.25,z),(9.95,.14,.12),'wood_dark')
+        for side in (-1,1):
+            box('Balcony return rail',(side*4.87,f+.66,z),(.12,1.22,.12),'wood_dark')
+            for yy in (.3,.65,1.0):
+                box('Balcony return baluster',(side*4.87,f+yy,4.14),(.07,.07,.85),'wood_light')
+    # Cuckoo-house is a large relief volume embedded in the crest.
+    cy = f+.49
+    extrude('Cuckoo clock carved wooden house',
+            [(-1.05,6.65),(1.05,6.65),(1.05,7.76),(0,8.40),(-1.05,7.76)],
+            .52,'wood_dark',cy)
+    for s in (-1,1):
+        rod('Cuckoo gable gold rake',(s*1.19,cy+.30,7.76),(0,cy+.30,8.50),.075,'gold')
+    dial((0,cy+.31,7.20),.48,hour=6,minute=30)
+    for s in (-1,1):
+        box('Closed tiny cuckoo door',(s*.14,cy+.32,7.96),(.25,.11,.33),'wood_light')
+        box('Cuckoo tiny door iron hinge',(s*.23,cy+.39,7.96),(.065,.05,.12),'iron')
+        # Three broad alternating pine-cone tiers read at the game camera.
+        x = s*.70
+        rod('Pine cone weight chain',(x,cy+.35,6.76),(x,cy+.35,5.82),.025,'brass')
+        for j in range(4):
+            z = 5.64+j*.13
+            lathe('Carved pine cone weight',(x,cy+.35,z),
+                  [(-.06,.06),(.02,.14-j*.012),(.12,.065)],'wood_dark',8)
+    for s in (-1,1):
+        scroll((s*2.05,f+.34,7.25),1.45,s)
+    sy,sz = sign_bracket(4.35,f,3.15,.92)
+    # A blank, chunky carved board: intentionally no lettering.
+    start = len(PARTS)
+    poly = [(-.62,-.34),(.50,-.34),(.70,-.10),(.62,.30),(-.48,.38),(-.71,.12)]
+    extrude('Inn blank carved hanging board',poly,.16,'wood_dark')
+    for i in range(len(poly)):
+        a,c = poly[i],poly[(i+1)%len(poly)]
+        rod('Inn sign gold frame',(a[0],.105,a[1]),(c[0],.105,c[1]),.055,'gold')
+    for obj in PARTS[start:]:
+        transform(obj,(4.35,sy,sz),(0,0,math.pi/5))
+    for x in (-1.05,1.05):
+        lantern((x,f+.40,2.60),.7)
+    chimney(-3.2,b+1.25,6.95,8.10,10.15)
+    drip((1.15,f+.35,7.03),.53)
+    dissolve(w,b,f,8.30,11,('roof_shingle','wood_light','paint_rose','gold'))
+
+
+def rifle(loc, scale=1):
+    x,y,z = loc
+    box('Rifle walnut stock',(x-.10*scale,y,z-.42*scale),
+        (.16*scale,.12,.46*scale),'wood_dark',(0,-.15,0))
+    box('Rifle fore stock',(x,y,z),(.13*scale,.13,.55*scale),'wood_dark')
+    rod('Rifle iron barrel',(x,y,z-.1*scale),(x,y,z+.85*scale),.035*scale,'iron')
+    box('Rifle receiver',(x,y+.045,z-.18*scale),(.22*scale,.09,.17*scale),'iron')
+    ring('Rifle trigger guard',(x-.02*scale,y+.09,z-.33*scale),.095*scale,.04,.06,'iron',10)
+
+
+def revolver_sign(x, y, z):
+    # True revolver silhouette with barrel, six-shot cylinder and angled grip.
+    poly = [(-1.18,.25),(.42,.25),(.60,.12),(.63,-.10),(.42,-.25),
+            (.62,-.88),(.19,-1.0),(-.04,-.28),(-.44,-.19),(-.44,.04),(-1.18,.04)]
+    extrude('Oversize revolver iron silhouette',[(x+a,z+c) for a,c in poly],
+            .20,'iron',y)
+    extrude('Revolver wood grip',[(x+.12,z-.24),(x+.40,z-.27),
+            (x+.55,z-.82),(x+.25,z-.90)],.245,'wood',y)
+    box('Revolver long barrel',(x-.54,y,z+.16),(1.44,.25,.19),'iron')
+    box('Revolver gold barrel inlay',(x-.54,y+.15,z+.18),(1.32,.055,.045),'gold')
+    cylinder('Revolver fluted cylinder',(x-.13,y+.10,z-.005),.265,.20,'iron',12,(math.pi/2,0,0))
+    for i in range(6):
+        a = i*TAU/6
+        cylinder('Revolver cylinder brass chamber',(x-.13+.17*math.cos(a),y+.22,z+.17*math.sin(a)),
+                 .045,.04,'gold',6,(math.pi/2,0,0))
+    ring('Revolver gold trigger guard',(x+.19,y+.13,z-.30),.22,.055,.10,'gold',16)
+    box('Revolver hammer',(x+.46,y,z+.22),(.17,.15,.19),'iron',(0,.25,0))
+    cylinder('Grip gold rivet',(x+.34,y+.15,z-.60),.065,.05,'gold',8,(math.pi/2,0,0))
+
+
+def gunshop():
+    w,d,h = 8.5,7,4.65
+    holes = [(0,.22,1.45,2.5),(-2.65,1.1,2.6,1.9),(2.75,1.5,1.25,1.6)]
+    f,b = shell(w,d,h,holes)
+    roof(w,f,b,h,.95,'roof_tin')
+    crest(w,f,h,6.80,'wood_light')
+    boardwalk(w,f)
+    door(f)
+    window('Gun display',-2.65,f+.35,2.05,2.6,1.9)
+    for x in (-3.95,-1.35):
+        box('Display projecting jamb return',(x,f+.18,2.05),(.13,.37,2.1),'wood_light')
+    for zz in (1.10,3.0):
+        box('Display projecting sill return',(-2.65,f+.18,zz),(2.72,.37,.13),'wood_light')
+    # Display rifles sit ahead of the opaque review glass and behind the rack.
+    for i in range(4):
+        rifle((-3.47+i*.55,f+.57,1.86),.85)
+    for zz in (1.32,1.80):
+        box('Rifle display rack',(-2.65,f+.67,zz),(2.35,.14,.12),'wood_light')
+    window('Gunshop side display',2.75,f+.10,2.3,1.25,1.6)
+    # Individual thick fabric stripes follow the same sloping awning plane.
+    for i in range(16):
+        x = -w/2+(i+.5)*w/16
+        role = 'canvas' if i%2==0 else 'cloth_red'
+        box('Red and canvas awning stripe',(x,f+.70,4.00),
+            (w/16-.012,1.48,.07),role,(-math.radians(10),0,0))
+        extrude('Striped scalloped valance',[(x-w/32,3.88),(x+w/32,3.88),
+                (x+w/32,3.65),(x,3.57),(x-w/32,3.65)],.075,role,f+1.40,False)
+    for x in (-4.05,4.05):
+        box('Awning iron support',(x,f+1.25,2.04),(.11,.12,3.64),'iron')
+        rod('Awning brace',(x,f+1.24,3.39),(x,f+.6,4.01),.055,'iron')
+    sy,sz = sign_bracket(2.15,f,5.08,1.08)
+    revolver_sign(2.1,sy,sz+.15)
+    # Six-point sheriff star with six raised rounded points.
+    radius = .68
+    polygon = [(radius*(1 if i%2==0 else .46)*math.sin(i*TAU/12),
+                5.95+radius*(1 if i%2==0 else .46)*math.cos(i*TAU/12)) for i in range(12)]
+    extrude('Sheriff gold star',polygon,.15,'gold',f+.34)
+    for i in range(6):
+        a = i*TAU/6
+        cylinder('Sheriff rounded point',(radius*math.sin(a),f+.44,5.95+radius*math.cos(a)),
+                 .08,.09,'brass',8,(math.pi/2,0,0))
+    cylinder('Sheriff centre boss',(0,f+.46,5.95),.19,.09,'brass',12,(math.pi/2,0,0))
+    lantern((1.0,f+.40,2.6),.75)
+    dissolve(w,b,f,6.70,9,('roof_tin','rust','wood_light','gold'))
+
+
+def bullet(loc, scale=1):
+    lathe('Brass cartridge',loc,[(0,.095*scale),(.07*scale,.115*scale),
+          (.14*scale,.095*scale),(.48*scale,.095*scale),
+          (.60*scale,.07*scale),(.72*scale,.022*scale)],'brass',8)
+
+
+def crate(loc):
+    x,y,z = loc
+    box('Cartridge crate dark interior',(x,y,z+.30),(.85,.67,.54),'wood_dark')
+    for zz in (z+.14,z+.47):
+        for yy in (y-.36,y+.36):
+            box('Crate slat',(x,yy,zz),(.97,.10,.22),'wood_light')
+        for xx in (x-.45,x+.45):
+            box('Crate end slat',(xx,y,zz),(.10,.70,.22),'wood_weathered')
+    for xx in (-.31,.31):
+        box('Crate iron band',(x+xx,y+.42,z+.32),(.065,.06,.59),'iron')
+    for j in range(2):
+        for i in range(4):
+            bullet((x+(i-1.5)*.20,y+(j-.5)*.24,z+.46),.65)
+
+
+def hourglass(loc, scale=1):
+    x,y,z = loc
+    for dz in (-.9,.9):
+        obj = ring('Hourglass open brass end ring',(0,0,0),.62*scale,
+                   .105*scale,.13,'brass',20)
+        transform(obj,(x,y,z+dz*scale),(math.pi/2,0,0))
+    for xx in (-.49,.49):
+        for yy in (-.25,.25):
+            rod('Hourglass brass column',(x+xx*scale,y+yy*scale,z-.86*scale),
+                (x+xx*scale,y+yy*scale,z+.86*scale),.045*scale,'brass')
+    # Separate rear glass half-bulbs leave a real open front cutaway so the
+    # sand remains visible even with the required opaque grey Principled BSDF.
+    for side in (-1,1):
+        rings = [(side*v*scale,r*scale) for v,r in
+                 ((.03,.06),(.25,.25),(.57,.44),(.78,.40))]
+        rings.sort()
+        count = 10
+        verts = [(x+r*math.cos(math.pi+j*math.pi/count),
+                  y+r*math.sin(math.pi+j*math.pi/count),z+zz)
+                 for zz,r in rings for j in range(count+1)]
+        # Give the half glass shell .045m thickness with Blender solidify.
+        faces = [(k*(count+1)+j,k*(count+1)+j+1,(k+1)*(count+1)+j+1,
+                  (k+1)*(count+1)+j) for k in range(len(rings)-1) for j in range(count)]
+        obj = mesh('Hourglass rear glass bulb',verts,faces,'glass',False)
+        mod = obj.modifiers.new('Thick glass cutaway','SOLIDIFY')
+        mod.thickness = .045
+    lathe('Upper frozen sand',(x,y+.015,z),[(.17*scale,.05*scale),
+          (.53*scale,.29*scale),(.66*scale,.30*scale)],'sand_glow',12,bevel=False)
+    lathe('Lower sand mound',(x,y+.015,z),[(-.77*scale,.35*scale),
+          (-.67*scale,.29*scale),(-.40*scale,.025*scale)],'sand_glow',12,bevel=False)
+    rod('Frozen hourglass sand stream',(x,y+.04,z-.40*scale),
+        (x,y+.04,z+.17*scale),.026*scale,'sand_glow')
+
+
+def ammoworkshop():
+    w,d,h,cx = 6.25,8,4.45,-1.0
+    f,b = shell(w,d,h,[(0,.22,2.65,3.0),(-2.8,1.55,1.1,1.45)],cx=cx)
+    roof(w,f,b,h,1.20,'roof_tin',cx)
+    crest(w,f,h,6.35,'wood_weathered',cx)
+    boardwalk(8.6,f)
+    door(f,2.65,3.0,True)
+    porch(f,3.15,3.63)
+    window('Forge front window',-2.8,f+.12,2.275,1.1,1.45)
+    # A complete lean-to on +X, with open front and side for the work area.
+    left,right = cx+w/2-.04,4.28
+    middle = (left+right)/2
+    box('Lean-to stone floor',(middle,-.125,.14),(right-left,5.05,.28),'stone')
+    for y in (-2.45,1.65):
+        box('Lean-to outer post',(right-.15,y,1.58),(.17,.18,2.9),'wood_dark')
+        rod('Lean-to post brace',(right-.15,y,2.15),(right-.64,y,2.98),.075,'wood_light')
+    box('Lean-to roof',(middle,-.35,3.12),(right-left+.18,4.8,.16),
+        'roof_shingle',(0,.20,0))
+    box('Lean-to fascia',(right,-.35,2.94),(.15,4.8,.22),'rust')
+    # Anvil is a solid extruded silhouette including horn, waist and feet.
+    ax,ay = 3.32,1.45
+    box('Anvil timber block',(ax,ay,.62),(.72,.68,.96),'wood_dark')
+    poly = [(-.50,1.12),(.50,1.12),(.35,1.30),(.17,1.37),(.22,1.64),
+            (.56,1.70),(.77,1.86),(-.49,1.86),(-.77,1.72),(-.38,1.62),
+            (-.19,1.39),(-.25,1.27)]
+    extrude('Forge iron anvil',[(ax+x,z) for x,z in poly],.48,'iron',ay)
+    qx,qy = 2.73,2.20
+    lathe('Quench barrel staves',(qx,qy,.25),[(0,.40),(.15,.46),(.75,.46),(.95,.40)],
+          'wood_weathered',12)
+    for z in (.40,.92,1.17):
+        cylinder('Quench barrel iron hoop',(qx,qy,z),.475,.09,'iron',12)
+    cylinder('Quench barrel recessed water',(qx,qy,1.19),.34,.055,'glass',16)
+    for i in range(10):
+        a = i*TAU/10
+        rod('Barrel stave seam',(qx+.45*math.cos(a),qy+.45*math.sin(a),.43),
+            (qx+.45*math.cos(a),qy+.45*math.sin(a),1.08),.022,'wood_dark',5)
+    chimney(-2.90,b+1.2,4.70,6.6,8.8)
+    # Large hourglass is safely above the porch and closed barn doors.
+    start = len(PARTS)
+    hourglass((0,f+.56,5.01),.91)
+    # A taller profile keeps both bulbs legible from the steep game camera.
+    for obj in PARTS[start:]:
+        for v in obj.data.vertices:
+            v.co.z = 5.20+(v.co.z-5.01)*1.30
+    for x in (-3.25,1.32):
+        bullet((x,f+.18,5.67),1.15)
+    crate((-2.25,f+.69,.22))
+    crate((2.03,f+.69,.22))
+    lantern((-1.65,f+.40,2.90),.7)
+    dissolve(7.6,b,f,6.65,9,('roof_tin','wood_weathered','brass','rust'),cx=-.20)
+
+
+def mannequin(loc, role):
+    x,y,z = loc
+    cylinder('Dress form wood foot',(x,y,z+.05),.31,.10,'wood',10)
+    rod('Dress form wooden stand',(x,y,z+.1),(x,y,z+.64),.055,'wood')
+    lathe('Tailored dress-form silhouette',(x,y,z+.54),
+          [(0,.38),(.18,.34),(.48,.18),(.69,.23),(.89,.32),
+           (1.04,.21),(1.10,.09),(1.24,.09)],role,12,bevel=False)
+    cylinder('Mannequin neck cap',(x,y,z+1.81),.12,.07,'wood',10)
+    ring('Dress form waist tape',(x,y+.23,z+1.06),.20,.045,.06,'gold',12)
+
+
+def ribbon(points, width=.16, role='gold'):
+    # A thick rectangular ribbon, not a zero-thickness curve.
+    verts = []
+    for i,p in enumerate(points):
+        t = (Vector(points[min(i+1,len(points)-1)])-
+             Vector(points[max(0,i-1)])).normalized()
+        u = Vector((0,1,0)).cross(t).normalized()
+        for a,b in ((-1,-1),(1,-1),(1,1),(-1,1)):
+            verts.append(tuple(Vector(p)+u*a*width/2+Vector((0,b*.025,0))))
+    faces = [(3,2,1,0)]
+    faces += [(k*4+j,k*4+(j+1)%4,(k+1)*4+(j+1)%4,(k+1)*4+j)
+              for k in range(len(points)-1) for j in range(4)]
+    faces.append(tuple(range((len(points)-1)*4,len(points)*4)))
+    mesh('Curling tape measure ribbon',verts,faces,role,False)
+    for i,p in enumerate(points):
+        if i%2 == 0:
+            box('Tape measure dark graduation',(p[0],p[1]+.034,p[2]),(.075,.045,.045),'iron')
+
+
+def wardrobe():
+    w,d,h = 7.5,7,4.65
+    f,b = shell(w,d,h,[(0,.22,1.4,2.5),(-2.3,.85,2.5,2.3),
+                      (2.60,1.55,1.15,1.55)],paint='paint_sage')
+    roof(w,f,b,h,1.05,'roof_shingle')
+    crest(w,f,h,6.65,'paint_sage')
+    boardwalk(w,f)
+    door(f,1.4)
+    porch(f,2.05,3.10)
+    window('Tailor right window',2.6,f+.12,2.325,1.15,1.55,True,trim='cloth_cream')
+    # Projecting five-sided bay with proper plinth, canopy, returns and glass.
+    x = -2.3
+    plan = [(-1.24,0),(-1.24,.47),(-.92,.88),(.92,.88),(1.24,.47),(1.24,0)]
+    for z in (.83,3.55):
+        n = len(plan)
+        verts = [(x+u,f+v,z+zz) for zz in (-.09,.09) for u,v in plan]
+        faces = [tuple(reversed(range(n))),tuple(range(n,2*n))]
+        faces += [(i,(i+1)%n,(i+1)%n+n,i+n) for i in range(n)]
+        mesh('Tailor bay plinth / canopy',verts,faces,'cloth_cream')
+    box('Bay rear lit backdrop',(x,f+.02,2.18),(2.4,.09,2.56),'window_lit')
+    for u,v in plan[1:-1]:
+        box('Bay window cream upright',(x+u,f+v,2.18),(.105,.105,2.61),'cloth_cream')
+    # Side glass panes; the frontal pane is rolled up for the window display.
+    for s in (-1,1):
+        box('Bay return glass',(x+s*1.21,f+.24,2.18),(.055,.44,2.46),'glass')
+        box('Bay angled glass',(x+s*1.07,f+.67,2.18),(.055,.49,2.46),'glass',
+            (0,0,s*math.radians(38)))
+    box('Bay upper transom',(x,f+.89,3.29),(1.84,.06,.27),'glass')
+    box('Bay lower protective rail',(x,f+.92,1.05),(1.86,.10,.10),'cloth_cream')
+    mannequin((x-.46,f+.55,.94),'cloth_cream')
+    mannequin((x+.46,f+.55,.94),'cloth_red')
+    sy,sz = sign_bracket(2.65,f,4.33,1.12)
+    # Spool axis Z, wide wooden flanges, raised red thread bands and needle.
+    for zz in (-.42,.42):
+        cylinder('Thread spool wood flange',(2.65,sy,sz+zz),.47,.12,'wood_light',12)
+    cylinder('Thread spool red winding',(2.65,sy,sz),.31,.76,'cloth_red',12)
+    for j in range(5):
+        cylinder('Raised thread band',(2.65,sy,sz-.29+j*.145),.34,.045,'cloth_red',12)
+    rod('Large iron sewing needle',(2.32,sy+.35,sz-.60),
+        (3.13,sy+.35,sz+.80),.035,'iron')
+    ring('Needle eye',(3.12,sy+.35,sz+.76),.105,.04,.06,'iron',12)
+    # Real fabric pennants on a sagging cord across the eaves.
+    points = [(-w/2+i*w/16,f+.45,4.52-.22*math.sin(i*math.pi/16)) for i in range(17)]
+    tube('Bunting cord',points,.025,'wood_dark')
+    for i in range(13):
+        u = -w*.46+(i+.5)*w*.92/13
+        zz = 4.52-.22*math.sin((u/w+.5)*math.pi)
+        extrude('Fabric bunting pennant',[(u-.20,zz),(u+.20,zz),(u,zz-.42)],
+                .05,('cloth_red','cloth_cream','paint_rose')[i%3],f+.46,False)
+    points = [(1.1+.43*math.sin(t*TAU*1.35),f+.48+.10*math.sin(t*math.pi),5.1+t*3.38)
+              for t in [i/32 for i in range(33)]]
+    ribbon(points)
+    lantern((.99,f+.45,2.55),.65)
+    dissolve(w,b,f,6.65,9,('roof_shingle','paint_sage','cloth_cream','gold'))
+
+
+def arch_segment(inner, outer, a, b, bottom, depth, role, steps=4):
+    angles = [a+(b-a)*j/steps for j in range(steps+1)]
+    poly = [(outer*math.cos(t),bottom+outer*math.sin(t)) for t in angles]
+    poly += [(inner*math.cos(t),bottom+inner*math.sin(t)) for t in reversed(angles)]
+    return extrude('Grand arch curved beam segment',poly,depth,role,-.20)
+
+
+def timegate():
+    # Inner faces at +/-2.25, arch underside starts at Z=6.0 at its spring.
+    # No base/floor/door/glass/VFX spans the 4.5m x 6m traversable opening.
+    for side in (-1,1):
+        x = side*3.28
+        box('Clock pillar stone plinth',(x,-.20,.19),(2.04,2.60,.38),'stone_dark')
+        box('Clock pillar upper plinth',(x,-.20,.45),(1.90,2.40,.18),'stone')
+        box('Grandfather case rear',(x,-1.23,3.45),(1.76,.20,5.85),'wood_dark')
+        for s in (-1,1):
+            box('Grandfather case side',(x+s*.81,-.20,3.49),(.19,2.18,5.88),
+                'wood_dark' if s==side else 'wood_weathered')
+            box('Clock case fluted front stile',(x+s*.78,.96,3.40),(.22,.22,5.30),'wood_light')
+            box('Clock case gold stile inlay',(x+s*.78,1.085,3.45),(.065,.06,4.85),'gold')
+        for z in (.88,4.75,6.0):
+            box('Clock case cream crosspiece',(x,.94,z),(1.80,.22,.19),'cloth_cream')
+        for z in (1.16,5.88):
+            box('Case wraparound cornice',(x,-.17,z),(1.96,2.48,.18),'wood_light')
+        # Closed glass case doors with a centre mullion. The central glazed
+        # section is recessed behind the actual lantern pendulum for legibility.
+        box('Pendulum door recessed glass',(x,-.67,2.92),(1.32,.07,3.30),'glass')
+        for s in (-1,1):
+            box('Glass door side pane',(x+s*.58,.92,2.94),(.13,.06,3.4),'glass')
+        for z in (1.25,4.62):
+            box('Pendulum glass door frame',(x,1.04,z),(1.44,.13,.12),'brass')
+        for zz in (1.7,4.1):
+            box('Case glass door iron hinge',(x-side*.70,1.08,zz),(.17,.07,.20),'iron')
+        cylinder('Case door brass knob',(x+side*.56,1.13,2.85),.075,.12,'brass',10,(math.pi/2,0,0))
+        rod('Lantern pendulum rod',(x,.72,4.58),(x,.72,2.08),.045,'brass')
+        lantern((x,.76,1.98),1.40)
+        ring('Pendulum brass halo',(x,.79,1.98),.53,.065,.10,'brass',20)
+        # Small clock hoods distinguish the full-depth pillars as clock cases.
+        dial((x,1.05,5.28),.44,hour=11,minute=59)
+        extrude('Grandfather clock peaked hood',[(x-.96,6.02),(x+.96,6.02),
+                (x+.85,6.42),(x,6.85),(x-.85,6.42)],2.46,'wood_dark',-.20)
+        for s in (-1,1):
+            rod('Clock hood gilded rake',(x+s*.96,1.12,6.12),(x,1.12,6.87),.065,'gold')
+        # Exterior lanterns hang outboard, never inside the passage.
+        hx = x+side*.84
+        tube('Outboard lantern iron hook',[(hx,1.04,4.55),(hx+side*.12,1.38,4.78),
+             (hx+side*.20,1.38,4.66),(hx+side*.20,1.38,4.37)],.055,'iron')
+        lantern((hx+side*.18,1.38,3.90),.88)
+        # Each clock case gets its own tiny porch and board steps.
+        box('Pillar door canopy',(x,1.22,4.87),(1.98,.60,.14),'roof_tin')
+        for z in (1.53,3.95):
+            box('Rear clock panel band',(x,-1.37,z),(1.56,.10,.13),'brass')
+        for i in range(4):
+            box('Rear case inset board',(x-.56+i*.37,-1.36,3.12),(.34,.09,3.6),WOOD[i])
+    boardwalk(8.7,.80,gate=True)
+    for i in range(9):
+        # Central top segments partially disappear instead of an intact cap
+        # with arbitrary confetti added on top.
+        if i==4:
+            continue
+        a,b = i*math.pi/9+.012,(i+1)*math.pi/9-.012
+        arch_segment(2.25,2.92,a,b,6.0,1.65,'wood_dark' if i%2 else 'wood_weathered')
+        arch_segment(2.27,2.36,a,b,6.0,1.79,'gold',3)
+    # Clock lies above the free passage, at the arch crown, 11:59 exactly.
+    dial((0,.88,8.35),1.28,True,hour=11,minute=59)
+    for x,length in ((-.73,.60),(-.18,1.03),(.40,.76),(.82,.47)):
+        zz = 8.35-math.sqrt(max(0,1.28**2-x*x))
+        drip((x,1.12,zz+.13),length)
+    for s in (-1,1):
+        scroll((s*1.70,.83,7.58),1.4,s)
+        scroll((s*2.24,.83,6.68),.95,-s)
+        gear((s*1.20,.62,9.26),.30,'brass',10)
+    # Uppermost arch boards, gears and numeral blocks rise in four layers.
+    dissolve(7.5,-1.05,.9,9.05,11,('gold','wood_dark','brass'),clock_bits=True)
+    for i in range(7):
+        x = -2.25+i*.73
+        z = 9.35+(i%3)*.48
+        box('Floating clock numeral upright',(x,.10,z),(.065,.10,.28),'gold',
+            (0,(-.35+i*.1),0))
+        if i%2==0:
+            box('Floating numeral serif',(x,.10,z+.13),(.17,.11,.055),'gold')
+
+
+SPECS = (
+    ('Inn',(11,8,11),inn),
+    ('GunShop',(9,7,9),gunshop),
+    ('AmmoWorkshop',(9,8,9),ammoworkshop),
+    ('Wardrobe',(8,7,9),wardrobe),
+    ('TimeGate',(9,4,11),timegate),
+)
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return (Vector(tuple(min(v.co[i] for v in obj.data.vertices) for i in range(3))),
+            Vector(tuple(max(v.co[i] for v in obj.data.vertices) for i in range(3))))
+
+
+def material_coverage(obj):
+    """Occlusion-aware projected visible area from the 55-degree review view."""
+    obj.data.calc_loop_triangles()
+    verts = [v.co.copy() for v in obj.data.vertices]
+    tris = list(obj.data.loop_triangles)
+    tree = BVHTree.FromPolygons(verts,[tuple(t.vertices) for t in tris],all_triangles=True)
+    view = Vector((0,math.cos(math.radians(55)),math.sin(math.radians(55))))
+    distance = max(obj.dimensions)*3
+    areas = {}
+    for index,t in enumerate(tris):
+        facing = t.normal.dot(view)
+        if facing <= 0:
+            continue
+        center = sum((verts[i] for i in t.vertices),Vector())/3
+        _,_,hit,_ = tree.ray_cast(center+view*distance,-view,distance+.01)
+        if hit == index:
+            role = obj.data.materials[t.material_index].name
+            areas[role] = areas.get(role,0)+t.area*facing
+    total = sum(areas.values())
+    assert total > 0,obj.name
+    return {role:area/total for role,area in areas.items()}
+
+
+def check_gate_passage(obj):
+    """No triangle may cross the walking envelope, including disconnected FX."""
+    # Check a densely sampled ray grid through the full gate depth.
+    tree = BVHTree.FromObject(obj,bpy.context.evaluated_depsgraph_get())
+    for i in range(29):
+        x = -2.22+i*4.44/28
+        for j in range(39):
+            z = .03+j*5.94/38
+            hit,_,_,_ = tree.ray_cast(Vector((x,3,z)),Vector((0,-1,0)),6)
+            assert hit is None,('Blocked gate passage',x,z,hit)
+
+
+def finish(name, target):
+    bpy.ops.object.select_all(action='DESELECT')
+    # Apply the identical bevel on all rigid parts before joining. A collapse
+    # pass removes excess bevel tessellation while respecting material borders.
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name,obj.data.name = name,name+'_Mesh'
+    # Recalculate first, so decimation works consistently on closed submeshes.
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    bm.to_mesh(obj.data)
+    bm.free()
+    raw = triangles(obj)
+    if raw > 11900:
+        mod = obj.modifiers.new('Building 12000 triangle budget','DECIMATE')
+        mod.ratio,mod.delimit = 11850/raw,{'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj)<=12000,(name,triangles(obj))
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    assert all(e.is_manifold for e in bm.edges),(name,'open mesh edge')
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    bpy.context.view_layer.update()
+    lo,hi = bounds(obj)
+    # Footprint origin is authored at (0,0,0); do not recentre on drifting FX
+    # or nonuniformly scale the 1.2m boardwalk / 4.5m gate passage.
+    assert obj.location.length < 1e-6,name
+    assert abs(lo.z)<.025 and abs(hi.z-target[2])<.15,(name,lo,hi)
+    assert all(abs(obj.dimensions[i]-target[i])<1.2 for i in range(2)),(name,obj.dimensions)
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co),name
+    assert all(mat.name in ROLES for mat in obj.data.materials),name
+    for mat in obj.data.materials:
+        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
+        shader = mat.node_tree.nodes['Principled BSDF']
+        assert tuple(shader.inputs['Base Color'].default_value)==(.5,.5,.5,1)
+        assert not any(n.type.startswith('TEX_') for n in mat.node_tree.nodes)
+    coverage = material_coverage(obj)
+    assert sum(v>.002 for v in coverage.values())>=6,(name,coverage)
+    assert max(coverage.values())<=.55,(name,'material dominance',coverage)
+    if name=='TimeGate':
+        check_gate_passage(obj)
+    obj['front'] = '+Y'
+    obj['origin'] = 'Bottom centre of building footprint, metres'
+    obj['approx_size_m'] = list(target)
+    obj['triangle_count'] = triangles(obj)
+    obj['vanishing_layers'] = 4
+    obj['walkthrough'] = name=='TimeGate'
+    obj['boardwalk_depth_m'] = 1.2
+    destination = OUTPUT / ('Kit_V_'+name+'.fbx')
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination),use_selection=True,
+        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
+        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size>1024,destination
+    print('VISIBLE '+name+' '+str({k:round(v,3) for k,v in
+          sorted(coverage.items(),key=lambda item:-item[1])}),flush=True)
+    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
+    return obj
+
+
+def preview(objects):
+    """Only viewport colours change, strictly after the final neutral FBX."""
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.render.resolution_x,scene.render.resolution_y = 1600,900
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = str(PREVIEW)
+    scene.render.film_transparent = False
+    scene.render.use_file_extension = True
+    scene.view_settings.view_transform = 'Standard'
+    shading = scene.display.shading
+    shading.light,shading.color_type = 'FLAT','MATERIAL'
+    shading.show_shadows,shading.show_cavity = False,True
+    shading.cavity_type = 'BOTH'
+    shading.curvature_ridge_factor,shading.curvature_valley_factor = 1.55,1.15
+    shading.show_specular_highlight = False
+    shading.show_object_outline = True
+    shading.object_outline_color = (.055,.035,.02)
+    shading.background_type = 'WORLD'
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new('Review world')
+    scene.world.color = (.045,.052,.075)
+    locations = [obj.location.copy() for obj in objects]
+    helpers = []
+    try:
+        for role,mat in MATS.items():
+            mat.diffuse_color = (*PALETTE[role],1)
+        gap = 1.75
+        widths = [obj.dimensions.x for obj in objects]
+        total = sum(widths)+gap*(len(objects)-1)
+        x = -total/2
+        for obj,width in zip(objects,widths):
+            lo,hi = bounds(obj)
+            obj.location.x = x-lo.x
+            x += width+gap
+        data = bpy.data.cameras.new('Review camera')
+        cam = bpy.data.objects.new('Review camera',data)
+        scene.collection.objects.link(cam)
+        helpers.append(cam)
+        scene.camera = cam
+        cam.data.type,cam.data.ortho_scale = 'ORTHO',total+2
+        angle = math.radians(55)
+        target = Vector((0,0,4.0))
+        cam.location = target+Vector((0,45*math.cos(angle),45*math.sin(angle)))
+        cam.rotation_euler = (target-cam.location).to_track_quat('-Z','Y').to_euler()
+        for obj in objects:
+            data = bpy.data.curves.new('Review caption','FONT')
+            data.body,data.align_x,data.size = obj.name,'CENTER',.42
+            data.materials.append(MATS['clock_face'])
+            caption = bpy.data.objects.new('Review caption '+obj.name,data)
+            scene.collection.objects.link(caption)
+            caption.location = (obj.location.x,5.25,-.05)
+            caption.rotation_euler = cam.rotation_euler
+            helpers.append(caption)
+        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
+        print('PREVIEW '+str(PREVIEW),flush=True)
+    finally:
+        scene.camera = None
+        for obj in helpers:
+            bpy.data.objects.remove(obj,do_unlink=True)
+        for obj,loc in zip(objects,locations):
+            obj.location = loc
+        for mat in MATS.values():
+            mat.diffuse_color = (.5,.5,.5,1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials):
+        bpy.data.materials.remove(mat)
+    scene = bpy.context.scene
+    scene.unit_settings.system,scene.unit_settings.scale_length = 'METRIC',1
+    materials()
+    OUTPUT.mkdir(parents=True,exist_ok=True)
+    objects = []
+    for i,(name,size,build) in enumerate(SPECS):
+        PARTS = []
+        random.seed(115911+7919*i)
+        build()
+        objects.append(finish(name,size))
+    assert len(scene.objects)==5 and all(obj.type=='MESH' for obj in scene.objects)
+    preview(objects)
+    assert len(scene.objects)==5 and all(obj.type=='MESH' for obj in scene.objects)
+    print('DONE',flush=True)
+
+
+if __name__=='__main__':
+    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '"'!Library'"' -g '"'!Temp'"'; git status --short" in C:\Project\Cat_Tang
+ succeeded in 1148ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '!Library' -g '!Temp'; git status --short
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+ M Art/tools/blender_bake_fx.py
+ M Art/tools/blender_fx.py
+ M Game/Assets/Art/Materials/Proto/CatCoat.mat
+ M Game/Assets/Art/Materials/Proto/CatEye.mat
+ M Game/Assets/Art/Materials/Proto/CatFur.mat
+ M Game/Assets/Art/Materials/Proto/CatGun.mat
+ M Game/Assets/Art/Materials/Proto/CatHat.mat
+ M Game/Assets/Art/Materials/Proto/CatScarf.mat
+ M Game/Assets/Art/Shaders/CatTangToon.shader
+ M Game/Assets/Data/Tables/Bullet.csv
+ M Game/Assets/Data/Tables/Chapter.csv
+ M Game/Assets/Data/Tables/Costume.csv
+ M Game/Assets/Data/Tables/Effect.csv
+ M Game/Assets/Data/Tables/Enum.csv
+ M Game/Assets/Data/Tables/Gun.csv
+ M Game/Assets/Data/Tables/TraitTier.csv
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/FxMeshImporter.cs
+ M Game/Assets/Editor/ModelPalette.cs
+ M Game/Assets/Editor/ResourceTextureImport.cs
+ M Game/Assets/Editor/SceneBuilders.cs
+ M Game/Assets/Resources/FX/boss_floor_clock.png
+ M Game/Assets/Scenes/Village.unity
+ M Game/Assets/Scripts/Core/Meta.cs
+ M Game/Assets/Scripts/Core/Music.cs
+ M Game/Assets/Scripts/Core/Tables.cs
+ M Game/Assets/Scripts/Game/BigLabel.cs
+ M Game/Assets/Scripts/Game/BossBrain.cs
+ M Game/Assets/Scripts/Game/CameraFollow.cs
+ M Game/Assets/Scripts/Game/Ch2Bosses.cs
+ M Game/Assets/Scripts/Game/Ch2Kit.cs
+ M Game/Assets/Scripts/Game/DamageNumber.cs
+ M Game/Assets/Scripts/Game/Effects.cs
+ M Game/Assets/Scripts/Game/Enemy.cs
+ M Game/Assets/Scripts/Game/EnemyCh2.cs
+ M Game/Assets/Scripts/Game/EnemyFactory.cs
+ M Game/Assets/Scripts/Game/EnemyHpBar.cs
+ M Game/Assets/Scripts/Game/EnemyMoves.cs
+ M Game/Assets/Scripts/Game/EnemyProjectile.cs
+ M Game/Assets/Scripts/Game/ExtraFx.cs
+ M Game/Assets/Scripts/Game/FloorClock.cs
+ M Game/Assets/Scripts/Game/FxPart.cs
+ M Game/Assets/Scripts/Game/GunkataFx.cs
+ M Game/Assets/Scripts/Game/Health.cs
+ M Game/Assets/Scripts/Game/Kit.cs
+ M Game/Assets/Scripts/Game/PlayerController.cs
+ M Game/Assets/Scripts/Game/Revolver.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RoomDoor.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M Game/Assets/Scripts/Game/RunManagerXp.cs
+ M Game/Assets/Scripts/Game/Tracer.cs
+ M Game/Assets/Scripts/Game/VillageManager.cs
+ M Game/Assets/Scripts/UI/AimCursor.cs
+ M Game/Assets/Scripts/UI/CursorTip.cs
+ M Game/Assets/Scripts/UI/GameUI.cs
+ M Game/Assets/Scripts/UI/HudView.cs
+ M Game/Assets/Scripts/UI/InventoryScreen.cs
+ M Game/Assets/Scripts/UI/UIKit.cs
+ M Game/ProjectSettings/EditorBuildSettings.asset
+ M HANDOFF.md
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+ M "docs/Cat_Tang_\353\252\251\353\241\235_\354\264\210\354\225\210.md"
+ M "docs/Cat_Tang_\354\264\235_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\273\250\354\205\211_\352\270\260\355\232\215\354\204\234.md"
+ M "docs/Cat_Tang_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234.md"
+ M docs/data/Cat_Tang_Data.xlsx
+ M docs/images/ui_src/boss_floor_clock.png
+ M docs/tools/build_ch2_ppt.js
+ M docs/tools/build_docs.py
+ M docs/tools/build_level_ppts.js
+ M docs/tools/build_tables.py
+ M docs/tools/fx_sheet_cut.py
+?? .tripo/
+?? Art/tools/__pycache__/
+?? Art/tools/blender_kit_ch2_arena.py
+?? Art/tools/blender_kit_ch3_bosses.py
+?? Art/tools/blender_kit_ch3_bossprops.py
+?? Art/tools/blender_kit_ch3_landmarks.py
+?? Art/tools/blender_kit_ch3_props.py
+?? Art/tools/blender_kit_ch3_walls.py
+?? Art/tools/blender_kit_village_bridge.py
+?? Art/tools/blender_kit_village_buildings.py
+?? Art/tools/blender_kit_village_island.py
+?? Art/tools/blender_kit_village_props.py
+?? Art/tools/ground_texture_ch3.py
+?? Art/tools/ground_texture_village.py
+?? Art/tools/memclock_v2.py
+?? Art/tools/memshatter.py
+?? Art/tools/specs/_ch3_common.md
+?? Art/tools/specs/_ch3_detail_v2.md
+?? Art/tools/specs/_village_common.md
+?? Art/tools/specs/blender_kit_ch3_bosses_preview.png
+?? Art/tools/specs/blender_kit_ch3_bossprops_preview.png
+?? Art/tools/specs/blender_kit_ch3_landmarks_preview.png
+?? Art/tools/specs/blender_kit_ch3_props_preview.png
+?? Art/tools/specs/blender_kit_ch3_walls_preview.png
+?? Art/tools/specs/blender_kit_village_bridge_preview.png
+?? Art/tools/specs/blender_kit_village_buildings_preview.png
+?? Art/tools/specs/blender_kit_village_island_preview.png
+?? Art/tools/specs/blender_kit_village_props_preview.png
+?? Art/tools/specs/ch3_concept_spec.md
+?? Art/tools/specs/kit_ch2_arena.log
+?? Art/tools/specs/kit_ch2_arena_preview.png
+?? Art/tools/specs/kit_ch2_arena_spec.md
+?? Art/tools/specs/kit_ch2_arena_v2.log
+?? Art/tools/specs/kit_ch2_arena_v3.log
+?? Art/tools/specs/kit_ch3_bosses.log
+?? Art/tools/specs/kit_ch3_bosses_spec.md
+?? Art/tools/specs/kit_ch3_bossprops.log
+?? Art/tools/specs/kit_ch3_bossprops_spec.md
+?? Art/tools/specs/kit_ch3_landmarks.log
+?? Art/tools/specs/kit_ch3_landmarks_spec.md
+?? Art/tools/specs/kit_ch3_landmarks_v2.log
+?? Art/tools/specs/kit_ch3_landmarks_v2_spec.md
+?? Art/tools/specs/kit_ch3_props.log
+?? Art/tools/specs/kit_ch3_props_spec.md
+?? Art/tools/specs/kit_ch3_props_v2.log
+?? Art/tools/specs/kit_ch3_props_v2_spec.md
+?? Art/tools/specs/kit_ch3_shore_v2.log
+?? Art/tools/specs/kit_ch3_shore_v2_spec.md
+?? Art/tools/specs/kit_ch3_walls.log
+?? Art/tools/specs/kit_ch3_walls_spec.md
+?? Art/tools/specs/kit_ch3_walls_v2.log
+?? Art/tools/specs/kit_ch3_walls_v2_spec.md
+?? Art/tools/specs/kit_village_bridge.log
+?? Art/tools/specs/kit_village_bridge_spec.md
+?? Art/tools/specs/kit_village_buildings.log
+?? Art/tools/specs/kit_village_buildings_nofloat.log
+?? Art/tools/specs/kit_village_buildings_nofloat_spec.md
+?? Art/tools/specs/kit_village_buildings_spec.md
+?? Art/tools/specs/kit_village_island.log
+?? Art/tools/specs/kit_village_island_spec.md
+?? Art/tools/specs/kit_village_nofloat_spec.md
+?? Art/tools/specs/kit_village_props.log
+?? Art/tools/specs/kit_village_props_spec.md
+?? Art/tools/specs/ui_bell_spec.md
+?? Art/tools/specs/ui_memory_clock_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Art/tripo_input/ch3/
+?? Art/tripo_input/merchant/
+?? Art/tripo_input/npc/
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena.fbx.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_1.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_10.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_2.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_3.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_4.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_5.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_6.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_7.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_8.mat.meta
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat
+?? Game/Assets/Art/Characters/Ch2/Kit_Arena_Toon_9.mat.meta
+?? Game/Assets/Art/Characters/Ch3.meta
+?? Game/Assets/Art/Characters/Ch3/
+?? Game/Assets/Art/Characters/Merchant.meta
+?? Game/Assets/Art/Characters/Merchant/
+?? Game/Assets/Art/Characters/Npc/
+?? Game/Assets/Art/Characters/Village/
+?? Game/Assets/Art/Env/Ch3.meta
+?? Game/Assets/Art/Env/Ch3/
+?? Game/Assets/Art/Env/Village/
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx
+?? Game/Assets/Art/FX/Meshes/fx_diamond.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_echo_blade.fbx
+?? Game/Assets/Art/FX/Meshes/fx_echo_blade.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_echo_star.fbx
+?? Game/Assets/Art/FX/Meshes/fx_echo_star.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_0.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_1.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glass_2.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx
+?? Game/Assets/Art/FX/Meshes/fx_glint.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_ice_block.fbx
+?? Game/Assets/Art/FX/Meshes/fx_ice_block.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_ice_chunk_0.fbx
+?? Game/Assets/Art/FX/Meshes/fx_ice_chunk_0.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_ice_chunk_1.fbx
+?? Game/Assets/Art/FX/Meshes/fx_ice_chunk_1.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_ice_chunk_2.fbx
+?? Game/Assets/Art/FX/Meshes/fx_ice_chunk_2.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_ice_petal.fbx
+?? Game/Assets/Art/FX/Meshes/fx_ice_petal.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_slash.fbx
+?? Game/Assets/Art/FX/Meshes/fx_slash.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_water_column.fbx
+?? Game/Assets/Art/FX/Meshes/fx_water_column.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_water_crown.fbx
+?? Game/Assets/Art/FX/Meshes/fx_water_crown.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_water_drop.fbx
+?? Game/Assets/Art/FX/Meshes/fx_water_drop.fbx.meta
+?? Game/Assets/Art/FX/Meshes/fx_water_splash.fbx
+?? Game/Assets/Art/FX/Meshes/fx_water_splash.fbx.meta
+?? Game/Assets/Data/Tables/Unlock.csv
+?? Game/Assets/Data/Tables/Unlock.csv.meta
+?? Game/Assets/Editor/VillageKitBuilder.cs
+?? Game/Assets/Editor/VillageKitBuilder.cs.meta
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Blade.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Knight.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Mage.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Shooter.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab
+?? Game/Assets/Resources/Enemies/Ch3_Trickster.prefab.meta
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset
+?? Game/Assets/Resources/FX/Meshes/fx_diamond.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_echo_blade.asset
+?? Game/Assets/Resources/FX/Meshes/fx_echo_blade.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_echo_star.asset
+?? Game/Assets/Resources/FX/Meshes/fx_echo_star.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_0.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_1.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glass_2.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset
+?? Game/Assets/Resources/FX/Meshes/fx_glint.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_ice_block.asset
+?? Game/Assets/Resources/FX/Meshes/fx_ice_block.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_ice_chunk_0.asset
+?? Game/Assets/Resources/FX/Meshes/fx_ice_chunk_0.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_ice_chunk_1.asset
+?? Game/Assets/Resources/FX/Meshes/fx_ice_chunk_1.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_ice_chunk_2.asset
+?? Game/Assets/Resources/FX/Meshes/fx_ice_chunk_2.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_ice_petal.asset
+?? Game/Assets/Resources/FX/Meshes/fx_ice_petal.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_slash.asset
+?? Game/Assets/Resources/FX/Meshes/fx_slash.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_water_column.asset
+?? Game/Assets/Resources/FX/Meshes/fx_water_column.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_water_crown.asset
+?? Game/Assets/Resources/FX/Meshes/fx_water_crown.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_water_drop.asset
+?? Game/Assets/Resources/FX/Meshes/fx_water_drop.asset.meta
+?? Game/Assets/Resources/FX/Meshes/fx_water_splash.asset
+?? Game/Assets/Resources/FX/Meshes/fx_water_splash.asset.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_GlassBurst.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_MirrorFlash.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Ch3_Stardust.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_PierceEcho.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_PierceEcho.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_SmokePuff.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryClock.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_Trait_MemoryShatter.prefab.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_0.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_1.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_10.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_11.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_12.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_13.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_14.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_15.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_2.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_3.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_4.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_5.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_6.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_7.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_8.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3orb_9.png
+?? Game/Assets/Resources/FX/anim/bk_c3orb_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_0.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_1.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_10.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_11.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_12.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_13.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_14.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_15.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_2.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_3.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_4.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_5.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_6.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_7.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_8.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3shard_9.png
+?? Game/Assets/Resources/FX/anim/bk_c3shard_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_0.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_1.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_10.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_11.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_12.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_13.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_14.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_15.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_2.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_3.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_4.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_5.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_6.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_7.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_8.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3spark_9.png
+?? Game/Assets/Resources/FX/anim/bk_c3spark_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_0.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_1.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_10.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_11.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_12.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_13.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_14.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_15.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_2.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_3.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_4.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_5.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_6.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_7.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_8.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c3water_9.png
+?? Game/Assets/Resources/FX/anim/bk_c3water_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_22.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_23.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png
+?? Game/Assets/Resources/FX/anim/bk_memclock_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_16.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_17.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_18.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_19.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_20.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_21.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png
+?? Game/Assets/Resources/FX/anim/bk_memshatter_9.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_0.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_1.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_2.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_3.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_4.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_5.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_6.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_7.png
+?? Game/Assets/Resources/FX/anim/cx_ice_bloom_7.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_0.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_1.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_2.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_3.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_4.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_5.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_6.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_7.png
+?? Game/Assets/Resources/FX/anim/cx_ice_lock_7.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_0.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_1.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_2.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_3.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_4.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_5.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_6.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_7.png
+?? Game/Assets/Resources/FX/anim/cx_pierce_echo_7.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_0.png
+?? Game/Assets/Resources/FX/anim/cx_rend_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_1.png
+?? Game/Assets/Resources/FX/anim/cx_rend_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_2.png
+?? Game/Assets/Resources/FX/anim/cx_rend_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_3.png
+?? Game/Assets/Resources/FX/anim/cx_rend_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_4.png
+?? Game/Assets/Resources/FX/anim/cx_rend_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_5.png
+?? Game/Assets/Resources/FX/anim/cx_rend_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_6.png
+?? Game/Assets/Resources/FX/anim/cx_rend_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_rend_7.png
+?? Game/Assets/Resources/FX/anim/cx_rend_7.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_0.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_0.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_1.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_1.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_2.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_2.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_3.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_3.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_4.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_4.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_5.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_5.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_6.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_6.png.meta
+?? Game/Assets/Resources/FX/anim/fx_c3water_7.png
+?? Game/Assets/Resources/FX/anim/fx_c3water_7.png.meta
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab
+?? Game/Assets/Resources/Kit/Ch2/Arena.prefab.meta
+?? Game/Assets/Resources/Kit/Ch3.meta
+?? Game/Assets/Resources/Kit/Ch3/
+?? Game/Assets/Resources/Merchants.meta
+?? Game/Assets/Resources/Merchants/
+?? Game/Assets/Resources/UI/Lobby.meta
+?? Game/Assets/Resources/UI/Lobby/
+?? Game/Assets/Resources/UI/bell_icon.png
+?? Game/Assets/Resources/UI/bell_icon.png.meta
+?? Game/Assets/Resources/UI/memory_clock.png
+?? Game/Assets/Resources/UI/memory_clock.png.meta
+?? Game/Assets/Resources/UI/merchant_arrow.png
+?? Game/Assets/Resources/UI/merchant_arrow.png.meta
+?? Game/Assets/Scenes/Lobby.unity
+?? Game/Assets/Scenes/Lobby.unity.meta
+?? Game/Assets/Scripts/Core/GameSettings.cs
+?? Game/Assets/Scripts/Core/GameSettings.cs.meta
+?? Game/Assets/Scripts/Dev/UiCapture.cs
+?? Game/Assets/Scripts/Dev/UiCapture.cs.meta
+?? Game/Assets/Scripts/Game/Ch3Bosses.cs
+?? Game/Assets/Scripts/Game/Ch3Bosses.cs.meta
+?? Game/Assets/Scripts/Game/Ch3Kit.cs
+?? Game/Assets/Scripts/Game/Ch3Kit.cs.meta
+?? Game/Assets/Scripts/Game/EnemyCh3.cs
+?? Game/Assets/Scripts/Game/EnemyCh3.cs.meta
+?? Game/Assets/Scripts/Game/ExecutionFx.cs
+?? Game/Assets/Scripts/Game/ExecutionFx.cs.meta
+?? Game/Assets/Scripts/Game/FxRecorder.cs
+?? Game/Assets/Scripts/Game/FxRecorder.cs.meta
+?? Game/Assets/Scripts/Game/IslandBridge.cs
+?? Game/Assets/Scripts/Game/MemoryClock.cs
+?? Game/Assets/Scripts/Game/MemoryClock.cs.meta
+?? Game/Assets/Scripts/Game/MirrorGhost.cs
+?? Game/Assets/Scripts/Game/MirrorGhost.cs.meta
+?? Game/Assets/Scripts/Game/MirrorReflection.cs
+?? Game/Assets/Scripts/Game/MirrorReflection.cs.meta
+?? Game/Assets/Scripts/Game/MirrorShard.cs
+?? Game/Assets/Scripts/Game/MirrorShard.cs.meta
+?? Game/Assets/Scripts/Game/OblivionFx.cs
+?? Game/Assets/Scripts/Game/OblivionFx.cs.meta
+?? Game/Assets/Scripts/Game/VillageStory.cs
+?? Game/Assets/Scripts/Game/VillageWake.cs
+?? Game/Assets/Scripts/Game/VillageWake.cs.meta
+?? Game/Assets/Scripts/Game/WaterBurst.cs
+?? Game/Assets/Scripts/Game/WaterBurst.cs.meta
+?? Game/Assets/Scripts/UI/EdgeMarker.cs
+?? Game/Assets/Scripts/UI/EdgeMarker.cs.meta
+?? Game/Assets/Scripts/UI/LobbyScreen.cs
+?? Game/Assets/Scripts/UI/LobbyScreen.cs.meta
+?? Game/Assets/Scripts/UI/LobbyStrokes.cs
+?? Game/Assets/Scripts/UI/LobbyStrokes.cs.meta
+?? Game/Assets/Scripts/UI/LobbyVfx.cs
+?? Game/Assets/Scripts/UI/LobbyVfx.cs.meta
+?? Game/Assets/Scripts/UI/Terms.cs
+?? Game/Assets/Scripts/UI/Terms.cs.meta
+?? Game/Assets/Shaders/CatTangMirrorClock.shader
+?? Game/Assets/Shaders/CatTangMirrorClock.shader.meta
+?? Game/Assets/Shaders/CatTangMirrorFloor.shader
+?? Game/Assets/Shaders/CatTangMirrorFloor.shader.meta
+?? Game/Assets/Shaders/CatTangMirrorGhost.shader
+?? Game/Assets/Shaders/CatTangMirrorGhost.shader.meta
+?? Game/Assets/Shaders/CatTangWater.shader
+?? Game/Assets/Shaders/CatTangWater.shader.meta
+?? Game/Assets/_Recovery.meta
+?? Game/Assets/_Recovery/
+?? "docs/1159_2\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_3\354\236\245_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? "docs/1159_\354\264\235\355\203\204_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? "docs/1159_\354\275\224\354\212\244\355\212\254_\352\270\260\355\232\215\354\204\234_20261118_\354\240\225\354\212\271\354\232\264_Ver03.pptx"
+?? docs/images/ch3/
+?? docs/images/fx_preview/
+?? docs/images/fx_src/c3_water.png
+?? docs/images/fx_src/execute_rend.png
+?? docs/images/fx_src/ice_bloom.png
+?? docs/images/fx_src/ice_lock.png
+?? docs/images/fx_src/ice_ref_game.png
+?? docs/images/fx_src/pierce_echo.png
+?? docs/images/fx_src/prompts/c3_water.log
+?? docs/images/fx_src/prompts/c3_water.txt
+?? docs/images/fx_src/prompts/execute_rend.log
+?? docs/images/fx_src/prompts/execute_rend.txt
+?? docs/images/fx_src/prompts/ice_bloom.log
+?? docs/images/fx_src/prompts/ice_bloom.txt
+?? docs/images/fx_src/prompts/ice_lock.log
+?? docs/images/fx_src/prompts/ice_lock.txt
+?? docs/images/fx_src/prompts/pierce_echo.log
+?? docs/images/fx_src/prompts/pierce_echo.txt
+?? docs/images/fx_src/water_ref/
+?? docs/images/ui_src/boss_floor_clock_roman.png
+?? docs/images/ui_src/flat_button.png
+?? docs/images/ui_src/flat_card.png
+?? docs/images/ui_src/flat_panel.png
+?? docs/images/ui_src/flat_parts.png
+?? docs/images/ui_src/flat_title.png
+?? docs/images/ui_src/flat_title_dots.png
+?? docs/images/ui_src/lobby_bg.png
+?? docs/images/ui_src/lobby_button.png
+?? docs/images/ui_src/lobby_fg.png
+?? docs/images/ui_src/lobby_icons.png
+?? docs/images/ui_src/lobby_key.png
+?? docs/images/ui_src/menu_button.png
+?? docs/images/ui_src/merchant_arrow.png
+?? docs/images/ui_src/panel_frame.png
+?? docs/images/ui_src/prompts/boss_floor_clock_arabic.log
+?? docs/images/ui_src/prompts/boss_floor_clock_arabic.txt
+?? docs/images/ui_src/prompts/drawing_stages.txt
+?? docs/images/ui_src/prompts/export_lobby_assets.ps1
+?? docs/images/ui_src/prompts/lobby_assets_generation.md
+?? docs/images/ui_src/prompts/lobby_bg.log
+?? docs/images/ui_src/prompts/lobby_bg.txt
+?? docs/images/ui_src/prompts/lobby_flat.log
+?? docs/images/ui_src/prompts/lobby_flat.txt
+?? docs/images/ui_src/prompts/lobby_generation.txt
+?? docs/images/ui_src/prompts/lobby_key.log
+?? docs/images/ui_src/prompts/lobby_key.txt
+?? docs/images/ui_src/prompts/lobby_lineart.log
+?? docs/images/ui_src/prompts/lobby_lineart.txt
+?? docs/images/ui_src/prompts/lobby_stages.log
+?? docs/images/ui_src/prompts/lobby_stages.txt
+?? docs/images/ui_src/prompts/lobby_ui.log
+?? docs/images/ui_src/prompts/lobby_ui.txt
+?? docs/images/ui_src/prompts/lobby_ui2.log
+?? docs/images/ui_src/prompts/lobby_ui2.txt
+?? docs/images/ui_src/prompts/merchant_arrow.log
+?? docs/images/ui_src/prompts/merchant_arrow.txt
+?? docs/images/ui_src/prompts/ref_hero.png
+?? docs/images/ui_src/prompts/ref_key.png
+?? docs/images/ui_src/slot_card.png
+?? docs/images/ui_src/slot_card2.png
+?? docs/images/ui_src/stage1_construction.png
+?? docs/images/ui_src/stage2_pencil.png
+?? docs/images/ui_src/stage3_lineart.png
+?? docs/images/ui_src/title2_1159.png
+?? docs/images/ui_src/title_1159.png
+?? docs/images/ui_src/ui_parts.png
+?? docs/tools/build_ch3_ppt.js
+?? docs/tools/fx_frames_to_gif.py
+?? docs/tools/ui_lobby_cut.py
+?? docs/tools/ui_lobby_ink.py
+?? docs/tools/ui_lobby_stages.py
+?? docs/tools/ui_lobby_strokes.py
+?? docs/tools/ui_lobby_vector.py
+?? docs/tools/ui_merchant_cut.py
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$paths = @('"'C:/AGENTS.md','C:/Project/AGENTS.md','C:/Project/Cat_Tang/AGENTS.md','Art/AGENTS.md','Art/tools/AGENTS.md'); foreach ("'$p in $paths) { if (Test-Path -LiteralPath $p) { Write-Output $p; Get-Content -LiteralPath $p } }; $s = Get-Content Art/tools/blender_kit_village_buildings.py; $s[355..730]' in C:\Project\Cat_Tang
+ succeeded in 238ms:
+            box('Full height corner post',(x,y,height/2),(.24,.25,height),'wood_dark')
+            box('Corner painted inset',(x,y+.14,height/2),(.12,.07,height-.28),
+                'cloth_cream' if paint else 'wood_light')
+    for z in (.38,height-.12):
+        for y in (front+.10,back-.10):
+            box('Front and rear trim band',(cx,y,z),(width+.18,.17,.17),
+                'cloth_cream' if paint else 'wood_light')
+        for x in (cx-width/2-.08,cx+width/2+.08):
+            box('Side trim band',(x,center,z),(.15,front-back,.17),
+                'cloth_cream' if paint else 'wood_light')
+    return front,back
+
+
+def roof(width, front, back, eave, rise, role, cx=0):
+    half = width/2+.22
+    run = math.sqrt(half*half+rise*rise)
+    angle = math.atan2(rise,half)
+    # Solid lower pitches; a few ridge tiles detach, exposing broken rafters.
+    for side in (-1,1):
+        for i in range(5):
+            t = (i+.5)/5
+            for j in range(4):
+                if i==4 and j in ((1,3) if side==1 else (0,2)):
+                    continue
+                y = back-.22+(j+.5)*(front-back+.44)/4
+                x,z = cx+side*half*(1-t),eave+rise*t
+                box('Overlapping roof panel',(x,y,z),
+                    (run/5+.055,(front-back+.44)/4-.025,.13),role,
+                    (0,side*angle,0))
+                if role == 'roof_tin' and i in (0,2):
+                    box('Standing tin seam',(x,y,z+.075),
+                        (run/5,.055,.055),'rust',(0,side*angle,0))
+        box('Eave fascia',(cx+side*half,(front+back)/2,eave-.05),
+            (.18,front-back+.60,.23),'wood_light')
+        for y in (back+.35,(front+back)/2,front-.25):
+            rod('Roof triangular rafter',(cx+side*half,y,eave-.14),
+                (cx+side*.16,y,eave+rise-.16),.07,'wood_dark')
+    # Front and rear closed gables, with separate trim and real depth.
+    for y in (back-.02,front+.02):
+        extrude('Complete roof gable',[(cx-width/2,eave-.16),
+                (cx+width/2,eave-.16),(cx,eave+rise-.18)],.16,
+                'wood_weathered',y)
+        for side in (-1,1):
+            rod('Gable rake trim',(cx+side*half,y,eave),
+                (cx+side*.12,y,eave+rise-.06),.075,'wood_light')
+    for j in (0,2):
+        box('Interrupted ridge cap',(cx,back+(j+.5)*(front-back)/4,eave+rise),
+            (.30,(front-back)/4-.08,.16),'brass')
+
+
+def crest(width, front, base, crown, paint='wood_light', cx=0):
+    # Jagged stepped skyline: the absent upper boards reappear in the fragments.
+    n = math.ceil(width/.57)
+    for i in range(n):
+        x = -width/2+(i+.5)*width/n
+        profile = 1-abs(x)/(width/2)
+        top = base+(crown-base)*(.54+.46*profile)
+        if i%5 == 1:
+            top -= .32
+        box('Broken false-front crest board',(cx+x,front+.06,(base+top)/2),
+            (width/n-.024,.22,top-base),paint if i%3 else 'wood_weathered')
+        if i%5 != 1:
+            box('Interrupted crest crown molding',(cx+x,front+.10,top+.015),
+                (width/n+.015,.32,.11),'gold' if i%3==0 else 'wood_light')
+    box('False-front cornice',(cx,front+.13,base+.11),(width+.26,.36,.23),'wood_dark')
+    box('Cornice gold line',(cx,front+.34,base+.16),(width+.34,.07,.07),'gold')
+    for i in range(max(3,round(width/.65))):
+        x = cx-width*.46+i*width*.92/(max(3,round(width/.65))-1)
+        box('Cornice dentil',(x,front+.24,base-.12),(.16,.28,.24),'wood_light')
+    for side in (-1,1):
+        scroll((cx+side*width*.34,front+.25,base+.74),.9,side)
+
+
+def porch(front, width=2.5, height=3.05):
+    box('Little entrance awning',(0,front+.63,height),(width,1.30,.16),
+        'roof_shingle',(-math.radians(7),0,0))
+    box('Porch carved front fascia',(0,front+1.23,height-.10),(width,.14,.24),'wood_light')
+    for side in (-1,1):
+        x = side*(width/2-.14)
+        box('Porch post',(x,front+1.13,(height+.22)/2),(.13,.14,height-.22),'wood_dark')
+        rod('Porch angled bracket',(x,front+1.12,height-.65),
+            (x,front+.67,height-.10),.065,'wood_light')
+
+
+def sign_bracket(x, front, z, reach=1):
+    box('Iron hanging sign wall plate',(x,front+.13,z-.22),(.16,.13,.74),'iron')
+    rod('Iron sign bracket',(x,front+.16,z),(x,front+reach,z),.055,'iron')
+    rod('Iron bracket diagonal',(x,front+.18,z-.46),(x,front+reach*.80,z),.045,'iron')
+    for yy in (front+reach*.5,front+reach*.91):
+        rod('Hanging sign chain',(x,yy,z-.03),(x,yy,z-.37),.025,'iron')
+    return front+reach*.75,z-.60
+
+
+def dissolve(width, back, front, start, top, roles, cx=0, clock_bits=False):
+    """Four rising layers, decreasing count/size; all above the solid 2/3.
+
+    Front and rear source tiles participate so the effect reads all around.
+    The topmost speck fixes the intended height without scaling entrances.
+    """
+    for layer,count in enumerate((15,11,7,4)):
+        f = layer/3
+        size = .44*(1-.67*f)
+        zbase = start+(top-start-.20)*f
+        for i in range(count):
+            x = cx+random.uniform(-width*.46,width*.46)
+            y = random.choice((front,back,(front+back)/2))+random.uniform(-.22,.22)
+            z = min(top-.16,zbase+random.uniform(0,.19))
+            if clock_bits and i%4==0:
+                gear((x,y,z),size*.65,'brass',8,
+                     (random.uniform(-.35,.35),random.uniform(-.3,.3),0))
+            else:
+                box('Floating broken plank / shingle',(x,y,z),
+                    (size*random.uniform(.8,1.5),size*.65,size*.32),
+                    roles[i%len(roles)],
+                    (random.uniform(-.5,.5),random.uniform(-.45,.45),random.uniform(-.4,.4)))
+            if i%2==0:
+                for k in range(3):
+                    box('Rising sand grain trail',(x+.055*k,y+.02*k,z-.18-k*.12),
+                        (.045,.045,.065-k*.007),'sand_glow',bevel=False)
+    box('Last vanishing sand grain',(cx+.25,(front+back)/2,top-.025),
+        (.05,.05,.05),'sand_glow',bevel=False)
+
+
+def chimney(x, y, bottom, top, fragment_top):
+    for row in range(max(1,round((top-bottom)/.32))):
+        z = bottom+.16+row*.32
+        for j in range(2):
+            xx = x+(j-.5)*.42
+            box('Chimney staggered masonry',(xx+(row%2)*.035,y,z),
+                (.40,.72,.30),'stone' if (row+j)%3 else 'stone_dark')
+    box('Rust chimney lip',(x,y,top+.05),(.98,.90,.16),'rust')
+    box('Open chimney dark flue',(x,y,top+.15),(.62,.54,.07),'stone_dark')
+    for layer,count in enumerate((4,3,2,1)):
+        for j in range(count):
+            t = layer/3
+            z = top+.35+(fragment_top-top-.50)*t
+            box('Dissolving chimney brick',(x+random.uniform(-.35,.35),y+random.uniform(-.3,.3),z),
+                (.28*(1-t*.65),.21*(1-t*.65),.13),'stone' if j%2 else 'rust',
+                (.1,j*.3,layer*.23))
+            box('Frozen chimney sand spark',(x+.12+layer*.09,y+.18,z+.12),
+                (.055,.055,.09),'sand_glow',bevel=False)
+
+
+def inn():
+    w,d,h = 10.4,8,6.55
+    front_holes = [(0,.22,1.5,2.5)]
+    front_holes += [(x,1.5,1.45,1.65) for x in (-3.4,3.4)]
+    front_holes += [(x,4.55,1.2,1.55) for x in (-3.4,-1.15,1.15,3.4)]
+    f,b = shell(w,d,h,front_holes)
+    roof(w,f,b,h,1.25,'roof_shingle')
+    crest(w,f,h,8.55,'paint_rose')
+    boardwalk(w,f)
+    door(f)
+    for x in (-3.4,3.4):
+        window('Inn ground window',x,f+.11,2.325,1.45,1.65,True)
+    for x in (-3.4,-1.15,1.15,3.4):
+        window('Inn second floor window',x,f+.11,5.325,1.2,1.55,True)
+    # Full-width second-storey balcony doubles as the entrance porch roof.
+    for i in range(19):
+        box('Balcony floorboard',(-4.9+(i+.5)*9.8/19,f+.68,3.58),
+            (9.8/19-.018,1.35,.14),WOOD[i%len(WOOD)])
+    for x in (-4.85,-2.4,2.4,4.85):
+        box('Balcony lower support post',(x,f+1.14,1.91),(.18,.18,3.36),'wood_dark')
+        rod('Balcony corbel',(x,f+1.13,2.96),(x,f+.57,3.53),.09,'wood_light')
+    for x in (-4.85,-2.4,0,2.4,4.85):
+        box('Balcony railing newel',(x,f+1.25,4.14),(.18,.18,1.14),'paint_rose')
+        cylinder('Balcony brass post cap',(x,f+1.25,4.76),.12,.10,'brass',8)
+    for i in range(25):
+        box('Balcony railing baluster',(-4.75+i*9.5/24,f+1.25,4.12),(.065,.075,.85),'wood_light')
+    for z in (3.76,4.61):
+        box('Balcony full front rail',(0,f+1.25,z),(9.95,.14,.12),'wood_dark')
+        for side in (-1,1):
+            box('Balcony return rail',(side*4.87,f+.66,z),(.12,1.22,.12),'wood_dark')
+            for yy in (.3,.65,1.0):
+                box('Balcony return baluster',(side*4.87,f+yy,4.14),(.07,.07,.85),'wood_light')
+    # Cuckoo-house is a large relief volume embedded in the crest.
+    cy = f+.49
+    extrude('Cuckoo clock carved wooden house',
+            [(-1.05,6.65),(1.05,6.65),(1.05,7.76),(0,8.40),(-1.05,7.76)],
+            .52,'wood_dark',cy)
+    for s in (-1,1):
+        rod('Cuckoo gable gold rake',(s*1.19,cy+.30,7.76),(0,cy+.30,8.50),.075,'gold')
+    dial((0,cy+.31,7.20),.48,hour=6,minute=30)
+    for s in (-1,1):
+        box('Closed tiny cuckoo door',(s*.14,cy+.32,7.96),(.25,.11,.33),'wood_light')
+        box('Cuckoo tiny door iron hinge',(s*.23,cy+.39,7.96),(.065,.05,.12),'iron')
+        # Three broad alternating pine-cone tiers read at the game camera.
+        x = s*.70
+        rod('Pine cone weight chain',(x,cy+.35,6.76),(x,cy+.35,5.82),.025,'brass')
+        for j in range(4):
+            z = 5.64+j*.13
+            lathe('Carved pine cone weight',(x,cy+.35,z),
+                  [(-.06,.06),(.02,.14-j*.012),(.12,.065)],'wood_dark',8)
+    for s in (-1,1):
+        scroll((s*2.05,f+.34,7.25),1.45,s)
+    sy,sz = sign_bracket(4.35,f,3.15,.92)
+    # A blank, chunky carved board: intentionally no lettering.
+    start = len(PARTS)
+    poly = [(-.62,-.34),(.50,-.34),(.70,-.10),(.62,.30),(-.48,.38),(-.71,.12)]
+    extrude('Inn blank carved hanging board',poly,.16,'wood_dark')
+    for i in range(len(poly)):
+        a,c = poly[i],poly[(i+1)%len(poly)]
+        rod('Inn sign gold frame',(a[0],.105,a[1]),(c[0],.105,c[1]),.055,'gold')
+    for obj in PARTS[start:]:
+        transform(obj,(4.35,sy,sz),(0,0,math.pi/5))
+    for x in (-1.05,1.05):
+        lantern((x,f+.40,2.60),.7)
+    chimney(-3.2,b+1.25,6.95,8.10,10.15)
+    drip((1.15,f+.35,7.03),.53)
+    dissolve(w,b,f,8.30,11,('roof_shingle','wood_light','paint_rose','gold'))
+
+
+def rifle(loc, scale=1):
+    x,y,z = loc
+    box('Rifle walnut stock',(x-.10*scale,y,z-.42*scale),
+        (.16*scale,.12,.46*scale),'wood_dark',(0,-.15,0))
+    box('Rifle fore stock',(x,y,z),(.13*scale,.13,.55*scale),'wood_dark')
+    rod('Rifle iron barrel',(x,y,z-.1*scale),(x,y,z+.85*scale),.035*scale,'iron')
+    box('Rifle receiver',(x,y+.045,z-.18*scale),(.22*scale,.09,.17*scale),'iron')
+    ring('Rifle trigger guard',(x-.02*scale,y+.09,z-.33*scale),.095*scale,.04,.06,'iron',10)
+
+
+def revolver_sign(x, y, z):
+    # True revolver silhouette with barrel, six-shot cylinder and angled grip.
+    poly = [(-1.18,.25),(.42,.25),(.60,.12),(.63,-.10),(.42,-.25),
+            (.62,-.88),(.19,-1.0),(-.04,-.28),(-.44,-.19),(-.44,.04),(-1.18,.04)]
+    extrude('Oversize revolver iron silhouette',[(x+a,z+c) for a,c in poly],
+            .20,'iron',y)
+    extrude('Revolver wood grip',[(x+.12,z-.24),(x+.40,z-.27),
+            (x+.55,z-.82),(x+.25,z-.90)],.245,'wood',y)
+    box('Revolver long barrel',(x-.54,y,z+.16),(1.44,.25,.19),'iron')
+    box('Revolver gold barrel inlay',(x-.54,y+.15,z+.18),(1.32,.055,.045),'gold')
+    cylinder('Revolver fluted cylinder',(x-.13,y+.10,z-.005),.265,.20,'iron',12,(math.pi/2,0,0))
+    for i in range(6):
+        a = i*TAU/6
+        cylinder('Revolver cylinder brass chamber',(x-.13+.17*math.cos(a),y+.22,z+.17*math.sin(a)),
+                 .045,.04,'gold',6,(math.pi/2,0,0))
+    ring('Revolver gold trigger guard',(x+.19,y+.13,z-.30),.22,.055,.10,'gold',16)
+    box('Revolver hammer',(x+.46,y,z+.22),(.17,.15,.19),'iron',(0,.25,0))
+    cylinder('Grip gold rivet',(x+.34,y+.15,z-.60),.065,.05,'gold',8,(math.pi/2,0,0))
+
+
+def gunshop():
+    w,d,h = 8.5,7,4.65
+    holes = [(0,.22,1.45,2.5),(-2.65,1.1,2.6,1.9),(2.75,1.5,1.25,1.6)]
+    f,b = shell(w,d,h,holes)
+    roof(w,f,b,h,.95,'roof_tin')
+    crest(w,f,h,6.80,'wood_light')
+    boardwalk(w,f)
+    door(f)
+    window('Gun display',-2.65,f+.35,2.05,2.6,1.9)
+    for x in (-3.95,-1.35):
+        box('Display projecting jamb return',(x,f+.18,2.05),(.13,.37,2.1),'wood_light')
+    for zz in (1.10,3.0):
+        box('Display projecting sill return',(-2.65,f+.18,zz),(2.72,.37,.13),'wood_light')
+    # Display rifles sit ahead of the opaque review glass and behind the rack.
+    for i in range(4):
+        rifle((-3.47+i*.55,f+.57,1.86),.85)
+    for zz in (1.32,1.80):
+        box('Rifle display rack',(-2.65,f+.67,zz),(2.35,.14,.12),'wood_light')
+    window('Gunshop side display',2.75,f+.10,2.3,1.25,1.6)
+    # Individual thick fabric stripes follow the same sloping awning plane.
+    for i in range(16):
+        x = -w/2+(i+.5)*w/16
+        role = 'canvas' if i%2==0 else 'cloth_red'
+        box('Red and canvas awning stripe',(x,f+.70,4.00),
+            (w/16-.012,1.48,.07),role,(-math.radians(10),0,0))
+        extrude('Striped scalloped valance',[(x-w/32,3.88),(x+w/32,3.88),
+                (x+w/32,3.65),(x,3.57),(x-w/32,3.65)],.075,role,f+1.40,False)
+    for x in (-4.05,4.05):
+        box('Awning iron support',(x,f+1.25,2.04),(.11,.12,3.64),'iron')
+        rod('Awning brace',(x,f+1.24,3.39),(x,f+.6,4.01),.055,'iron')
+    sy,sz = sign_bracket(2.15,f,5.08,1.08)
+    revolver_sign(2.1,sy,sz+.15)
+    # Six-point sheriff star with six raised rounded points.
+    radius = .68
+    polygon = [(radius*(1 if i%2==0 else .46)*math.sin(i*TAU/12),
+                5.95+radius*(1 if i%2==0 else .46)*math.cos(i*TAU/12)) for i in range(12)]
+    extrude('Sheriff gold star',polygon,.15,'gold',f+.34)
+    for i in range(6):
+        a = i*TAU/6
+        cylinder('Sheriff rounded point',(radius*math.sin(a),f+.44,5.95+radius*math.cos(a)),
+                 .08,.09,'brass',8,(math.pi/2,0,0))
+    cylinder('Sheriff centre boss',(0,f+.46,5.95),.19,.09,'brass',12,(math.pi/2,0,0))
+    lantern((1.0,f+.40,2.6),.75)
+    dissolve(w,b,f,6.70,9,('roof_tin','rust','wood_light','gold'))
+
+
+def bullet(loc, scale=1):
+    lathe('Brass cartridge',loc,[(0,.095*scale),(.07*scale,.115*scale),
+          (.14*scale,.095*scale),(.48*scale,.095*scale),
+          (.60*scale,.07*scale),(.72*scale,.022*scale)],'brass',8)
+
+
+def crate(loc):
+    x,y,z = loc
+    box('Cartridge crate dark interior',(x,y,z+.30),(.85,.67,.54),'wood_dark')
+    for zz in (z+.14,z+.47):
+        for yy in (y-.36,y+.36):
+            box('Crate slat',(x,yy,zz),(.97,.10,.22),'wood_light')
+        for xx in (x-.45,x+.45):
+            box('Crate end slat',(xx,y,zz),(.10,.70,.22),'wood_weathered')
+    for xx in (-.31,.31):
+        box('Crate iron band',(x+xx,y+.42,z+.32),(.065,.06,.59),'iron')
+    for j in range(2):
+        for i in range(4):
+            bullet((x+(i-1.5)*.20,y+(j-.5)*.24,z+.46),.65)
+
+
+def hourglass(loc, scale=1):
+    x,y,z = loc
+    for dz in (-.9,.9):
+        obj = ring('Hourglass open brass end ring',(0,0,0),.62*scale,
+                   .105*scale,.13,'brass',20)
+        transform(obj,(x,y,z+dz*scale),(math.pi/2,0,0))
+    for xx in (-.49,.49):
+        for yy in (-.25,.25):
+            rod('Hourglass brass column',(x+xx*scale,y+yy*scale,z-.86*scale),
+                (x+xx*scale,y+yy*scale,z+.86*scale),.045*scale,'brass')
+    # Separate rear glass half-bulbs leave a real open front cutaway so the
+    # sand remains visible even with the required opaque grey Principled BSDF.
+    for side in (-1,1):
+        rings = [(side*v*scale,r*scale) for v,r in
+                 ((.03,.06),(.25,.25),(.57,.44),(.78,.40))]
+        rings.sort()
+        count = 10
+        verts = [(x+r*math.cos(math.pi+j*math.pi/count),
+                  y+r*math.sin(math.pi+j*math.pi/count),z+zz)
+                 for zz,r in rings for j in range(count+1)]
+        # Give the half glass shell .045m thickness with Blender solidify.
+        faces = [(k*(count+1)+j,k*(count+1)+j+1,(k+1)*(count+1)+j+1,
+                  (k+1)*(count+1)+j) for k in range(len(rings)-1) for j in range(count)]
+        obj = mesh('Hourglass rear glass bulb',verts,faces,'glass',False)
+        mod = obj.modifiers.new('Thick glass cutaway','SOLIDIFY')
+        mod.thickness = .045
+    lathe('Upper frozen sand',(x,y+.015,z),[(.17*scale,.05*scale),
+          (.53*scale,.29*scale),(.66*scale,.30*scale)],'sand_glow',12,bevel=False)
+    lathe('Lower sand mound',(x,y+.015,z),[(-.77*scale,.35*scale),
+          (-.67*scale,.29*scale),(-.40*scale,.025*scale)],'sand_glow',12,bevel=False)
+    rod('Frozen hourglass sand stream',(x,y+.04,z-.40*scale),
+        (x,y+.04,z+.17*scale),.026*scale,'sand_glow')
+
+
+def ammoworkshop():
+    w,d,h,cx = 6.25,8,4.45,-1.0
+    f,b = shell(w,d,h,[(0,.22,2.65,3.0),(-2.8,1.55,1.1,1.45)],cx=cx)
+    roof(w,f,b,h,1.20,'roof_tin',cx)
+    crest(w,f,h,6.35,'wood_weathered',cx)
+    boardwalk(8.6,f)
+    door(f,2.65,3.0,True)
+    porch(f,3.15,3.63)
+    window('Forge front window',-2.8,f+.12,2.275,1.1,1.45)
+    # A complete lean-to on +X, with open front and side for the work area.
+    left,right = cx+w/2-.04,4.28
+    middle = (left+right)/2
+    box('Lean-to stone floor',(middle,-.125,.14),(right-left,5.05,.28),'stone')
+    for y in (-2.45,1.65):
+        box('Lean-to outer post',(right-.15,y,1.58),(.17,.18,2.9),'wood_dark')
+        rod('Lean-to post brace',(right-.15,y,2.15),(right-.64,y,2.98),.075,'wood_light')
+    box('Lean-to roof',(middle,-.35,3.12),(right-left+.18,4.8,.16),
+        'roof_shingle',(0,.20,0))
+    box('Lean-to fascia',(right,-.35,2.94),(.15,4.8,.22),'rust')
+    # Anvil is a solid extruded silhouette including horn, waist and feet.
+    ax,ay = 3.32,1.45
+    box('Anvil timber block',(ax,ay,.62),(.72,.68,.96),'wood_dark')
+    poly = [(-.50,1.12),(.50,1.12),(.35,1.30),(.17,1.37),(.22,1.64),
+            (.56,1.70),(.77,1.86),(-.49,1.86),(-.77,1.72),(-.38,1.62),
+            (-.19,1.39),(-.25,1.27)]
+    extrude('Forge iron anvil',[(ax+x,z) for x,z in poly],.48,'iron',ay)
+    qx,qy = 2.73,2.20
+    lathe('Quench barrel staves',(qx,qy,.25),[(0,.40),(.15,.46),(.75,.46),(.95,.40)],
+          'wood_weathered',12)
+    for z in (.40,.92,1.17):
+        cylinder('Quench barrel iron hoop',(qx,qy,z),.475,.09,'iron',12)
+    cylinder('Quench barrel recessed water',(qx,qy,1.19),.34,.055,'glass',16)
+    for i in range(10):
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s = Get-Content Art/tools/blender_kit_village_buildings.py; $s[730..999]; Select-String -Path Art/tools/blender_kit_village_buildings.py -Pattern '"'float|fragment|dissolv|sand_glow|stardust|spark|vanish|SPECS|target' " in C:\Project\Cat_Tang
+ succeeded in 328ms:
+    for i in range(10):
+        a = i*TAU/10
+        rod('Barrel stave seam',(qx+.45*math.cos(a),qy+.45*math.sin(a),.43),
+            (qx+.45*math.cos(a),qy+.45*math.sin(a),1.08),.022,'wood_dark',5)
+    chimney(-2.90,b+1.2,4.70,6.6,8.8)
+    # Large hourglass is safely above the porch and closed barn doors.
+    start = len(PARTS)
+    hourglass((0,f+.56,5.01),.91)
+    # A taller profile keeps both bulbs legible from the steep game camera.
+    for obj in PARTS[start:]:
+        for v in obj.data.vertices:
+            v.co.z = 5.20+(v.co.z-5.01)*1.30
+    for x in (-3.25,1.32):
+        bullet((x,f+.18,5.67),1.15)
+    crate((-2.25,f+.69,.22))
+    crate((2.03,f+.69,.22))
+    lantern((-1.65,f+.40,2.90),.7)
+    dissolve(7.6,b,f,6.65,9,('roof_tin','wood_weathered','brass','rust'),cx=-.20)
+
+
+def mannequin(loc, role):
+    x,y,z = loc
+    cylinder('Dress form wood foot',(x,y,z+.05),.31,.10,'wood',10)
+    rod('Dress form wooden stand',(x,y,z+.1),(x,y,z+.64),.055,'wood')
+    lathe('Tailored dress-form silhouette',(x,y,z+.54),
+          [(0,.38),(.18,.34),(.48,.18),(.69,.23),(.89,.32),
+           (1.04,.21),(1.10,.09),(1.24,.09)],role,12,bevel=False)
+    cylinder('Mannequin neck cap',(x,y,z+1.81),.12,.07,'wood',10)
+    ring('Dress form waist tape',(x,y+.23,z+1.06),.20,.045,.06,'gold',12)
+
+
+def ribbon(points, width=.16, role='gold'):
+    # A thick rectangular ribbon, not a zero-thickness curve.
+    verts = []
+    for i,p in enumerate(points):
+        t = (Vector(points[min(i+1,len(points)-1)])-
+             Vector(points[max(0,i-1)])).normalized()
+        u = Vector((0,1,0)).cross(t).normalized()
+        for a,b in ((-1,-1),(1,-1),(1,1),(-1,1)):
+            verts.append(tuple(Vector(p)+u*a*width/2+Vector((0,b*.025,0))))
+    faces = [(3,2,1,0)]
+    faces += [(k*4+j,k*4+(j+1)%4,(k+1)*4+(j+1)%4,(k+1)*4+j)
+              for k in range(len(points)-1) for j in range(4)]
+    faces.append(tuple(range((len(points)-1)*4,len(points)*4)))
+    mesh('Curling tape measure ribbon',verts,faces,role,False)
+    for i,p in enumerate(points):
+        if i%2 == 0:
+            box('Tape measure dark graduation',(p[0],p[1]+.034,p[2]),(.075,.045,.045),'iron')
+
+
+def wardrobe():
+    w,d,h = 7.5,7,4.65
+    f,b = shell(w,d,h,[(0,.22,1.4,2.5),(-2.3,.85,2.5,2.3),
+                      (2.60,1.55,1.15,1.55)],paint='paint_sage')
+    roof(w,f,b,h,1.05,'roof_shingle')
+    crest(w,f,h,6.65,'paint_sage')
+    boardwalk(w,f)
+    door(f,1.4)
+    porch(f,2.05,3.10)
+    window('Tailor right window',2.6,f+.12,2.325,1.15,1.55,True,trim='cloth_cream')
+    # Projecting five-sided bay with proper plinth, canopy, returns and glass.
+    x = -2.3
+    plan = [(-1.24,0),(-1.24,.47),(-.92,.88),(.92,.88),(1.24,.47),(1.24,0)]
+    for z in (.83,3.55):
+        n = len(plan)
+        verts = [(x+u,f+v,z+zz) for zz in (-.09,.09) for u,v in plan]
+        faces = [tuple(reversed(range(n))),tuple(range(n,2*n))]
+        faces += [(i,(i+1)%n,(i+1)%n+n,i+n) for i in range(n)]
+        mesh('Tailor bay plinth / canopy',verts,faces,'cloth_cream')
+    box('Bay rear lit backdrop',(x,f+.02,2.18),(2.4,.09,2.56),'window_lit')
+    for u,v in plan[1:-1]:
+        box('Bay window cream upright',(x+u,f+v,2.18),(.105,.105,2.61),'cloth_cream')
+    # Side glass panes; the frontal pane is rolled up for the window display.
+    for s in (-1,1):
+        box('Bay return glass',(x+s*1.21,f+.24,2.18),(.055,.44,2.46),'glass')
+        box('Bay angled glass',(x+s*1.07,f+.67,2.18),(.055,.49,2.46),'glass',
+            (0,0,s*math.radians(38)))
+    box('Bay upper transom',(x,f+.89,3.29),(1.84,.06,.27),'glass')
+    box('Bay lower protective rail',(x,f+.92,1.05),(1.86,.10,.10),'cloth_cream')
+    mannequin((x-.46,f+.55,.94),'cloth_cream')
+    mannequin((x+.46,f+.55,.94),'cloth_red')
+    sy,sz = sign_bracket(2.65,f,4.33,1.12)
+    # Spool axis Z, wide wooden flanges, raised red thread bands and needle.
+    for zz in (-.42,.42):
+        cylinder('Thread spool wood flange',(2.65,sy,sz+zz),.47,.12,'wood_light',12)
+    cylinder('Thread spool red winding',(2.65,sy,sz),.31,.76,'cloth_red',12)
+    for j in range(5):
+        cylinder('Raised thread band',(2.65,sy,sz-.29+j*.145),.34,.045,'cloth_red',12)
+    rod('Large iron sewing needle',(2.32,sy+.35,sz-.60),
+        (3.13,sy+.35,sz+.80),.035,'iron')
+    ring('Needle eye',(3.12,sy+.35,sz+.76),.105,.04,.06,'iron',12)
+    # Real fabric pennants on a sagging cord across the eaves.
+    points = [(-w/2+i*w/16,f+.45,4.52-.22*math.sin(i*math.pi/16)) for i in range(17)]
+    tube('Bunting cord',points,.025,'wood_dark')
+    for i in range(13):
+        u = -w*.46+(i+.5)*w*.92/13
+        zz = 4.52-.22*math.sin((u/w+.5)*math.pi)
+        extrude('Fabric bunting pennant',[(u-.20,zz),(u+.20,zz),(u,zz-.42)],
+                .05,('cloth_red','cloth_cream','paint_rose')[i%3],f+.46,False)
+    points = [(1.1+.43*math.sin(t*TAU*1.35),f+.48+.10*math.sin(t*math.pi),5.1+t*3.38)
+              for t in [i/32 for i in range(33)]]
+    ribbon(points)
+    lantern((.99,f+.45,2.55),.65)
+    dissolve(w,b,f,6.65,9,('roof_shingle','paint_sage','cloth_cream','gold'))
+
+
+def arch_segment(inner, outer, a, b, bottom, depth, role, steps=4):
+    angles = [a+(b-a)*j/steps for j in range(steps+1)]
+    poly = [(outer*math.cos(t),bottom+outer*math.sin(t)) for t in angles]
+    poly += [(inner*math.cos(t),bottom+inner*math.sin(t)) for t in reversed(angles)]
+    return extrude('Grand arch curved beam segment',poly,depth,role,-.20)
+
+
+def timegate():
+    # Inner faces at +/-2.25, arch underside starts at Z=6.0 at its spring.
+    # No base/floor/door/glass/VFX spans the 4.5m x 6m traversable opening.
+    for side in (-1,1):
+        x = side*3.28
+        box('Clock pillar stone plinth',(x,-.20,.19),(2.04,2.60,.38),'stone_dark')
+        box('Clock pillar upper plinth',(x,-.20,.45),(1.90,2.40,.18),'stone')
+        box('Grandfather case rear',(x,-1.23,3.45),(1.76,.20,5.85),'wood_dark')
+        for s in (-1,1):
+            box('Grandfather case side',(x+s*.81,-.20,3.49),(.19,2.18,5.88),
+                'wood_dark' if s==side else 'wood_weathered')
+            box('Clock case fluted front stile',(x+s*.78,.96,3.40),(.22,.22,5.30),'wood_light')
+            box('Clock case gold stile inlay',(x+s*.78,1.085,3.45),(.065,.06,4.85),'gold')
+        for z in (.88,4.75,6.0):
+            box('Clock case cream crosspiece',(x,.94,z),(1.80,.22,.19),'cloth_cream')
+        for z in (1.16,5.88):
+            box('Case wraparound cornice',(x,-.17,z),(1.96,2.48,.18),'wood_light')
+        # Closed glass case doors with a centre mullion. The central glazed
+        # section is recessed behind the actual lantern pendulum for legibility.
+        box('Pendulum door recessed glass',(x,-.67,2.92),(1.32,.07,3.30),'glass')
+        for s in (-1,1):
+            box('Glass door side pane',(x+s*.58,.92,2.94),(.13,.06,3.4),'glass')
+        for z in (1.25,4.62):
+            box('Pendulum glass door frame',(x,1.04,z),(1.44,.13,.12),'brass')
+        for zz in (1.7,4.1):
+            box('Case glass door iron hinge',(x-side*.70,1.08,zz),(.17,.07,.20),'iron')
+        cylinder('Case door brass knob',(x+side*.56,1.13,2.85),.075,.12,'brass',10,(math.pi/2,0,0))
+        rod('Lantern pendulum rod',(x,.72,4.58),(x,.72,2.08),.045,'brass')
+        lantern((x,.76,1.98),1.40)
+        ring('Pendulum brass halo',(x,.79,1.98),.53,.065,.10,'brass',20)
+        # Small clock hoods distinguish the full-depth pillars as clock cases.
+        dial((x,1.05,5.28),.44,hour=11,minute=59)
+        extrude('Grandfather clock peaked hood',[(x-.96,6.02),(x+.96,6.02),
+                (x+.85,6.42),(x,6.85),(x-.85,6.42)],2.46,'wood_dark',-.20)
+        for s in (-1,1):
+            rod('Clock hood gilded rake',(x+s*.96,1.12,6.12),(x,1.12,6.87),.065,'gold')
+        # Exterior lanterns hang outboard, never inside the passage.
+        hx = x+side*.84
+        tube('Outboard lantern iron hook',[(hx,1.04,4.55),(hx+side*.12,1.38,4.78),
+             (hx+side*.20,1.38,4.66),(hx+side*.20,1.38,4.37)],.055,'iron')
+        lantern((hx+side*.18,1.38,3.90),.88)
+        # Each clock case gets its own tiny porch and board steps.
+        box('Pillar door canopy',(x,1.22,4.87),(1.98,.60,.14),'roof_tin')
+        for z in (1.53,3.95):
+            box('Rear clock panel band',(x,-1.37,z),(1.56,.10,.13),'brass')
+        for i in range(4):
+            box('Rear case inset board',(x-.56+i*.37,-1.36,3.12),(.34,.09,3.6),WOOD[i])
+    boardwalk(8.7,.80,gate=True)
+    for i in range(9):
+        # Central top segments partially disappear instead of an intact cap
+        # with arbitrary confetti added on top.
+        if i==4:
+            continue
+        a,b = i*math.pi/9+.012,(i+1)*math.pi/9-.012
+        arch_segment(2.25,2.92,a,b,6.0,1.65,'wood_dark' if i%2 else 'wood_weathered')
+        arch_segment(2.27,2.36,a,b,6.0,1.79,'gold',3)
+    # Clock lies above the free passage, at the arch crown, 11:59 exactly.
+    dial((0,.88,8.35),1.28,True,hour=11,minute=59)
+    for x,length in ((-.73,.60),(-.18,1.03),(.40,.76),(.82,.47)):
+        zz = 8.35-math.sqrt(max(0,1.28**2-x*x))
+        drip((x,1.12,zz+.13),length)
+    for s in (-1,1):
+        scroll((s*1.70,.83,7.58),1.4,s)
+        scroll((s*2.24,.83,6.68),.95,-s)
+        gear((s*1.20,.62,9.26),.30,'brass',10)
+    # Uppermost arch boards, gears and numeral blocks rise in four layers.
+    dissolve(7.5,-1.05,.9,9.05,11,('gold','wood_dark','brass'),clock_bits=True)
+    for i in range(7):
+        x = -2.25+i*.73
+        z = 9.35+(i%3)*.48
+        box('Floating clock numeral upright',(x,.10,z),(.065,.10,.28),'gold',
+            (0,(-.35+i*.1),0))
+        if i%2==0:
+            box('Floating numeral serif',(x,.10,z+.13),(.17,.11,.055),'gold')
+
+
+SPECS = (
+    ('Inn',(11,8,11),inn),
+    ('GunShop',(9,7,9),gunshop),
+    ('AmmoWorkshop',(9,8,9),ammoworkshop),
+    ('Wardrobe',(8,7,9),wardrobe),
+    ('TimeGate',(9,4,11),timegate),
+)
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return (Vector(tuple(min(v.co[i] for v in obj.data.vertices) for i in range(3))),
+            Vector(tuple(max(v.co[i] for v in obj.data.vertices) for i in range(3))))
+
+
+def material_coverage(obj):
+    """Occlusion-aware projected visible area from the 55-degree review view."""
+    obj.data.calc_loop_triangles()
+    verts = [v.co.copy() for v in obj.data.vertices]
+    tris = list(obj.data.loop_triangles)
+    tree = BVHTree.FromPolygons(verts,[tuple(t.vertices) for t in tris],all_triangles=True)
+    view = Vector((0,math.cos(math.radians(55)),math.sin(math.radians(55))))
+    distance = max(obj.dimensions)*3
+    areas = {}
+    for index,t in enumerate(tris):
+        facing = t.normal.dot(view)
+        if facing <= 0:
+            continue
+        center = sum((verts[i] for i in t.vertices),Vector())/3
+        _,_,hit,_ = tree.ray_cast(center+view*distance,-view,distance+.01)
+        if hit == index:
+            role = obj.data.materials[t.material_index].name
+            areas[role] = areas.get(role,0)+t.area*facing
+    total = sum(areas.values())
+    assert total > 0,obj.name
+    return {role:area/total for role,area in areas.items()}
+
+
+def check_gate_passage(obj):
+    """No triangle may cross the walking envelope, including disconnected FX."""
+    # Check a densely sampled ray grid through the full gate depth.
+    tree = BVHTree.FromObject(obj,bpy.context.evaluated_depsgraph_get())
+    for i in range(29):
+        x = -2.22+i*4.44/28
+        for j in range(39):
+            z = .03+j*5.94/38
+            hit,_,_,_ = tree.ray_cast(Vector((x,3,z)),Vector((0,-1,0)),6)
+            assert hit is None,('Blocked gate passage',x,z,hit)
+
+
+def finish(name, target):
+    bpy.ops.object.select_all(action='DESELECT')
+    # Apply the identical bevel on all rigid parts before joining. A collapse
+    # pass removes excess bevel tessellation while respecting material borders.
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name,obj.data.name = name,name+'_Mesh'
+    # Recalculate first, so decimation works consistently on closed submeshes.
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    bm.to_mesh(obj.data)
+    bm.free()
+    raw = triangles(obj)
+    if raw > 11900:
+        mod = obj.modifiers.new('Building 12000 triangle budget','DECIMATE')
+        mod.ratio,mod.delimit = 11850/raw,{'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+
+Art\tools\blender_kit_village_buildings.py:22:PREVIEW = ROOT / 'Art/tools/specs/blender_kit_village_buildings_preview.p
+ng'
+Art\tools\blender_kit_village_buildings.py:24:         'roof_shingle', 'roof_tin', 'stone', 'stone_dark', 'sand_glow',
+Art\tools\blender_kit_village_buildings.py:29:        'lantern_glow', 'sand_glow', 'clock_face'}
+Art\tools\blender_kit_village_buildings.py:35:    'stone_dark': (.30, .27, .22), 'sand_glow': (1, .77, .29),
+Art\tools\blender_kit_village_buildings.py:407:    # Jagged stepped skyline: the absent upper boards reappear in the fr
+agments.
+Art\tools\blender_kit_village_buildings.py:449:def dissolve(width, back, front, start, top, roles, cx=0, clock_bits=Fal
+se):
+Art\tools\blender_kit_village_buildings.py:467:                box('Floating broken plank / shingle',(x,y,z),
+Art\tools\blender_kit_village_buildings.py:474:                        (.045,.045,.065-k*.007),'sand_glow',bevel=False)
+Art\tools\blender_kit_village_buildings.py:475:    box('Last vanishing sand grain',(cx+.25,(front+back)/2,top-.025),
+Art\tools\blender_kit_village_buildings.py:476:        (.05,.05,.05),'sand_glow',bevel=False)
+Art\tools\blender_kit_village_buildings.py:479:def chimney(x, y, bottom, top, fragment_top):
+Art\tools\blender_kit_village_buildings.py:491:            z = top+.35+(fragment_top-top-.50)*t
+Art\tools\blender_kit_village_buildings.py:492:            box('Dissolving chimney brick',(x+random.uniform(-.35,.35),y
++random.uniform(-.3,.3),z),
+Art\tools\blender_kit_village_buildings.py:495:            box('Frozen chimney sand spark',(x+.12+layer*.09,y+.18,z+.12
+),
+Art\tools\blender_kit_village_buildings.py:496:                (.055,.055,.09),'sand_glow',bevel=False)
+Art\tools\blender_kit_village_buildings.py:565:    dissolve(w,b,f,8.30,11,('roof_shingle','wood_light','paint_rose','go
+ld'))
+Art\tools\blender_kit_village_buildings.py:641:    dissolve(w,b,f,6.70,9,('roof_tin','rust','wood_light','gold'))
+Art\tools\blender_kit_village_buildings.py:692:          (.53*scale,.29*scale),(.66*scale,.30*scale)],'sand_glow',12,be
+vel=False)
+Art\tools\blender_kit_village_buildings.py:694:          (-.67*scale,.29*scale),(-.40*scale,.025*scale)],'sand_glow',12
+,bevel=False)
+Art\tools\blender_kit_village_buildings.py:696:        (x,y+.04,z+.17*scale),.026*scale,'sand_glow')
+Art\tools\blender_kit_village_buildings.py:748:    dissolve(7.6,b,f,6.65,9,('roof_tin','wood_weathered','brass','rust')
+,cx=-.20)
+Art\tools\blender_kit_village_buildings.py:834:    dissolve(w,b,f,6.65,9,('roof_shingle','paint_sage','cloth_cream','go
+ld'))
+Art\tools\blender_kit_village_buildings.py:910:    dissolve(7.5,-1.05,.9,9.05,11,('gold','wood_dark','brass'),clock_bit
+s=True)
+Art\tools\blender_kit_village_buildings.py:914:        box('Floating clock numeral upright',(x,.10,z),(.065,.10,.28),'g
+old',
+Art\tools\blender_kit_village_buildings.py:917:            box('Floating numeral serif',(x,.10,z+.13),(.17,.11,.055),'g
+old')
+Art\tools\blender_kit_village_buildings.py:920:SPECS = (
+Art\tools\blender_kit_village_buildings.py:974:def finish(name, target):
+Art\tools\blender_kit_village_buildings.py:1014:    assert abs(lo.z)<.025 and abs(hi.z-target[2])<.15,(name,lo,hi)
+Art\tools\blender_kit_village_buildings.py:1015:    assert all(abs(obj.dimensions[i]-target[i])<1.2 for i in range(2)),
+(name,obj.dimensions)
+Art\tools\blender_kit_village_buildings.py:1030:    obj['approx_size_m'] = list(target)
+Art\tools\blender_kit_village_buildings.py:1032:    obj['vanishing_layers'] = 4
+Art\tools\blender_kit_village_buildings.py:1092:        target = Vector((0,0,4.0))
+Art\tools\blender_kit_village_buildings.py:1093:        cam.location = target+Vector((0,45*math.cos(angle),45*math.sin(
+angle)))
+Art\tools\blender_kit_village_buildings.py:1094:        cam.rotation_euler = (target-cam.location).to_track_quat('-Z','
+Y').to_euler()
+Art\tools\blender_kit_village_buildings.py:1128:    for i,(name,size,build) in enumerate(SPECS):
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding UTF8 Art/tools/blender_kit_village_buildings.py -TotalCount 12; Test-Path 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'; Get-ChildItem -LiteralPath .agents -Force -ErrorAction SilentlyContinue | Select-Object Name" in C:\Project\Cat_Tang
+ exited 1 in 248ms:
+# 새벽에 사라지는 서부 마을 시설 5종: 사방 외벽, 지붕, 시계 장식과 검토용 이미지.
+# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_village_buildings.py
+"""Deterministic village kit; stock Blender only. Metres, Z up, front +Y.
+
+Run exports first with neutral role materials, then renders a coloured review.
+The gate deliberately substitutes an open passage for the shops' closed door.
+No shared helpers, input assets, textures, or other source files are modified.
+"""
+
+import math
+import random
+from pathlib import Path
+True
+
+codex
+공중 조각은 공통 `dissolve()` 함수, 굴뚝의 조각 생성부, TimeGate의 상단 숫자와 톱니에서 생성됩니다. Wardrobe 위로 솟은 줄자도 본체와 떨어져 있어 제거하겠습니다. 깨진 지붕과 처마, 시계의 금색 흘러내림, 모래시계 내부 모래는 유지하고 높이 검증값을 조정하겠습니다.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_village_buildings.py
+diff --git a/Art/tools/blender_kit_village_buildings.py b/Art/tools/blender_kit_village_buildings.py
+index 9cfc9f5a05cc67d55bff54efa40453bc3b90fe18..15479265f615c3e4e951628d06569454118de31f
+--- a/Art/tools/blender_kit_village_buildings.py
++++ b/Art/tools/blender_kit_village_buildings.py
+@@ -3,6 +3,7 @@
+ """Deterministic village kit; stock Blender only. Metres, Z up, front +Y.
+ 
+ Run exports first with neutral role materials, then renders a coloured review.
++Broken edges stay on the buildings; rising debris is spawned by the game.
+ The gate deliberately substitutes an open passage for the shops' closed door.
+ No shared helpers, input assets, textures, or other source files are modified.
+ """
+@@ -158,20 +159,6 @@
+         r = scale*(.45-.33*t)
+         points.append((x+flip*r*math.cos(angle),y,z+r*math.sin(angle)))
+     tube('Gold carved scroll',points,.045,'gold')
+-
+-
+-def gear(loc, radius=.4, role='brass', teeth=10, rot=(0,0,0)):
+-    # Extruded toothed annulus with an actual open centre, not a flat disc.
+-    count = teeth*4
+-    verts = []
+-    for y, outer in ((-.055,False),(-.055,True),(.055,True),(.055,False)):
+-        for i in range(count):
+-            a = i*TAU/count
+-            r = radius*(1 if i%4 in (1,2) else .79) if outer else radius*.38
+-            verts.append((r*math.cos(a),y,r*math.sin(a)))
+-    faces = [(k*count+i,k*count+(i+1)%count,((k+1)%4)*count+(i+1)%count,
+-              ((k+1)%4)*count+i) for k in range(4) for i in range(count)]
+-    return transform(mesh('Open clock gear',verts,faces,role,False),loc,rot)
+ 
+ 
+ def dial(loc, radius, cracked=False, hour=10, minute=10):
+@@ -370,7 +357,7 @@
+     half = width/2+.22
+     run = math.sqrt(half*half+rise*rise)
+     angle = math.atan2(rise,half)
+-    # Solid lower pitches; a few ridge tiles detach, exposing broken rafters.
++    # Solid lower pitches; missing ridge tiles expose broken rafters.
+     for side in (-1,1):
+         for i in range(5):
+             t = (i+.5)/5
+@@ -404,7 +391,7 @@
+ 
+ 
+ def crest(width, front, base, crown, paint='wood_light', cx=0):
+-    # Jagged stepped skyline: the absent upper boards reappear in the fragments.
++    # Jagged stepped skyline keeps the crumbling edge on the building itself.
+     n = math.ceil(width/.57)
+     for i in range(n):
+         x = -width/2+(i+.5)*width/n
+@@ -446,37 +433,7 @@
+     return front+reach*.75,z-.60
+ 
+ 
+-def dissolve(width, back, front, start, top, roles, cx=0, clock_bits=False):
+-    """Four rising layers, decreasing count/size; all above the solid 2/3.
+-
+-    Front and rear source tiles participate so the effect reads all around.
+-    The topmost speck fixes the intended height without scaling entrances.
+-    """
+-    for layer,count in enumerate((15,11,7,4)):
+-        f = layer/3
+-        size = .44*(1-.67*f)
+-        zbase = start+(top-start-.20)*f
+-        for i in range(count):
+-            x = cx+random.uniform(-width*.46,width*.46)
+-            y = random.choice((front,back,(front+back)/2))+random.uniform(-.22,.22)
+-            z = min(top-.16,zbase+random.uniform(0,.19))
+-            if clock_bits and i%4==0:
+-                gear((x,y,z),size*.65,'brass',8,
+-                     (random.uniform(-.35,.35),random.uniform(-.3,.3),0))
+-            else:
+-                box('Floating broken plank / shingle',(x,y,z),
+-                    (size*random.uniform(.8,1.5),size*.65,size*.32),
+-                    roles[i%len(roles)],
+-                    (random.uniform(-.5,.5),random.uniform(-.45,.45),random.uniform(-.4,.4)))
+-            if i%2==0:
+-                for k in range(3):
+-                    box('Rising sand grain trail',(x+.055*k,y+.02*k,z-.18-k*.12),
+-                        (.045,.045,.065-k*.007),'sand_glow',bevel=False)
+-    box('Last vanishing sand grain',(cx+.25,(front+back)/2,top-.025),
+-        (.05,.05,.05),'sand_glow',bevel=False)
+-
+-
+-def chimney(x, y, bottom, top, fragment_top):
++def chimney(x, y, bottom, top):
+     for row in range(max(1,round((top-bottom)/.32))):
+         z = bottom+.16+row*.32
+         for j in range(2):
+@@ -485,15 +442,6 @@
+                 (.40,.72,.30),'stone' if (row+j)%3 else 'stone_dark')
+     box('Rust chimney lip',(x,y,top+.05),(.98,.90,.16),'rust')
+     box('Open chimney dark flue',(x,y,top+.15),(.62,.54,.07),'stone_dark')
+-    for layer,count in enumerate((4,3,2,1)):
+-        for j in range(count):
+-            t = layer/3
+-            z = top+.35+(fragment_top-top-.50)*t
+-            box('Dissolving chimney brick',(x+random.uniform(-.35,.35),y+random.uniform(-.3,.3),z),
+-                (.28*(1-t*.65),.21*(1-t*.65),.13),'stone' if j%2 else 'rust',
+-                (.1,j*.3,layer*.23))
+-            box('Frozen chimney sand spark',(x+.12+layer*.09,y+.18,z+.12),
+-                (.055,.055,.09),'sand_glow',bevel=False)
+ 
+ 
+ def inn():
+@@ -560,9 +508,8 @@
+         transform(obj,(4.35,sy,sz),(0,0,math.pi/5))
+     for x in (-1.05,1.05):
+         lantern((x,f+.40,2.60),.7)
+-    chimney(-3.2,b+1.25,6.95,8.10,10.15)
++    chimney(-3.2,b+1.25,6.95,8.10)
+     drip((1.15,f+.35,7.03),.53)
+-    dissolve(w,b,f,8.30,11,('roof_shingle','wood_light','paint_rose','gold'))
+ 
+ 
+ def rifle(loc, scale=1):
+@@ -638,7 +585,6 @@
+                  .08,.09,'brass',8,(math.pi/2,0,0))
+     cylinder('Sheriff centre boss',(0,f+.46,5.95),.19,.09,'brass',12,(math.pi/2,0,0))
+     lantern((1.0,f+.40,2.6),.75)
+-    dissolve(w,b,f,6.70,9,('roof_tin','rust','wood_light','gold'))
+ 
+ 
+ def bullet(loc, scale=1):
+@@ -732,7 +678,7 @@
+         a = i*TAU/10
+         rod('Barrel stave seam',(qx+.45*math.cos(a),qy+.45*math.sin(a),.43),
+             (qx+.45*math.cos(a),qy+.45*math.sin(a),1.08),.022,'wood_dark',5)
+-    chimney(-2.90,b+1.2,4.70,6.6,8.8)
++    chimney(-2.90,b+1.2,4.70,6.6)
+     # Large hourglass is safely above the porch and closed barn doors.
+     start = len(PARTS)
+     hourglass((0,f+.56,5.01),.91)
+@@ -745,7 +691,6 @@
+     crate((-2.25,f+.69,.22))
+     crate((2.03,f+.69,.22))
+     lantern((-1.65,f+.40,2.90),.7)
+-    dissolve(7.6,b,f,6.65,9,('roof_tin','wood_weathered','brass','rust'),cx=-.20)
+ 
+ 
+ def mannequin(loc, role):
+@@ -759,25 +704,6 @@
+     ring('Dress form waist tape',(x,y+.23,z+1.06),.20,.045,.06,'gold',12)
+ 
+ 
+-def ribbon(points, width=.16, role='gold'):
+-    # A thick rectangular ribbon, not a zero-thickness curve.
+-    verts = []
+-    for i,p in enumerate(points):
+-        t = (Vector(points[min(i+1,len(points)-1)])-
+-             Vector(points[max(0,i-1)])).normalized()
+-        u = Vector((0,1,0)).cross(t).normalized()
+-        for a,b in ((-1,-1),(1,-1),(1,1),(-1,1)):
+-            verts.append(tuple(Vector(p)+u*a*width/2+Vector((0,b*.025,0))))
+-    faces = [(3,2,1,0)]
+-    faces += [(k*4+j,k*4+(j+1)%4,(k+1)*4+(j+1)%4,(k+1)*4+j)
+-              for k in range(len(points)-1) for j in range(4)]
+-    faces.append(tuple(range((len(points)-1)*4,len(points)*4)))
+-    mesh('Curling tape measure ribbon',verts,faces,role,False)
+-    for i,p in enumerate(points):
+-        if i%2 == 0:
+-            box('Tape measure dark graduation',(p[0],p[1]+.034,p[2]),(.075,.045,.045),'iron')
+-
+-
+ def wardrobe():
+     w,d,h = 7.5,7,4.65
+     f,b = shell(w,d,h,[(0,.22,1.4,2.5),(-2.3,.85,2.5,2.3),
+@@ -827,11 +753,7 @@
+         zz = 4.52-.22*math.sin((u/w+.5)*math.pi)
+         extrude('Fabric bunting pennant',[(u-.20,zz),(u+.20,zz),(u,zz-.42)],
+                 .05,('cloth_red','cloth_cream','paint_rose')[i%3],f+.46,False)
+-    points = [(1.1+.43*math.sin(t*TAU*1.35),f+.48+.10*math.sin(t*math.pi),5.1+t*3.38)
+-              for t in [i/32 for i in range(33)]]
+-    ribbon(points)
+     lantern((.99,f+.45,2.55),.65)
+-    dissolve(w,b,f,6.65,9,('roof_shingle','paint_sage','cloth_cream','gold'))
+ 
+ 
+ def arch_segment(inner, outer, a, b, bottom, depth, role, steps=4):
+@@ -905,24 +827,14 @@
+     for s in (-1,1):
+         scroll((s*1.70,.83,7.58),1.4,s)
+         scroll((s*2.24,.83,6.68),.95,-s)
+-        gear((s*1.20,.62,9.26),.30,'brass',10)
+-    # Uppermost arch boards, gears and numeral blocks rise in four layers.
+-    dissolve(7.5,-1.05,.9,9.05,11,('gold','wood_dark','brass'),clock_bits=True)
+-    for i in range(7):
+-        x = -2.25+i*.73
+-        z = 9.35+(i%3)*.48
+-        box('Floating clock numeral upright',(x,.10,z),(.065,.10,.28),'gold',
+-            (0,(-.35+i*.1),0))
+-        if i%2==0:
+-            box('Floating numeral serif',(x,.10,z+.13),(.17,.11,.055),'gold')
+ 
+ 
+ SPECS = (
+-    ('Inn',(11,8,11),inn),
+-    ('GunShop',(9,7,9),gunshop),
+-    ('AmmoWorkshop',(9,8,9),ammoworkshop),
+-    ('Wardrobe',(8,7,9),wardrobe),
+-    ('TimeGate',(9,4,11),timegate),
++    ('Inn',(11,8,8.62),inn),
++    ('GunShop',(9,7,6.87),gunshop),
++    ('AmmoWorkshop',(9,8,6.785),ammoworkshop),
++    ('Wardrobe',(8,7,6.655),wardrobe),
++    ('TimeGate',(9,4,9.784),timegate),
+ )
+ 
+ 
+@@ -1008,8 +920,8 @@
+     obj.data.update()
+     bpy.context.view_layer.update()
+     lo,hi = bounds(obj)
+-    # Footprint origin is authored at (0,0,0); do not recentre on drifting FX
+-    # or nonuniformly scale the 1.2m boardwalk / 4.5m gate passage.
++    # Footprint origin is authored at (0,0,0); do not recentre or
++    # nonuniformly scale the 1.2m boardwalk / 4.5m gate passage.
+     assert obj.location.length < 1e-6,name
+     assert abs(lo.z)<.025 and abs(hi.z-target[2])<.15,(name,lo,hi)
+     assert all(abs(obj.dimensions[i]-target[i])<1.2 for i in range(2)),(name,obj.dimensions)
+@@ -1029,7 +941,7 @@
+     obj['origin'] = 'Bottom centre of building footprint, metres'
+     obj['approx_size_m'] = list(target)
+     obj['triangle_count'] = triangles(obj)
+-    obj['vanishing_layers'] = 4
++    obj['vanishing_layers'] = 0
+     obj['walkthrough'] = name=='TimeGate'
+     obj['boardwalk_depth_m'] = 1.2
+     destination = OUTPUT / ('Kit_V_'+name+'.fbx')
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_village_buildings.py" in C:\Project\Cat_Tang
+ succeeded in 43515ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_village_buildings.py:53: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Village\\Kit_V_Inn.fbx'
+export finished in 0.0267 sec.
+VISIBLE Inn {'roof_shingle': 0.4, 'wood_light': 0.147, 'wood_dark': 0.126, 'wood': 0.104, 'wood_weathered': 0.08, 'paint_rose': 0.052, 'window_lit': 0.035, 'gold': 0.025, 'brass': 0.01, 'cloth_cream': 0.006, 'plank': 0.005, 'clock_face': 0.003, 'stone_dark': 0.003, 'stone': 0.002, 'iron': 0.001, 'rust': 0.001, 'gold_drip': 0.001}
+EXPORTED Inn 11850 (11.0081, 8.3389, 8.6092)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Village\\Kit_V_GunShop.fbx'
+export finished in 0.0223 sec.
+VISIBLE GunShop {'roof_tin': 0.429, 'wood_light': 0.155, 'cloth_red': 0.078, 'canvas': 0.069, 'wood_dark': 0.067, 'wood_weathered': 0.064, 'wood': 0.046, 'gold': 0.029, 'window_lit': 0.019, 'iron': 0.018, 'brass': 0.011, 'plank': 0.008, 'rust': 0.008}
+EXPORTED GunShop 11850 (9.11, 7.3415, 6.8613)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Village\\Kit_V_AmmoWorkshop.fbx'
+export finished in 0.0265 sec.
+VISIBLE AmmoWorkshop {'roof_tin': 0.385, 'roof_shingle': 0.138, 'wood_weathered': 0.107, 'wood_light': 0.098, 'wood': 0.079, 'wood_dark': 0.073, 'brass': 0.028, 'iron': 0.019, 'gold': 0.015, 'rust': 0.014, 'window_lit': 0.011, 'plank': 0.007, 'glass': 0.007, 'sand_glow': 0.006, 'stone_dark': 0.006, 'stone': 0.005, 'lantern_glow': 0.0}
+EXPORTED AmmoWorkshop 11850 (8.7854, 8.3402, 6.7763)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Village\\Kit_V_Wardrobe.fbx'
+export finished in 0.0243 sec.
+VISIBLE Wardrobe {'roof_shingle': 0.464, 'paint_sage': 0.129, 'cloth_cream': 0.086, 'wood_light': 0.073, 'wood_dark': 0.068, 'wood': 0.051, 'wood_weathered': 0.046, 'gold': 0.022, 'glass': 0.017, 'paint_rose': 0.012, 'cloth_red': 0.011, 'brass': 0.009, 'plank': 0.008, 'iron': 0.003}
+EXPORTED Wardrobe 11850 (8.1148, 7.3431, 6.6491)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Village\\Kit_V_TimeGate.fbx'
+export finished in 0.0231 sec.
+VISIBLE TimeGate {'wood_dark': 0.274, 'wood_light': 0.241, 'wood_weathered': 0.103, 'clock_face': 0.07, 'brass': 0.059, 'wood': 0.045, 'gold': 0.044, 'roof_tin': 0.03, 'iron': 0.026, 'plank': 0.025, 'glass': 0.024, 'cloth_cream': 0.019, 'stone_dark': 0.013, 'stone': 0.009, 'gold_drip': 0.009, 'lantern_glow': 0.008}
+EXPORTED TimeGate 11850 (8.952, 3.9475, 9.7807)
+00:42.938  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_village_buildings_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_village_buildings_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+다섯 모델 모두 오류 없이 FBX 내보내기를 마쳤고, 각 모델에서 6개 이상의 역할 재질이 보이는지 확인하는 검사도 통과했습니다. 높이는 부유 조각 제거에 따라 낮아졌으며, 현재 재생성된 미리보기를 확인하고 있습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Select-String -Path Art/tools/blender_kit_village_buildings.py -Pattern 'Floating|Rising sand|Last vanishing|Frozen chimney sand|dissolve\\(|fragment_top|sand_glow|gold_drip|vanishing_layers'; Get-Item Art/tools/specs/blender_kit_village_buildings_preview.png, Game/Assets/Art/Characters/Village/Kit_V_Inn.fbx, Game/Assets/Art/Characters/Village/Kit_V_GunShop.fbx, Game/Assets/Art/Characters/Village/Kit_V_AmmoWorkshop.fbx, Game/Assets/Art/Characters/Village/Kit_V_Wardrobe.fbx, Game/Assets/Art/Characters/Village/Kit_V_TimeGate.fbx | Select-Object Name,Length,LastWriteTime" in C:\Project\Cat_Tang
+ succeeded in 301ms:
+
+Art\tools\blender_kit_village_buildings.py:25:         'roof_shingle', 'roof_tin', 'stone', 'stone_dark', 'sand_glow',
+Art\tools\blender_kit_village_buildings.py:26:         'brass', 'gold', 'gold_drip', 'iron', 'rust', 'canvas', 'cloth_r
+ed',
+Art\tools\blender_kit_village_buildings.py:30:        'lantern_glow', 'sand_glow', 'clock_face'}
+Art\tools\blender_kit_village_buildings.py:36:    'stone_dark': (.30, .27, .22), 'sand_glow': (1, .77, .29),
+Art\tools\blender_kit_village_buildings.py:38:    'gold_drip': (.96, .47, .055), 'iron': (.16, .17, .15),
+Art\tools\blender_kit_village_buildings.py:201:             (x-.08,z-.26)],.095,'gold_drip',y)
+Art\tools\blender_kit_village_buildings.py:638:          (.53*scale,.29*scale),(.66*scale,.30*scale)],'sand_glow',12,be
+vel=False)
+Art\tools\blender_kit_village_buildings.py:640:          (-.67*scale,.29*scale),(-.40*scale,.025*scale)],'sand_glow',12
+,bevel=False)
+Art\tools\blender_kit_village_buildings.py:642:        (x,y+.04,z+.17*scale),.026*scale,'sand_glow')
+Art\tools\blender_kit_village_buildings.py:944:    obj['vanishing_layers'] = 0
+
+Name          : blender_kit_village_buildings_preview.png
+Length        : 1670806
+LastWriteTime : 2026-11-18 오후 8:21:26
+
+
+Name          : Kit_V_Inn.fbx
+Length        : 265116
+LastWriteTime : 2026-11-18 오후 8:21:02
+
+
+Name          : Kit_V_GunShop.fbx
+Length        : 280860
+LastWriteTime : 2026-11-18 오후 8:21:09
+
+
+Name          : Kit_V_AmmoWorkshop.fbx
+Length        : 282204
+LastWriteTime : 2026-11-18 오후 8:21:17
+
+
+Name          : Kit_V_Wardrobe.fbx
+Length        : 278924
+LastWriteTime : 2026-11-18 오후 8:21:22
+
+
+Name          : Kit_V_TimeGate.fbx
+Length        : 288364
+LastWriteTime : 2026-11-18 오후 8:21:24
+
+
+
+
+codex
+Updated only [blender_kit_village_buildings.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_village_buildings.py): removed floating debris and trails while retaining broken edges, gold drips, and hourglass sand.
+
+Blender completed successfully: all five FBXs exported at 11,850 triangles each and passed material checks. [Preview regenerated](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_village_buildings_preview.png).
+tokens used
+46,200
+Updated only [blender_kit_village_buildings.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_village_buildings.py): removed floating debris and trails while retaining broken edges, gold drips, and hourglass sand.
+
+Blender completed successfully: all five FBXs exported at 11,850 triangles each and passed material checks. [Preview regenerated](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_village_buildings_preview.png).

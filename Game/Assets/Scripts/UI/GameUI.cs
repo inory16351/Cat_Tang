@@ -311,6 +311,7 @@ namespace CatTang
                     else if (!current) OpenInventory();
                 }
                 if (kb.escapeKey.wasPressedThisFrame && current && !resultsOpen) CloseAll();
+                else if (kb.escapeKey.wasPressedThisFrame && village && !current && !player.InputLocked && !leaving) OpenVillageMenu();   // 깨어나는 중엔 안 열림
             }
             UpdateDodge();
             UpdateHeatGlow();
@@ -365,15 +366,56 @@ namespace CatTang
                     int s = Mathf.Clamp(rev.next, 1, 12);
                     var b = rev.slots[s].bullet;
                     nextText.text = b == null ? $"다음 {s}시 · 빈 칸" :
-                        $"다음 {s}시 · {b.Name} · 판정 {rev.JudgeTime(s)}시 · {(rev.Awakened(s) ? "<color=#FFD54A>깨어남</color>" : "<color=#9AA0A6>잠듦</color>")}";
+                        $"다음 {s}시 · {b.Name} · 판정 {rev.JudgeTime(s)}시 · {(rev.Awakened(s) ? "<color=#FFD54A>활성화</color>" : "<color=#9AA0A6>비활성화</color>")}";
                 }
                 heatText.text = rev.heat >= Revolver.HeatMax ? "<color=#FFD54A>Q 불릿 파티!</color>" : $"열기 {rev.heat:0.0}/3";
                 skillText.text = $"총 스킬 {(player.SkillCooldownLeft > 0 ? player.SkillCooldownLeft.ToString("0.0") + "초" : "준비")}";
             }
             var fcs = player.Focus;
-            bool showPrompt = fcs && !current;
+            bool showPrompt = fcs && !current && !player.InputLocked;            // 깨어남 · 이야기 연출 중엔 숨김
             if (prompt.activeSelf != showPrompt) prompt.SetActive(showPrompt);
             if (showPrompt) promptText.text = $"<color=#FFD54A>E</color>  {fcs.prompt}";
+        }
+
+        // ---------- 대화 (마을 이야기, VillageStory) ----------
+        /// <summary>화면 아래 대화 창: 이름 + 한 줄씩 (글자가 흘러나옴). E · 스페이스 · 엔터 · 클릭으로 넘김, 다 끝나면 done</summary>
+        public void Talk(string speaker, string[] lines, System.Action done)
+        {
+            var go = OpenScreen("Talk", false);
+            StartCoroutine(TalkCo(go, speaker, lines, done));
+        }
+
+        IEnumerator TalkCo(GameObject go, string speaker, string[] lines, System.Action done)
+        {
+            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(1320, 250), true);
+            var name = UIKit.Banner(speaker, panel.transform, new Vector2(0, 1), new Vector2(250, 6), 440);
+            var body = UIKit.Label("Line", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -14), new Vector2(1160, 140), 28, TextAnchor.MiddleLeft, false, UIKit.Cream);
+            var hint = UIKit.Label("Hint", panel.transform, new Vector2(1, 0), new Vector2(-110, 30), new Vector2(200, 30), 18, TextAnchor.MiddleRight, false, new Color(1, 1, 1, 0.55f));
+            hint.text = "E · 클릭";
+            bool Next()
+            {
+                var kb = Keyboard.current; var ms = Mouse.current;
+                return (kb != null && (kb.eKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) || (ms != null && ms.leftButton.wasPressedThisFrame);
+            }
+            yield return null;
+            foreach (var line in lines)
+            {
+                int blip = -1;
+                for (float c = 0; c < line.Length; c += Time.unscaledDeltaTime * 42f)
+                {
+                    if (!go) { done?.Invoke(); yield break; }             // ESC로 닫힘
+                    body.text = line.Substring(0, Mathf.Min(line.Length, (int)c + 1));
+                    if ((int)c / 3 != blip) { blip = (int)c / 3; if (line[Mathf.Min(line.Length - 1, (int)c)] != ' ') Sfx.Play("talk", 0.4f, 0.12f, 1); }   // 글자 세 개마다 작은 소리
+                    yield return null;
+                    if (Next()) break;
+                }
+                body.text = line;
+                yield return null;
+                while (go && !Next()) { hint.color = new Color(1, 1, 1, 0.35f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f)); yield return null; }
+                if (!go) { done?.Invoke(); yield break; }
+            }
+            if (current == go) CloseAll();
+            done?.Invoke();
         }
 
         public void Toast(string msg)
@@ -489,17 +531,17 @@ namespace CatTang
                     var it = m.stock[i];
                     int idx = i, price = Shop.PriceOf(it);
                     // 카드 2줄: 위 줄은 골드 글 아래, 아래 줄은 회복 · 새로고침 버튼 위 (서로 안 겹치게)
-                    var card = UIKit.Panel("Card" + i, panel.transform, new Vector2(0.5f, 0.5f), new Vector2(-500 + (i % 3) * 500, 96 - (i / 3) * 254), new Vector2(440, 240), false, "tooltip", 2f);
+                    var card = UIKit.Panel("Card" + i, panel.transform, new Vector2(0.5f, 0.5f), new Vector2(-430 + (i % 3) * 430, 96 - (i / 3) * 254), new Vector2(400, 240), false, "tooltip", 2f);   // 3열이 패널(1400) 테두리 안에 들어가게 (2026-11-19)
                     var icon = UIKit.Img("Icon", card.transform, "slot", new Vector2(0, 0.5f), new Vector2(90, 20), new Vector2(130, 130));
                     icon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
                     icon.enabled = false;                                // 네모 틀 없이 아이콘만
                     var inner = UIKit.MakeRect("I", icon.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130, 130)).gameObject.AddComponent<Image>();
                     inner.preserveAspect = true;
                     inner.sprite = it.kind switch { ItemKind.Bullet => UIKit.BulletIcon(it.bullet), ItemKind.Gun => UIKit.GunIcon(it.gun), _ => UIKit.Spr("op_token") };
-                    var nm = UIKit.Label("Name", card.transform, new Vector2(0, 1), new Vector2(170, -52), new Vector2(250, 56), 24, TextAnchor.MiddleLeft, true, new Color(0.3f, 0.18f, 0.1f));
+                    var nm = UIKit.Label("Name", card.transform, new Vector2(0, 1), new Vector2(165, -52), new Vector2(215, 56), 24, TextAnchor.MiddleLeft, true, new Color(0.3f, 0.18f, 0.1f));
                     nm.rectTransform.pivot = new Vector2(0, 0.5f);
                     nm.text = it.Name;
-                    var ds = UIKit.Label("Desc", card.transform, new Vector2(0, 1), new Vector2(170, -98), new Vector2(250, 56), 18, TextAnchor.UpperLeft, false, new Color(0.3f, 0.2f, 0.12f));
+                    var ds = UIKit.Label("Desc", card.transform, new Vector2(0, 1), new Vector2(165, -98), new Vector2(215, 56), 18, TextAnchor.UpperLeft, false, new Color(0.3f, 0.2f, 0.12f));
                     ds.rectTransform.pivot = new Vector2(0, 1);
                     ds.text = it.kind switch
                     {
@@ -508,7 +550,7 @@ namespace CatTang
                         _ => "탄에 끼워 판정 시각을 바꿈"
                     };
                     foreach (var t in new[] { nm, ds }) foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
-                    var btn = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(60, 36), new Vector2(260, 64), m.sold[i] ? "판매됨" : $"{price} 골드", () =>
+                    var btn = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(55, 36), new Vector2(240, 64), m.sold[i] ? "판매됨" : $"{price} 골드", () =>
                     {
                         bool isGun = it.kind == ItemKind.Gun;
                         if (m.sold[idx] || player.inv.gold < price || (!isGun && !player.inv.HasSpace)) return;
@@ -614,7 +656,7 @@ namespace CatTang
                 var ic = UIKit.MakeRect("Icon", frame.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140, 140)).gameObject.AddComponent<Image>();
                 ic.sprite = UIKit.GunIcon(gun); ic.preserveAspect = true; ic.raycastTarget = false;
                 var nm = UIKit.Label("Name", card.transform, new Vector2(0.5f, 1), new Vector2(0, -232), new Vector2(460, 40), 26, TextAnchor.MiddleCenter, true, brown);
-                nm.text = gun != null ? $"{gun.Name}  <size=18>{UIKit.GradeKo(gun.Grade)} · ×{gun.DamageMul:0.00} · {gun.FireInterval:0.00}초</size>" : "-";
+                nm.text = gun != null ? $"{gun.Name}  <size=18>{UIKit.GradeKo(gun.Grade)} · ×{gun.DamageMul:0.00} · 사거리 {gun.Range:0}m</size>" : "-";
                 var ds = UIKit.Label("Desc", card.transform, new Vector2(0.5f, 1), new Vector2(0, -268), new Vector2(450, 190), 18, TextAnchor.UpperLeft, false, body);
                 ds.rectTransform.pivot = new Vector2(0.5f, 1);
                 ds.supportRichText = true;
@@ -666,10 +708,50 @@ namespace CatTang
             }, 30);
         }
 
+        // ---------- 마을: ESC 메뉴 (계속하기 · 메인 로비로) ----------
+        // 저장은 시설에서 살 때마다 바로 되므로 로비로 나가도 잃는 것 없음
+        bool leaving;
+        static readonly Color Haze = new(0.78f, 0.74f, 0.8f);         // 로비 → 마을 때와 같은 라벤더 안개
+
+        public void OpenVillageMenu()
+        {
+            var go = OpenScreen("VillageMenu");
+            UIKit.Dim(go.transform);
+            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(640, 520), true);
+            UIKit.Banner("잠시 멈춤", panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 440);
+            UIKit.CloseButton(panel.transform, CloseAll);
+            var info = UIKit.Label("Info", panel.transform, new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(540, 40), 22, TextAnchor.MiddleCenter, false, UIKit.Cream);
+            info.text = $"슬롯 {Meta.ActiveSlot}  ·  넘은 장 {Meta.ChaptersCleared}  ·  시간의 조각 {Meta.Shards}";
+            UIKit.MakeButton("Resume", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(400, 90), "계속하기", CloseAll, 30);
+            UIKit.MakeButton("Lobby", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -120), new Vector2(400, 90), "메인 로비로", () => StartCoroutine(ToLobbyCo()), 30);
+        }
+
+        IEnumerator ToLobbyCo()
+        {
+            if (leaving) yield break;
+            leaving = true;
+            CloseAll();
+            if (player) player.InputLocked = true;
+            PlayerPrefs.Save();
+            var op = SceneManager.LoadSceneAsync("Lobby");
+            op.allowSceneActivation = false;
+            var hz = UIKit.Stretch("Haze", screens).gameObject.AddComponent<Image>();
+            hz.raycastTarget = true;
+            for (float t = 0; t < 1f; t += Time.unscaledDeltaTime / 0.7f)
+            {
+                hz.color = new Color(Haze.r, Haze.g, Haze.b, t);
+                yield return null;
+            }
+            hz.color = Haze;
+            Time.timeScale = 1f;
+            op.allowSceneActivation = true;
+        }
+
         // ---------- 마을: 시간의 문 (한 판 = 1장부터 한 목숨) ----------
         // 챕터를 고르지 않음. 늘 1장에서 출발해 보스를 넘을 때마다 다음 장으로 이어지고, 이번 판의 끝 = 넘은 장 + 1
         public void OpenChapterSelect()
         {
+            Sfx.Play("fac_gate", 0.85f, 0f);
             var go = OpenScreen("Chapters");
             UIKit.Dim(go.transform);
             var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1300, 900), true);
@@ -700,38 +782,100 @@ namespace CatTang
             {
                 Meta.SelectedChapter = 1;
                 Time.timeScale = 1f;
+                Sfx.Play("gate_depart", 0.9f, 0f);
                 SceneManager.LoadSceneAsync("Run");
             }, 30);
         }
 
-        // ---------- 마을 시설 ----------
+        // ---------- 마을 시설 (2026-11-18 사용자: 시설 레벨 없음 · 새 아이템 해금이 주요 성장) ----------
+        // 총포상 · 탄약 공방 = 해금 묶음 구매(세피리아식) · 의상실 = 조건을 채운 코스튬 구매 · 기억의 방 = 능력치
         public void OpenFacility(Meta.Facility f)
         {
+            Sfx.Play(f switch { Meta.Facility.MemoryRoom => "fac_memory", Meta.Facility.GunShop => "fac_gun", Meta.Facility.AmmoWorkshop => "fac_ammo", _ => "fac_wardrobe" }, 0.8f, 0f);   // 시설마다 열리는 소리 (2026-11-19)
             var go = OpenScreen("Facility_" + f);
             UIKit.Dim(go.transform);
             var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1500, 900), true);
             UIKit.Banner(Meta.FacilityName[(int)f], panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 560);
             UIKit.CloseButton(panel.transform, CloseAll);
-            var head = UIKit.Label("Head", panel.transform, new Vector2(0.5f, 1), new Vector2(-200, -150), new Vector2(900, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Cream);
-            var content = UIKit.MakeRect("Content", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -40), new Vector2(1300, 640));
+            var head = UIKit.Label("Head", panel.transform, new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1300, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Cream);
+            // 내용 영역 = 스크롤 (2026-11-19 사용자: 기억의 방 세 번째 줄이 화면 밖으로 잘림 → 카드 크기는 그대로, 스크롤바로)
+            var content = ScrollArea(panel.transform, new Vector2(0, -62), new Vector2(1300, 596), out var scroll);   // 위 글줄(지키는 존재 · 조각)과 안 겹치게
             void Redraw()
             {
-                for (int c = content.childCount - 1; c >= 0; c--) Destroy(content.GetChild(c).gameObject);
-                int lv = Meta.FacilityLevel(f);
-                head.text = $"시설 {lv}/{Meta.FacilityMaxLevel}단계  ·  시간의 조각 {Meta.Shards}";
-                var up = UIKit.MakeButton("Upgrade", content, new Vector2(1, 1), new Vector2(0, 100), new Vector2(380, 76),
-                    lv >= Meta.FacilityMaxLevel ? "최대 단계" : $"시설 강화 ({Meta.FacilityUpgradeCost(f)} 조각)", () => { if (Meta.TryUpgradeFacility(f)) { Toast("시설이 넓어졌다"); Redraw(); } }, 22);
-                up.GetComponent<RectTransform>().pivot = new Vector2(1, 0.5f);
-                UIKit.SetInteractable(up, lv < Meta.FacilityMaxLevel && Meta.Shards >= Meta.FacilityUpgradeCost(f));
+                float keep = scroll.verticalNormalizedPosition;
+                for (int c = content.childCount - 1; c >= 0; c--) { var old = content.GetChild(c).gameObject; old.SetActive(false); Destroy(old); }
+                head.text = $"{Meta.FacilityNpc[(int)f]}  ·  시간의 조각 {Meta.Shards}";
                 switch (f)
                 {
                     case Meta.Facility.MemoryRoom: MemoryContent(content, Redraw); break;
                     case Meta.Facility.GunShop: GunShopContent(content, Redraw); break;
-                    case Meta.Facility.AmmoWorkshop: AmmoContent(content); break;
+                    case Meta.Facility.AmmoWorkshop: GroupContent(content, "Ammo", Redraw); break;
                     case Meta.Facility.Wardrobe: WardrobeContent(content, Redraw); break;
                 }
+                FitScroll(content, 596f);
+                Canvas.ForceUpdateCanvases();
+                scroll.verticalNormalizedPosition = keep;          // 사고 나서 다시 그려도 보던 자리 그대로
             }
             Redraw();
+            scroll.verticalNormalizedPosition = 1f;
+        }
+
+        /// <summary>세로 스크롤 영역: 보이는 창(가림) + 내용 + 오른쪽 스크롤바(넘칠 때만). 반환 = 카드를 놓을 내용 (가운데 기준 좌표 그대로 씀)</summary>
+        RectTransform ScrollArea(Transform parent, Vector2 pos, Vector2 size, out ScrollRect sr)
+        {
+            var view = UIKit.MakeRect("View", parent, new Vector2(0.5f, 0.5f), pos, size);
+            view.gameObject.AddComponent<RectMask2D>();
+            view.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0);    // 빈 곳에서도 휠 · 끌기가 먹게
+            var content = UIKit.MakeRect("Content", view, new Vector2(0.5f, 1f), Vector2.zero, size);
+            sr = view.gameObject.AddComponent<ScrollRect>();
+            sr.viewport = view; sr.content = content;
+            sr.horizontal = false; sr.vertical = true;
+            sr.movementType = ScrollRect.MovementType.Clamped;
+            sr.scrollSensitivity = 45f;
+            // 스크롤바: 패널 오른쪽 안쪽. 그림 = Codex(prompts/scrollbar.txt → ui_scroll_cut.py): 놋쇠 마개 홈 + 금빛 손잡이 + 가운데 줄무늬
+            // 그림은 반 크기로 그림(ppu 배율 2) — 홈 48px → 24, 손잡이 36px → 18
+            const float BarW = 24f, CapInset = 14f;
+            var trackSpr = UIKit.Spr("scroll_track");
+            var handleSpr = UIKit.Spr("scroll_handle");
+            var gripSpr = UIKit.Spr("scroll_grip");
+            var bar = UIKit.MakeRect("ScrollBar", parent, new Vector2(0.5f, 0.5f), pos + new Vector2(size.x / 2 + 28, 0), new Vector2(BarW, size.y));
+            var tImg = bar.gameObject.AddComponent<Image>();
+            if (trackSpr) { tImg.sprite = trackSpr; tImg.type = Image.Type.Sliced; tImg.pixelsPerUnitMultiplier = 2f; }
+            else tImg.color = new Color(0f, 0f, 0f, 0.35f);
+            var area = UIKit.MakeRect("Area", bar, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            area.anchorMin = Vector2.zero; area.anchorMax = Vector2.one;
+            float inset = trackSpr ? CapInset : 0f;                                  // 손잡이가 위아래 놋쇠 마개를 덮지 않게
+            area.offsetMin = new Vector2(3, inset); area.offsetMax = new Vector2(-3, -inset);
+            var handle = UIKit.MakeRect("Handle", area, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            handle.anchorMin = Vector2.zero; handle.anchorMax = Vector2.one; handle.sizeDelta = Vector2.zero;
+            var hImg = handle.gameObject.AddComponent<Image>();
+            if (handleSpr) { hImg.sprite = handleSpr; hImg.type = Image.Type.Sliced; hImg.pixelsPerUnitMultiplier = 2f; }
+            else hImg.color = UIKit.Gold;
+            if (gripSpr)
+            {
+                var grip = UIKit.MakeRect("Grip", handle, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(gripSpr.rect.width / 2, gripSpr.rect.height / 2));
+                var gImg = grip.gameObject.AddComponent<Image>();
+                gImg.sprite = gripSpr; gImg.raycastTarget = false;
+            }
+            var sb = bar.gameObject.AddComponent<Scrollbar>();
+            sb.handleRect = handle; sb.targetGraphic = hImg; sb.direction = Scrollbar.Direction.BottomToTop;
+            sr.verticalScrollbar = sb;
+            sr.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            return content;
+        }
+
+        /// <summary>가운데 기준으로 놓인 카드들(보이는 높이 viewH 기준 배치)을 내용 위쪽에 맞추고, 아래로 넘친 만큼 내용을 늘림</summary>
+        static void FitScroll(RectTransform content, float viewH)
+        {
+            float bottom = -viewH / 2;
+            foreach (RectTransform ch in content)
+                if (ch.gameObject.activeSelf) bottom = Mathf.Min(bottom, ch.anchoredPosition.y - ch.sizeDelta.y * ch.pivot.y);
+            float h = Mathf.Max(viewH, viewH / 2 - bottom + 24f);
+            // 카드는 내용 가운데에 매달려 있음: 내용이 h로 커지면 가운데가 (h - viewH)/2만큼 내려가므로 그만큼 올려 위쪽 정렬 유지
+            float shift = (h - viewH) / 2;
+            foreach (RectTransform ch in content)
+                if (ch.gameObject.activeSelf && ch.anchorMin.y == 0.5f && ch.anchorMax.y == 0.5f) ch.anchoredPosition += new Vector2(0, shift);
+            content.sizeDelta = new Vector2(content.sizeDelta.x, h);
         }
 
         Image Card(Transform parent, string name, Vector2 pos, Vector2 size) => UIKit.Panel(name, parent, new Vector2(0.5f, 0.5f), pos, size, false, "tooltip", 2f);
@@ -756,55 +900,59 @@ namespace CatTang
                 var card = Card(content, "Node" + n.Id, new Vector2(-430 + (i % 3) * 430, 130 - (i / 3) * 300), new Vector2(400, 270));
                 CardText(card.transform, n.Name, new Vector2(0, -36), new Vector2(360, 40), 30, true);
                 CardText(card.transform, $"{lv} / {n.MaxLevel}\n{n.Desc}", new Vector2(0, -82), new Vector2(340, 90), 20, false);
-                string label = !avail ? "시설 단계 부족" : lv >= n.MaxLevel ? "최대" : $"새기기 ({Meta.CostOf(n)} 조각)";
-                var b = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(300, 70), label, () => { if (Meta.TryBuy(node)) redraw(); }, 22);
+                string label = !avail ? "다음 장을 넘으면" : lv >= n.MaxLevel ? "최대" : $"새기기 ({Meta.CostOf(n)} 조각)";
+                var b = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(300, 70), label, () => { if (Meta.TryBuy(node)) { Sfx.Play("ui_buy", 0.85f, 0f); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 22);
                 UIKit.SetInteractable(b, avail && lv < n.MaxLevel && Meta.Shards >= Meta.CostOf(n));
                 i++;
             }
         }
 
-        void GunShopContent(Transform content, System.Action redraw)
+        static string ItemName(int id) => Tables.Bullets.TryGetValue(id, out var b) ? b.Name : Tables.Guns.TryGetValue(id, out var g) ? g.Name : id.ToString();
+
+        /// <summary>해금 묶음 카드 (총포상 · 탄약 공방): 묶음 이름 · 안 아이템 · 가격 / 필요한 장</summary>
+        void GroupContent(Transform content, string facility, System.Action redraw, float top = 160f, float height = 640f)
         {
-            int i = 0;
-            foreach (var g in Tables.Guns.Values)
+            var groups = Tables.UnlockGroups.Where(g => g.Facility == facility).ToList();
+            if (groups.Count == 0)                                          // 지금 있는 총탄 · 총은 기본 해금 (2026-11-18), 새 묶음은 앞으로 추가
             {
-                var gun = g;
-                bool un = Meta.GunUnlocked(g.Id);
-                var card = Card(content, "Gun" + g.Id, new Vector2(-480 + (i % 4) * 320, 140 - (i / 4) * 320), new Vector2(300, 300));
-                var ic = UIKit.Img("Icon", card.transform, "slot", new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(110, 110));
-                ic.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                ic.enabled = false;                                      // 네모 틀 없이 아이콘만
-                var inner = UIKit.MakeRect("I", ic.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110, 110)).gameObject.AddComponent<Image>();
-                inner.sprite = UIKit.GunIcon(g); inner.preserveAspect = true; inner.color = un ? Color.white : new Color(0.3f, 0.3f, 0.3f);
-                CardText(card.transform, $"{g.Name}\n<size=16>{UIKit.GradeKo(g.Grade)} · ×{g.DamageMul:0.00}</size>", new Vector2(0, -140), new Vector2(280, 60), 22, true);
-                if (!un)
-                {
-                    var b = UIKit.MakeButton("Unlock", card.transform, new Vector2(0.5f, 0), new Vector2(0, 46), new Vector2(250, 64), $"해금 {Meta.GunUnlockCost(g)} 조각", () => { if (Meta.TryUnlockGun(gun)) redraw(); else Toast("조각이 모자라거나 시설 단계가 낮음"); }, 20);
-                    UIKit.SetInteractable(b, Meta.Shards >= Meta.GunUnlockCost(g));
-                }
-                else
-                {
-                    // 시작 총은 한 자루: 고른 손에 들고 반대 손은 기본 총
-                    var r = UIKit.MakeButton("R", card.transform, new Vector2(0.5f, 0), new Vector2(-62, 46), new Vector2(124, 60), Meta.StartGunRight == g.Id ? "오른 ✓" : "오른손", () => { Meta.StartGunRight = gun.Id; Meta.StartGunLeft = 2001; redraw(); }, 18);
-                    var l = UIKit.MakeButton("L", card.transform, new Vector2(0.5f, 0), new Vector2(62, 46), new Vector2(124, 60), Meta.StartGunLeft == g.Id ? "왼 ✓" : "왼손", () => { Meta.StartGunLeft = gun.Id; Meta.StartGunRight = 2001; redraw(); }, 18);
-                }
-                i++;
+                var none = UIKit.Label("None", content, new Vector2(0.5f, 0.5f), new Vector2(0, top - 60), new Vector2(900, 60), 22, TextAnchor.MiddleCenter, false, UIKit.Cream);
+                none.text = facility == "Gun" ? "지금 있는 총은 모두 손에 익었다 · 새 총은 아직 만드는 중" : "지금 있는 탄은 모두 손에 익었다 · 새 탄은 아직 빚는 중";
+                return;
+            }
+            int cols = 4, rows = Mathf.Max(1, (groups.Count + cols - 1) / cols);
+            float h = Mathf.Min(300f, height / rows - 10f);
+            for (int i = 0; i < groups.Count; i++)
+            {
+                var g = groups[i];
+                bool own = Meta.GroupOwned(g), avail = Meta.GroupAvailable(g);
+                var card = Card(content, "Group" + g.Id, new Vector2(-480 + (i % cols) * 320, top - (i / cols) * (h + 10)), new Vector2(305, h));
+                CardText(card.transform, g.Name, new Vector2(0, -24), new Vector2(260, 30), 22, true);
+                string items = string.Join(" · ", g.Items.Take(6).Select(ItemName)) + (g.Items.Count > 6 ? $" 외 {g.Items.Count - 6}" : "");
+                CardText(card.transform, $"<size=13>{g.Desc}</size>\n{items}", new Vector2(0, -56), new Vector2(255, h - 110), 14, false);
+                string label = own ? "해금됨 ✓" : !avail ? $"{g.ReqChapter}장을 넘으면" : $"해금 {g.Cost} 조각";
+                var b = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(240, 48), label,
+                    () => { if (Meta.TryBuyGroup(g)) { Sfx.Play("ui_buy", 0.85f, 0f); Toast($"'{g.Name}' 해금 — 이제 판에서 나온다"); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 17);
+                UIKit.SetInteractable(b, !own && avail && Meta.Shards >= g.Cost);
             }
         }
 
-        void AmmoContent(Transform content)
+        void GunShopContent(Transform content, System.Action redraw)
         {
-            int lv = Meta.FacilityLevel(Meta.Facility.AmmoWorkshop);
-            string[] lines =
+            // 위: 해금 묶음 / 아래: 해금한 총 중 시작 총 고르기
+            GroupContent(content, "Gun", redraw, 200f, 240f);
+            int i = 0;
+            foreach (var g in Tables.Guns.Values.Where(g => Meta.GunUnlocked(g.Id)))
             {
-                "기본: 일반 · 희귀 탄이 보상과 상점에 나옴",
-                (lv >= 1 ? "✓ " : "") + "1단계: 영웅 탄이 나오기 시작",
-                (lv >= 2 ? "✓ " : "") + "2단계: 전설 탄이 나오기 시작",
-                (lv >= 3 ? "✓ " : "") + "3단계: 판을 시작할 때 연산 1개를 들고 감"
-            };
-            var card = Card(content, "Info", new Vector2(0, 40), new Vector2(1000, 420));
-            CardText(card.transform, "탄약 공방", new Vector2(0, -40), new Vector2(900, 50), 34, true);
-            CardText(card.transform, string.Join("\n\n", lines), new Vector2(0, -110), new Vector2(860, 300), 24, false);
+                var gun = g;
+                var card = Card(content, "Gun" + g.Id, new Vector2(-560 + i * 160, -150), new Vector2(150, 300));
+                var ic = UIKit.MakeRect("I", card.transform, new Vector2(0.5f, 1), new Vector2(0, -64), new Vector2(96, 96)).gameObject.AddComponent<Image>();
+                ic.sprite = UIKit.GunIcon(g); ic.preserveAspect = true;
+                CardText(card.transform, $"{g.Name}\n<size=14>{UIKit.GradeKo(g.Grade)} · ×{g.DamageMul:0.00}</size>", new Vector2(0, -118), new Vector2(140, 60), 17, true);
+                // 시작 총은 한 자루: 고른 손에 들고 반대 손은 기본 총
+                UIKit.MakeButton("R", card.transform, new Vector2(0.5f, 0), new Vector2(0, 86), new Vector2(124, 50), Meta.StartGunRight == g.Id ? "오른 ✓" : "오른손", () => { Meta.StartGunRight = gun.Id; Meta.StartGunLeft = 2001; redraw(); }, 16);
+                UIKit.MakeButton("L", card.transform, new Vector2(0.5f, 0), new Vector2(0, 32), new Vector2(124, 50), Meta.StartGunLeft == g.Id ? "왼 ✓" : "왼손", () => { Meta.StartGunLeft = gun.Id; Meta.StartGunRight = 2001; redraw(); }, 16);
+                i++;
+            }
         }
 
         void WardrobeContent(Transform content, System.Action redraw)
@@ -813,15 +961,20 @@ namespace CatTang
             foreach (var c in Tables.Costumes.Values)
             {
                 var cos = c;
-                bool un = Meta.CostumeUnlocked(c.Id);
+                bool un = Meta.CostumeUnlocked(c.Id), met = Meta.CostumeCondMet(c);
+                var (now, goal) = Meta.CostumeProgress(c);
                 var card = Card(content, "Cos" + c.Id, new Vector2(-480 + (i % 4) * 320, 140 - (i / 4) * 320), new Vector2(300, 300));
-                CardText(card.transform, c.Name, new Vector2(0, -34), new Vector2(280, 40), 26, true);
+                CardText(card.transform, c.Name, new Vector2(0, -30), new Vector2(280, 36), 26, true);
                 string eff = string.Join("\n", new[] { c.Effect1, c.Effect2, c.Effect3 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? e.Desc : ""));
-                CardText(card.transform, eff == "" ? c.Desc : eff, new Vector2(0, -80), new Vector2(270, 120), 17, false);
+                CardText(card.transform, eff == "" ? c.Desc : eff, new Vector2(0, -70), new Vector2(270, 100), 16, false);
+                if (!un)
+                    CardText(card.transform, $"<color={(met ? "#3F7A2E" : "#8A3A22")}>조건: {Meta.CostumeCondText(c)}{(goal > 1 ? $"  ({now}/{goal})" : met ? " ✓" : "")}</color>",
+                        new Vector2(0, -176), new Vector2(280, 30), 16, false);
                 Button b;
-                if (!un) b = UIKit.MakeButton("Unlock", card.transform, new Vector2(0.5f, 0), new Vector2(0, 46), new Vector2(250, 64), $"해금 {c.Cost} 조각", () => { if (Meta.TryUnlockCostume(cos.Id, cos.Cost)) redraw(); }, 20);
-                else b = UIKit.MakeButton("Wear", card.transform, new Vector2(0.5f, 0), new Vector2(0, 46), new Vector2(250, 64), Meta.SelectedCostume == c.Id ? "입는 중" : "입기", () => { Meta.SelectedCostume = cos.Id; redraw(); }, 20);
-                UIKit.SetInteractable(b, un ? Meta.SelectedCostume != c.Id : Meta.Shards >= c.Cost);
+                if (!un) b = UIKit.MakeButton("Unlock", card.transform, new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(250, 60), met ? $"구매 {c.Cost} 조각" : "조건 미달성",
+                    () => { if (Meta.TryUnlockCostume(cos)) { Sfx.Play("ui_buy", 0.85f, 0f); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 20);
+                else b = UIKit.MakeButton("Wear", card.transform, new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(250, 60), Meta.SelectedCostume == c.Id ? "입는 중" : "입기", () => { Meta.SelectedCostume = cos.Id; redraw(); }, 20);
+                UIKit.SetInteractable(b, un ? Meta.SelectedCostume != c.Id : met && Meta.Shards >= c.Cost);
                 i++;
             }
         }

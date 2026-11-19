@@ -1,0 +1,50 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\gunkata_spin.wav",
+  "source": {
+    "kind": "generate",
+    "title": "gunkata_spin",
+    "original_idea": "11:59 game SFX: gunkata_spin",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, twin revolvers spun rapidly around a whirling gunslinger, continuous fast whirling whoosh with rhythmic metallic spinning clicks, steady, no start or end, steel, brass, swirling air, close, dry, seamless loop for a game.",
+    "sound_fields": {
+      "source": "twin revolvers spun rapidly around a whirling gunslinger",
+      "action": "continuous fast whirling whoosh with rhythmic metallic spinning clicks, steady, no start or end",
+      "material": "steel, brass, swirling air",
+      "space": "close, dry, seamless loop for a game"
+    },
+    "bpm": null,
+    "seconds": 3.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "gunkata_spin.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T11:22:00",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-19T11:22:00",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 2.75,
+  "steps": [
+    "mono",
+    "resample 44100→48000",
+    "loop xfade 250 ms",
+    "peak normalize -1 dBFS (-0.02 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0673,
+  "file": "gunkata_spin.ogg"
+}

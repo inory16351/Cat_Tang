@@ -300,7 +300,12 @@ Shader "CatTang/FX"
                     f = max(f, 1 - length(p - c) / (0.28 * (1 - t * 0.6)));
                 }
                 f += (fbm(uv * 7) - 0.5) * 0.4 - t * 0.8;
-                if (f > 0) over(acc, f < 0.12 ? INK : SMOKE_L, 1);
+                // 흙먼지 = 적이 사라질 때 검은 안개(bk_mist)와 같은 색 (2026-11-18 사용자): 회보라 몸 · 아래쪽 어두운 면 · 보라 테두리
+                // bk_mist 그림의 sRGB 색 (0.38, 0.31, 0.44) · (0.31, 0.25, 0.31) · (0.38, 0.25, 0.5)를 리니어로
+                const float3 MIST = float3(0.12, 0.078, 0.16), MIST_D = float3(0.078, 0.051, 0.078), MIST_E = float3(0.12, 0.051, 0.21);
+                // 색을 따로 준 먼지(흰색이 아닌 _Tint: 3장 빛가루 · 밀쳐냄 등)는 예전처럼 밝은 연기에 물들임
+                bool plain = min(_Tint.r, min(_Tint.g, _Tint.b)) > 0.99;
+                if (f > 0) over(acc, plain ? (f < 0.12 ? MIST_E : (p.y < 0.05 - p.x * 0.3 ? MIST : MIST_D)) : (f < 0.12 ? INK : SMOKE_L), 1);
                 return acc;
             }
             // 14 튕김 · 관통 불꽃: 짧은 방사 선

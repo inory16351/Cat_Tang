@@ -709,7 +709,7 @@ function buildCh1() {
     text(s, "패턴 고르기", { x: X[2] + 0.25, y: Y[1] + 0.15, w: 3, h: 0.38, fontSize: 15, bold: true, color: GOLD });
     bullets(s, [
       "'가까움' 기준 = 5m 안",
-      "거리에 맞는 후보 70% · 나머지 30%",
+      "거리에 맞는 패턴 + 거리 무관 패턴 같은 확률",
       "하수인 호출은 거리와 상관없이 후보",
       "직전 패턴은 제외",
     ], { x: X[2] + 0.25, y: Y[1] + 0.6, w: W - 0.4, h: 1.8, fontSize: 12.5, paraSpaceAfter: 3 });
@@ -804,7 +804,7 @@ function buildCh1() {
       g[1].forEach((p, k) => chip(s, p, 8.6 + k * 2.0, y + 0.33, 1.9, g[2], g[2] === TEAL ? BG : TXT, { size: 11.5, h: 0.4 }));
     });
     bullets(s, [
-      "거리에 맞는 후보 70% · 나머지 30%",
+      "거리에 맞는 패턴 + 거리 무관 패턴 같은 확률",
       "직전 패턴은 제외",
       "시각 패턴은 추첨과 별개로 체력 75 · 50 · 25%에 확정",
     ], { x: 6.3, y: 5.8, w: 6.4, h: 1.1, fontSize: 13, paraSpaceAfter: 3 });

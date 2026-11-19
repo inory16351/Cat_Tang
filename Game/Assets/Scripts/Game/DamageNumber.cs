@@ -63,9 +63,19 @@ namespace CatTang
             Spawn(pos, dmg, false, true);
         }
 
+        /// <summary>조건부 추가 피해 몫 (보스 · 표식 · 상태 이상 · 거리 · 판정 시각 등): 금빛 숫자 (2026-11-18 사용자). 초록 숫자와 같은 크기 · 움직임</summary>
+        public static void SpawnCond(Vector3 pos, float dmg)
+        {
+            if (!Load()) return;
+            if (dmg < 0.5f) return;
+            Spawn(pos, dmg, false, true, true);
+        }
+
         public static void Spawn(Vector3 pos, float dmg, bool crit = false) => Spawn(pos, dmg, crit, false);
 
-        static void Spawn(Vector3 pos, float dmg, bool crit, bool bonus)
+        static readonly Color CondGold = new(1f, 0.8f, 0.25f);
+
+        static void Spawn(Vector3 pos, float dmg, bool crit, bool bonus, bool cond = false)
         {
             if (!Load()) return;
             var go = new GameObject(crit ? "DmgCrit" : "Dmg");
@@ -76,11 +86,11 @@ namespace CatTang
             d.vel = new Vector3(Random.Range(-0.6f, 0.6f), crit ? 3.8f : 3.2f, 0);
             d.crit = crit;
             d.life = crit ? 0.95f : 0.75f;
-            bool art = crit && hasCritArt || bonus && hasBonusArt;
+            bool art = crit && hasCritArt || bonus && !cond && hasBonusArt;   // 금빛은 일반 숫자를 물들임
             var useMats = !art ? mats : bonus ? bonusMats : critMats;
             var useAspect = !art ? aspect : bonus ? bonusAspect : critAspect;
             if (crit && !art) d.tint = new Color(1f, 0.45f, 0.4f);
-            if (bonus && !art) d.tint = new Color(0.35f, 1f, 0.45f);
+            if (bonus && !art) d.tint = cond ? CondGold : new Color(0.35f, 1f, 0.45f);
             if (bonus) { d.scale *= 0.85f; d.vel.y = 2.6f; d.life = 0.85f; }
             d.born = Time.time;
             d.mpb = new MaterialPropertyBlock();

@@ -11,7 +11,7 @@ namespace CatTang
     public class BigLabel : MonoBehaviour
     {
         static Canvas canvas;
-        Transform target;
+        public Transform target;
         Vector3 offset, worldPos;
         RectTransform rt;
         Text label;

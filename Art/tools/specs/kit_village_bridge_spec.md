@@ -1,0 +1,9 @@
+Write ONE new Blender script `Art/tools/blender_kit_village_bridge.py` (do not edit any other file).
+Read `Art/tools/specs/_village_common.md` first and follow it exactly (materials, richness rules, coordinates, export, preview).
+
+The hub village is now SEVERAL floating islands connected by bridges. Islands unlock one by one as the player clears chapters: a locked island's bridge is broken (pieces floating apart in the void), an unlocked one is whole.
+Bridges are placed between two island lips, spanning the void. The game scales them along their length, so keep them a clean module.
+
+Pieces (origin at the CENTER of the bridge deck, deck top surface at Z = 0 at both ends, length along the Y axis):
+1. `Bridge` — 10 m long (Y from -5 to +5) x 3.2 m wide (walkway 2.6 m). A sturdy western plank suspension bridge: deck of cross planks (`plank`, `wood`, `wood_light`, `wood_weathered` alternating, a few slightly offset), two `wood_dark` side beams, thick rope rails (`canvas`) sagging gently between 4 posts per side (`wood_dark` posts with `iron` caps and `brass` rings), the deck sags ~0.25 m in the middle. At both ends a pair of taller gate posts with hanging lanterns (`iron` frame, `glass`, `lantern_glow`). Underneath: a few dangling rope ends and `iron` chains. Small `stardust` motes along the rails. Keep the walkway surface clear (nothing taller than 0.06 m on the 2.6 m walkway).
+2. `BridgeBroken` — same footprint and same end posts/lanterns (lanterns UNLIT: use `glass` instead of `lantern_glow`), but the middle 6 m is gone: only 1.5 m stubs of deck at each end with snapped planks; the missing planks float frozen in the void between them, scattered, rotated, drifting slightly downward and apart (15-20 planks), with snapped rope rails hanging down from the posts, and `sand_glow` grains trailing from the broken ends (the bridge is vanishing into time).

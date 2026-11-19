@@ -1,8 +1,8 @@
 // 인벤토리 (Tab) — 세 칸 배치
-//  왼쪽: 탄환 시계(12칸, 깨어나면 금빛 · 연산 수는 작은 점) + 양손 총
+//  왼쪽: 탄환 시계(12칸, 활성화되면 금빛 · 연산 수는 작은 점) + 양손 총
 //  가운데: 보관함 4×3 + 팔기 칸 + 골드
 //  오른쪽: 설명 / 능력치 (탭)
-// 탄을 클릭하면 '탄 강화' 창: 위 · 아래 연산 칸, 보관 중인 연산 목록, 깨어나는 시각 미리보기. 전투 중에는 보기만.
+// 탄을 클릭하면 '탄 강화' 창: 위 · 아래 연산 칸, 보관 중인 연산 목록, 활성화되는 시각 미리보기. 전투 중에는 보기만.
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -307,7 +307,7 @@ namespace CatTang
             }
             // 판정 미리보기
             enhJudge = UIKit.Label("Judge", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -170), new Vector2(560, 60), 24, TextAnchor.MiddleCenter, true, UIKit.Cream);
-            UIKit.Label("HoursTitle", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -225), new Vector2(560, 28), 18, TextAnchor.MiddleCenter, false, UIKit.Muted).text = "이 탄이 깨어나는 칸 (지금 연산 기준)";
+            UIKit.Label("HoursTitle", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -225), new Vector2(560, 28), 18, TextAnchor.MiddleCenter, false, UIKit.Muted).text = "이 탄이 활성화되는 칸 (지금 연산 기준)";
             enhHours = UIKit.MakeRect("Hours", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -270), new Vector2(560, 50));
             // 오른쪽: 보관 중인 연산
             UIKit.Label("OpsTitle", P, new Vector2(0.5f, 0.5f), new Vector2(330, 250), new Vector2(460, 36), 26, TextAnchor.MiddleCenter, true, UIKit.Gold).text = "보관함의 연산";
@@ -369,7 +369,7 @@ namespace CatTang
                     dot.color = k < rev.slots[s].ops.Count ? Color.white : new Color(1, 1, 1, 0.3f);
                 }
             }
-            lockText.text = CanEdit ? "끌어놓기로 교체 · 탄을 클릭하면 탄 강화 창 · 깨어난 칸은 금빛" : "전투 중에는 바꿀 수 없음 (보기만)";
+            lockText.text = CanEdit ? "끌어놓기로 교체 · 탄을 클릭하면 탄 강화 창 · 활성화된 칸은 금빛" : "전투 중에는 바꿀 수 없음 (보기만)";
             lockText.color = CanEdit ? UIKit.Muted : UIKit.Red;
             goldText.text = p.inv.gold.ToString();
             if (tabDesc) { tabDesc.color = statsTab ? UIKit.Muted : UIKit.Gold; tabStats.color = statsTab ? UIKit.Gold : UIKit.Muted; }
@@ -387,7 +387,7 @@ namespace CatTang
                 int j = p.rev.JudgeTime(enhIndex);
                 bool aw = p.rev.Awakened(enhIndex);
                 string chain = ops.Count == 0 ? $"{enhIndex}" : $"{enhIndex} " + string.Join(" ", ops.Select(o => o.Name));
-                enhJudge.text = $"{enhIndex}시 칸 · {chain} = 판정 <b>{j}시</b>  {(aw ? "<color=#FFD54A>깨어남</color>" : "<color=#9AA0A6>잠듦</color>")}";
+                enhJudge.text = $"{enhIndex}시 칸 · {chain} = 판정 <b>{j}시</b>  {(aw ? "<color=#FFD54A>활성화</color>" : "<color=#9AA0A6>비활성화</color>")}";
             }
             else enhJudge.text = "보관함의 탄 — 실린더에 놓으면 판정";
             for (int c = enhHours.childCount - 1; c >= 0; c--) Destroy(enhHours.GetChild(c).gameObject);
@@ -405,7 +405,7 @@ namespace CatTang
             var rev = p.rev;
             infoIcon.sprite = UIKit.Spr("hp_frame");
             infoTitle.text = "능력치";
-            string Gun(GunDef g, bool right) => g == null ? "-" : $"{g.Name}  ×{g.DamageMul:0.00} · {1f / (g.FireInterval / Mathf.Max(0.2f, 1 + p.AttackSpeedBonus)):0.0}발/초\n   <size=17>{UIKit.HandEffectLine(g, right)}</size>";
+            string Gun(GunDef g, bool right) => g == null ? "-" : $"{g.Name}  ×{g.DamageMul:0.00} · 사거리 {g.Range:0}m\n   <size=17>{UIKit.HandEffectLine(g, right)}</size>";
             var lines = new List<string>
             {
                 $"<b>체력</b>  {Mathf.CeilToInt(p.health.hp)} / {Mathf.CeilToInt(p.health.maxHp)}",
@@ -414,12 +414,12 @@ namespace CatTang
                 $"<b>회피 확률</b>  {p.DodgeChance * 100:0}%   <b>열기</b>  1발 {p.HeatPerHit:0.00}칸",
                 $"<b>오른손</b>  {Gun(rev.rightGun, true)}",
                 $"<b>왼손</b>  {Gun(rev.leftGun, false)}",
-                $"<b>깨어난 탄</b>  {12 - rev.UnawakenedCount()} / 12",
+                $"<b>활성화</b>  {12 - rev.UnawakenedCount()} / 12",
                 "",
                 "<b>특성</b>"
             };
             var tc = rev.TraitCounts();
-            if (tc.Count == 0) lines.Add("  깨어난 탄이 없음 (기본 '탄환'은 늘 잠듦)");
+            if (tc.Count == 0) lines.Add("  활성화 없음 (기본 '탄환'은 늘 비활성화)");
             foreach (var kv in tc.OrderByDescending(k => k.Value))
             {
                 var name = Tables.Traits.TryGetValue(kv.Key, out var t) ? t.Name : kv.Key.ToString();
@@ -436,14 +436,14 @@ namespace CatTang
             if (w) statsTab = false;
             var it = w ? ItemAt(w) : null;
             if (w && w.place == SlotPlace.Sell) { SetTip(UIKit.Spr("coin"), "팔기", "탄 · 연산을 여기로 끌어 오면 절반 값에 판다. 총은 팔 수 없다 (주울 때 바꾸거나 버린다)."); return; }
-            if (it == null) { SetTip(UIKit.Spr("slot_round"), "탄환 시계", "오른손 총이 홀수 칸, 왼손 총이 짝수 칸을 쏜다. 발사 순서는 1 → 12.\n\n탄은 판정 시각이 자리 조건에 맞으면 깨어나 특성 · 고유 효과가 켜진다 (금빛 칸).\n탄을 클릭하면 강화 창에서 연산을 끼워 판정 시각을 바꿀 수 있다.\n\n처음 든 '탄환'은 효과가 없는 기본 탄."); return; }
+            if (it == null) { SetTip(UIKit.Spr("slot_round"), "탄환 시계", "오른손 총이 홀수 칸, 왼손 총이 짝수 칸을 쏜다. 발사 순서는 1 → 12.\n\n탄은 판정 시각이 자리 조건에 맞으면 활성화되어 특성 · 고유 효과가 켜진다 (금빛 칸).\n탄을 클릭하면 강화 창에서 연산을 끼워 판정 시각을 바꿀 수 있다.\n\n처음 든 '탄환'은 효과가 없는 기본 탄."); return; }
             switch (it.kind)
             {
                 case ItemKind.Bullet:
                     var b = it.bullet;
                     string traits = b.Trait1 == 0 ? "없음" : string.Join(" · ", new[] { b.Trait1, b.Trait2 }.Where(x => x != 0).Select(x => Tables.Traits.TryGetValue(x, out var t) ? t.Name : x.ToString()));
-                    string eff = string.Join("\n", new[] { b.Effect1, b.Effect2 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? "· " + e.Desc : ""));
-                    string judge = w.place == SlotPlace.Cylinder ? $"\n판정 <b>{p.rev.JudgeTime(w.index)}시</b> · {(p.rev.Awakened(w.index) ? "<b>깨어남</b>" : "잠듦")}" : "";
+                    string eff = string.Join("\n", new[] { b.Effect1, b.Effect2 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? "· " + Effects.BulletEffectDesc(e, b.Grade) : ""));
+                    string judge = w.place == SlotPlace.Cylinder ? $"\n판정 <b>{p.rev.JudgeTime(w.index)}시</b> · {(p.rev.Awakened(w.index) ? "<b>활성화</b>" : "비활성화")}" : "";
                     string ops = it.ops.Count > 0 ? $"\n연산: {string.Join(" → ", it.ops.Select(o => o.Name))}" : "";
                     SetTip(UIKit.BulletIcon(b), b.Name,
                         $"{UIKit.GradeKo(b.Grade)} · 공격 {b.Damage} · 연산 칸 {b.OpSlots}\n조건: <b>{UIKit.CondKo(b)}</b>{judge}{ops}\n특성: {traits}\n\n{(eff == "" ? "효과 없음" : eff)}\n\n<i>{b.Desc}</i>\n\n<size=16>클릭: 탄 강화</size>");
@@ -451,7 +451,7 @@ namespace CatTang
                 case ItemKind.Gun:
                     var g = it.gun;
                     int hand = w.place == SlotPlace.GunRight ? 1 : w.place == SlotPlace.GunLeft ? 2 : 0;
-                    SetTip(UIKit.GunIcon(g), g.Name, $"{UIKit.GradeKo(g.Grade)}\n공격 ×{g.DamageMul:0.00} · 연사 {g.FireInterval:0.00}초 · 장전 {g.ReloadTime:0.0}초 · 사거리 {g.Range:0}m\n\n{UIKit.GunHandText(g, hand)}\n\n<i>{g.Desc}</i>\n\n<size=16>왼손 · 오른손 칸끼리 끌면 좌우를 바꾼다</size>");
+                    SetTip(UIKit.GunIcon(g), g.Name, $"{UIKit.GradeKo(g.Grade)}\n공격 ×{g.DamageMul:0.00} · 사거리 {g.Range:0}m · 장전 {g.ReloadTime:0.0}초\n\n{UIKit.GunHandText(g, hand)}\n\n<i>{g.Desc}</i>\n\n<size=16>왼손 · 오른손 칸끼리 끌면 좌우를 바꾼다</size>");
                     break;
                 default:
                     SetTip(UIKit.Spr("op_token"), "연산 " + it.op.Name, $"탄에 끼우면 판정 시각에 {it.op.Name}.\n위 칸부터 계산한다. 12를 넘거나 0 이하가 되어도 값을 그대로 둔다.");

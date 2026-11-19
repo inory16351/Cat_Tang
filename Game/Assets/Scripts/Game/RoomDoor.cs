@@ -17,7 +17,7 @@ namespace CatTang
 
         public static string NameOf(RewardKind k) => k switch
         {
-            RewardKind.Gold => "골드", RewardKind.Gun => "총", RewardKind.Bullet => "총탄", RewardKind.Op => "총탄 강화",
+            RewardKind.Gold => "골드", RewardKind.Gun => "총", RewardKind.Bullet => "총탄", RewardKind.Op => "연산",
             RewardKind.Shard => "시간의 조각", RewardKind.Armor => "방어구 강화", _ => "최종 보스"
         };
 

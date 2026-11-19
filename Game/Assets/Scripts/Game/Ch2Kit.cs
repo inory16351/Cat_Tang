@@ -12,6 +12,11 @@ namespace CatTang
     {
         public static bool Is(ChapterDef ch) => ch != null && ch.Id == 2 && Kit.Has(ch, "SteamValve");
 
+        // 보스 경기장 (2026-11-18 사용자: 패턴 설계상 더 크게): 전차대 지름 24m → 32m, 방 40×38m.
+        // 객차 둘레 회전(폭 2m)이 가장자리를 돌아도 안쪽 반경 약 14m가 남아 증기 분출(7m) · 레일 돌진을 피할 자리가 생김
+        public const float BossArenaDiameter = 32f;
+        public static readonly Vector2 BossRoomSize = new(40, 38);
+
         static int Stage => RunManager.Instance ? RunManager.Instance.stageIndex : 0;
         static bool BossRoom => RunManager.Instance && RunManager.Instance.IsBossRoom;
 
@@ -75,7 +80,11 @@ namespace CatTang
             int stage = Stage;
             if (boss)
             {
-                if (Kit.Has(ch, "Turntable")) Kit.Place(ch, "Turntable", root, new Vector3(0, 0.02f, 0), 0f, 1f, false);
+                // 경기장 바닥: 새 'Arena'(지름 32m, 방사형 판자 · 시계 숫자 띠 · +자 선로 · 놋쇠 축)가 있으면 그것, 없으면 예전 전차대(24m)를 늘려 씀
+                // 예전 전차대는 두께 0.3m 원판이라 윗면이 땅(0.01)보다 0.12 위에 오게 내려 놓음
+                if (Kit.Has(ch, "Arena")) Kit.Place(ch, "Arena", root, Vector3.zero, 0f, 1f, false);              // 거대한 시계: 원판 없이 테두리 · 슬롯 · 선로 · 바늘만 타일 위에 (밑면 = 바닥)
+                else if (Kit.Has(ch, "Turntable")) Kit.Place(ch, "Turntable", root, new Vector3(0, -0.18f, 0), 0f, BossArenaDiameter / 24f, false);
+                ArenaFence(root, BossArenaDiameter / 2f);
                 for (int sx = -1; sx <= 1; sx += 2)
                     for (int sz = -1; sz <= 1; sz += 2)
                         Kit.Place(ch, "SignalLamp", root, new Vector3(sx * (hw - 1.6f), 0, sz * (hd - 1.6f)), Quaternion.LookRotation(new Vector3(-sx, 0, -sz)).eulerAngles.y);
@@ -213,6 +222,24 @@ namespace CatTang
             {
                 var go = Kit.Place(ch, "SteamValve", root, new Vector3(sx * (hw - 1.6f), 0, 1.5f), sx > 0 ? 270f : 90f);
                 if (go) SteamVent.Make(go);
+            }
+        }
+
+        /// <summary>원형 경기장 경계: 전차대 가장자리 바깥에 보이지 않는 벽 조각을 둘러 고양이가 모서리(돌바닥)로 빠져 객차 회전 · 증기를 피하지 못하게</summary>
+        public static void ArenaFence(Transform root, float r)
+        {
+            var fence = new GameObject("ArenaFence").transform;
+            fence.SetParent(root, false);
+            const int n = 48;
+            float seg = 2f * Mathf.PI * (r + 0.4f) / n + 0.3f;
+            for (int i = 0; i < n; i++)
+            {
+                float a = i * Mathf.PI * 2f / n;
+                var go = new GameObject("Fence_" + i);
+                go.transform.SetParent(fence, false);
+                go.transform.localPosition = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a)) * (r + 0.4f) + Vector3.up * 1.5f;
+                go.transform.localRotation = Quaternion.Euler(0, a * Mathf.Rad2Deg, 0);
+                go.AddComponent<BoxCollider>().size = new Vector3(seg, 3f, 0.8f);
             }
         }
 

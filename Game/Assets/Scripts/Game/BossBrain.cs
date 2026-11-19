@@ -1,5 +1,5 @@
 // 보스 두뇌 공통: 패턴 고르기 · 페이즈 · 코루틴 패턴 실행
-// 패턴 고르기 (1장 기획서): 거리에 맞는 패턴 + 거리 무관 패턴을 동일 확률로 무작위 발동, 직전 패턴은 제외.
+// 패턴 고르기 (모든 보스 공통, 2026-11-18 사용자 확정): 거리에 맞는 패턴 + 거리 무관 패턴을 동일 확률로 무작위 발동, 직전 패턴은 제외.
 // 패턴마다 추가 조건(예: 하수인 호출은 필드 몬스터 2명 이하일 때만)을 걸 수 있음.
 using System.Collections;
 using System.Collections.Generic;
@@ -26,18 +26,6 @@ namespace CatTang
             var c = Candidates(all, near, last);
             if (c.Count == 0) c = Candidates(all, near, null);
             return c.Count == 0 ? null : c[Random.Range(0, c.Count)];
-        }
-
-        /// <summary>2장 규칙 '거리별 후보 70/30': 거리에 맞는 패턴 묶음 70% · 거리 무관 묶음 30% (한쪽이 비면 다른 쪽), 직전 패턴 제외</summary>
-        public static BossPattern PickWeighted(List<BossPattern> all, bool near, string last, float distShare = 0.7f)
-        {
-            var c = Candidates(all, near, last);
-            if (c.Count == 0) c = Candidates(all, near, null);
-            if (c.Count == 0) return null;
-            var byDist = c.FindAll(p => p.reach != Reach.Any);
-            var any = c.FindAll(p => p.reach == Reach.Any);
-            var group = byDist.Count == 0 ? any : any.Count == 0 ? byDist : Random.value < distShare ? byDist : any;
-            return group[Random.Range(0, group.Count)];
         }
 
         static List<BossPattern> Candidates(List<BossPattern> all, bool near, string exclude)
@@ -94,8 +82,6 @@ namespace CatTang
         protected virtual System.Func<IEnumerator> Forced() => null;
         /// <summary>패턴과 별개로 매 프레임 (상시 탄막 · 기믹 타이머)</summary>
         protected virtual void Always(PlayerController p, Vector3 dir, float dist) { }
-        /// <summary>다음 패턴 추첨 (기본: 1장 규칙 동일 확률)</summary>
-        protected virtual BossPattern PickNext(bool near) => PatternPicker.Pick(patterns, near, lastPattern);
         protected virtual void Move(PlayerController p, Vector3 dir, float dist, float spd)
         {
             if (dist > NearDist * 0.6f) transform.position += dir * spd * Time.deltaTime;
@@ -110,7 +96,7 @@ namespace CatTang
 
             var forced = Forced();
             if (forced != null) { Begin(forced(), null); return; }
-            var pick = PickNext(dist <= NearDist);
+            var pick = PatternPicker.Pick(patterns, dist <= NearDist, lastPattern);
             if (pick != null) { if (self) self.Anim(pick.anim); Begin(pick.run(), pick.id); }
         }
 
@@ -182,6 +168,9 @@ namespace CatTang
             if (b) owned.Add(b.gameObject);
             return b;
         }
+
+        /// <summary>패턴 중 만든 물체를 보스가 사라질 때 같이 지우도록 등록</summary>
+        protected GameObject Own(GameObject g) { owned.RemoveAll(x => !x); if (g) owned.Add(g); return g; }
 
         protected virtual void OnDisable()
         {

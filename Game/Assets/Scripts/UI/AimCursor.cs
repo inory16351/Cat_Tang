@@ -118,7 +118,7 @@ namespace CatTang
                 rt.gameObject.SetActive(show);
                 Cursor.visible = !show;
             }
-            if (!show) return;
+            if (!show) { if (rangeMark) rangeMark.gameObject.SetActive(false); return; }
             RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)canvas.transform, mouse.position.ReadValue(), null, out var lp);
             rt.anchoredPosition = lp;
             float dt = Time.unscaledDeltaTime;
@@ -128,11 +128,46 @@ namespace CatTang
             if (!reloading) spin = Mathf.MoveTowardsAngle(spin, 0, dt * 400f);
             rt.localScale = Vector3.one * (1f + 0.28f * kick * kick);
             rt.localRotation = Quaternion.Euler(0, 0, kickRoll * kick - spin);
-            img.color = new Color(1, 1, 1, reloading ? 0.6f : 1f);     // 반전 재질: 알파 = 반전 세기 (장전 중 흐리게)
-            var a = new Color(1, 1, 1, reloading ? 0.6f : 1f);
+            // 사거리 (2026-11-18 사용자: 총마다 사거리가 달라짐): 커서가 다음 총의 사거리 밖이면 커서를 흐리게 하고,
+            // 조준 방향의 사거리 끝 자리에 작은 빨간 점을 찍어 탄이 거기까지만 간다는 걸 보여 줌
+            bool outOfRange = p.AimDist > p.NextRange + 0.3f;
+            float al = reloading ? 0.6f : outOfRange ? 0.45f : 1f;
+            img.color = new Color(1, 1, 1, al);     // 반전 재질: 알파 = 반전 세기 (장전 중 · 사거리 밖이면 흐리게)
+            var a = new Color(1, 1, 1, al);
             if (boost) boost.color = a;
             if (edge) edge.color = a;
             if (dot) dot.color = a;
+            RangeMark(p, outOfRange);
+        }
+
+        RectTransform rangeMark;
+
+        void RangeMark(PlayerController p, bool on)
+        {
+            var cam = Camera.main;
+            if (on && cam)
+            {
+                if (!rangeMark)
+                {
+                    var spr = UIKit.Spr("cursor_target_dot");
+                    if (!spr) return;
+                    var g = new GameObject("RangeEnd", typeof(RectTransform));
+                    g.transform.SetParent(canvas.transform, false);
+                    rangeMark = (RectTransform)g.transform;
+                    rangeMark.sizeDelta = Vector2.one * Size * 0.75f;
+                    var im = g.AddComponent<Image>();
+                    im.sprite = spr; im.preserveAspect = true; im.raycastTarget = false;
+                }
+                var world = p.transform.position + Vector3.up * 0.9f + p.AimDir * p.NextRange;
+                var sp = cam.WorldToScreenPoint(world);
+                if (sp.z > 0 && RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)canvas.transform, sp, null, out var lp))
+                {
+                    rangeMark.anchoredPosition = lp;
+                    rangeMark.gameObject.SetActive(true);
+                    return;
+                }
+            }
+            if (rangeMark) rangeMark.gameObject.SetActive(false);
         }
     }
 }
