@@ -87,8 +87,18 @@ namespace CatTang
         //   구슬 → bk_c3orb (깎은 장미빛 보석 + 빛 고리), 산탄 → bk_c3shard (구르는 유리 조각), 맞음 · 튕김 → bk_c3spark (Art/tools/blender_bake_fx.py)
         static bool Ch3 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 3;
 
+        // 4장 (시계 장치 속, 느와르) = 빨간 계열 구운 3D (2026-11-19 사용자: 흑백 대비, 적 공격 궤적은 빨강): 구슬 → bk_c4orb (달아오른 톱니),
+        //   산탄 · 바늘 · 리볼버 · 저격 → bk_c4needle (빨간 시곗바늘), 맞음 · 튕김 → bk_c4spark (톱니 조각 · 빨간 고리)
+        public static bool Ch4 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 4;
+
         static Material[] Ch3Frames(Style s)
         {
+            if (Ch4)
+            {
+                string set4 = s == Style.Orb ? "bk_c4orb" : s == Style.Numeral || s == Style.Ticket ? null : "bk_c4needle";
+                if (set4 != null) { var f4 = FxFlipbook.Frames(set4); if (f4.Length > 0) return f4; }
+                return null;
+            }
             if (!Ch3) return null;
             string set = s == Style.Orb ? "bk_c3orb" : s == Style.Pellet ? "bk_c3shard" : null;
             if (set == null) return null;
@@ -100,6 +110,7 @@ namespace CatTang
         static void Spark(Vector3 at, float size, Color c)
         {
             if (Ch3 && FxFlipbook.Spawn("bk_c3spark", at, Vector3.zero, size * 1.3f, 0.4f, false)) return;
+            if (Ch4 && FxFlipbook.Spawn("bk_c4spark", at, Vector3.zero, size * 1.3f, 0.4f, false)) return;
             FxBurst.Spawn(at, size, FxBurst.Kind.Spark, c);
         }
 
@@ -116,7 +127,7 @@ namespace CatTang
             Style.Needle => 2.0f, Style.Numeral => 1.6f, Style.Ticket => 1.5f, _ => 1.9f,
         };
 
-        static Color ColorOf(Style s) => s switch
+        static Color ColorOf(Style s) => Ch4 && s != Style.Numeral ? new Color(1f, 0.1f, 0.12f) : s switch
         {
             Style.Revolver => new Color(1f, 0.25f, 0.35f),
             Style.Pellet => new Color(1f, 0.3f, 0.3f),

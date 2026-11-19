@@ -22,7 +22,9 @@ namespace CatTang
         Transform follow;
         static Material mat;
 
-        public static readonly Color Danger = new(1f, 0.14f, 0.36f);   // 진홍 분홍
+        static readonly Color DangerPink = new(1f, 0.14f, 0.36f);        // 진홍 분홍
+        static readonly Color DangerRed = new(1f, 0.06f, 0.08f);         // 4장 느와르: 흑백 위 새빨강 (2026-11-19 사용자)
+        public static Color Danger => EnemyProjectile.Ch4 ? DangerRed : DangerPink;
         public static readonly Color Aim = new(0.82f, 0.38f, 1f);      // 보라
         static readonly Color Shadow = new(0.06f, 0.02f, 0.08f, 0.34f);
         static readonly Color Ink = new(0.05f, 0.01f, 0.07f, 0.9f);
@@ -199,7 +201,16 @@ namespace CatTang
                 glinted = true;
                 GunkataFx.WarnGlint(transform.position + Vector3.up * 1.6f);
             }
-            if (Time.time - born >= life) Destroy(gameObject);
+            if (Time.time - born >= life)
+            {
+                // 4장 (느와르): 적 예고가 끝나는 순간 = 공격이 나가는 순간 → 레이저 베기 호 · 레이저 줄 (LaserFx)
+                if (LaserFx.On && col.r > 0.8f && col.g < 0.3f)
+                {
+                    if (shape == Shape.Sector) LaserFx.Slash(transform.position, transform.forward, radius);
+                    else if (shape == Shape.Lane) LaserFx.Streak(transform.position, transform.forward, len, width);
+                }
+                Destroy(gameObject);
+            }
         }
 
         void Redraw(float k)

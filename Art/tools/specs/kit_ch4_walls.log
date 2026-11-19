@@ -1,0 +1,3637 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1f249-c885-7331-be72-7b0e4c210636
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch4_walls.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece. Then look at the preview PNG and fix anything that reads badly.
+Read `Art/tools/specs/_ch4_common.md` first: it has the material names, richness, coordinate and export rules you must follow.
+
+## Goal
+WALL modules that line the edges of rectangular combat rooms inside the clock tower. The game tiles them side by side along a wall line, so each module has a mostly flat back, a clear front (+Y), and EXACTLY the width listed (X from -W/2 to +W/2; small bits may overhang <= 0.2 m). Depth (Y) about 1.2-2.2 m, main front face near Y = +1.0. Seen from above-front, so the front face, top silhouette and top surfaces matter most. Height 3-5 m unless stated (the game lowers the south wall). No rows of identical plain boxes, irregular top silhouettes, and the ends (X = +-W/2) must meet neighbours cleanly.
+Stages climb the tower: S1 spring storehouse (bottom, closed, wooden shelves and crates) → S2 gear engine room (huge meshing gears in the walls) → S3 bell tower (open arches, bells, more night sky) → S4 corridor behind the dial (back of a giant translucent clock face, girders, lots of starry sky).
+
+## Pieces
+1. `Wall_Storehouse` 6 m (S1): a `stone` / `stone_dark` block wall 4 m high with tall `wood_dark` shelving racks in front holding coiled springs (`steel`), boxed gears and small crates, an `iron` ladder leaning on one rack, `brass` lamp bracket with a `lamp_warm` bulb.
+2. `Wall_Gears` 6 m (S2): a riveted `navy_paint` iron-plate wall 4.5 m high (panels framed in `iron` with `brass_dark` rivet rows) with 3 big partly-embedded gears of different sizes (diameters 3.2, 2.0, 1.4) meshing with each other on the front face (`brass`, `copper`, `steel` - each a different material, teeth in the darker variant), a horizontal `steel` drive shaft with `brass` bearings, a `red_lacquer` pressure dial (`dial_face` + `dial_mark`).
+3. `Wall_BellArch` 6 m (S3): `stone` wall 4.5 m high with a big round-topped OPEN arch (2.8 wide x 3.4 high) in the middle through which you see a `night_sky` panel set 0.6 m behind with 6-8 `starlight` dots; a small `copper` bell hanging inside the arch top from an `iron` bracket; `brass` keystone, `stone_dark` voussoirs alternating with `stone`, `navy_paint` frieze band with `gold` star studs.
+4. `Wall_DialBack` 8 m (S4): the BACK of a giant clock face: a huge `glass` disc segment (translucent dial, mirrored Roman-numeral ticks as raised `dial_mark` bars, part of a circle of radius 6 whose center is above and behind, so the module shows a curved arc) held by radial `steel` girders and `iron_dark` truss beams with `brass` rivets; behind the glass a `night_sky` panel with `starlight` dots; the back of two huge clock HANDS (`dial_mark`, with `gold` counterweight) crossing the glass.
+5. `Wall_Pendulum` 6 m (any stage, landmark): `navy_paint` panelled wall 5 m high with a tall glass-fronted case (`wood_dark` frame, `glass` front) in which a big `brass` pendulum disc hangs on a `steel` rod, `gold` bob ring, `red_lacquer` inner back panel.
+6. `Wall` 4 m x 3 m: generic filler: `stone` blocks below, riveted `navy_paint` iron band above, `brass` cap rail with gear-tooth crenellation, `dial_mark` seams.
+7. `Wall_Girder` 6 m (S4, open-sided edge): a LOW edge (1.1 m high) of a steel girder walkway: `steel` I-beam railing with `iron` X-bracing and `brass` rivets; behind it (negative Y), hanging DOWN from Z 0 to Z -4, a vertical truss of `iron_dark` beams and a few gears (`brass_dark`), so it reads as the edge of a high platform above the starry void. Front face of the railing at about Y = +0.6.
+
+Budgets: up to ~8000 tris each.
+
+codex
+먼저 공통 규칙과 기존 도구 구성을 확인한 뒤, 지정한 스크립트 하나만 만들겠습니다. Blender로 전체 조각을 내보내고 미리보기까지 확인하겠습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'Art/tools/specs/_ch4_common.md'" in C:\Project\Cat_Tang
+ succeeded in 188ms:
+## Common rules (chapter 4 "Inside the Clockwork" = the clockmaker's giant clock tower)
+Setting: a dreamlike CLOCK TOWER INTERIOR (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+Huge interlocking brass gears, rotating gear discs set flush in the floor, swinging pendulums, coiled mainsprings, old bronze bells, iron girders and riveted plates, clock faces, and through gaps in the machinery a starry NIGHT SKY. The player climbs from the bottom (spring storehouse) to the top (dial face). Motif: "interlocking / meshing". Mood: nocturnal, mechanical, quiet and grand.
+Colours (the game recolors by material name): deep NIGHT NAVY and SILVER / steel as the base, brass and gold gears, with RED accents (red lacquer, red gem eyes, red ribbon). Warm only for the merchant.
+Signature accent: GEAR TEETH, rivets, clock dials with Roman-numeral ticks (as raised bars, no text), spiral springs, pendulum discs. Chunky silhouettes, slightly hand-made irregularity (seeded random per piece, `random.seed(<fixed>)`). BEVEL modifier (0.02-0.05, 2 segments, angle limit, clamp overlap) on hard parts.
+
+### Richness (the user wants high-end, not flat single-color objects)
+- Every piece uses AT LEAST 4 role materials (walls / landmarks 6-8); no single material covers more than ~55% of the visible surface. Break big surfaces into bands, panels, insets and trims.
+- Carve: stacked moldings, recessed riveted panels, gear-tooth rims, spoked wheels, relief clock dials, spiral grooves, chamfered edges everywhere. Cracks / seams as inset grooves in a darker material.
+- No detail thinner than ~0.04 m, no micro noise. Budgets: props up to ~5000 tris, walls / landmarks / merchant up to ~8000.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`steel`, `steel_dark`, `iron`, `iron_dark`, `silver`, `brass`, `brass_dark`, `gold`, `copper`, `navy_paint`, `navy_dark`, `red_lacquer`, `red_dark`, `gem_red`, `wood`, `wood_dark`, `stone`, `stone_dark`, `dial_face` (pale ivory clock face), `dial_mark` (dark hour ticks / hands), `glass`, `starlight` (small glowing star bits), `night_sky` (deep starry backdrop panels), `porcelain`, `ribbon_red`, `velvet`, `lamp_warm`.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece (unless the piece says otherwise).
+Each piece = ONE joined mesh object named exactly as listed (unless the piece says it has several objects), exported to its own FBX `Game/Assets/Art/Characters/Ch4/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Recalc normals outward. Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end. Create the folder `Game/Assets/Art/Characters/Ch4/` if missing.
+Use `Art/tools/blender_kit_ch3_props.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+Finally render ONE preview PNG of all pieces laid out in a grid (Workbench engine, flat MATERIAL color with a distinct viewport color per material name so pieces are readable, camera ~55 deg from above-front, 1800x1000) to `Art/tools/specs/<script name without .py>_preview.png`. The preview is only for review; it must not change the exported FBX files.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '*ch4*' -g '*blender*' Art .agents .codex" in C:\Project\Cat_Tang
+ exited 1 in 986ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '*ch4*' -g '*blender*' Art .agents .codex
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'Art/tools/blender_kit_ch3_props.py' -TotalCount 240; Get-ChildItem -Path . -Filter AGENTS.md -Recurse -File | Select-Object -ExpandProperty FullName; Get-ChildItem -LiteralPath 'Art/tools' -Filter '*ch4*' | Select-Object Name" in C:\Project\Cat_Tang
+ succeeded in 1174ms:
+# 嫄곗슱 ?멸퀎 ?꾪닾 ?뚰뭹 10醫낆쓣 留뚮뱾怨?FBX? 寃?좎슜 誘몃━蹂닿린瑜??대낫?낅땲??
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch3_props.py
+"""Stock Blender 5.x, deterministic metre-scale meshes; no external dependencies."""
+
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch3'
+PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch3_props_preview.png'
+ROLES = (
+    'sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
+    'sand', 'marble', 'marble_dark', 'gold', 'gold_dark', 'mirror',
+    'mirror_back', 'crystal', 'crystal_core', 'water', 'water_foam', 'cloud',
+    'cloud_shade', 'cloth_rose', 'stardust', 'wood', 'roof_tile', 'window_lit',
+    'glaze_teal', 'coral', 'ivory', 'bronze', 'rose_gold', 'gem_rose',
+    'gem_amber', 'crystal_rose', 'tile_cream',
+)
+HARD = {'sandstone', 'sandstone_light', 'sandstone_dark', 'rock', 'rock_dark',
+        'marble', 'marble_dark', 'gold', 'gold_dark', 'ivory', 'bronze',
+        'rose_gold', 'glaze_teal', 'coral', 'tile_cream'}
+PALETTE = {
+    'sandstone': (.67, .32, .38), 'sandstone_light': (.94, .62, .59),
+    'sandstone_dark': (.35, .14, .23), 'rock': (.45, .31, .40),
+    'rock_dark': (.22, .17, .24), 'sand': (.83, .53, .39),
+    'marble': (.91, .87, .78), 'marble_dark': (.43, .43, .51),
+    'gold': (.94, .61, .18), 'gold_dark': (.43, .25, .07),
+    'mirror': (.47, .71, .83), 'mirror_back': (.23, .23, .34),
+    'crystal': (.71, .86, .96), 'crystal_core': (1.0, .97, .85),
+    'water': (.15, .53, .58), 'water_foam': (.73, .97, .92),
+    'cloth_rose': (.64, .18, .33), 'stardust': (1.0, .81, .44),
+    'glaze_teal': (.05, .52, .51), 'coral': (.94, .34, .29),
+    'ivory': (.99, .92, .70), 'bronze': (.49, .28, .14),
+    'rose_gold': (.89, .48, .39), 'gem_rose': (.94, .13, .43),
+    'gem_amber': (1.0, .44, .04), 'crystal_rose': (.86, .43, .73),
+    'tile_cream': (.93, .76, .58),
+}
+MATS = {}
+PARTS = []
+
+
+def setup_materials():
+    for role in ROLES:
+        mat = bpy.data.materials.new(role)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        nodes = mat.node_tree.nodes
+        nodes.clear()
+        shader = nodes.new('ShaderNodeBsdfPrincipled')
+        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        shader.inputs['Metallic'].default_value = 0
+        shader.inputs['Roughness'].default_value = .8
+        output = nodes.new('ShaderNodeOutputMaterial')
+        mat.node_tree.links.new(shader.outputs['BSDF'], output.inputs['Surface'])
+        MATS[role] = mat
+
+
+def mesh(label, vertices, faces, role, bevel=True):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(vertices, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[role])
+    if bevel and role in HARD:
+        mod = obj.modifiers.new('Soft worn edges', 'BEVEL')
+        mod.width, mod.segments = .02, 2
+        mod.limit_method = 'ANGLE'
+        # Preserve broad faceting; soften the silhouette and hard right angles.
+        mod.angle_limit = math.radians(70)
+    PARTS.append(obj)
+    return obj
+
+
+def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @
+                       Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, role, rot=(0, 0, 0)):
+    x, y, z = (v / 2 for v in size)
+    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
+             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    return place(mesh(label, verts, faces, role), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, role, n=16, top=None,
+             rot=(0, 0, 0), bevel=True):
+    top = radius if top is None else top
+    verts = [(r * math.cos(j * math.tau / n),
+              r * math.sin(j * math.tau / n), z)
+             for r, z in ((radius, -depth / 2), (top, depth / 2))
+             for j in range(n)]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    return place(mesh(label, verts, faces, role, bevel), loc, rot)
+
+
+def lathe(label, profile, role, n=24, loc=(0, 0, 0), rot=(0, 0, 0)):
+    """Revolve a closed radial/Z section: bowls and bands are genuinely hollow."""
+    verts = [(r * math.cos(j * math.tau / n), r * math.sin(j * math.tau / n), z)
+             for r, z in profile for j in range(n)]
+    faces = [(k * n + j, k * n + (j + 1) % n,
+              ((k + 1) % len(profile)) * n + (j + 1) % n,
+              ((k + 1) % len(profile)) * n + j)
+             for k in range(len(profile)) for j in range(n)]
+    return place(mesh(label, verts, faces, role), loc, rot)
+
+
+def ring(label, radius, width, z, height, role, n=24, loc=(0, 0, 0), rot=(0, 0, 0)):
+    return lathe(label, [(radius - width, z), (radius, z),
+                         (radius, z + height), (radius - width, z + height)],
+                 role, n, loc, rot)
+
+
+def tube(label, points, radius, role, n=6):
+    verts = []
+    previous = None
+    for i, point in enumerate(points):
+        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
+                   Vector(points[max(i - 1, 0)])).normalized()
+        ref = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
+        side = ref.cross(tangent).normalized()
+        if previous is not None:
+            side = (previous - tangent * previous.dot(tangent)).normalized()
+        other = tangent.cross(side)
+        previous = side
+        for j in range(n):
+            a = math.tau * j / n
+            verts.append(tuple(Vector(point) + radius *
+                               (side * math.cos(a) + other * math.sin(a))))
+    faces = [tuple(reversed(range(n)))]
+    faces += [(i * n + j, i * n + (j + 1) % n,
+               (i + 1) * n + (j + 1) % n, (i + 1) * n + j)
+              for i in range(len(points) - 1) for j in range(n)]
+    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
+    return mesh(label, verts, faces, role)
+
+
+def lump(label, loc, size, role, facet_roles=False):
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=1, radius=1)
+    bm.verts.ensure_lookup_table()
+    for v in bm.verts:
+        v.co *= random.uniform(.89, 1.10)
+    # Exact local bounds, with a flat floor instead of a buried origin.
+    lows = [min(v.co[i] for v in bm.verts) for i in range(3)]
+    highs = [max(v.co[i] for v in bm.verts) for i in range(3)]
+    for v in bm.verts:
+        v.co = Vector(tuple(loc[i] + size[i] *
+                            ((v.co[i] - lows[i]) / (highs[i] - lows[i]) - .5)
+                            for i in range(3)))
+    obj = mesh(label, [tuple(v.co) for v in bm.verts],
+               [tuple(v.index for v in f.verts) for f in bm.faces], role)
+    bm.free()
+    if facet_roles:
+        obj.data.materials.append(MATS['sandstone_dark'])
+        obj.data.materials.append(MATS['sandstone_light'])
+        for poly in obj.data.polygons:
+            poly.material_index = 2 if poly.normal.z > .35 else (1 if poly.normal.z < -.15 else 0)
+    return obj
+
+
+def crystal(label, base, radius, length, role='crystal', lean=0, azimuth=0):
+    # Six rectangular prism faces, six triangular pointed facets.
+    verts = [(radius * math.cos(j * math.tau / 6),
+              radius * math.sin(j * math.tau / 6), z)
+             for z in (0, length * .76) for j in range(6)]
+    verts.append((0, 0, length))
+    faces = [tuple(reversed(range(6)))]
+    faces += [(j, (j + 1) % 6, (j + 1) % 6 + 6, j + 6) for j in range(6)]
+    faces += [(j + 6, (j + 1) % 6 + 6, 12) for j in range(6)]
+    obj = mesh(label, verts, faces, role)
+    obj.data.transform(Matrix.Translation(Vector(base)) @
+                       Matrix.Rotation(azimuth, 4, 'Z') @
+                       Matrix.Rotation(math.radians(lean), 4, 'Y'))
+    if base[2] == 0:
+        # Every scattered splinter touches the floor despite its individual lean.
+        bottom = min(v.co.z for v in obj.data.vertices)
+        for v in obj.data.vertices:
+            v.co.z -= bottom
+    return obj
+
+
+def octahedron(loc, radius, role='stardust'):
+    verts = [(radius, 0, 0), (0, radius, 0), (-radius, 0, 0),
+             (0, -radius, 0), (0, 0, radius * 1.5), (0, 0, -radius * 1.5)]
+    faces = [(i, (i + 1) % 4, 4) for i in range(4)]
+    faces += [((i + 1) % 4, i, 5) for i in range(4)]
+    return place(mesh('Faceted jewel', verts, faces, role), loc)
+
+
+def extrude_y(label, profile, back, front, role, back_role=None, bevel=True):
+    n = len(profile)
+    verts = [(x, y, z) for y in (back, front) for x, z in profile]
+    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
+    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
+    obj = mesh(label, verts, faces, role, bevel)
+    if back_role:
+        obj.data.materials.append(MATS[back_role])
+        obj.data.polygons[0].material_index = 1
+        for poly in list(obj.data.polygons)[2:]:
+            poly.material_index = 1
+    return obj
+
+
+def arch(width, bottom, spring, n=12):
+    r = width / 2
+    return [(-r, bottom), (r, bottom)] + [
+        (r * math.cos(i * math.pi / n), spring + r * math.sin(i * math.pi / n))
+        for i in range(n + 1)]
+
+
+def arch_frame(label, inner, outer, back, front, role='gold'):
+    n = len(inner)
+    verts = [(x, y, z) for y, profile in
+             ((back, outer), (front, outer), (front, inner), (back, inner))
+             for x, z in profile]
+    faces = [(k * n + j, k * n + (j + 1) % n,
+              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
+             for k in range(4) for j in range(n)]
+    return mesh(label, verts, faces, role)
+
+
+def medallion(label, x, y, z, radius):
+    cylinder(label, (x, y, z), radius, .09, 'gold', n=12,
+             rot=(math.pi / 2, 0, 0))
+    cylinder(label + ' raised boss', (x, y + .05, z), radius * .53, .035,
+             'gold_dark', n=8, rot=(math.pi / 2, 0, 0))
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'Art/tools/blender_kit_ch3_props.py' -Tail 180; Get-ChildItem -LiteralPath 'C:\\Project' -Filter AGENTS.md; Get-ChildItem -LiteralPath 'C:\\' -Filter AGENTS.md; git status --short; Test-Path -LiteralPath 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'" in C:\Project\Cat_Tang
+ succeeded in 260ms:
+    ('FallenPillar', (2.6, 1.0, 1.0), fallen_pillar),
+    ('MirrorShard', (2.5, .15, 3.05), mirror_shard),
+    ('Pebbles3', (1.2, 1.2, .15), pebbles3),
+    ('CrystalBits', (1.0, 1.0, .35), crystal_bits),
+    ('Ripple', (1.6, 1.6, .02), ripple),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return (Vector(tuple(min(v.co[i] for v in obj.data.vertices) for i in range(3))),
+            Vector(tuple(max(v.co[i] for v in obj.data.vertices) for i in range(3))))
+
+
+def finish(name, dimensions):
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in PARTS:
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = PARTS[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name, obj.data.name = name, name + '_Mesh'
+    # Weld nothing: disconnected floating dust and scattered ground bits survive.
+    count = triangles(obj)
+    budget = 8000 if name == 'MerchantMirror' else 6000
+    if count > budget:
+        mod = obj.modifiers.new('Preserve material regions within triangle budget', 'DECIMATE')
+        mod.ratio = (budget - 100) / count
+        mod.delimit = {'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj) <= budget, (name, triangles(obj))
+
+    low, high = bounds(obj)
+    centre = (low + high) / 2
+    span = high - low
+    # The shard and ripple have deliberate air under them, not a raised origin.
+    floor = .6 if name == 'MirrorShard' else (.005 if name == 'Ripple' else 0)
+    top = dimensions[2]
+    for v in obj.data.vertices:
+        v.co.x = (v.co.x - centre.x) * dimensions[0] / span.x
+        v.co.y = (v.co.y - centre.y) * dimensions[1] / span.y
+        v.co.z = floor + (v.co.z - low.z) * (top - floor) / span.z
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
+    bm.to_mesh(obj.data)
+    bm.free()
+    for poly in obj.data.polygons:
+        poly.use_smooth = False
+    obj.data.update()
+    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
+    bpy.context.view_layer.update()
+    low, high = bounds(obj)
+    assert abs(low.z - floor) < 1e-5 and abs(high.z - top) < 1e-5, name
+    assert all(abs(obj.dimensions[i] - dimensions[i]) < 1e-4 for i in (0, 1)), name
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
+    assert all(mat.name in ROLES for mat in obj.data.materials), name
+    used_roles = {obj.data.materials[p.material_index].name for p in obj.data.polygons}
+    assert name == 'Ripple' or len(used_roles) >= 5, (name, used_roles)
+    for mat in obj.data.materials:
+        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
+    obj['chapter'], obj['front'] = 'Mirage Desert / Mirror World', '+Y'
+    obj['footprint_and_top_m'], obj['triangle_count'] = list(dimensions), triangles(obj)
+    obj['collision'] = name not in {'Pebbles3', 'CrystalBits', 'Ripple'}
+    if name == 'MemoryCrystal':
+        obj['interactive'] = 'shootable explosive'
+    if name == 'MirrorShard':
+        obj['floor_clearance_m'], obj['reflective_faces'] = .6, '+Y / -Y'
+    destination = OUTPUT / f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(
+        filepath=str(destination), use_selection=True,
+        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
+        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
+    )
+    assert destination.is_file() and destination.stat().st_size > 1024, destination
+    print(f'EXPORTED {name} {triangles(obj)} '
+          f'{tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
+    return obj
+
+
+def preview(objects):
+    """Export is already complete. Only the review image uses viewport colours."""
+    scene = bpy.context.scene
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.render.resolution_x, scene.render.resolution_y = 1600, 900
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = str(PREVIEW)
+    scene.render.film_transparent = False
+    scene.view_settings.view_transform = 'Standard'
+    shade = scene.display.shading
+    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
+    shade.show_shadows = False
+    shade.show_cavity = True
+    shade.cavity_type = 'BOTH'
+    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.3, 1.0
+    shade.show_specular_highlight = False
+    shade.background_type, shade.background_color = 'WORLD', (.045, .055, .08)
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new('Review background')
+    scene.world.color = (.045, .055, .08)
+    helpers = []
+    old_locations = [obj.location.copy() for obj in objects]
+    try:
+        for role, mat in MATS.items():
+            mat.diffuse_color = (*PALETTE.get(role, (.5, .5, .5)), 1)
+        total = sum(spec[1][0] for spec in SPECS) + .65 * (len(objects) - 1)
+        x = -total / 2
+        for obj, (_, dims, _) in zip(objects, SPECS):
+            obj.location.x = x + dims[0] / 2
+            x += dims[0] + .65
+        camera = bpy.data.objects.new('Review camera only', bpy.data.cameras.new('Review camera only'))
+        scene.collection.objects.link(camera)
+        helpers.append(camera)
+        scene.camera = camera
+        camera.data.type, camera.data.ortho_scale = 'ORTHO', total + 1.0
+        elevation = math.radians(55)
+        target = Vector((0, 0, .8))
+        camera.location = target + Vector((0, 30 * math.cos(elevation), 30 * math.sin(elevation)))
+        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
+        # Camera-facing captions are review-only and never enter an FBX.
+        for obj in objects:
+            text_data = bpy.data.curves.new('Review caption', 'FONT')
+            text_data.body, text_data.align_x, text_data.size = obj.name, 'CENTER', .19
+            text_data.materials.append(MATS['crystal_core'])
+            label = bpy.data.objects.new('Review label ' + obj.name, text_data)
+            scene.collection.objects.link(label)
+            label.location = (obj.location.x, 1.52, -.05)
+            label.rotation_euler = camera.rotation_euler
+            helpers.append(label)
+        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
+        print(f'PREVIEW {PREVIEW}', flush=True)
+    finally:
+        scene.camera = None
+        for helper in helpers:
+            bpy.data.objects.remove(helper, do_unlink=True)
+        for obj, loc in zip(objects, old_locations):
+            obj.location = loc
+        for mat in MATS.values():
+            mat.diffuse_color = (.5, .5, .5, 1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials):
+        bpy.data.materials.remove(mat)
+    scene = bpy.context.scene
+    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
+    setup_materials()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    exported = []
+    for index, (name, dimensions, build) in enumerate(SPECS):
+        PARTS = []
+        random.seed(33117 + index * 7919)
+        build()
+        exported.append(finish(name, dimensions))
+    assert len(scene.objects) == 10 and all(obj.type == 'MESH' for obj in scene.objects)
+    preview(exported)
+    assert len(scene.objects) == 10 and all(obj.type == 'MESH' for obj in scene.objects)
+    print('DONE', flush=True)
+
+
+if __name__ == '__main__':
+    main()
+?? .tripo/
+?? Art/tools/specs/_ch4_common.md
+?? Art/tools/specs/kit_ch4_gates.log
+?? Art/tools/specs/kit_ch4_gates_spec.md
+?? Art/tools/specs/kit_ch4_props.log
+?? Art/tools/specs/kit_ch4_props_spec.md
+?? Art/tools/specs/kit_ch4_walls.log
+?? Art/tools/specs/kit_ch4_walls_spec.md
+?? Art/tripo_input/ch2/.tripo/
+True
+
+codex
+공통 규칙을 확인했습니다. 각 모듈은 회색 역할 재질을 유지한 단일 메시로 내보내고, 미리보기에만 색을 적용하겠습니다. 아치는 실제로 뚫린 구조로, 다이얼 뒷면은 곡선형 유리 면으로, 낮은 난간은 아래로 내려가는 트러스로 만들어 실루엣을 구분하겠습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'Art/tools/specs/kit_ch4_walls_spec.md' -TotalCount 100; Get-ChildItem -LiteralPath 'Art/tools' -Filter 'blender_kit_ch4_walls.py'" in C:\Project\Cat_Tang
+ succeeded in 208ms:
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch4_walls.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece. Then look at the preview PNG and fix anything that reads badly.
+Read `Art/tools/specs/_ch4_common.md` first: it has the material names, richness, coordinate and export rules you must follow.
+
+## Goal
+WALL modules that line the edges of rectangular combat rooms inside the clock tower. The game tiles them side by side along a wall line, so each module has a mostly flat back, a clear front (+Y), and EXACTLY the width listed (X from -W/2 to +W/2; small bits may overhang <= 0.2 m). Depth (Y) about 1.2-2.2 m, main front face near Y = +1.0. Seen from above-front, so the front face, top silhouette and top surfaces matter most. Height 3-5 m unless stated (the game lowers the south wall). No rows of identical plain boxes, irregular top silhouettes, and the ends (X = +-W/2) must meet neighbours cleanly.
+Stages climb the tower: S1 spring storehouse (bottom, closed, wooden shelves and crates) ??S2 gear engine room (huge meshing gears in the walls) ??S3 bell tower (open arches, bells, more night sky) ??S4 corridor behind the dial (back of a giant translucent clock face, girders, lots of starry sky).
+
+## Pieces
+1. `Wall_Storehouse` 6 m (S1): a `stone` / `stone_dark` block wall 4 m high with tall `wood_dark` shelving racks in front holding coiled springs (`steel`), boxed gears and small crates, an `iron` ladder leaning on one rack, `brass` lamp bracket with a `lamp_warm` bulb.
+2. `Wall_Gears` 6 m (S2): a riveted `navy_paint` iron-plate wall 4.5 m high (panels framed in `iron` with `brass_dark` rivet rows) with 3 big partly-embedded gears of different sizes (diameters 3.2, 2.0, 1.4) meshing with each other on the front face (`brass`, `copper`, `steel` - each a different material, teeth in the darker variant), a horizontal `steel` drive shaft with `brass` bearings, a `red_lacquer` pressure dial (`dial_face` + `dial_mark`).
+3. `Wall_BellArch` 6 m (S3): `stone` wall 4.5 m high with a big round-topped OPEN arch (2.8 wide x 3.4 high) in the middle through which you see a `night_sky` panel set 0.6 m behind with 6-8 `starlight` dots; a small `copper` bell hanging inside the arch top from an `iron` bracket; `brass` keystone, `stone_dark` voussoirs alternating with `stone`, `navy_paint` frieze band with `gold` star studs.
+4. `Wall_DialBack` 8 m (S4): the BACK of a giant clock face: a huge `glass` disc segment (translucent dial, mirrored Roman-numeral ticks as raised `dial_mark` bars, part of a circle of radius 6 whose center is above and behind, so the module shows a curved arc) held by radial `steel` girders and `iron_dark` truss beams with `brass` rivets; behind the glass a `night_sky` panel with `starlight` dots; the back of two huge clock HANDS (`dial_mark`, with `gold` counterweight) crossing the glass.
+5. `Wall_Pendulum` 6 m (any stage, landmark): `navy_paint` panelled wall 5 m high with a tall glass-fronted case (`wood_dark` frame, `glass` front) in which a big `brass` pendulum disc hangs on a `steel` rod, `gold` bob ring, `red_lacquer` inner back panel.
+6. `Wall` 4 m x 3 m: generic filler: `stone` blocks below, riveted `navy_paint` iron band above, `brass` cap rail with gear-tooth crenellation, `dial_mark` seams.
+7. `Wall_Girder` 6 m (S4, open-sided edge): a LOW edge (1.1 m high) of a steel girder walkway: `steel` I-beam railing with `iron` X-bracing and `brass` rivets; behind it (negative Y), hanging DOWN from Z 0 to Z -4, a vertical truss of `iron_dark` beams and a few gears (`brass_dark`), so it reads as the edge of a high platform above the starry void. Front face of the railing at about Y = +0.6.
+
+Budgets: up to ~8000 tris each.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py
+diff --git a/Art/tools/blender_kit_ch4_walls.py b/Art/tools/blender_kit_ch4_walls.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..784b376d9cb1e4ea67535a081eadf7e192fc5bbc
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_walls.py
+@@ -0,0 +1,710 @@
++# 시계탑 전투방 벽 모듈 7종과 검수용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py
++"""Deterministic Blender 5.x wall kit. Metres, Z up, room/front = +Y.
++
++Only the last, review-only pass changes viewport colours or adds a camera.
++All exports are one grey, role-material mesh, with their origin at (0, 0, 0).
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_walls_preview.png'
++ROLES = (
++    'steel', 'steel_dark', 'iron', 'iron_dark', 'silver', 'brass',
++    'brass_dark', 'gold', 'copper', 'navy_paint', 'navy_dark',
++    'red_lacquer', 'red_dark', 'gem_red', 'wood', 'wood_dark',
++    'stone', 'stone_dark', 'dial_face', 'dial_mark', 'glass',
++    'starlight', 'night_sky', 'porcelain', 'ribbon_red', 'velvet', 'lamp_warm',
++)
++PALETTE = {
++    'steel': (.46, .61, .69), 'steel_dark': (.19, .29, .36),
++    'iron': (.25, .32, .39), 'iron_dark': (.075, .12, .19),
++    'silver': (.75, .85, .89), 'brass': (.74, .47, .16),
++    'brass_dark': (.34, .22, .10), 'gold': (1.0, .73, .27),
++    'copper': (.73, .32, .19), 'navy_paint': (.10, .20, .34),
++    'navy_dark': (.055, .10, .19), 'red_lacquer': (.58, .065, .09),
++    'red_dark': (.25, .045, .06), 'wood': (.44, .27, .15),
++    'wood_dark': (.21, .12, .085), 'stone': (.47, .52, .60),
++    'stone_dark': (.23, .29, .38), 'dial_face': (.86, .85, .69),
++    'dial_mark': (.06, .085, .14), 'glass': (.37, .66, .73),
++    'starlight': (.86, .93, 1.0), 'night_sky': (.018, .032, .10),
++    'lamp_warm': (1.0, .78, .34),
++}
++MATS = {}
++PARTS = []
++FACE = (math.pi / 2, 0, 0)
++
++
++def materials():
++    for role in ROLES:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes.get('Principled BSDF')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .76
++        if role == 'glass':
++            shader.inputs['Transmission Weight'].default_value = .72
++            shader.inputs['Roughness'].default_value = .18
++            shader.inputs['Alpha'].default_value = .23
++            mat.surface_render_method = 'DITHERED'
++        MATS[role] = mat
++
++
++def mesh(label, vertices, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(vertices, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Hand softened hard edges', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(70)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, bevel=False, rot=(0, 0, 0)):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def extrude(label, profile, back, front, role, bevel=False):
++    n = len(profile)
++    verts = [(x, y, z) for y in (back, front) for x, z in profile]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def cylinder(label, loc, radius, depth, role, n=16, rot=FACE, bevel=False):
++    verts = [(radius * math.cos(j * math.tau / n),
++              radius * math.sin(j * math.tau / n), z)
++             for z in (-depth / 2, depth / 2) for j in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def ring(label, loc, outer, inner, depth, role, n=32, bevel=False):
++    verts = [(r * math.cos(j * math.tau / n), y,
++              r * math.sin(j * math.tau / n))
++             for y, r in ((-depth / 2, outer), (depth / 2, outer),
++                          (depth / 2, inner), (-depth / 2, inner))
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc)
++
++
++def beam(label, a, b, width, depth, role, bevel=False):
++    vec = Vector(b) - Vector(a)
++    obj = box(label, (0, 0, 0), (width, depth, vec.length), role, bevel)
++    obj.data.transform(Matrix.Translation((Vector(a) + Vector(b)) / 2) @
++                       vec.to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def tube(label, points, radius, role, n=6):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
++                   Vector(points[max(i - 1, 0)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        side = reference.cross(tangent).normalized()
++        other = tangent.cross(side)
++        for j in range(n):
++            a = j * math.tau / n
++            verts.append(tuple(Vector(point) + radius *
++                               (side * math.cos(a) + other * math.sin(a))))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(k * n + j, k * n + (j + 1) % n,
++               (k + 1) * n + (j + 1) % n, (k + 1) * n + j)
++              for k in range(len(points) - 1) for j in range(n)]
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    return mesh(label, verts, faces, role)
++
++
++def rivet(x, y, z, role='brass_dark', radius=.055):
++    cylinder('Broad forged rivet', (x, y, z), radius, .05, role, n=8)
++
++
++def star(x, y, z, radius=.09, role='starlight'):
++    profile = []
++    for j in range(8):
++        a = j * math.tau / 8
++        r = radius if j % 2 == 0 else radius * .30
++        profile.append((x + math.sin(a) * r, z + math.cos(a) * r))
++    extrude('Four pointed tower star', profile, y - .025, y + .025, role)
++
++
++def gear(x, y, z, radius, role, teeth_role, teeth=24, phase=0):
++    """True open spokes, a continuous toothed crown, and a stepped axle boss."""
++    n = teeth * 4
++    verts = []
++    for yy, inner in ((y - .14, False), (y + .14, False),
++                      (y + .14, True), (y - .14, True)):
++        for j in range(n):
++            a = math.tau * j / n + phase
++            r = radius * (.79 if inner else (1 if j % 4 in (1, 2) else .90))
++            verts.append((x + r * math.cos(a), yy, z + r * math.sin(a)))
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    mesh('Cut gear teeth', verts, faces, teeth_role)
++    ring('Machined gear rim', (x, y + .025, z), radius * .84,
++         radius * .71, .32, role, n=teeth * 2)
++    for j in range(5):
++        a = math.tau * j / 5 + phase
++        beam('Broad gear spoke',
++             (x + math.cos(a) * radius * .18, y + .02, z + math.sin(a) * radius * .18),
++             (x + math.cos(a) * radius * .75, y + .02, z + math.sin(a) * radius * .75),
++             radius * .16, .23, role)
++    cylinder('Stepped gear boss', (x, y + .12, z), radius * .24, .38,
++             role, n=16, bevel=True)
++    cylinder('Axle end', (x, y + .34, z), radius * .11, .09, 'iron', n=10)
++    box('Axle key slot', (x, y + .393, z), (radius * .13, .025, .055), 'dial_mark')
++
++
++def crate(x, y, bottom, w=.65, h=.55, boxed_gear=False):
++    box('Crate carcass', (x, y, bottom + h / 2), (w, .47, h), 'wood', True)
++    for dx in (-w * .39, w * .39):
++        box('Crate iron hoop', (x + dx, y + .25, bottom + h / 2),
++            (.065, .06, h), 'iron')
++    for zz in (bottom + .10, bottom + h - .10):
++        box('Crate cross batten', (x, y + .29, zz), (w, .07, .075), 'wood_dark')
++    if boxed_gear:
++        # Open presentation box with a visible miniature spare gear.
++        gear(x, y + .33, bottom + h * .56, min(w, h) * .35,
++             'brass', 'brass_dark', teeth=10)
++    else:
++        beam('Crate diagonal', (x - w * .32, y + .30, bottom + .14),
++             (x + w * .32, y + .30, bottom + h - .14), .065, .065, 'wood_dark')
++
++
++def masonry(width, height, front=.10, back=-.55, rows=5):
++    box('Continuous dark mortar backing', (0, (front + back) / 2, height / 2),
++        (width, front - back, height), 'stone_dark')
++    step = height / rows
++    for row in range(rows):
++        left = -width / 2
++        cuts = [left] + [x for x in
++                        [left + .7 + (row % 2) * .52 + j * 1.14 for j in range(7)]
++                        if left + .12 < x < width / 2 - .12] + [width / 2]
++        for j, (a, b) in enumerate(zip(cuts, cuts[1:])):
++            box('Offset ashlar', ((a + b) / 2, front + .035, step * (row + .5)),
++                (b - a - .035, .15, step - .045),
++                'stone_dark' if (row + j) % 5 == 0 else 'stone',
++                bevel=(row == rows - 1 and j % 2 == 0))
++
++
++def storehouse():
++    masonry(6, 3.77)
++    box('Dressed foundation', (0, -.17, .15), (6, 1.0, .30), 'stone_dark', True)
++    box('Dark cornice', (0, -.08, 3.78), (6, .96, .18), 'stone_dark', True)
++    for x, width, top in ((-2.18, 1.64, 4.0), (-.30, 2.1, 3.91), (2.17, 1.66, 3.97)):
++        box('Uneven cornice coping', (x, -.08, (top + 3.86) / 2),
++            (width, 1.03, top - 3.86), 'stone', True)
++    # Two tall racks with visibly different shelf rhythms and stock.
++    for x, width, top, shelves in ((-1.62, 2.12, 3.47, (.42, 1.46, 2.52, 3.40)),
++                                      (1.10, 2.12, 3.22, (.42, 1.70, 3.15))):
++        for dx in (-width / 2, width / 2):
++            box('Rack upright', (x + dx, .59, top / 2), (.14, .92, top), 'wood_dark', True)
++            box('Brass rack foot', (x + dx, .64, .16), (.22, .98, .22), 'brass_dark')
++        for zz in shelves:
++            box('Thick shelf', (x, .63, zz), (width, 1.00, .13), 'wood_dark', True)
++            box('Shelf worn lip', (x, 1.145, zz), (width - .15, .055, .065), 'wood')
++        beam('Rack back diagonal', (x - width / 2, .17, .47),
++             (x + width / 2, .17, top - .10), .09, .09, 'iron')
++    for x, z, r in ((-2.14, 1.98, .35), (-1.25, 2.04, .42), (.65, 2.35, .43), (1.60, 2.27, .34)):
++        pts = []
++        for j in range(60):
++            a = j * math.tau * 2.65 / 59
++            rr = .09 + (r - .09) * j / 59
++            pts.append((x + rr * math.cos(a), .93, z + rr * math.sin(a)))
++        tube('Stored coiled mainspring', pts, .045, 'steel')
++        box('Spring cradle', (x, .84, z - r - .07), (.52, .50, .10), 'iron')
++    crate(-2.08, .68, .49, .73, .69, True)
++    crate(-1.15, .68, .49, .72, .53)
++    crate(-1.77, .66, 2.59, .90, .55)
++    crate(.62, .65, .49, .78, .65, True)
++    crate(1.57, .66, .49, .73, .88)
++    # Ladder leans toward the rack at the top, all feet remain inside the seam.
++    for x in (2.38, 2.86):
++        beam('Leaning ladder stile', (x, 1.40, .04), (x, .65, 3.38), .085, .085, 'iron', True)
++    for j in range(9):
++        t = .10 + j * .095
++        beam('Ladder rung', (2.36, 1.40 - .75 * t, .04 + 3.34 * t),
++             (2.88, 1.40 - .75 * t, .04 + 3.34 * t), .065, .065, 'steel')
++    box('Lamp bracket mounting plate', (-.15, .24, 3.48), (.30, .11, .46), 'brass', True)
++    beam('Lamp bracket arm', (-.15, .28, 3.63), (-.15, 1.02, 3.63), .10, .10, 'brass', True)
++    beam('Lamp bracket brace', (-.15, .31, 3.32), (-.15, .91, 3.63), .065, .065, 'brass_dark')
++    cylinder('Lamp shade', (-.15, 1.02, 3.54), .24, .10, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    cylinder('Warm lamp bulb', (-.15, 1.02, 3.38), .12, .24, 'lamp_warm', n=12, rot=(0, 0, 0), bevel=True)
++
++
++def plate_wall(width, height):
++    box('Flat back iron wall', (0, -.10, height / 2), (width, .90, height), 'iron_dark')
++    columns = 3 if width == 6 else 2
++    panel_w = width / columns
++    for j in range(columns):
++        x = -width / 2 + panel_w * (j + .5)
++        box('Recessed enamel wall panel', (x, .39, height / 2),
++            (panel_w - .20, .16, height - .44), 'navy_paint', True)
++        box('Raised panel lower inset', (x, .49, .48), (panel_w - .36, .07, .42), 'navy_dark')
++        for xx in (x - panel_w / 2 + .10, x + panel_w / 2 - .10):
++            box('Iron panel frame', (xx, .52, height / 2), (.13, .18, height - .16), 'iron')
++            for zz in (.37, 1.15, 2.00, height - .37):
++                rivet(xx, .64, zz)
++    for zz in (.13, height - .14):
++        box('Continuous wall rail', (0, .47, zz), (width, .35, .20), 'iron', True)
++
++
++def gears():
++    plate_wall(6, 4.35)
++    for x, w, top in ((-2.2, 1.6, 4.50), (-.2, 2.15, 4.41), (2.23, 1.54, 4.46)):
++        box('Stepped engine coping', (x, -.03, (top + 4.25) / 2),
++            (w, 1.14, top - 4.25), 'steel', True)
++    gear(-1.0, .68, 2.40, 1.60, 'brass', 'brass_dark', 28, .025)
++    gear(1.48, .68, 3.00, 1.00, 'copper', 'red_dark', 18, .12)
++    gear(2.08, .68, 1.46, .70, 'steel', 'steel_dark', 13, .11)
++    cylinder('Horizontal engine drive shaft', (0, 1.03, .51), .10, 5.65, 'steel',
++             n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    for x in (-2.35, -.18, 2.48):
++        box('Bearing pedestal', (x, .79, .27), (.44, .60, .40), 'iron', True)
++        cylinder('Brass shaft bearing', (x, 1.03, .51), .23, .26, 'brass',
++                 n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    # A readable pale gauge isolated in the upper-left corner.
++    x, z = -2.38, 3.63
++    cylinder('Red pressure gauge housing', (x, .80, z), .40, .36, 'red_lacquer', n=24, bevel=True)
++    cylinder('Pressure dial ivory face', (x, 1.0, z), .32, .055, 'dial_face', n=24)
++    ring('Gauge brass bezel', (x, 1.035, z), .37, .31, .06, 'brass', n=24)
++    for j in range(8):
++        a = -.72 * math.pi + j * 1.44 * math.pi / 7
++        beam('Pressure gauge index', (x + .23 * math.sin(a), 1.075, z + .23 * math.cos(a)),
++             (x + .285 * math.sin(a), 1.075, z + .285 * math.cos(a)), .04, .025, 'dial_mark')
++    beam('Gauge needle', (x, 1.10, z), (x + .17, 1.10, z + .16), .045, .035, 'dial_mark')
++    tube('Pressure pipe', [(-2.38, .75, 3.25), (-2.76, .75, 3.10),
++                           (-2.76, .75, .52)], .06, 'copper')
++
++
++def bell_arch():
++    # The central 2.8 x 3.4 opening contains no stone, including its back.
++    for sign in (-1, 1):
++        for row in range(5):
++            z = (row + .5) * .40
++            box('Arch pier ashlar', (sign * 2.20, .15, z), (1.60, 1.0, .385),
++                'stone' if row % 3 else 'stone_dark', bevel=(row % 2 == 0))
++        box('Pier base molding', (sign * 2.20, .23, .13), (1.60, 1.15, .26), 'stone_dark', True)
++        box('Arch spring impost', (sign * 2.21, .29, 2.00), (1.58, 1.28, .18), 'brass_dark', True)
++    profile = [(-3, 4.16), (3, 4.16), (3, 2), (1.4, 2)]
++    profile += [(1.4 * math.cos(j * math.pi / 24),
++                 2 + 1.4 * math.sin(j * math.pi / 24)) for j in range(1, 25)]
++    profile += [(-3, 2)]
++    extrude('Open arch spandrel', profile, -.35, .65, 'stone', True)
++    for j in range(13):
++        a, b = j * math.pi / 13 + .008, (j + 1) * math.pi / 13 - .008
++        wedge = [(r * math.cos(t), 2 + r * math.sin(t))
++                 for r, t in ((1.4, a), (1.69, a), (1.69, b), (1.4, b))]
++        extrude('Alternating arch voussoir', wedge, .64, .98,
++                'brass' if j == 6 else ('stone_dark' if j % 2 == 0 else 'stone'), True)
++    for sign in (-1, 1):
++        for j in range(3):
++            box('Spandrel inset joint', (sign * (1.93 + .32 * j), .66, 3.63 - j * .16),
++                (.05, .025, .57), 'stone_dark')
++    box('Starry night beyond the open arch', (0, -.99, 1.78), (2.8, .08, 3.56), 'night_sky')
++    for x, z, r in ((-1.05, .54, .07), (.63, .76, .09), (-.66, 1.35, .075),
++                    (1.05, 1.88, .065), (-.93, 2.43, .08), (.45, 2.17, .06), (.03, 3.12, .08)):
++        star(x, -.93, z, r)
++    box('Frieze deep enamel', (0, .29, 4.07), (6, 1.30, .30), 'navy_paint', True)
++    box('Frieze lower gold line', (0, .96, 3.94), (6, .07, .07), 'brass')
++    for j in range(11):
++        star(-2.65 + j * .53, .975, 4.075, .09, 'gold')
++    box('Arch coping lower molding', (0, .20, 4.27), (6, 1.30, .13), 'stone_dark', True)
++    for x, w, top in ((-2.3, 1.4, 4.46), (0, 2.9, 4.50), (2.32, 1.36, 4.41)):
++        box('Arch raised coping', (x, .20, (top + 4.31) / 2),
++            (w, 1.36, top - 4.31), 'stone', True)
++    # Hollow flared bell, a separate lip and visible clapper.
++    box('Bell hanger bracket', (0, .32, 3.16), (.72, .17, .12), 'iron', True)
++    beam('Bell suspension', (0, .32, 3.16), (0, .32, 2.95), .09, .09, 'iron')
++    bell_profile = [(.10, 2.98), (.21, 2.91), (.25, 2.69), (.37, 2.48),
++                    (.45, 2.43), (.45, 2.35), (.35, 2.35), (.29, 2.48),
++                    (.17, 2.68), (.14, 2.88), (.065, 2.91)]
++    n = 24
++    verts = [(r * math.cos(j * math.tau / n), .32 + r * math.sin(j * math.tau / n), z)
++             for r, z in bell_profile for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + j)
++             for k in range(len(bell_profile)) for j in range(n)]
++    mesh('Hollow bronze bell', verts, faces, 'copper')
++    cylinder('Bell crown', (0, .32, 2.94), .12, .12, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    beam('Bell clapper stem', (0, .32, 2.72), (0, .32, 2.27), .07, .07, 'iron')
++    cylinder('Bell clapper', (0, .32, 2.27), .095, .14, 'brass', n=12, rot=(0, 0, 0))
++
++
++def dial_back():
++    # Lower disc sector: exact radius 6.0 about (0, .50, 6.15).
++    # Its lower edge rises towards the sides; its center lies ABOVE the module.
++    center_z = 6.15
++    lower = [(x, center_z - math.sqrt(36 - x * x))
++             for x in [-4 + j * 8 / 64 for j in range(65)]]
++    profile = lower + [(4, 4.76), (-4, 4.76)]
++    glass = extrude('Giant translucent clock face sector R6', profile, .49, .56, 'glass')
++    # Slight backward lean makes the unseen circle center also behind the face.
++    for v in glass.data.vertices:
++        v.co.y += (center_z - v.co.z) * .035
++    box('Starry sky behind dial', (0, -.78, 2.36), (8, .10, 4.72), 'night_sky')
++    for j in range(31):
++        x, z = random.uniform(-3.84, 3.84), random.uniform(.20, 4.58)
++        star(x, -.71, z, random.uniform(.055, .105))
++    # A structural chord and flush end posts keep neighbours tileable.
++    for x in (-3.88, 3.88):
++        box('End stanchion web', (x, .19, 2.32), (.18, 1.14, 4.64), 'iron_dark')
++        for yy in (-.39, .78):
++            box('End stanchion flange', (x, yy, 2.32), (.24, .10, 4.64), 'steel', True)
++        for z in (.28, 1.60, 3.0, 4.38):
++            rivet(x, .85, z, 'brass', .065)
++    box('Bottom structural sill', (0, -.01, .12), (8, 1.50, .24), 'iron_dark', True)
++    box('Upper truss chord', (0, .30, 4.66), (8, .45, .20), 'iron_dark', True)
++    for j in range(6):
++        a = (-4 + j * 1.333, .28, 4.47)
++        b = (-4 + (j + 1) * 1.333, .28, 3.96)
++        beam('Upper zigzag truss', a, b, .12, .18, 'iron_dark')
++        beam('Upper zigzag truss return', b, (b[0], .28, 4.47), .10, .18, 'steel')
++    # Two concentric bands trace the actual curved outer circumference.
++    for radius, role, thickness in ((5.94, 'steel', .13), (5.67, 'brass', .065)):
++        xmax = 3.80
++        pts = [(x, .81, center_z - math.sqrt(radius * radius - x * x))
++               for x in [-xmax + j * 2 * xmax / 48 for j in range(49)]]
++        tube('Circular dial retaining band', pts, thickness, role, n=6)
++    for a in (-.62, -.31, 0, .31, .62):
++        p = (5.81 * math.sin(a), .84, center_z - 5.81 * math.cos(a))
++        q = (2.03 * math.sin(a), .84, center_z - 2.03 * math.cos(a))
++        beam('Radial steel girder', p, q, .12, .20, 'steel', True)
++        for t in (.12, .55, .88):
++            v = Vector(p).lerp(Vector(q), t)
++            rivet(v.x, .97, v.z, 'brass', .06)
++    # Mirrored Roman VI, VII, VIII, V, IV bars. No font/text in the asset.
++    # Local tangential X is flipped because we are looking at the BACK.
++    glyphs = ('VIII', 'VII', 'VI', 'V', 'IV')
++    for a, numeral in zip((-.59, -.30, 0, .30, .59), glyphs):
++        def tick(u, v):
++            return (5.13 * math.sin(a) - u * math.cos(a) - v * math.sin(a),
++                    1.025, center_z - 5.13 * math.cos(a) - u * math.sin(a) + v * math.cos(a))
++        cursor = -.13 * (len(numeral) - 1)
++        for letter in numeral:
++            if letter == 'I':
++                beam('Mirrored Roman I', tick(cursor, -.24), tick(cursor, .24), .065, .07, 'dial_mark')
++            else:
++                beam('Mirrored Roman V left', tick(cursor - .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++                beam('Mirrored Roman V right', tick(cursor + .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++            cursor += .26
++    # Back of the clock hands; the pivot and counterweights enter the top sector.
++    pivot = (.58, 1.14, 4.01)
++    for tip, width in (((-2.68, 1.14, 1.44), .23), ((2.58, 1.14, 2.13), .30)):
++        beam('Giant clock hand back', pivot, tip, width, .10, 'dial_mark', True)
++        vec = (Vector(pivot) - Vector(tip)).normalized()
++        end = Vector(pivot) + vec * .61
++        beam('Hand gold counterweight', Vector(pivot) + vec * .15, end,
++             width * 1.7, .14, 'gold', True)
++    ring('Clock axle rear ring', pivot, .31, .17, .19, 'brass', n=24)
++    cylinder('Clock axle rear cap', (.58, 1.27, 4.01), .18, .14, 'iron', n=16, bevel=True)
++
++
++def pendulum():
++    plate_wall(6, 4.75)
++    box('Full width lower stone plinth', (0, -.03, .17), (6, 1.30, .34), 'stone_dark', True)
++    for x in (-2.57, 2.57):
++        box('Side wall relief panel', (x, .52, 2.64), (.52, .10, 3.36), 'steel_dark', True)
++        for zz in (1.25, 2.13, 3.01, 3.89):
++            box('Side wall brass hash', (x, .59, zz), (.24, .055, .07), 'brass')
++    box('Case red recessed back', (0, .59, 2.41), (3.53, .16, 4.24), 'red_lacquer', True)
++    for x in (-1.86, 1.86):
++        box('Carved dark case pillar', (x, .86, 2.45), (.23, .76, 4.44), 'wood_dark', True)
++        box('Pillar inset', (x, 1.25, 2.45), (.075, .04, 3.80), 'wood')
++        for z in (.39, 4.35):
++            box('Case pillar ferrule', (x, .88, z), (.33, .83, .16), 'brass', True)
++    for zz, w, h in ((.30, 4.15, .20), (.51, 3.94, .15), (4.58, 4.17, .20), (4.76, 3.83, .16)):
++        box('Stacked case molding', (0, .83, zz), (w, .83, h), 'wood_dark', True)
++    crown = [(-1.45, 4.81), (-.66, 4.89), (-.32, 5), (.32, 5), (.66, 4.89), (1.45, 4.81)]
++    extrude('Pediment with irregular crown', crown, .50, 1.15, 'brass', True)
++    ring('Pendulum pivot collar', (0, .94, 4.09), .30, .18, .15, 'brass_dark', n=24)
++    cylinder('Pivot pin', (0, 1.04, 4.09), .13, .18, 'steel', n=12, bevel=True)
++    beam('Long pendulum steel rod', (0, 1.03, 4.09), (.29, 1.03, 1.39), .12, .12, 'steel', True)
++    cylinder('Heavy pendulum bob disc', (.29, 1.02, 1.39), .77, .24, 'brass', n=32, bevel=True)
++    ring('Gold bob annulus', (.29, 1.17, 1.39), .74, .59, .065, 'gold', n=32)
++    cylinder('Bob central medallion', (.29, 1.19, 1.39), .28, .08, 'brass_dark', n=16, bevel=True)
++    star(.29, 1.25, 1.39, .16, 'gold')
++    box('Tall glass case front', (0, 1.31, 2.55), (3.43, .055, 3.90), 'glass')
++    # Fine brass glazing bars and corner plates frame the transparent sheet.
++    for x in (-1.69, 1.69):
++        box('Glass edge trim', (x, 1.36, 2.55), (.055, .045, 3.92), 'brass')
++    for z in (.61, 4.48):
++        box('Glass horizontal trim', (0, 1.36, z), (3.43, .045, .055), 'brass')
++    for x in (-1.48, 1.48):
++        for z in (.82, 4.24):
++            box('Glass corner escutcheon', (x, 1.36, z), (.18, .05, .18), 'brass_dark')
++    box('Clock case door keyhole', (1.57, 1.40, 2.39), (.10, .06, .18), 'gold', True)
++
++
++def filler():
++    masonry(4, 1.86, front=.58, back=-.55, rows=3)
++    box('Filler foundation molding', (0, .08, .12), (4, 1.26, .24), 'stone_dark', True)
++    box('Filler band backing', (0, .10, 2.26), (4, 1.30, .86), 'iron_dark')
++    for j in range(3):
++        x = -4 / 3 + j * 4 / 3
++        box('Filler navy iron panel', (x, .79, 2.26), (1.27, .12, .70), 'navy_paint', True)
++        for xx in (x - .52, x + .52):
++            for z in (2.03, 2.49):
++                rivet(xx, .89, z, 'brass', .05)
++    for x in (-.67, .67):
++        box('Dark panel seam', (x, .87, 2.26), (.045, .025, .71), 'dial_mark')
++    box('Band lower rolled edge', (0, .22, 1.87), (4, 1.45, .13), 'steel', True)
++    box('Continuous brass cap rail', (0, .18, 2.76), (4, 1.44, .18), 'brass', True)
++    for j in range(9):
++        x = -1.78 + j * .445
++        box('Gear tooth crenellation', (x, .18, 2.915), (.25, 1.20, .17),
++            'brass_dark' if j % 3 == 0 else 'brass', True)
++    # An inset gear relief breaks the otherwise horizontal filler silhouette.
++    gear(.12, .94, 2.26, .30, 'steel', 'steel_dark', teeth=10)
++
++
++def girder():
++    # No solid wall/sky card: this piece is genuinely open to the void.
++    for z in (.08, .98):
++        box('Railing I beam web', (0, .36, z), (6, .16, .16), 'steel')
++        for zz in (z - .07, z + .07):
++            box('Railing I beam flange', (0, .34, zz), (6, .52, .08), 'steel', True)
++    for x in (-2.88, -1.0, 1.0, 2.88):
++        box('Railing upright', (x, .33, .55), (.16, .44, 1.10), 'steel', True)
++        box('Upright foot gusset', (x, .60, .17), (.34, .06, .31), 'iron')
++        for z in (.17, .91):
++            rivet(x, .65, z, 'brass', .06)
++    for left, right in ((-2.83, -1.06), (-.94, .94), (1.06, 2.83)):
++        for lo, hi in ((.20, .87), (.87, .20)):
++            beam('Railing X brace', (left, .37, lo), (right, .37, hi), .09, .11, 'iron')
++        rivet((left + right) / 2, .46, .535, 'brass', .065)
++    # The load-bearing platform edge is behind the rail and exactly at Z=0.
++    box('Platform lip top flange', (0, -.28, -.055), (6, 1.12, .11), 'steel', True)
++    box('Platform lip bottom flange', (0, -.28, -.46), (6, 1.12, .10), 'iron', True)
++    box('Deep edge girder web', (0, -.28, -.25), (6, .17, .43), 'iron_dark')
++    for x in (-2.84, -.95, .95, 2.84):
++        box('Hanging truss vertical', (x, -.41, -2.02), (.19, .42, 3.96), 'iron_dark', True)
++        for zz in (-.60, -2.03, -3.82):
++            box('Truss gusset plate', (x, -.12, zz), (.37, .10, .30), 'steel_dark')
++            rivet(x, -.04, zz, 'brass', .065)
++    for zz in (-2.03, -3.91):
++        box('Hanging truss cross chord', (0, -.41, zz), (6, .35, .18), 'iron_dark', True)
++    for left, right in ((-2.84, -.95), (-.95, .95), (.95, 2.84)):
++        for bottom, top in ((-3.82, -2.12), (-1.94, -.46)):
++            beam('Suspended X diagonal', (left, -.40, bottom), (right, -.40, top), .12, .20, 'iron_dark')
++            beam('Suspended X return', (left, -.40, top), (right, -.40, bottom), .12, .20, 'iron_dark')
++    gear(-1.88, -.09, -1.20, .52, 'brass_dark', 'iron', 14, .1)
++    gear(1.86, -.09, -2.91, .65, 'brass_dark', 'iron', 16, .12)
++    gear(.79, -.09, -2.85, .43, 'brass_dark', 'iron', 11, .21)
++
++
++SPECS = [
++    ('Wall_Storehouse', 6, 4.0, storehouse),
++    ('Wall_Gears', 6, 4.5, gears),
++    ('Wall_BellArch', 6, 4.5, bell_arch),
++    ('Wall_DialBack', 8, 4.76, dial_back),
++    ('Wall_Pendulum', 6, 5.0, pendulum),
++    ('Wall', 4, 3.0, filler),
++    ('Wall_Girder', 6, 1.1, girder),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return tuple(Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++                 for fn in (min, max))
++
++
++def finish(name, width, height):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = name, name + '_Mesh'
++    count = triangles(obj)
++    if count > 8000:
++        # Material boundaries survive; the broad forms are always constructed
++        # first, so this only removes excess bevel tessellation/detail.
++        mod = obj.modifiers.new('Triangle budget preserving material borders', 'DECIMATE')
++        mod.ratio = 7900 / count
++        mod.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
++    bm.to_mesh(obj.data)
++    bm.free()
++    for poly in obj.data.polygons:
++        poly.use_smooth = False
++    obj.data.update()
++    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
++    bpy.context.view_layer.update()
++    low, high = bounds(obj)
++    assert abs(low.x + width / 2) < 1e-4 and abs(high.x - width / 2) < 1e-4, (name, low, high)
++    floor = -4 if name == 'Wall_Girder' else 0
++    assert abs(low.z - floor) < 1e-4, (name, low)
++    assert high.z <= height + .025, (name, high, height)
++    assert 1.1 <= high.y - low.y <= 2.25, (name, low, high)
++    assert triangles(obj) <= 8000, (name, triangles(obj))
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    used = {obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used) >= 6 and used.issubset(ROLES), (name, used)
++    for mat in obj.data.materials:
++        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    obj['front'], obj['module_width_m'] = '+Y', width
++    obj['triangle_count'], obj['chapter'] = triangles(obj), 'Inside the Clockwork'
++    obj['origin_rule'] = 'Bottom center; suspended truss intentionally extends to Z=-4' if name == 'Wall_Girder' else 'Bottom center'
++    destination = OUTPUT / f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def preview(objects):
++    """A single above-front contact sheet; exported FBXs are never rewritten."""
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 1800, 1000
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.show_shadows, shade.show_cavity = False, True
++    shade.cavity_type = 'BOTH'
++    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.25, 1.1
++    shade.show_specular_highlight = False
++    shade.background_type, shade.background_color = 'WORLD', (.032, .043, .068)
++    if scene.world is None:
++        scene.world = bpy.data.worlds.new('Preview world')
++    scene.world.color = (.032, .043, .068)
++    helpers = []
++    locations = [obj.location.copy() for obj in objects]
++    try:
++        for role, mat in MATS.items():
++            mat.diffuse_color = (*PALETTE.get(role, (.5, .5, .5)), .18 if role == 'glass' else 1)
++        # Four modules across the back, three across the front. Truss remains
++        # fully visible below its platform, without a floor plane to hide it.
++        positions = [(-12.4, -5.2), (-4.2, -5.2), (4.0, -5.2), (12.6, -5.2),
++                     (-9.0, 6.2), (-1.2, 6.2), (7.2, 6.2)]
++        for obj, (x, y) in zip(objects, positions):
++            obj.location = (x, y, 0)
++            obj.show_transparent = True
++        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type, camera.data.ortho_scale = 'ORTHO', 35.8
++        target = Vector((.4, 0, .65))
++        elevation = math.radians(55)
++        camera.location = target + Vector((0, 45 * math.cos(elevation), 45 * math.sin(elevation)))
++        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
++
++        def caption(body, loc, size, role='starlight'):
++            data = bpy.data.curves.new('Review type', 'FONT')
++            data.body, data.align_x, data.size = body, 'CENTER', size
++            data.materials.append(MATS[role])
++            obj = bpy.data.objects.new('Review caption', data)
++            scene.collection.objects.link(obj)
++            obj.location, obj.rotation_euler = loc, camera.rotation_euler
++            helpers.append(obj)
++
++        descriptions = ['S1 / SPRING STORES', 'S2 / ENGINE ROOM', 'S3 / BELFRY',
++                        'S4 / BEHIND THE DIAL', 'LANDMARK / PENDULUM',
++                        'FILLER / BATTLEMENT', 'S4 / SUSPENDED EDGE']
++        for obj, desc in zip(objects, descriptions):
++            y = obj.location.y + (3.30 if obj.name == 'Wall_Girder' else 2.00)
++            caption(obj.name, (obj.location.x, y, -.18), .30)
++            caption(desc, (obj.location.x, y + .46, -.18), .17, 'brass')
++        caption('IV  /  INSIDE THE CLOCKWORK', (.4, -10.15, 4.55), .52)
++        caption('MODULAR WALLS     /     +Y FRONT     /     METRE SCALE',
++                (.4, -9.45, 4.55), .23, 'brass')
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            bpy.data.objects.remove(obj, do_unlink=True)
++        for obj, loc in zip(objects, locations):
++            obj.location, obj.show_transparent = loc, False
++        for mat in MATS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
++    materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = []
++    for index, (name, width, height, build) in enumerate(SPECS):
++        random.seed(41031 + index * 7919)
++        PARTS = []
++        build()
++        objects.append(finish(name, width, height))
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py" in C:\Project\Cat_Tang
+ succeeded in 2204ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py:50: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Storehouse.fbx'
+export finished in 0.0086 sec.
+EXPORTED Wall_Storehouse 7900 (6.0, 2.106, 4.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Gears.fbx'
+export finished in 0.0079 sec.
+EXPORTED Wall_Gears 6968 (6.0, 1.86, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_BellArch.fbx'
+export finished in 0.0070 sec.
+EXPORTED Wall_BellArch 4956 (6.0, 2.03, 4.5)
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py", line 710, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py", line 702, in main
+    objects.append(finish(name, width, height))
+                   ~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py", line 586, in finish
+    assert abs(low.x + width / 2) < 1e-4 and abs(high.x - width / 2) < 1e-4, (name, low, high)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('Wall_DialBack', Vector((-4.032159805297852, -0.8299999833106995, 0.0)), Vector((4.047999858856201, 1.3949999809265137, 4.760000228881836)))
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py
+diff --git a/Art/tools/blender_kit_ch4_walls.py b/Art/tools/blender_kit_ch4_walls.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..9315fcfceb55d99be1f89c3490a790f2bc9f24ed
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_walls.py
+@@ -0,0 +1,710 @@
++# 시계탑 전투방 벽 모듈 7종과 검수용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py
++"""Deterministic Blender 5.x wall kit. Metres, Z up, room/front = +Y.
++
++Only the last, review-only pass changes viewport colours or adds a camera.
++All exports are one grey, role-material mesh, with their origin at (0, 0, 0).
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_walls_preview.png'
++ROLES = (
++    'steel', 'steel_dark', 'iron', 'iron_dark', 'silver', 'brass',
++    'brass_dark', 'gold', 'copper', 'navy_paint', 'navy_dark',
++    'red_lacquer', 'red_dark', 'gem_red', 'wood', 'wood_dark',
++    'stone', 'stone_dark', 'dial_face', 'dial_mark', 'glass',
++    'starlight', 'night_sky', 'porcelain', 'ribbon_red', 'velvet', 'lamp_warm',
++)
++PALETTE = {
++    'steel': (.46, .61, .69), 'steel_dark': (.19, .29, .36),
++    'iron': (.25, .32, .39), 'iron_dark': (.075, .12, .19),
++    'silver': (.75, .85, .89), 'brass': (.74, .47, .16),
++    'brass_dark': (.34, .22, .10), 'gold': (1.0, .73, .27),
++    'copper': (.73, .32, .19), 'navy_paint': (.10, .20, .34),
++    'navy_dark': (.055, .10, .19), 'red_lacquer': (.58, .065, .09),
++    'red_dark': (.25, .045, .06), 'wood': (.44, .27, .15),
++    'wood_dark': (.21, .12, .085), 'stone': (.47, .52, .60),
++    'stone_dark': (.23, .29, .38), 'dial_face': (.86, .85, .69),
++    'dial_mark': (.06, .085, .14), 'glass': (.37, .66, .73),
++    'starlight': (.86, .93, 1.0), 'night_sky': (.018, .032, .10),
++    'lamp_warm': (1.0, .78, .34),
++}
++MATS = {}
++PARTS = []
++FACE = (math.pi / 2, 0, 0)
++
++
++def materials():
++    for role in ROLES:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes.get('Principled BSDF')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .76
++        if role == 'glass':
++            shader.inputs['Transmission Weight'].default_value = .72
++            shader.inputs['Roughness'].default_value = .18
++            shader.inputs['Alpha'].default_value = .23
++            mat.surface_render_method = 'DITHERED'
++        MATS[role] = mat
++
++
++def mesh(label, vertices, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(vertices, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Hand softened hard edges', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(70)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, bevel=False, rot=(0, 0, 0)):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def extrude(label, profile, back, front, role, bevel=False):
++    n = len(profile)
++    verts = [(x, y, z) for y in (back, front) for x, z in profile]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def cylinder(label, loc, radius, depth, role, n=16, rot=FACE, bevel=False):
++    verts = [(radius * math.cos(j * math.tau / n),
++              radius * math.sin(j * math.tau / n), z)
++             for z in (-depth / 2, depth / 2) for j in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def ring(label, loc, outer, inner, depth, role, n=32, bevel=False):
++    verts = [(r * math.cos(j * math.tau / n), y,
++              r * math.sin(j * math.tau / n))
++             for y, r in ((-depth / 2, outer), (depth / 2, outer),
++                          (depth / 2, inner), (-depth / 2, inner))
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc)
++
++
++def beam(label, a, b, width, depth, role, bevel=False):
++    vec = Vector(b) - Vector(a)
++    obj = box(label, (0, 0, 0), (width, depth, vec.length), role, bevel)
++    obj.data.transform(Matrix.Translation((Vector(a) + Vector(b)) / 2) @
++                       vec.to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def tube(label, points, radius, role, n=6):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
++                   Vector(points[max(i - 1, 0)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        side = reference.cross(tangent).normalized()
++        other = tangent.cross(side)
++        for j in range(n):
++            a = j * math.tau / n
++            verts.append(tuple(Vector(point) + radius *
++                               (side * math.cos(a) + other * math.sin(a))))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(k * n + j, k * n + (j + 1) % n,
++               (k + 1) * n + (j + 1) % n, (k + 1) * n + j)
++              for k in range(len(points) - 1) for j in range(n)]
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    return mesh(label, verts, faces, role)
++
++
++def rivet(x, y, z, role='brass_dark', radius=.055):
++    cylinder('Broad forged rivet', (x, y, z), radius, .05, role, n=8)
++
++
++def star(x, y, z, radius=.09, role='starlight'):
++    profile = []
++    for j in range(8):
++        a = j * math.tau / 8
++        r = radius if j % 2 == 0 else radius * .30
++        profile.append((x + math.sin(a) * r, z + math.cos(a) * r))
++    extrude('Four pointed tower star', profile, y - .025, y + .025, role)
++
++
++def gear(x, y, z, radius, role, teeth_role, teeth=24, phase=0):
++    """True open spokes, a continuous toothed crown, and a stepped axle boss."""
++    n = teeth * 4
++    verts = []
++    for yy, inner in ((y - .14, False), (y + .14, False),
++                      (y + .14, True), (y - .14, True)):
++        for j in range(n):
++            a = math.tau * j / n + phase
++            r = radius * (.79 if inner else (1 if j % 4 in (1, 2) else .90))
++            verts.append((x + r * math.cos(a), yy, z + r * math.sin(a)))
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    mesh('Cut gear teeth', verts, faces, teeth_role)
++    ring('Machined gear rim', (x, y + .025, z), radius * .84,
++         radius * .71, .32, role, n=teeth * 2)
++    for j in range(5):
++        a = math.tau * j / 5 + phase
++        beam('Broad gear spoke',
++             (x + math.cos(a) * radius * .18, y + .02, z + math.sin(a) * radius * .18),
++             (x + math.cos(a) * radius * .75, y + .02, z + math.sin(a) * radius * .75),
++             radius * .16, .23, role)
++    cylinder('Stepped gear boss', (x, y + .12, z), radius * .24, .38,
++             role, n=16, bevel=True)
++    cylinder('Axle end', (x, y + .34, z), radius * .11, .09, 'iron', n=10)
++    box('Axle key slot', (x, y + .393, z), (radius * .13, .025, .055), 'dial_mark')
++
++
++def crate(x, y, bottom, w=.65, h=.55, boxed_gear=False):
++    box('Crate carcass', (x, y, bottom + h / 2), (w, .47, h), 'wood', True)
++    for dx in (-w * .39, w * .39):
++        box('Crate iron hoop', (x + dx, y + .25, bottom + h / 2),
++            (.065, .06, h), 'iron')
++    for zz in (bottom + .10, bottom + h - .10):
++        box('Crate cross batten', (x, y + .29, zz), (w, .07, .075), 'wood_dark')
++    if boxed_gear:
++        # Open presentation box with a visible miniature spare gear.
++        gear(x, y + .33, bottom + h * .56, min(w, h) * .35,
++             'brass', 'brass_dark', teeth=10)
++    else:
++        beam('Crate diagonal', (x - w * .32, y + .30, bottom + .14),
++             (x + w * .32, y + .30, bottom + h - .14), .065, .065, 'wood_dark')
++
++
++def masonry(width, height, front=.10, back=-.55, rows=5):
++    box('Continuous dark mortar backing', (0, (front + back) / 2, height / 2),
++        (width, front - back, height), 'stone_dark')
++    step = height / rows
++    for row in range(rows):
++        left = -width / 2
++        cuts = [left] + [x for x in
++                        [left + .7 + (row % 2) * .52 + j * 1.14 for j in range(7)]
++                        if left + .12 < x < width / 2 - .12] + [width / 2]
++        for j, (a, b) in enumerate(zip(cuts, cuts[1:])):
++            box('Offset ashlar', ((a + b) / 2, front + .035, step * (row + .5)),
++                (b - a - .035, .15, step - .045),
++                'stone_dark' if (row + j) % 5 == 0 else 'stone',
++                bevel=(row == rows - 1 and j % 2 == 0))
++
++
++def storehouse():
++    masonry(6, 3.77)
++    box('Dressed foundation', (0, -.17, .15), (6, 1.0, .30), 'stone_dark', True)
++    box('Dark cornice', (0, -.08, 3.78), (6, .96, .18), 'stone_dark', True)
++    for x, width, top in ((-2.18, 1.64, 4.0), (-.30, 2.1, 3.91), (2.17, 1.66, 3.97)):
++        box('Uneven cornice coping', (x, -.08, (top + 3.86) / 2),
++            (width, 1.03, top - 3.86), 'stone', True)
++    # Two tall racks with visibly different shelf rhythms and stock.
++    for x, width, top, shelves in ((-1.62, 2.12, 3.47, (.42, 1.46, 2.52, 3.40)),
++                                      (1.10, 2.12, 3.22, (.42, 1.70, 3.15))):
++        for dx in (-width / 2, width / 2):
++            box('Rack upright', (x + dx, .59, top / 2), (.14, .92, top), 'wood_dark', True)
++            box('Brass rack foot', (x + dx, .64, .16), (.22, .98, .22), 'brass_dark')
++        for zz in shelves:
++            box('Thick shelf', (x, .63, zz), (width, 1.00, .13), 'wood_dark', True)
++            box('Shelf worn lip', (x, 1.145, zz), (width - .15, .055, .065), 'wood')
++        beam('Rack back diagonal', (x - width / 2, .17, .47),
++             (x + width / 2, .17, top - .10), .09, .09, 'iron')
++    for x, z, r in ((-2.14, 1.98, .35), (-1.25, 2.04, .42), (.65, 2.35, .43), (1.60, 2.27, .34)):
++        pts = []
++        for j in range(60):
++            a = j * math.tau * 2.65 / 59
++            rr = .09 + (r - .09) * j / 59
++            pts.append((x + rr * math.cos(a), .93, z + rr * math.sin(a)))
++        tube('Stored coiled mainspring', pts, .045, 'steel')
++        box('Spring cradle', (x, .84, z - r - .07), (.52, .50, .10), 'iron')
++    crate(-2.08, .68, .49, .73, .69, True)
++    crate(-1.15, .68, .49, .72, .53)
++    crate(-1.77, .66, 2.59, .90, .55)
++    crate(.62, .65, .49, .78, .65, True)
++    crate(1.57, .66, .49, .73, .88)
++    # Ladder leans toward the rack at the top, all feet remain inside the seam.
++    for x in (2.38, 2.86):
++        beam('Leaning ladder stile', (x, 1.40, .04), (x, .65, 3.38), .085, .085, 'iron', True)
++    for j in range(9):
++        t = .10 + j * .095
++        beam('Ladder rung', (2.36, 1.40 - .75 * t, .04 + 3.34 * t),
++             (2.88, 1.40 - .75 * t, .04 + 3.34 * t), .065, .065, 'steel')
++    box('Lamp bracket mounting plate', (-.15, .24, 3.48), (.30, .11, .46), 'brass', True)
++    beam('Lamp bracket arm', (-.15, .28, 3.63), (-.15, 1.02, 3.63), .10, .10, 'brass', True)
++    beam('Lamp bracket brace', (-.15, .31, 3.32), (-.15, .91, 3.63), .065, .065, 'brass_dark')
++    cylinder('Lamp shade', (-.15, 1.02, 3.54), .24, .10, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    cylinder('Warm lamp bulb', (-.15, 1.02, 3.38), .12, .24, 'lamp_warm', n=12, rot=(0, 0, 0), bevel=True)
++
++
++def plate_wall(width, height):
++    box('Flat back iron wall', (0, -.10, height / 2), (width, .90, height), 'iron_dark')
++    columns = 3 if width == 6 else 2
++    panel_w = width / columns
++    for j in range(columns):
++        x = -width / 2 + panel_w * (j + .5)
++        box('Recessed enamel wall panel', (x, .39, height / 2),
++            (panel_w - .20, .16, height - .44), 'navy_paint', True)
++        box('Raised panel lower inset', (x, .49, .48), (panel_w - .36, .07, .42), 'navy_dark')
++        for xx in (x - panel_w / 2 + .10, x + panel_w / 2 - .10):
++            box('Iron panel frame', (xx, .52, height / 2), (.13, .18, height - .16), 'iron')
++            for zz in (.37, 1.15, 2.00, height - .37):
++                rivet(xx, .64, zz)
++    for zz in (.13, height - .14):
++        box('Continuous wall rail', (0, .47, zz), (width, .35, .20), 'iron', True)
++
++
++def gears():
++    plate_wall(6, 4.35)
++    for x, w, top in ((-2.2, 1.6, 4.50), (-.2, 2.15, 4.41), (2.23, 1.54, 4.46)):
++        box('Stepped engine coping', (x, -.03, (top + 4.25) / 2),
++            (w, 1.14, top - 4.25), 'steel', True)
++    gear(-1.0, .68, 2.40, 1.60, 'brass', 'brass_dark', 28, .025)
++    gear(1.48, .68, 3.00, 1.00, 'copper', 'red_dark', 18, .12)
++    gear(2.08, .68, 1.46, .70, 'steel', 'steel_dark', 13, .11)
++    cylinder('Horizontal engine drive shaft', (0, 1.03, .51), .10, 5.65, 'steel',
++             n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    for x in (-2.35, -.18, 2.48):
++        box('Bearing pedestal', (x, .79, .27), (.44, .60, .40), 'iron', True)
++        cylinder('Brass shaft bearing', (x, 1.03, .51), .23, .26, 'brass',
++                 n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    # A readable pale gauge isolated in the upper-left corner.
++    x, z = -2.38, 3.63
++    cylinder('Red pressure gauge housing', (x, .80, z), .40, .36, 'red_lacquer', n=24, bevel=True)
++    cylinder('Pressure dial ivory face', (x, 1.0, z), .32, .055, 'dial_face', n=24)
++    ring('Gauge brass bezel', (x, 1.035, z), .37, .31, .06, 'brass', n=24)
++    for j in range(8):
++        a = -.72 * math.pi + j * 1.44 * math.pi / 7
++        beam('Pressure gauge index', (x + .23 * math.sin(a), 1.075, z + .23 * math.cos(a)),
++             (x + .285 * math.sin(a), 1.075, z + .285 * math.cos(a)), .04, .025, 'dial_mark')
++    beam('Gauge needle', (x, 1.10, z), (x + .17, 1.10, z + .16), .045, .035, 'dial_mark')
++    tube('Pressure pipe', [(-2.38, .75, 3.25), (-2.76, .75, 3.10),
++                           (-2.76, .75, .52)], .06, 'copper')
++
++
++def bell_arch():
++    # The central 2.8 x 3.4 opening contains no stone, including its back.
++    for sign in (-1, 1):
++        for row in range(5):
++            z = (row + .5) * .40
++            box('Arch pier ashlar', (sign * 2.20, .15, z), (1.60, 1.0, .385),
++                'stone' if row % 3 else 'stone_dark', bevel=(row % 2 == 0))
++        box('Pier base molding', (sign * 2.20, .23, .13), (1.60, 1.15, .26), 'stone_dark', True)
++        box('Arch spring impost', (sign * 2.21, .29, 2.00), (1.58, 1.28, .18), 'brass_dark', True)
++    profile = [(-3, 4.16), (3, 4.16), (3, 2), (1.4, 2)]
++    profile += [(1.4 * math.cos(j * math.pi / 24),
++                 2 + 1.4 * math.sin(j * math.pi / 24)) for j in range(1, 25)]
++    profile += [(-3, 2)]
++    extrude('Open arch spandrel', profile, -.35, .65, 'stone', True)
++    for j in range(13):
++        a, b = j * math.pi / 13 + .008, (j + 1) * math.pi / 13 - .008
++        wedge = [(r * math.cos(t), 2 + r * math.sin(t))
++                 for r, t in ((1.4, a), (1.69, a), (1.69, b), (1.4, b))]
++        extrude('Alternating arch voussoir', wedge, .64, .98,
++                'brass' if j == 6 else ('stone_dark' if j % 2 == 0 else 'stone'), True)
++    for sign in (-1, 1):
++        for j in range(3):
++            box('Spandrel inset joint', (sign * (1.93 + .32 * j), .66, 3.63 - j * .16),
++                (.05, .025, .57), 'stone_dark')
++    box('Starry night beyond the open arch', (0, -.99, 1.78), (2.8, .08, 3.56), 'night_sky')
++    for x, z, r in ((-1.05, .54, .07), (.63, .76, .09), (-.66, 1.35, .075),
++                    (1.05, 1.88, .065), (-.93, 2.43, .08), (.45, 2.17, .06), (.03, 3.12, .08)):
++        star(x, -.93, z, r)
++    box('Frieze deep enamel', (0, .29, 4.07), (6, 1.30, .30), 'navy_paint', True)
++    box('Frieze lower gold line', (0, .96, 3.94), (6, .07, .07), 'brass')
++    for j in range(11):
++        star(-2.65 + j * .53, .975, 4.075, .09, 'gold')
++    box('Arch coping lower molding', (0, .20, 4.27), (6, 1.30, .13), 'stone_dark', True)
++    for x, w, top in ((-2.3, 1.4, 4.46), (0, 2.9, 4.50), (2.32, 1.36, 4.41)):
++        box('Arch raised coping', (x, .20, (top + 4.31) / 2),
++            (w, 1.36, top - 4.31), 'stone', True)
++    # Hollow flared bell, a separate lip and visible clapper.
++    box('Bell hanger bracket', (0, .32, 3.16), (.72, .17, .12), 'iron', True)
++    beam('Bell suspension', (0, .32, 3.16), (0, .32, 2.95), .09, .09, 'iron')
++    bell_profile = [(.10, 2.98), (.21, 2.91), (.25, 2.69), (.37, 2.48),
++                    (.45, 2.43), (.45, 2.35), (.35, 2.35), (.29, 2.48),
++                    (.17, 2.68), (.14, 2.88), (.065, 2.91)]
++    n = 24
++    verts = [(r * math.cos(j * math.tau / n), .32 + r * math.sin(j * math.tau / n), z)
++             for r, z in bell_profile for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + j)
++             for k in range(len(bell_profile)) for j in range(n)]
++    mesh('Hollow bronze bell', verts, faces, 'copper')
++    cylinder('Bell crown', (0, .32, 2.94), .12, .12, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    beam('Bell clapper stem', (0, .32, 2.72), (0, .32, 2.27), .07, .07, 'iron')
++    cylinder('Bell clapper', (0, .32, 2.27), .095, .14, 'brass', n=12, rot=(0, 0, 0))
++
++
++def dial_back():
++    # Lower disc sector: exact radius 6.0 about (0, .50, 6.15).
++    # Its lower edge rises towards the sides; its center lies ABOVE the module.
++    center_z = 6.15
++    lower = [(x, center_z - math.sqrt(36 - x * x))
++             for x in [-4 + j * 8 / 64 for j in range(65)]]
++    profile = lower + [(4, 4.76), (-4, 4.76)]
++    glass = extrude('Giant translucent clock face sector R6', profile, .49, .56, 'glass')
++    # Slight backward lean makes the unseen circle center also behind the face.
++    for v in glass.data.vertices:
++        v.co.y += (center_z - v.co.z) * .035
++    box('Starry sky behind dial', (0, -.78, 2.36), (8, .10, 4.72), 'night_sky')
++    for j in range(31):
++        x, z = random.uniform(-3.84, 3.84), random.uniform(.20, 4.58)
++        star(x, -.71, z, random.uniform(.055, .105))
++    # A structural chord and flush end posts keep neighbours tileable.
++    for x in (-3.88, 3.88):
++        box('End stanchion web', (x, .19, 2.32), (.18, 1.14, 4.64), 'iron_dark')
++        for yy in (-.39, .78):
++            box('End stanchion flange', (x, yy, 2.32), (.24, .10, 4.64), 'steel', True)
++        for z in (.28, 1.60, 3.0, 4.38):
++            rivet(x, .85, z, 'brass', .065)
++    box('Bottom structural sill', (0, -.01, .12), (8, 1.50, .24), 'iron_dark', True)
++    box('Upper truss chord', (0, .30, 4.66), (8, .45, .20), 'iron_dark', True)
++    for j in range(6):
++        a = (-3.82 + j * 7.64 / 6, .28, 4.47)
++        b = (-3.82 + (j + 1) * 7.64 / 6, .28, 3.96)
++        beam('Upper zigzag truss', a, b, .12, .18, 'iron_dark')
++        beam('Upper zigzag truss return', b, (b[0], .28, 4.47), .10, .18, 'steel')
++    # Two concentric bands trace the actual curved outer circumference.
++    for radius, role, thickness in ((5.94, 'steel', .13), (5.67, 'brass', .065)):
++        xmax = 3.80
++        pts = [(x, .81, center_z - math.sqrt(radius * radius - x * x))
++               for x in [-xmax + j * 2 * xmax / 48 for j in range(49)]]
++        tube('Circular dial retaining band', pts, thickness, role, n=6)
++    for a in (-.62, -.31, 0, .31, .62):
++        p = (5.81 * math.sin(a), .84, center_z - 5.81 * math.cos(a))
++        q = (2.03 * math.sin(a), .84, center_z - 2.03 * math.cos(a))
++        beam('Radial steel girder', p, q, .12, .20, 'steel', True)
++        for t in (.12, .55, .88):
++            v = Vector(p).lerp(Vector(q), t)
++            rivet(v.x, .97, v.z, 'brass', .06)
++    # Mirrored Roman VI, VII, VIII, V, IV bars. No font/text in the asset.
++    # Local tangential X is flipped because we are looking at the BACK.
++    glyphs = ('VIII', 'VII', 'VI', 'V', 'IV')
++    for a, numeral in zip((-.59, -.30, 0, .30, .59), glyphs):
++        def tick(u, v):
++            return (5.13 * math.sin(a) - u * math.cos(a) - v * math.sin(a),
++                    1.025, center_z - 5.13 * math.cos(a) - u * math.sin(a) + v * math.cos(a))
++        cursor = -.13 * (len(numeral) - 1)
++        for letter in numeral:
++            if letter == 'I':
++                beam('Mirrored Roman I', tick(cursor, -.24), tick(cursor, .24), .065, .07, 'dial_mark')
++            else:
++                beam('Mirrored Roman V left', tick(cursor - .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++                beam('Mirrored Roman V right', tick(cursor + .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++            cursor += .26
++    # Back of the clock hands; the pivot and counterweights enter the top sector.
++    pivot = (.58, 1.14, 4.01)
++    for tip, width in (((-2.68, 1.14, 1.44), .23), ((2.58, 1.14, 2.13), .30)):
++        beam('Giant clock hand back', pivot, tip, width, .10, 'dial_mark', True)
++        vec = (Vector(pivot) - Vector(tip)).normalized()
++        end = Vector(pivot) + vec * .61
++        beam('Hand gold counterweight', Vector(pivot) + vec * .15, end,
++             width * 1.7, .14, 'gold', True)
++    ring('Clock axle rear ring', pivot, .31, .17, .19, 'brass', n=24)
++    cylinder('Clock axle rear cap', (.58, 1.27, 4.01), .18, .14, 'iron', n=16, bevel=True)
++
++
++def pendulum():
++    plate_wall(6, 4.75)
++    box('Full width lower stone plinth', (0, -.03, .17), (6, 1.30, .34), 'stone_dark', True)
++    for x in (-2.57, 2.57):
++        box('Side wall relief panel', (x, .52, 2.64), (.52, .10, 3.36), 'steel_dark', True)
++        for zz in (1.25, 2.13, 3.01, 3.89):
++            box('Side wall brass hash', (x, .59, zz), (.24, .055, .07), 'brass')
++    box('Case red recessed back', (0, .59, 2.41), (3.53, .16, 4.24), 'red_lacquer', True)
++    for x in (-1.86, 1.86):
++        box('Carved dark case pillar', (x, .86, 2.45), (.23, .76, 4.44), 'wood_dark', True)
++        box('Pillar inset', (x, 1.25, 2.45), (.075, .04, 3.80), 'wood')
++        for z in (.39, 4.35):
++            box('Case pillar ferrule', (x, .88, z), (.33, .83, .16), 'brass', True)
++    for zz, w, h in ((.30, 4.15, .20), (.51, 3.94, .15), (4.58, 4.17, .20), (4.76, 3.83, .16)):
++        box('Stacked case molding', (0, .83, zz), (w, .83, h), 'wood_dark', True)
++    crown = [(-1.45, 4.81), (-.66, 4.89), (-.32, 5), (.32, 5), (.66, 4.89), (1.45, 4.81)]
++    extrude('Pediment with irregular crown', crown, .50, 1.15, 'brass', True)
++    ring('Pendulum pivot collar', (0, .94, 4.09), .30, .18, .15, 'brass_dark', n=24)
++    cylinder('Pivot pin', (0, 1.04, 4.09), .13, .18, 'steel', n=12, bevel=True)
++    beam('Long pendulum steel rod', (0, 1.03, 4.09), (.29, 1.03, 1.39), .12, .12, 'steel', True)
++    cylinder('Heavy pendulum bob disc', (.29, 1.02, 1.39), .77, .24, 'brass', n=32, bevel=True)
++    ring('Gold bob annulus', (.29, 1.17, 1.39), .74, .59, .065, 'gold', n=32)
++    cylinder('Bob central medallion', (.29, 1.19, 1.39), .28, .08, 'brass_dark', n=16, bevel=True)
++    star(.29, 1.25, 1.39, .16, 'gold')
++    box('Tall glass case front', (0, 1.31, 2.55), (3.43, .055, 3.90), 'glass')
++    # Fine brass glazing bars and corner plates frame the transparent sheet.
++    for x in (-1.69, 1.69):
++        box('Glass edge trim', (x, 1.36, 2.55), (.055, .045, 3.92), 'brass')
++    for z in (.61, 4.48):
++        box('Glass horizontal trim', (0, 1.36, z), (3.43, .045, .055), 'brass')
++    for x in (-1.48, 1.48):
++        for z in (.82, 4.24):
++            box('Glass corner escutcheon', (x, 1.36, z), (.18, .05, .18), 'brass_dark')
++    box('Clock case door keyhole', (1.57, 1.40, 2.39), (.10, .06, .18), 'gold', True)
++
++
++def filler():
++    masonry(4, 1.86, front=.58, back=-.55, rows=3)
++    box('Filler foundation molding', (0, .08, .12), (4, 1.26, .24), 'stone_dark', True)
++    box('Filler band backing', (0, .10, 2.26), (4, 1.30, .86), 'iron_dark')
++    for j in range(3):
++        x = -4 / 3 + j * 4 / 3
++        box('Filler navy iron panel', (x, .79, 2.26), (1.27, .12, .70), 'navy_paint', True)
++        for xx in (x - .52, x + .52):
++            for z in (2.03, 2.49):
++                rivet(xx, .89, z, 'brass', .05)
++    for x in (-.67, .67):
++        box('Dark panel seam', (x, .87, 2.26), (.045, .025, .71), 'dial_mark')
++    box('Band lower rolled edge', (0, .22, 1.87), (4, 1.45, .13), 'steel', True)
++    box('Continuous brass cap rail', (0, .18, 2.76), (4, 1.44, .18), 'brass', True)
++    for j in range(9):
++        x = -1.78 + j * .445
++        box('Gear tooth crenellation', (x, .18, 2.915), (.25, 1.20, .17),
++            'brass_dark' if j % 3 == 0 else 'brass', True)
++    # An inset gear relief breaks the otherwise horizontal filler silhouette.
++    gear(.12, .94, 2.26, .30, 'steel', 'steel_dark', teeth=10)
++
++
++def girder():
++    # No solid wall/sky card: this piece is genuinely open to the void.
++    for z in (.08, .98):
++        box('Railing I beam web', (0, .36, z), (6, .16, .16), 'steel')
++        for zz in (z - .07, z + .07):
++            box('Railing I beam flange', (0, .34, zz), (6, .52, .08), 'steel', True)
++    for x in (-2.88, -1.0, 1.0, 2.88):
++        box('Railing upright', (x, .33, .55), (.16, .44, 1.10), 'steel', True)
++        box('Upright foot gusset', (x, .60, .17), (.34, .06, .31), 'iron')
++        for z in (.17, .91):
++            rivet(x, .65, z, 'brass', .06)
++    for left, right in ((-2.83, -1.06), (-.94, .94), (1.06, 2.83)):
++        for lo, hi in ((.20, .87), (.87, .20)):
++            beam('Railing X brace', (left, .37, lo), (right, .37, hi), .09, .11, 'iron')
++        rivet((left + right) / 2, .46, .535, 'brass', .065)
++    # The load-bearing platform edge is behind the rail and exactly at Z=0.
++    box('Platform lip top flange', (0, -.28, -.055), (6, 1.12, .11), 'steel', True)
++    box('Platform lip bottom flange', (0, -.28, -.46), (6, 1.12, .10), 'iron', True)
++    box('Deep edge girder web', (0, -.28, -.25), (6, .17, .43), 'iron_dark')
++    for x in (-2.84, -.95, .95, 2.84):
++        box('Hanging truss vertical', (x, -.41, -2.02), (.19, .42, 3.96), 'iron_dark', True)
++        for zz in (-.60, -2.03, -3.82):
++            box('Truss gusset plate', (x, -.12, zz), (.37, .10, .30), 'steel_dark')
++            rivet(x, -.04, zz, 'brass', .065)
++    for zz in (-2.03, -3.91):
++        box('Hanging truss cross chord', (0, -.41, zz), (6, .35, .18), 'iron_dark', True)
++    for left, right in ((-2.84, -.95), (-.95, .95), (.95, 2.84)):
++        for bottom, top in ((-3.82, -2.12), (-1.94, -.46)):
++            beam('Suspended X diagonal', (left, -.40, bottom), (right, -.40, top), .12, .20, 'iron_dark')
++            beam('Suspended X return', (left, -.40, top), (right, -.40, bottom), .12, .20, 'iron_dark')
++    gear(-1.88, -.09, -1.20, .52, 'brass_dark', 'iron', 14, .1)
++    gear(1.86, -.09, -2.91, .65, 'brass_dark', 'iron', 16, .12)
++    gear(.79, -.09, -2.85, .43, 'brass_dark', 'iron', 11, .21)
++
++
++SPECS = [
++    ('Wall_Storehouse', 6, 4.0, storehouse),
++    ('Wall_Gears', 6, 4.5, gears),
++    ('Wall_BellArch', 6, 4.5, bell_arch),
++    ('Wall_DialBack', 8, 4.76, dial_back),
++    ('Wall_Pendulum', 6, 5.0, pendulum),
++    ('Wall', 4, 3.0, filler),
++    ('Wall_Girder', 6, 1.1, girder),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return tuple(Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++                 for fn in (min, max))
++
++
++def finish(name, width, height):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = name, name + '_Mesh'
++    count = triangles(obj)
++    if count > 8000:
++        # Material boundaries survive; the broad forms are always constructed
++        # first, so this only removes excess bevel tessellation/detail.
++        mod = obj.modifiers.new('Triangle budget preserving material borders', 'DECIMATE')
++        mod.ratio = 7900 / count
++        mod.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
++    bm.to_mesh(obj.data)
++    bm.free()
++    for poly in obj.data.polygons:
++        poly.use_smooth = False
++    obj.data.update()
++    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
++    bpy.context.view_layer.update()
++    low, high = bounds(obj)
++    assert abs(low.x + width / 2) < 1e-4 and abs(high.x - width / 2) < 1e-4, (name, low, high)
++    floor = -4 if name == 'Wall_Girder' else 0
++    assert abs(low.z - floor) < 1e-4, (name, low)
++    assert high.z <= height + .025, (name, high, height)
++    assert 1.1 <= high.y - low.y <= 2.25, (name, low, high)
++    assert triangles(obj) <= 8000, (name, triangles(obj))
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    used = {obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used) >= 6 and used.issubset(ROLES), (name, used)
++    for mat in obj.data.materials:
++        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    obj['front'], obj['module_width_m'] = '+Y', width
++    obj['triangle_count'], obj['chapter'] = triangles(obj), 'Inside the Clockwork'
++    obj['origin_rule'] = 'Bottom center; suspended truss intentionally extends to Z=-4' if name == 'Wall_Girder' else 'Bottom center'
++    destination = OUTPUT / f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def preview(objects):
++    """A single above-front contact sheet; exported FBXs are never rewritten."""
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 1800, 1000
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.show_shadows, shade.show_cavity = False, True
++    shade.cavity_type = 'BOTH'
++    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.25, 1.1
++    shade.show_specular_highlight = False
++    shade.background_type, shade.background_color = 'WORLD', (.032, .043, .068)
++    if scene.world is None:
++        scene.world = bpy.data.worlds.new('Preview world')
++    scene.world.color = (.032, .043, .068)
++    helpers = []
++    locations = [obj.location.copy() for obj in objects]
++    try:
++        for role, mat in MATS.items():
++            mat.diffuse_color = (*PALETTE.get(role, (.5, .5, .5)), .18 if role == 'glass' else 1)
++        # Four modules across the back, three across the front. Truss remains
++        # fully visible below its platform, without a floor plane to hide it.
++        positions = [(-12.4, -5.2), (-4.2, -5.2), (4.0, -5.2), (12.6, -5.2),
++                     (-9.0, 6.2), (-1.2, 6.2), (7.2, 6.2)]
++        for obj, (x, y) in zip(objects, positions):
++            obj.location = (x, y, 0)
++            obj.show_transparent = True
++        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type, camera.data.ortho_scale = 'ORTHO', 35.8
++        target = Vector((.4, 0, .65))
++        elevation = math.radians(55)
++        camera.location = target + Vector((0, 45 * math.cos(elevation), 45 * math.sin(elevation)))
++        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
++
++        def caption(body, loc, size, role='starlight'):
++            data = bpy.data.curves.new('Review type', 'FONT')
++            data.body, data.align_x, data.size = body, 'CENTER', size
++            data.materials.append(MATS[role])
++            obj = bpy.data.objects.new('Review caption', data)
++            scene.collection.objects.link(obj)
++            obj.location, obj.rotation_euler = loc, camera.rotation_euler
++            helpers.append(obj)
++
++        descriptions = ['S1 / SPRING STORES', 'S2 / ENGINE ROOM', 'S3 / BELFRY',
++                        'S4 / BEHIND THE DIAL', 'LANDMARK / PENDULUM',
++                        'FILLER / BATTLEMENT', 'S4 / SUSPENDED EDGE']
++        for obj, desc in zip(objects, descriptions):
++            y = obj.location.y + (3.30 if obj.name == 'Wall_Girder' else 2.00)
++            caption(obj.name, (obj.location.x, y, -.18), .30)
++            caption(desc, (obj.location.x, y + .46, -.18), .17, 'brass')
++        caption('IV  /  INSIDE THE CLOCKWORK', (.4, -10.15, 4.55), .52)
++        caption('MODULAR WALLS     /     +Y FRONT     /     METRE SCALE',
++                (.4, -9.45, 4.55), .23, 'brass')
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            bpy.data.objects.remove(obj, do_unlink=True)
++        for obj, loc in zip(objects, locations):
++            obj.location, obj.show_transparent = loc, False
++        for mat in MATS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
++    materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = []
++    for index, (name, width, height, build) in enumerate(SPECS):
++        random.seed(41031 + index * 7919)
++        PARTS = []
++        build()
++        objects.append(finish(name, width, height))
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py" in C:\Project\Cat_Tang
+ succeeded in 2675ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py:50: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Storehouse.fbx'
+export finished in 0.0093 sec.
+EXPORTED Wall_Storehouse 7900 (6.0, 2.106, 4.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Gears.fbx'
+export finished in 0.0090 sec.
+EXPORTED Wall_Gears 6968 (6.0, 1.86, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_BellArch.fbx'
+export finished in 0.0066 sec.
+EXPORTED Wall_BellArch 4956 (6.0, 2.03, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_DialBack.fbx'
+export finished in 0.0069 sec.
+EXPORTED Wall_DialBack 5328 (8.0, 2.225, 4.76)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Pendulum.fbx'
+export finished in 0.0076 sec.
+EXPORTED Wall_Pendulum 4572 (6.0, 2.11, 5.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall.fbx'
+export finished in 0.0061 sec.
+EXPORTED Wall 3116 (4.0, 1.8955, 3.0)
+Traceback (most recent call last):
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py", line 710, in <module>
+    main()
+    ~~~~^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py", line 702, in main
+    objects.append(finish(name, width, height))
+                   ~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py", line 586, in finish
+    assert abs(low.x + width / 2) < 1e-4 and abs(high.x - width / 2) < 1e-4, (name, low, high)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('Wall_Girder', Vector((-3.0500001907348633, -0.8400000333786011, -4.0)), Vector((3.0500001907348633, 0.6749999523162842, 1.100000023841858)))
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+실행 검증에서 다이얼 트러스와 난간 접합판이 지정 폭을 조금 넘는 것을 잡아 안쪽으로 조정하고 있습니다. 현재 6개 모듈이 정상 출력됐고, 모두 8,000삼각형 이내입니다. 마지막 난간까지 통과하면 미리보기에서 유리 뒤 부품과 별이 잘 보이는지 확인하겠습니다.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py
+diff --git a/Art/tools/blender_kit_ch4_walls.py b/Art/tools/blender_kit_ch4_walls.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..34f57e6520c84d7fb6b0e10f20af433c22124a33
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_walls.py
+@@ -0,0 +1,710 @@
++# 시계탑 전투방 벽 모듈 7종과 검수용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py
++"""Deterministic Blender 5.x wall kit. Metres, Z up, room/front = +Y.
++
++Only the last, review-only pass changes viewport colours or adds a camera.
++All exports are one grey, role-material mesh, with their origin at (0, 0, 0).
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_walls_preview.png'
++ROLES = (
++    'steel', 'steel_dark', 'iron', 'iron_dark', 'silver', 'brass',
++    'brass_dark', 'gold', 'copper', 'navy_paint', 'navy_dark',
++    'red_lacquer', 'red_dark', 'gem_red', 'wood', 'wood_dark',
++    'stone', 'stone_dark', 'dial_face', 'dial_mark', 'glass',
++    'starlight', 'night_sky', 'porcelain', 'ribbon_red', 'velvet', 'lamp_warm',
++)
++PALETTE = {
++    'steel': (.46, .61, .69), 'steel_dark': (.19, .29, .36),
++    'iron': (.25, .32, .39), 'iron_dark': (.075, .12, .19),
++    'silver': (.75, .85, .89), 'brass': (.74, .47, .16),
++    'brass_dark': (.34, .22, .10), 'gold': (1.0, .73, .27),
++    'copper': (.73, .32, .19), 'navy_paint': (.10, .20, .34),
++    'navy_dark': (.055, .10, .19), 'red_lacquer': (.58, .065, .09),
++    'red_dark': (.25, .045, .06), 'wood': (.44, .27, .15),
++    'wood_dark': (.21, .12, .085), 'stone': (.47, .52, .60),
++    'stone_dark': (.23, .29, .38), 'dial_face': (.86, .85, .69),
++    'dial_mark': (.06, .085, .14), 'glass': (.37, .66, .73),
++    'starlight': (.86, .93, 1.0), 'night_sky': (.018, .032, .10),
++    'lamp_warm': (1.0, .78, .34),
++}
++MATS = {}
++PARTS = []
++FACE = (math.pi / 2, 0, 0)
++
++
++def materials():
++    for role in ROLES:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes.get('Principled BSDF')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .76
++        if role == 'glass':
++            shader.inputs['Transmission Weight'].default_value = .72
++            shader.inputs['Roughness'].default_value = .18
++            shader.inputs['Alpha'].default_value = .23
++            mat.surface_render_method = 'DITHERED'
++        MATS[role] = mat
++
++
++def mesh(label, vertices, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(vertices, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Hand softened hard edges', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(70)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, bevel=False, rot=(0, 0, 0)):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def extrude(label, profile, back, front, role, bevel=False):
++    n = len(profile)
++    verts = [(x, y, z) for y in (back, front) for x, z in profile]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def cylinder(label, loc, radius, depth, role, n=16, rot=FACE, bevel=False):
++    verts = [(radius * math.cos(j * math.tau / n),
++              radius * math.sin(j * math.tau / n), z)
++             for z in (-depth / 2, depth / 2) for j in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def ring(label, loc, outer, inner, depth, role, n=32, bevel=False):
++    verts = [(r * math.cos(j * math.tau / n), y,
++              r * math.sin(j * math.tau / n))
++             for y, r in ((-depth / 2, outer), (depth / 2, outer),
++                          (depth / 2, inner), (-depth / 2, inner))
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc)
++
++
++def beam(label, a, b, width, depth, role, bevel=False):
++    vec = Vector(b) - Vector(a)
++    obj = box(label, (0, 0, 0), (width, depth, vec.length), role, bevel)
++    obj.data.transform(Matrix.Translation((Vector(a) + Vector(b)) / 2) @
++                       vec.to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def tube(label, points, radius, role, n=6):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
++                   Vector(points[max(i - 1, 0)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        side = reference.cross(tangent).normalized()
++        other = tangent.cross(side)
++        for j in range(n):
++            a = j * math.tau / n
++            verts.append(tuple(Vector(point) + radius *
++                               (side * math.cos(a) + other * math.sin(a))))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(k * n + j, k * n + (j + 1) % n,
++               (k + 1) * n + (j + 1) % n, (k + 1) * n + j)
++              for k in range(len(points) - 1) for j in range(n)]
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    return mesh(label, verts, faces, role)
++
++
++def rivet(x, y, z, role='brass_dark', radius=.055):
++    cylinder('Broad forged rivet', (x, y, z), radius, .05, role, n=8)
++
++
++def star(x, y, z, radius=.09, role='starlight'):
++    profile = []
++    for j in range(8):
++        a = j * math.tau / 8
++        r = radius if j % 2 == 0 else radius * .30
++        profile.append((x + math.sin(a) * r, z + math.cos(a) * r))
++    extrude('Four pointed tower star', profile, y - .025, y + .025, role)
++
++
++def gear(x, y, z, radius, role, teeth_role, teeth=24, phase=0):
++    """True open spokes, a continuous toothed crown, and a stepped axle boss."""
++    n = teeth * 4
++    verts = []
++    for yy, inner in ((y - .14, False), (y + .14, False),
++                      (y + .14, True), (y - .14, True)):
++        for j in range(n):
++            a = math.tau * j / n + phase
++            r = radius * (.79 if inner else (1 if j % 4 in (1, 2) else .90))
++            verts.append((x + r * math.cos(a), yy, z + r * math.sin(a)))
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    mesh('Cut gear teeth', verts, faces, teeth_role)
++    ring('Machined gear rim', (x, y + .025, z), radius * .84,
++         radius * .71, .32, role, n=teeth * 2)
++    for j in range(5):
++        a = math.tau * j / 5 + phase
++        beam('Broad gear spoke',
++             (x + math.cos(a) * radius * .18, y + .02, z + math.sin(a) * radius * .18),
++             (x + math.cos(a) * radius * .75, y + .02, z + math.sin(a) * radius * .75),
++             radius * .16, .23, role)
++    cylinder('Stepped gear boss', (x, y + .12, z), radius * .24, .38,
++             role, n=16, bevel=True)
++    cylinder('Axle end', (x, y + .34, z), radius * .11, .09, 'iron', n=10)
++    box('Axle key slot', (x, y + .393, z), (radius * .13, .025, .055), 'dial_mark')
++
++
++def crate(x, y, bottom, w=.65, h=.55, boxed_gear=False):
++    box('Crate carcass', (x, y, bottom + h / 2), (w, .47, h), 'wood', True)
++    for dx in (-w * .39, w * .39):
++        box('Crate iron hoop', (x + dx, y + .25, bottom + h / 2),
++            (.065, .06, h), 'iron')
++    for zz in (bottom + .10, bottom + h - .10):
++        box('Crate cross batten', (x, y + .29, zz), (w, .07, .075), 'wood_dark')
++    if boxed_gear:
++        # Open presentation box with a visible miniature spare gear.
++        gear(x, y + .33, bottom + h * .56, min(w, h) * .35,
++             'brass', 'brass_dark', teeth=10)
++    else:
++        beam('Crate diagonal', (x - w * .32, y + .30, bottom + .14),
++             (x + w * .32, y + .30, bottom + h - .14), .065, .065, 'wood_dark')
++
++
++def masonry(width, height, front=.10, back=-.55, rows=5):
++    box('Continuous dark mortar backing', (0, (front + back) / 2, height / 2),
++        (width, front - back, height), 'stone_dark')
++    step = height / rows
++    for row in range(rows):
++        left = -width / 2
++        cuts = [left] + [x for x in
++                        [left + .7 + (row % 2) * .52 + j * 1.14 for j in range(7)]
++                        if left + .12 < x < width / 2 - .12] + [width / 2]
++        for j, (a, b) in enumerate(zip(cuts, cuts[1:])):
++            box('Offset ashlar', ((a + b) / 2, front + .035, step * (row + .5)),
++                (b - a - .035, .15, step - .045),
++                'stone_dark' if (row + j) % 5 == 0 else 'stone',
++                bevel=(row == rows - 1 and j % 2 == 0))
++
++
++def storehouse():
++    masonry(6, 3.77)
++    box('Dressed foundation', (0, -.17, .15), (6, 1.0, .30), 'stone_dark', True)
++    box('Dark cornice', (0, -.08, 3.78), (6, .96, .18), 'stone_dark', True)
++    for x, width, top in ((-2.18, 1.64, 4.0), (-.30, 2.1, 3.91), (2.17, 1.66, 3.97)):
++        box('Uneven cornice coping', (x, -.08, (top + 3.86) / 2),
++            (width, 1.03, top - 3.86), 'stone', True)
++    # Two tall racks with visibly different shelf rhythms and stock.
++    for x, width, top, shelves in ((-1.62, 2.12, 3.47, (.42, 1.46, 2.52, 3.40)),
++                                      (1.10, 2.12, 3.22, (.42, 1.70, 3.15))):
++        for dx in (-width / 2, width / 2):
++            box('Rack upright', (x + dx, .59, top / 2), (.14, .92, top), 'wood_dark', True)
++            box('Brass rack foot', (x + dx, .64, .16), (.22, .98, .22), 'brass_dark')
++        for zz in shelves:
++            box('Thick shelf', (x, .63, zz), (width, 1.00, .13), 'wood_dark', True)
++            box('Shelf worn lip', (x, 1.145, zz), (width - .15, .055, .065), 'wood')
++        beam('Rack back diagonal', (x - width / 2, .17, .47),
++             (x + width / 2, .17, top - .10), .09, .09, 'iron')
++    for x, z, r in ((-2.14, 1.98, .35), (-1.25, 2.04, .42), (.65, 2.35, .43), (1.60, 2.27, .34)):
++        pts = []
++        for j in range(60):
++            a = j * math.tau * 2.65 / 59
++            rr = .09 + (r - .09) * j / 59
++            pts.append((x + rr * math.cos(a), .93, z + rr * math.sin(a)))
++        tube('Stored coiled mainspring', pts, .045, 'steel')
++        box('Spring cradle', (x, .84, z - r - .07), (.52, .50, .10), 'iron')
++    crate(-2.08, .68, .49, .73, .69, True)
++    crate(-1.15, .68, .49, .72, .53)
++    crate(-1.77, .66, 2.59, .90, .55)
++    crate(.62, .65, .49, .78, .65, True)
++    crate(1.57, .66, .49, .73, .88)
++    # Ladder leans toward the rack at the top, all feet remain inside the seam.
++    for x in (2.38, 2.86):
++        beam('Leaning ladder stile', (x, 1.40, .04), (x, .65, 3.38), .085, .085, 'iron', True)
++    for j in range(9):
++        t = .10 + j * .095
++        beam('Ladder rung', (2.36, 1.40 - .75 * t, .04 + 3.34 * t),
++             (2.88, 1.40 - .75 * t, .04 + 3.34 * t), .065, .065, 'steel')
++    box('Lamp bracket mounting plate', (-.15, .24, 3.48), (.30, .11, .46), 'brass', True)
++    beam('Lamp bracket arm', (-.15, .28, 3.63), (-.15, 1.02, 3.63), .10, .10, 'brass', True)
++    beam('Lamp bracket brace', (-.15, .31, 3.32), (-.15, .91, 3.63), .065, .065, 'brass_dark')
++    cylinder('Lamp shade', (-.15, 1.02, 3.54), .24, .10, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    cylinder('Warm lamp bulb', (-.15, 1.02, 3.38), .12, .24, 'lamp_warm', n=12, rot=(0, 0, 0), bevel=True)
++
++
++def plate_wall(width, height):
++    box('Flat back iron wall', (0, -.10, height / 2), (width, .90, height), 'iron_dark')
++    columns = 3 if width == 6 else 2
++    panel_w = width / columns
++    for j in range(columns):
++        x = -width / 2 + panel_w * (j + .5)
++        box('Recessed enamel wall panel', (x, .39, height / 2),
++            (panel_w - .20, .16, height - .44), 'navy_paint', True)
++        box('Raised panel lower inset', (x, .49, .48), (panel_w - .36, .07, .42), 'navy_dark')
++        for xx in (x - panel_w / 2 + .10, x + panel_w / 2 - .10):
++            box('Iron panel frame', (xx, .52, height / 2), (.13, .18, height - .16), 'iron')
++            for zz in (.37, 1.15, 2.00, height - .37):
++                rivet(xx, .64, zz)
++    for zz in (.13, height - .14):
++        box('Continuous wall rail', (0, .47, zz), (width, .35, .20), 'iron', True)
++
++
++def gears():
++    plate_wall(6, 4.35)
++    for x, w, top in ((-2.2, 1.6, 4.50), (-.2, 2.15, 4.41), (2.23, 1.54, 4.46)):
++        box('Stepped engine coping', (x, -.03, (top + 4.25) / 2),
++            (w, 1.14, top - 4.25), 'steel', True)
++    gear(-1.0, .68, 2.40, 1.60, 'brass', 'brass_dark', 28, .025)
++    gear(1.48, .68, 3.00, 1.00, 'copper', 'red_dark', 18, .12)
++    gear(2.08, .68, 1.46, .70, 'steel', 'steel_dark', 13, .11)
++    cylinder('Horizontal engine drive shaft', (0, 1.03, .51), .10, 5.65, 'steel',
++             n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    for x in (-2.35, -.18, 2.48):
++        box('Bearing pedestal', (x, .79, .27), (.44, .60, .40), 'iron', True)
++        cylinder('Brass shaft bearing', (x, 1.03, .51), .23, .26, 'brass',
++                 n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    # A readable pale gauge isolated in the upper-left corner.
++    x, z = -2.38, 3.63
++    cylinder('Red pressure gauge housing', (x, .80, z), .40, .36, 'red_lacquer', n=24, bevel=True)
++    cylinder('Pressure dial ivory face', (x, 1.0, z), .32, .055, 'dial_face', n=24)
++    ring('Gauge brass bezel', (x, 1.035, z), .37, .31, .06, 'brass', n=24)
++    for j in range(8):
++        a = -.72 * math.pi + j * 1.44 * math.pi / 7
++        beam('Pressure gauge index', (x + .23 * math.sin(a), 1.075, z + .23 * math.cos(a)),
++             (x + .285 * math.sin(a), 1.075, z + .285 * math.cos(a)), .04, .025, 'dial_mark')
++    beam('Gauge needle', (x, 1.10, z), (x + .17, 1.10, z + .16), .045, .035, 'dial_mark')
++    tube('Pressure pipe', [(-2.38, .75, 3.25), (-2.76, .75, 3.10),
++                           (-2.76, .75, .52)], .06, 'copper')
++
++
++def bell_arch():
++    # The central 2.8 x 3.4 opening contains no stone, including its back.
++    for sign in (-1, 1):
++        for row in range(5):
++            z = (row + .5) * .40
++            box('Arch pier ashlar', (sign * 2.20, .15, z), (1.60, 1.0, .385),
++                'stone' if row % 3 else 'stone_dark', bevel=(row % 2 == 0))
++        box('Pier base molding', (sign * 2.20, .23, .13), (1.60, 1.15, .26), 'stone_dark', True)
++        box('Arch spring impost', (sign * 2.21, .29, 2.00), (1.58, 1.28, .18), 'brass_dark', True)
++    profile = [(-3, 4.16), (3, 4.16), (3, 2), (1.4, 2)]
++    profile += [(1.4 * math.cos(j * math.pi / 24),
++                 2 + 1.4 * math.sin(j * math.pi / 24)) for j in range(1, 25)]
++    profile += [(-3, 2)]
++    extrude('Open arch spandrel', profile, -.35, .65, 'stone', True)
++    for j in range(13):
++        a, b = j * math.pi / 13 + .008, (j + 1) * math.pi / 13 - .008
++        wedge = [(r * math.cos(t), 2 + r * math.sin(t))
++                 for r, t in ((1.4, a), (1.69, a), (1.69, b), (1.4, b))]
++        extrude('Alternating arch voussoir', wedge, .64, .98,
++                'brass' if j == 6 else ('stone_dark' if j % 2 == 0 else 'stone'), True)
++    for sign in (-1, 1):
++        for j in range(3):
++            box('Spandrel inset joint', (sign * (1.93 + .32 * j), .66, 3.63 - j * .16),
++                (.05, .025, .57), 'stone_dark')
++    box('Starry night beyond the open arch', (0, -.99, 1.78), (2.8, .08, 3.56), 'night_sky')
++    for x, z, r in ((-1.05, .54, .07), (.63, .76, .09), (-.66, 1.35, .075),
++                    (1.05, 1.88, .065), (-.93, 2.43, .08), (.45, 2.17, .06), (.03, 3.12, .08)):
++        star(x, -.93, z, r)
++    box('Frieze deep enamel', (0, .29, 4.07), (6, 1.30, .30), 'navy_paint', True)
++    box('Frieze lower gold line', (0, .96, 3.94), (6, .07, .07), 'brass')
++    for j in range(11):
++        star(-2.65 + j * .53, .975, 4.075, .09, 'gold')
++    box('Arch coping lower molding', (0, .20, 4.27), (6, 1.30, .13), 'stone_dark', True)
++    for x, w, top in ((-2.3, 1.4, 4.46), (0, 2.9, 4.50), (2.32, 1.36, 4.41)):
++        box('Arch raised coping', (x, .20, (top + 4.31) / 2),
++            (w, 1.36, top - 4.31), 'stone', True)
++    # Hollow flared bell, a separate lip and visible clapper.
++    box('Bell hanger bracket', (0, .32, 3.16), (.72, .17, .12), 'iron', True)
++    beam('Bell suspension', (0, .32, 3.16), (0, .32, 2.95), .09, .09, 'iron')
++    bell_profile = [(.10, 2.98), (.21, 2.91), (.25, 2.69), (.37, 2.48),
++                    (.45, 2.43), (.45, 2.35), (.35, 2.35), (.29, 2.48),
++                    (.17, 2.68), (.14, 2.88), (.065, 2.91)]
++    n = 24
++    verts = [(r * math.cos(j * math.tau / n), .32 + r * math.sin(j * math.tau / n), z)
++             for r, z in bell_profile for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + j)
++             for k in range(len(bell_profile)) for j in range(n)]
++    mesh('Hollow bronze bell', verts, faces, 'copper')
++    cylinder('Bell crown', (0, .32, 2.94), .12, .12, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    beam('Bell clapper stem', (0, .32, 2.72), (0, .32, 2.27), .07, .07, 'iron')
++    cylinder('Bell clapper', (0, .32, 2.27), .095, .14, 'brass', n=12, rot=(0, 0, 0))
++
++
++def dial_back():
++    # Lower disc sector: exact radius 6.0 about (0, .50, 6.15).
++    # Its lower edge rises towards the sides; its center lies ABOVE the module.
++    center_z = 6.15
++    lower = [(x, center_z - math.sqrt(36 - x * x))
++             for x in [-4 + j * 8 / 64 for j in range(65)]]
++    profile = lower + [(4, 4.76), (-4, 4.76)]
++    glass = extrude('Giant translucent clock face sector R6', profile, .49, .56, 'glass')
++    # Slight backward lean makes the unseen circle center also behind the face.
++    for v in glass.data.vertices:
++        v.co.y += (center_z - v.co.z) * .035
++    box('Starry sky behind dial', (0, -.78, 2.36), (8, .10, 4.72), 'night_sky')
++    for j in range(31):
++        x, z = random.uniform(-3.84, 3.84), random.uniform(.20, 4.58)
++        star(x, -.71, z, random.uniform(.055, .105))
++    # A structural chord and flush end posts keep neighbours tileable.
++    for x in (-3.88, 3.88):
++        box('End stanchion web', (x, .19, 2.32), (.18, 1.14, 4.64), 'iron_dark')
++        for yy in (-.39, .78):
++            box('End stanchion flange', (x, yy, 2.32), (.24, .10, 4.64), 'steel', True)
++        for z in (.28, 1.60, 3.0, 4.38):
++            rivet(x, .85, z, 'brass', .065)
++    box('Bottom structural sill', (0, -.01, .12), (8, 1.50, .24), 'iron_dark', True)
++    box('Upper truss chord', (0, .30, 4.66), (8, .45, .20), 'iron_dark', True)
++    for j in range(6):
++        a = (-3.82 + j * 7.64 / 6, .28, 4.47)
++        b = (-3.82 + (j + 1) * 7.64 / 6, .28, 3.96)
++        beam('Upper zigzag truss', a, b, .12, .18, 'iron_dark')
++        beam('Upper zigzag truss return', b, (b[0], .28, 4.47), .10, .18, 'steel')
++    # Two concentric bands trace the actual curved outer circumference.
++    for radius, role, thickness in ((5.94, 'steel', .13), (5.67, 'brass', .065)):
++        xmax = 3.80
++        pts = [(x, .81, center_z - math.sqrt(radius * radius - x * x))
++               for x in [-xmax + j * 2 * xmax / 48 for j in range(49)]]
++        tube('Circular dial retaining band', pts, thickness, role, n=6)
++    for a in (-.62, -.31, 0, .31, .62):
++        p = (5.81 * math.sin(a), .84, center_z - 5.81 * math.cos(a))
++        q = (2.03 * math.sin(a), .84, center_z - 2.03 * math.cos(a))
++        beam('Radial steel girder', p, q, .12, .20, 'steel', True)
++        for t in (.12, .55, .88):
++            v = Vector(p).lerp(Vector(q), t)
++            rivet(v.x, .97, v.z, 'brass', .06)
++    # Mirrored Roman VI, VII, VIII, V, IV bars. No font/text in the asset.
++    # Local tangential X is flipped because we are looking at the BACK.
++    glyphs = ('VIII', 'VII', 'VI', 'V', 'IV')
++    for a, numeral in zip((-.59, -.30, 0, .30, .59), glyphs):
++        def tick(u, v):
++            return (5.13 * math.sin(a) - u * math.cos(a) - v * math.sin(a),
++                    1.025, center_z - 5.13 * math.cos(a) - u * math.sin(a) + v * math.cos(a))
++        cursor = -.13 * (len(numeral) - 1)
++        for letter in numeral:
++            if letter == 'I':
++                beam('Mirrored Roman I', tick(cursor, -.24), tick(cursor, .24), .065, .07, 'dial_mark')
++            else:
++                beam('Mirrored Roman V left', tick(cursor - .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++                beam('Mirrored Roman V right', tick(cursor + .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++            cursor += .26
++    # Back of the clock hands; the pivot and counterweights enter the top sector.
++    pivot = (.58, 1.14, 4.01)
++    for tip, width in (((-2.68, 1.14, 1.44), .23), ((2.58, 1.14, 2.13), .30)):
++        beam('Giant clock hand back', pivot, tip, width, .10, 'dial_mark', True)
++        vec = (Vector(pivot) - Vector(tip)).normalized()
++        end = Vector(pivot) + vec * .61
++        beam('Hand gold counterweight', Vector(pivot) + vec * .15, end,
++             width * 1.7, .14, 'gold', True)
++    ring('Clock axle rear ring', pivot, .31, .17, .19, 'brass', n=24)
++    cylinder('Clock axle rear cap', (.58, 1.27, 4.01), .18, .14, 'iron', n=16, bevel=True)
++
++
++def pendulum():
++    plate_wall(6, 4.75)
++    box('Full width lower stone plinth', (0, -.03, .17), (6, 1.30, .34), 'stone_dark', True)
++    for x in (-2.57, 2.57):
++        box('Side wall relief panel', (x, .52, 2.64), (.52, .10, 3.36), 'steel_dark', True)
++        for zz in (1.25, 2.13, 3.01, 3.89):
++            box('Side wall brass hash', (x, .59, zz), (.24, .055, .07), 'brass')
++    box('Case red recessed back', (0, .59, 2.41), (3.53, .16, 4.24), 'red_lacquer', True)
++    for x in (-1.86, 1.86):
++        box('Carved dark case pillar', (x, .86, 2.45), (.23, .76, 4.44), 'wood_dark', True)
++        box('Pillar inset', (x, 1.25, 2.45), (.075, .04, 3.80), 'wood')
++        for z in (.39, 4.35):
++            box('Case pillar ferrule', (x, .88, z), (.33, .83, .16), 'brass', True)
++    for zz, w, h in ((.30, 4.15, .20), (.51, 3.94, .15), (4.58, 4.17, .20), (4.76, 3.83, .16)):
++        box('Stacked case molding', (0, .83, zz), (w, .83, h), 'wood_dark', True)
++    crown = [(-1.45, 4.81), (-.66, 4.89), (-.32, 5), (.32, 5), (.66, 4.89), (1.45, 4.81)]
++    extrude('Pediment with irregular crown', crown, .50, 1.15, 'brass', True)
++    ring('Pendulum pivot collar', (0, .94, 4.09), .30, .18, .15, 'brass_dark', n=24)
++    cylinder('Pivot pin', (0, 1.04, 4.09), .13, .18, 'steel', n=12, bevel=True)
++    beam('Long pendulum steel rod', (0, 1.03, 4.09), (.29, 1.03, 1.39), .12, .12, 'steel', True)
++    cylinder('Heavy pendulum bob disc', (.29, 1.02, 1.39), .77, .24, 'brass', n=32, bevel=True)
++    ring('Gold bob annulus', (.29, 1.17, 1.39), .74, .59, .065, 'gold', n=32)
++    cylinder('Bob central medallion', (.29, 1.19, 1.39), .28, .08, 'brass_dark', n=16, bevel=True)
++    star(.29, 1.25, 1.39, .16, 'gold')
++    box('Tall glass case front', (0, 1.31, 2.55), (3.43, .055, 3.90), 'glass')
++    # Fine brass glazing bars and corner plates frame the transparent sheet.
++    for x in (-1.69, 1.69):
++        box('Glass edge trim', (x, 1.36, 2.55), (.055, .045, 3.92), 'brass')
++    for z in (.61, 4.48):
++        box('Glass horizontal trim', (0, 1.36, z), (3.43, .045, .055), 'brass')
++    for x in (-1.48, 1.48):
++        for z in (.82, 4.24):
++            box('Glass corner escutcheon', (x, 1.36, z), (.18, .05, .18), 'brass_dark')
++    box('Clock case door keyhole', (1.57, 1.40, 2.39), (.10, .06, .18), 'gold', True)
++
++
++def filler():
++    masonry(4, 1.86, front=.58, back=-.55, rows=3)
++    box('Filler foundation molding', (0, .08, .12), (4, 1.26, .24), 'stone_dark', True)
++    box('Filler band backing', (0, .10, 2.26), (4, 1.30, .86), 'iron_dark')
++    for j in range(3):
++        x = -4 / 3 + j * 4 / 3
++        box('Filler navy iron panel', (x, .79, 2.26), (1.27, .12, .70), 'navy_paint', True)
++        for xx in (x - .52, x + .52):
++            for z in (2.03, 2.49):
++                rivet(xx, .89, z, 'brass', .05)
++    for x in (-.67, .67):
++        box('Dark panel seam', (x, .87, 2.26), (.045, .025, .71), 'dial_mark')
++    box('Band lower rolled edge', (0, .22, 1.87), (4, 1.45, .13), 'steel', True)
++    box('Continuous brass cap rail', (0, .18, 2.76), (4, 1.44, .18), 'brass', True)
++    for j in range(9):
++        x = -1.78 + j * .445
++        box('Gear tooth crenellation', (x, .18, 2.915), (.25, 1.20, .17),
++            'brass_dark' if j % 3 == 0 else 'brass', True)
++    # An inset gear relief breaks the otherwise horizontal filler silhouette.
++    gear(.12, .94, 2.26, .30, 'steel', 'steel_dark', teeth=10)
++
++
++def girder():
++    # No solid wall/sky card: this piece is genuinely open to the void.
++    for z in (.08, .98):
++        box('Railing I beam web', (0, .36, z), (6, .16, .16), 'steel')
++        for zz in (z - .07, z + .07):
++            box('Railing I beam flange', (0, .34, zz), (6, .52, .08), 'steel', True)
++    for x in (-2.88, -1.0, 1.0, 2.88):
++        box('Railing upright', (x, .33, .55), (.16, .44, 1.10), 'steel', True)
++        box('Upright foot gusset', (x, .60, .17), (.24, .06, .31), 'iron')
++        for z in (.17, .91):
++            rivet(x, .65, z, 'brass', .06)
++    for left, right in ((-2.83, -1.06), (-.94, .94), (1.06, 2.83)):
++        for lo, hi in ((.20, .87), (.87, .20)):
++            beam('Railing X brace', (left, .37, lo), (right, .37, hi), .09, .11, 'iron')
++        rivet((left + right) / 2, .46, .535, 'brass', .065)
++    # The load-bearing platform edge is behind the rail and exactly at Z=0.
++    box('Platform lip top flange', (0, -.28, -.055), (6, 1.12, .11), 'steel', True)
++    box('Platform lip bottom flange', (0, -.28, -.46), (6, 1.12, .10), 'iron', True)
++    box('Deep edge girder web', (0, -.28, -.25), (6, .17, .43), 'iron_dark')
++    for x in (-2.84, -.95, .95, 2.84):
++        box('Hanging truss vertical', (x, -.41, -2.02), (.19, .42, 3.96), 'iron_dark', True)
++        for zz in (-.60, -2.03, -3.82):
++            box('Truss gusset plate', (x, -.12, zz), (.30, .10, .30), 'steel_dark')
++            rivet(x, -.04, zz, 'brass', .065)
++    for zz in (-2.03, -3.91):
++        box('Hanging truss cross chord', (0, -.41, zz), (6, .35, .18), 'iron_dark', True)
++    for left, right in ((-2.84, -.95), (-.95, .95), (.95, 2.84)):
++        for bottom, top in ((-3.82, -2.12), (-1.94, -.46)):
++            beam('Suspended X diagonal', (left, -.40, bottom), (right, -.40, top), .12, .20, 'iron_dark')
++            beam('Suspended X return', (left, -.40, top), (right, -.40, bottom), .12, .20, 'iron_dark')
++    gear(-1.88, -.09, -1.20, .52, 'brass_dark', 'iron', 14, .1)
++    gear(1.86, -.09, -2.91, .65, 'brass_dark', 'iron', 16, .12)
++    gear(.79, -.09, -2.85, .43, 'brass_dark', 'iron', 11, .21)
++
++
++SPECS = [
++    ('Wall_Storehouse', 6, 4.0, storehouse),
++    ('Wall_Gears', 6, 4.5, gears),
++    ('Wall_BellArch', 6, 4.5, bell_arch),
++    ('Wall_DialBack', 8, 4.76, dial_back),
++    ('Wall_Pendulum', 6, 5.0, pendulum),
++    ('Wall', 4, 3.0, filler),
++    ('Wall_Girder', 6, 1.1, girder),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return tuple(Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++                 for fn in (min, max))
++
++
++def finish(name, width, height):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = name, name + '_Mesh'
++    count = triangles(obj)
++    if count > 8000:
++        # Material boundaries survive; the broad forms are always constructed
++        # first, so this only removes excess bevel tessellation/detail.
++        mod = obj.modifiers.new('Triangle budget preserving material borders', 'DECIMATE')
++        mod.ratio = 7900 / count
++        mod.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
++    bm.to_mesh(obj.data)
++    bm.free()
++    for poly in obj.data.polygons:
++        poly.use_smooth = False
++    obj.data.update()
++    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
++    bpy.context.view_layer.update()
++    low, high = bounds(obj)
++    assert abs(low.x + width / 2) < 1e-4 and abs(high.x - width / 2) < 1e-4, (name, low, high)
++    floor = -4 if name == 'Wall_Girder' else 0
++    assert abs(low.z - floor) < 1e-4, (name, low)
++    assert high.z <= height + .025, (name, high, height)
++    assert 1.1 <= high.y - low.y <= 2.25, (name, low, high)
++    assert triangles(obj) <= 8000, (name, triangles(obj))
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    used = {obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used) >= 6 and used.issubset(ROLES), (name, used)
++    for mat in obj.data.materials:
++        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    obj['front'], obj['module_width_m'] = '+Y', width
++    obj['triangle_count'], obj['chapter'] = triangles(obj), 'Inside the Clockwork'
++    obj['origin_rule'] = 'Bottom center; suspended truss intentionally extends to Z=-4' if name == 'Wall_Girder' else 'Bottom center'
++    destination = OUTPUT / f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def preview(objects):
++    """A single above-front contact sheet; exported FBXs are never rewritten."""
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 1800, 1000
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.show_shadows, shade.show_cavity = False, True
++    shade.cavity_type = 'BOTH'
++    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.25, 1.1
++    shade.show_specular_highlight = False
++    shade.background_type, shade.background_color = 'WORLD', (.032, .043, .068)
++    if scene.world is None:
++        scene.world = bpy.data.worlds.new('Preview world')
++    scene.world.color = (.032, .043, .068)
++    helpers = []
++    locations = [obj.location.copy() for obj in objects]
++    try:
++        for role, mat in MATS.items():
++            mat.diffuse_color = (*PALETTE.get(role, (.5, .5, .5)), .18 if role == 'glass' else 1)
++        # Four modules across the back, three across the front. Truss remains
++        # fully visible below its platform, without a floor plane to hide it.
++        positions = [(-12.4, -5.2), (-4.2, -5.2), (4.0, -5.2), (12.6, -5.2),
++                     (-9.0, 6.2), (-1.2, 6.2), (7.2, 6.2)]
++        for obj, (x, y) in zip(objects, positions):
++            obj.location = (x, y, 0)
++            obj.show_transparent = True
++        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type, camera.data.ortho_scale = 'ORTHO', 35.8
++        target = Vector((.4, 0, .65))
++        elevation = math.radians(55)
++        camera.location = target + Vector((0, 45 * math.cos(elevation), 45 * math.sin(elevation)))
++        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
++
++        def caption(body, loc, size, role='starlight'):
++            data = bpy.data.curves.new('Review type', 'FONT')
++            data.body, data.align_x, data.size = body, 'CENTER', size
++            data.materials.append(MATS[role])
++            obj = bpy.data.objects.new('Review caption', data)
++            scene.collection.objects.link(obj)
++            obj.location, obj.rotation_euler = loc, camera.rotation_euler
++            helpers.append(obj)
++
++        descriptions = ['S1 / SPRING STORES', 'S2 / ENGINE ROOM', 'S3 / BELFRY',
++                        'S4 / BEHIND THE DIAL', 'LANDMARK / PENDULUM',
++                        'FILLER / BATTLEMENT', 'S4 / SUSPENDED EDGE']
++        for obj, desc in zip(objects, descriptions):
++            y = obj.location.y + (3.30 if obj.name == 'Wall_Girder' else 2.00)
++            caption(obj.name, (obj.location.x, y, -.18), .30)
++            caption(desc, (obj.location.x, y + .46, -.18), .17, 'brass')
++        caption('IV  /  INSIDE THE CLOCKWORK', (.4, -10.15, 4.55), .52)
++        caption('MODULAR WALLS     /     +Y FRONT     /     METRE SCALE',
++                (.4, -9.45, 4.55), .23, 'brass')
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            bpy.data.objects.remove(obj, do_unlink=True)
++        for obj, loc in zip(objects, locations):
++            obj.location, obj.show_transparent = loc, False
++        for mat in MATS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
++    materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = []
++    for index, (name, width, height, build) in enumerate(SPECS):
++        random.seed(41031 + index * 7919)
++        PARTS = []
++        build()
++        objects.append(finish(name, width, height))
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py" in C:\Project\Cat_Tang
+ succeeded in 3260ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py:50: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Storehouse.fbx'
+export finished in 0.0092 sec.
+EXPORTED Wall_Storehouse 7900 (6.0, 2.106, 4.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Gears.fbx'
+export finished in 0.0080 sec.
+EXPORTED Wall_Gears 6968 (6.0, 1.86, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_BellArch.fbx'
+export finished in 0.0067 sec.
+EXPORTED Wall_BellArch 4956 (6.0, 2.03, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_DialBack.fbx'
+export finished in 0.0067 sec.
+EXPORTED Wall_DialBack 5328 (8.0, 2.225, 4.76)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Pendulum.fbx'
+export finished in 0.0075 sec.
+EXPORTED Wall_Pendulum 4572 (6.0, 2.11, 5.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall.fbx'
+export finished in 0.0059 sec.
+EXPORTED Wall 3116 (4.0, 1.8955, 3.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Girder.fbx'
+export finished in 0.0058 sec.
+EXPORTED Wall_Girder 5672 (6.0, 1.515, 5.1)
+00:02.968  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_walls_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_walls_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+7개 모두 출력됐고 미리보기도 확인했습니다. 종은 아치 윗부분에 많이 가려지고, 아치 안 별도 잘 보이지 않아 배치를 조정하겠습니다. 필러의 톱니는 깊이 때문에 긴 막대처럼 보여 더 짧게 다듬고, 미리보기에서 잘린 제목과 행 간격도 수정하겠습니다.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py
+diff --git a/Art/tools/blender_kit_ch4_walls.py b/Art/tools/blender_kit_ch4_walls.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2b5db767840f1f939cb5f4b2b55a3ca142dbcabe
+--- /dev/null
++++ b/Art/tools/blender_kit_ch4_walls.py
+@@ -0,0 +1,721 @@
++# 시계탑 전투방 벽 모듈 7종과 검수용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py
++"""Deterministic Blender 5.x wall kit. Metres, Z up, room/front = +Y.
++
++Only the last, review-only pass changes viewport colours or adds a camera.
++All exports are one grey, role-material mesh, with their origin at (0, 0, 0).
++"""
++
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_walls_preview.png'
++ROLES = (
++    'steel', 'steel_dark', 'iron', 'iron_dark', 'silver', 'brass',
++    'brass_dark', 'gold', 'copper', 'navy_paint', 'navy_dark',
++    'red_lacquer', 'red_dark', 'gem_red', 'wood', 'wood_dark',
++    'stone', 'stone_dark', 'dial_face', 'dial_mark', 'glass',
++    'starlight', 'night_sky', 'porcelain', 'ribbon_red', 'velvet', 'lamp_warm',
++)
++PALETTE = {
++    'steel': (.46, .61, .69), 'steel_dark': (.19, .29, .36),
++    'iron': (.25, .32, .39), 'iron_dark': (.075, .12, .19),
++    'silver': (.75, .85, .89), 'brass': (.74, .47, .16),
++    'brass_dark': (.34, .22, .10), 'gold': (1.0, .73, .27),
++    'copper': (.73, .32, .19), 'navy_paint': (.10, .20, .34),
++    'navy_dark': (.055, .10, .19), 'red_lacquer': (.58, .065, .09),
++    'red_dark': (.25, .045, .06), 'wood': (.44, .27, .15),
++    'wood_dark': (.21, .12, .085), 'stone': (.47, .52, .60),
++    'stone_dark': (.23, .29, .38), 'dial_face': (.86, .85, .69),
++    'dial_mark': (.06, .085, .14), 'glass': (.37, .66, .73),
++    'starlight': (.86, .93, 1.0), 'night_sky': (.018, .032, .10),
++    'lamp_warm': (1.0, .78, .34),
++}
++MATS = {}
++PARTS = []
++FACE = (math.pi / 2, 0, 0)
++
++
++def materials():
++    for role in ROLES:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        shader = mat.node_tree.nodes.get('Principled BSDF')
++        shader.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        shader.inputs['Roughness'].default_value = .76
++        if role == 'glass':
++            shader.inputs['Transmission Weight'].default_value = .72
++            shader.inputs['Roughness'].default_value = .18
++            shader.inputs['Alpha'].default_value = .23
++            mat.surface_render_method = 'DITHERED'
++        MATS[role] = mat
++
++
++def mesh(label, vertices, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(vertices, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Hand softened hard edges', 'BEVEL')
++        mod.width, mod.segments = .025, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(70)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @
++                       Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def box(label, loc, size, role, bevel=False, rot=(0, 0, 0)):
++    x, y, z = (s / 2 for s in size)
++    verts = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z),
++             (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
++    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
++             (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def extrude(label, profile, back, front, role, bevel=False):
++    n = len(profile)
++    verts = [(x, y, z) for y in (back, front) for x, z in profile]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return mesh(label, verts, faces, role, bevel)
++
++
++def cylinder(label, loc, radius, depth, role, n=16, rot=FACE, bevel=False):
++    verts = [(radius * math.cos(j * math.tau / n),
++              radius * math.sin(j * math.tau / n), z)
++             for z in (-depth / 2, depth / 2) for j in range(n)]
++    faces = [tuple(reversed(range(n))), tuple(range(n, 2 * n))]
++    faces += [(j, (j + 1) % n, (j + 1) % n + n, j + n) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc, rot)
++
++
++def ring(label, loc, outer, inner, depth, role, n=32, bevel=False):
++    verts = [(r * math.cos(j * math.tau / n), y,
++              r * math.sin(j * math.tau / n))
++             for y, r in ((-depth / 2, outer), (depth / 2, outer),
++                          (depth / 2, inner), (-depth / 2, inner))
++             for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    return place(mesh(label, verts, faces, role, bevel), loc)
++
++
++def beam(label, a, b, width, depth, role, bevel=False):
++    vec = Vector(b) - Vector(a)
++    obj = box(label, (0, 0, 0), (width, depth, vec.length), role, bevel)
++    obj.data.transform(Matrix.Translation((Vector(a) + Vector(b)) / 2) @
++                       vec.to_track_quat('Z', 'Y').to_matrix().to_4x4())
++    return obj
++
++
++def tube(label, points, radius, role, n=6):
++    verts = []
++    for i, point in enumerate(points):
++        tangent = (Vector(points[min(i + 1, len(points) - 1)]) -
++                   Vector(points[max(i - 1, 0)])).normalized()
++        reference = Vector((0, 1, 0)) if abs(tangent.y) < .9 else Vector((1, 0, 0))
++        side = reference.cross(tangent).normalized()
++        other = tangent.cross(side)
++        for j in range(n):
++            a = j * math.tau / n
++            verts.append(tuple(Vector(point) + radius *
++                               (side * math.cos(a) + other * math.sin(a))))
++    faces = [tuple(reversed(range(n)))]
++    faces += [(k * n + j, k * n + (j + 1) % n,
++               (k + 1) * n + (j + 1) % n, (k + 1) * n + j)
++              for k in range(len(points) - 1) for j in range(n)]
++    faces.append(tuple(range((len(points) - 1) * n, len(points) * n)))
++    return mesh(label, verts, faces, role)
++
++
++def rivet(x, y, z, role='brass_dark', radius=.055):
++    cylinder('Broad forged rivet', (x, y, z), radius, .05, role, n=8)
++
++
++def star(x, y, z, radius=.09, role='starlight'):
++    profile = []
++    for j in range(8):
++        a = j * math.tau / 8
++        r = radius if j % 2 == 0 else radius * .30
++        profile.append((x + math.sin(a) * r, z + math.cos(a) * r))
++    return extrude('Four pointed tower star', profile, y - .025, y + .025, role)
++
++
++def gear(x, y, z, radius, role, teeth_role, teeth=24, phase=0):
++    """True open spokes, a continuous toothed crown, and a stepped axle boss."""
++    n = teeth * 4
++    verts = []
++    for yy, inner in ((y - .14, False), (y + .14, False),
++                      (y + .14, True), (y - .14, True)):
++        for j in range(n):
++            a = math.tau * j / n + phase
++            r = radius * (.79 if inner else (1 if j % 4 in (1, 2) else .90))
++            verts.append((x + r * math.cos(a), yy, z + r * math.sin(a)))
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % 4) * n + (j + 1) % n, ((k + 1) % 4) * n + j)
++             for k in range(4) for j in range(n)]
++    mesh('Cut gear teeth', verts, faces, teeth_role)
++    ring('Machined gear rim', (x, y + .025, z), radius * .84,
++         radius * .71, .32, role, n=teeth * 2)
++    for j in range(5):
++        a = math.tau * j / 5 + phase
++        beam('Broad gear spoke',
++             (x + math.cos(a) * radius * .18, y + .02, z + math.sin(a) * radius * .18),
++             (x + math.cos(a) * radius * .75, y + .02, z + math.sin(a) * radius * .75),
++             radius * .16, .23, role)
++    cylinder('Stepped gear boss', (x, y + .12, z), radius * .24, .38,
++             role, n=16, bevel=True)
++    cylinder('Axle end', (x, y + .34, z), radius * .11, .09, 'iron', n=10)
++    box('Axle key slot', (x, y + .393, z), (radius * .13, .025, .055), 'dial_mark')
++
++
++def crate(x, y, bottom, w=.65, h=.55, boxed_gear=False):
++    box('Crate carcass', (x, y, bottom + h / 2), (w, .47, h), 'wood', True)
++    for dx in (-w * .39, w * .39):
++        box('Crate iron hoop', (x + dx, y + .25, bottom + h / 2),
++            (.065, .06, h), 'iron')
++    for zz in (bottom + .10, bottom + h - .10):
++        box('Crate cross batten', (x, y + .29, zz), (w, .07, .075), 'wood_dark')
++    if boxed_gear:
++        # Open presentation box with a visible miniature spare gear.
++        gear(x, y + .33, bottom + h * .56, min(w, h) * .35,
++             'brass', 'brass_dark', teeth=10)
++    else:
++        beam('Crate diagonal', (x - w * .32, y + .30, bottom + .14),
++             (x + w * .32, y + .30, bottom + h - .14), .065, .065, 'wood_dark')
++
++
++def masonry(width, height, front=.10, back=-.55, rows=5):
++    box('Continuous dark mortar backing', (0, (front + back) / 2, height / 2),
++        (width, front - back, height), 'stone_dark')
++    step = height / rows
++    for row in range(rows):
++        left = -width / 2
++        cuts = [left] + [x for x in
++                        [left + .7 + (row % 2) * .52 + j * 1.14 for j in range(7)]
++                        if left + .12 < x < width / 2 - .12] + [width / 2]
++        for j, (a, b) in enumerate(zip(cuts, cuts[1:])):
++            box('Offset ashlar', ((a + b) / 2, front + .035, step * (row + .5)),
++                (b - a - .035, .15, step - .045),
++                'stone_dark' if (row + j) % 5 == 0 else 'stone',
++                bevel=(row == rows - 1 and j % 2 == 0))
++
++
++def storehouse():
++    masonry(6, 3.77)
++    box('Dressed foundation', (0, -.17, .15), (6, 1.0, .30), 'stone_dark', True)
++    box('Dark cornice', (0, -.08, 3.78), (6, .96, .18), 'stone_dark', True)
++    for x, width, top in ((-2.18, 1.64, 4.0), (-.30, 2.1, 3.91), (2.17, 1.66, 3.97)):
++        box('Uneven cornice coping', (x, -.08, (top + 3.86) / 2),
++            (width, 1.03, top - 3.86), 'stone', True)
++    # Two tall racks with visibly different shelf rhythms and stock.
++    for x, width, top, shelves in ((-1.62, 2.12, 3.47, (.42, 1.46, 2.52, 3.40)),
++                                      (1.10, 2.12, 3.22, (.42, 1.70, 3.15))):
++        for dx in (-width / 2, width / 2):
++            box('Rack upright', (x + dx, .59, top / 2), (.14, .92, top), 'wood_dark', True)
++            box('Brass rack foot', (x + dx, .64, .16), (.22, .98, .22), 'brass_dark')
++        for zz in shelves:
++            box('Thick shelf', (x, .63, zz), (width, 1.00, .13), 'wood_dark', True)
++            box('Shelf worn lip', (x, 1.145, zz), (width - .15, .055, .065), 'wood')
++        beam('Rack back diagonal', (x - width / 2, .17, .47),
++             (x + width / 2, .17, top - .10), .09, .09, 'iron')
++    for x, z, r in ((-2.14, 1.98, .35), (-1.25, 2.04, .42), (.65, 2.35, .43), (1.60, 2.27, .34)):
++        pts = []
++        for j in range(60):
++            a = j * math.tau * 2.65 / 59
++            rr = .09 + (r - .09) * j / 59
++            pts.append((x + rr * math.cos(a), .93, z + rr * math.sin(a)))
++        tube('Stored coiled mainspring', pts, .045, 'steel')
++        box('Spring cradle', (x, .84, z - r - .07), (.52, .50, .10), 'iron')
++    crate(-2.08, .68, .49, .73, .69, True)
++    crate(-1.15, .68, .49, .72, .53)
++    crate(-1.77, .66, 2.59, .90, .55)
++    crate(.62, .65, .49, .78, .65, True)
++    crate(1.57, .66, .49, .73, .88)
++    # Ladder leans toward the rack at the top, all feet remain inside the seam.
++    for x in (2.38, 2.86):
++        beam('Leaning ladder stile', (x, 1.40, .04), (x, .65, 3.38), .085, .085, 'iron', True)
++    for j in range(9):
++        t = .10 + j * .095
++        beam('Ladder rung', (2.36, 1.40 - .75 * t, .04 + 3.34 * t),
++             (2.88, 1.40 - .75 * t, .04 + 3.34 * t), .065, .065, 'steel')
++    box('Lamp bracket mounting plate', (-.15, .24, 3.48), (.30, .11, .46), 'brass', True)
++    beam('Lamp bracket arm', (-.15, .28, 3.63), (-.15, 1.02, 3.63), .10, .10, 'brass', True)
++    beam('Lamp bracket brace', (-.15, .31, 3.32), (-.15, .91, 3.63), .065, .065, 'brass_dark')
++    cylinder('Lamp shade', (-.15, 1.02, 3.54), .24, .10, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    cylinder('Warm lamp bulb', (-.15, 1.02, 3.38), .12, .24, 'lamp_warm', n=12, rot=(0, 0, 0), bevel=True)
++
++
++def plate_wall(width, height):
++    box('Flat back iron wall', (0, -.10, height / 2), (width, .90, height), 'iron_dark')
++    columns = 3 if width == 6 else 2
++    panel_w = width / columns
++    for j in range(columns):
++        x = -width / 2 + panel_w * (j + .5)
++        box('Recessed enamel wall panel', (x, .39, height / 2),
++            (panel_w - .20, .16, height - .44), 'navy_paint', True)
++        box('Raised panel lower inset', (x, .49, .48), (panel_w - .36, .07, .42), 'navy_dark')
++        for xx in (x - panel_w / 2 + .10, x + panel_w / 2 - .10):
++            box('Iron panel frame', (xx, .52, height / 2), (.13, .18, height - .16), 'iron')
++            for zz in (.37, 1.15, 2.00, height - .37):
++                rivet(xx, .64, zz)
++    for zz in (.13, height - .14):
++        box('Continuous wall rail', (0, .47, zz), (width, .35, .20), 'iron', True)
++
++
++def gears():
++    plate_wall(6, 4.35)
++    for x, w, top in ((-2.2, 1.6, 4.50), (-.2, 2.15, 4.41), (2.23, 1.54, 4.46)):
++        box('Stepped engine coping', (x, -.03, (top + 4.25) / 2),
++            (w, 1.14, top - 4.25), 'steel', True)
++    gear(-1.0, .68, 2.40, 1.60, 'brass', 'brass_dark', 28, .025)
++    gear(1.48, .68, 3.00, 1.00, 'copper', 'red_dark', 18, .12)
++    gear(2.08, .68, 1.46, .70, 'steel', 'steel_dark', 13, .11)
++    cylinder('Horizontal engine drive shaft', (0, 1.03, .51), .10, 5.65, 'steel',
++             n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    for x in (-2.35, -.18, 2.48):
++        box('Bearing pedestal', (x, .79, .27), (.44, .60, .40), 'iron', True)
++        cylinder('Brass shaft bearing', (x, 1.03, .51), .23, .26, 'brass',
++                 n=12, rot=(0, math.pi / 2, 0), bevel=True)
++    # A readable pale gauge isolated in the upper-left corner.
++    x, z = -2.38, 3.63
++    cylinder('Red pressure gauge housing', (x, .80, z), .40, .36, 'red_lacquer', n=24, bevel=True)
++    cylinder('Pressure dial ivory face', (x, 1.0, z), .32, .055, 'dial_face', n=24)
++    ring('Gauge brass bezel', (x, 1.035, z), .37, .31, .06, 'brass', n=24)
++    for j in range(8):
++        a = -.72 * math.pi + j * 1.44 * math.pi / 7
++        beam('Pressure gauge index', (x + .23 * math.sin(a), 1.075, z + .23 * math.cos(a)),
++             (x + .285 * math.sin(a), 1.075, z + .285 * math.cos(a)), .04, .025, 'dial_mark')
++    beam('Gauge needle', (x, 1.10, z), (x + .17, 1.10, z + .16), .045, .035, 'dial_mark')
++    tube('Pressure pipe', [(-2.38, .75, 3.25), (-2.76, .75, 3.10),
++                           (-2.76, .75, .52)], .06, 'copper')
++
++
++def bell_arch():
++    # The central 2.8 x 3.4 opening contains no stone, including its back.
++    for sign in (-1, 1):
++        for row in range(5):
++            z = (row + .5) * .40
++            box('Arch pier ashlar', (sign * 2.20, .15, z), (1.60, 1.0, .385),
++                'stone' if row % 3 else 'stone_dark', bevel=(row % 2 == 0))
++        box('Pier base molding', (sign * 2.20, .23, .13), (1.60, 1.15, .26), 'stone_dark', True)
++        box('Arch spring impost', (sign * 2.21, .29, 2.00), (1.58, 1.28, .18), 'brass_dark', True)
++    profile = [(-3, 4.16), (3, 4.16), (3, 2), (1.4, 2)]
++    profile += [(1.4 * math.cos(j * math.pi / 24),
++                 2 + 1.4 * math.sin(j * math.pi / 24)) for j in range(1, 25)]
++    profile += [(-3, 2)]
++    extrude('Open arch spandrel', profile, -.35, .65, 'stone', True)
++    for j in range(13):
++        a, b = j * math.pi / 13 + .008, (j + 1) * math.pi / 13 - .008
++        wedge = [(r * math.cos(t), 2 + r * math.sin(t))
++                 for r, t in ((1.4, a), (1.69, a), (1.69, b), (1.4, b))]
++        extrude('Alternating arch voussoir', wedge, .64, .98,
++                'brass' if j == 6 else ('stone_dark' if j % 2 == 0 else 'stone'), True)
++    for sign in (-1, 1):
++        for j in range(3):
++            box('Spandrel inset joint', (sign * (1.93 + .32 * j), .66, 3.63 - j * .16),
++                (.05, .025, .57), 'stone_dark')
++    box('Starry night beyond the open arch', (0, -.99, 1.78), (2.8, .08, 3.56), 'night_sky')
++    # A shallow return at sill level keeps the opening sky-dark when viewed
++    # downwards at 55 degrees. It is backdrop, not an opaque wall infill.
++    box('Night backdrop sill return', (0, -.13, .025), (2.8, 1.72, .05), 'night_sky')
++    for x, z, r in ((-.95, .12, .08), (.95, .14, .075), (-.45, .35, .075),
++                    (.45, .40, .07), (.03, .62, .08)):
++        star(x, -.93, z, r)
++    for x, y in ((-.80, .30), (.64, .08)):
++        obj = star(0, 0, 0, .085)
++        place(obj, (x, y, .08), (math.pi / 2, 0, 0))
++    box('Frieze deep enamel', (0, .29, 4.07), (6, 1.30, .30), 'navy_paint', True)
++    box('Frieze lower gold line', (0, .96, 3.94), (6, .07, .07), 'brass')
++    for j in range(11):
++        star(-2.65 + j * .53, .975, 4.075, .09, 'gold')
++    box('Arch coping lower molding', (0, .20, 4.27), (6, 1.30, .13), 'stone_dark', True)
++    for x, w, top in ((-2.3, 1.4, 4.46), (0, 2.9, 4.50), (2.32, 1.36, 4.41)):
++        box('Arch raised coping', (x, .20, (top + 4.31) / 2),
++            (w, 1.36, top - 4.31), 'stone', True)
++    # Hollow flared bell, a separate lip and visible clapper.
++    box('Bell hanger bracket', (0, .92, 3.16), (.72, .17, .12), 'iron', True)
++    beam('Bell bracket anchor left', (-.32, .47, 3.16), (-.32, .92, 3.16), .09, .09, 'iron')
++    beam('Bell bracket anchor right', (.32, .47, 3.16), (.32, .92, 3.16), .09, .09, 'iron')
++    beam('Bell suspension', (0, .92, 3.16), (0, .92, 2.95), .09, .09, 'iron')
++    bell_profile = [(.10, 2.98), (.21, 2.91), (.25, 2.69), (.37, 2.48),
++                    (.45, 2.43), (.45, 2.35), (.35, 2.35), (.29, 2.48),
++                    (.17, 2.68), (.14, 2.88), (.065, 2.91)]
++    n = 24
++    verts = [(r * math.cos(j * math.tau / n), .92 + .55 * r * math.sin(j * math.tau / n), z)
++             for r, z in bell_profile for j in range(n)]
++    faces = [(k * n + j, k * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + (j + 1) % n,
++              ((k + 1) % len(bell_profile)) * n + j)
++             for k in range(len(bell_profile)) for j in range(n)]
++    mesh('Hollow bronze bell', verts, faces, 'copper')
++    cylinder('Bell crown', (0, .92, 2.94), .12, .12, 'brass', n=12, rot=(0, 0, 0), bevel=True)
++    beam('Bell clapper stem', (0, .92, 2.72), (0, .92, 2.27), .07, .07, 'iron')
++    cylinder('Bell clapper', (0, .92, 2.27), .095, .14, 'brass', n=12, rot=(0, 0, 0))
++
++
++def dial_back():
++    # Lower disc sector: exact radius 6.0 about (0, .50, 6.15).
++    # Its lower edge rises towards the sides; its center lies ABOVE the module.
++    center_z = 6.15
++    lower = [(x, center_z - math.sqrt(36 - x * x))
++             for x in [-4 + j * 8 / 64 for j in range(65)]]
++    profile = lower + [(4, 4.76), (-4, 4.76)]
++    glass = extrude('Giant translucent clock face sector R6', profile, .49, .56, 'glass')
++    # Slight backward lean makes the unseen circle center also behind the face.
++    for v in glass.data.vertices:
++        v.co.y += (center_z - v.co.z) * .035
++    box('Starry sky behind dial', (0, -.78, 2.36), (8, .10, 4.72), 'night_sky')
++    for j in range(31):
++        x, z = random.uniform(-3.84, 3.84), random.uniform(.20, 4.58)
++        star(x, -.71, z, random.uniform(.055, .105))
++    # A structural chord and flush end posts keep neighbours tileable.
++    for x in (-3.88, 3.88):
++        box('End stanchion web', (x, .19, 2.32), (.18, 1.14, 4.64), 'iron_dark')
++        for yy in (-.39, .78):
++            box('End stanchion flange', (x, yy, 2.32), (.24, .10, 4.64), 'steel', True)
++        for z in (.28, 1.60, 3.0, 4.38):
++            rivet(x, .85, z, 'brass', .065)
++    box('Bottom structural sill', (0, -.01, .12), (8, 1.50, .24), 'iron_dark', True)
++    box('Upper truss chord', (0, .30, 4.66), (8, .45, .20), 'iron_dark', True)
++    for j in range(6):
++        a = (-3.82 + j * 7.64 / 6, .28, 4.47)
++        b = (-3.82 + (j + 1) * 7.64 / 6, .28, 3.96)
++        beam('Upper zigzag truss', a, b, .12, .18, 'iron_dark')
++        beam('Upper zigzag truss return', b, (b[0], .28, 4.47), .10, .18, 'steel')
++    # Two concentric bands trace the actual curved outer circumference.
++    for radius, role, thickness in ((5.94, 'steel', .13), (5.67, 'brass', .065)):
++        xmax = 3.80
++        pts = [(x, .81, center_z - math.sqrt(radius * radius - x * x))
++               for x in [-xmax + j * 2 * xmax / 48 for j in range(49)]]
++        tube('Circular dial retaining band', pts, thickness, role, n=6)
++    for a in (-.62, -.31, 0, .31, .62):
++        p = (5.81 * math.sin(a), .84, center_z - 5.81 * math.cos(a))
++        q = (2.03 * math.sin(a), .84, center_z - 2.03 * math.cos(a))
++        beam('Radial steel girder', p, q, .12, .20, 'steel', True)
++        for t in (.12, .55, .88):
++            v = Vector(p).lerp(Vector(q), t)
++            rivet(v.x, .97, v.z, 'brass', .06)
++    # Mirrored Roman VI, VII, VIII, V, IV bars. No font/text in the asset.
++    # Local tangential X is flipped because we are looking at the BACK.
++    glyphs = ('VIII', 'VII', 'VI', 'V', 'IV')
++    for a, numeral in zip((-.59, -.30, 0, .30, .59), glyphs):
++        def tick(u, v):
++            return (5.13 * math.sin(a) - u * math.cos(a) - v * math.sin(a),
++                    1.025, center_z - 5.13 * math.cos(a) - u * math.sin(a) + v * math.cos(a))
++        cursor = -.13 * (len(numeral) - 1)
++        for letter in numeral:
++            if letter == 'I':
++                beam('Mirrored Roman I', tick(cursor, -.24), tick(cursor, .24), .065, .07, 'dial_mark')
++            else:
++                beam('Mirrored Roman V left', tick(cursor - .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++                beam('Mirrored Roman V right', tick(cursor + .11, .24), tick(cursor, -.24), .065, .07, 'dial_mark')
++            cursor += .26
++    # Back of the clock hands; the pivot and counterweights enter the top sector.
++    pivot = (.58, 1.14, 4.01)
++    for tip, width in (((-2.68, 1.14, 1.44), .23), ((2.58, 1.14, 2.13), .30)):
++        beam('Giant clock hand back', pivot, tip, width, .10, 'dial_mark', True)
++        vec = (Vector(pivot) - Vector(tip)).normalized()
++        end = Vector(pivot) + vec * .61
++        beam('Hand gold counterweight', Vector(pivot) + vec * .15, end,
++             width * 1.7, .14, 'gold', True)
++    ring('Clock axle rear ring', pivot, .31, .17, .19, 'brass', n=24)
++    cylinder('Clock axle rear cap', (.58, 1.27, 4.01), .18, .14, 'iron', n=16, bevel=True)
++
++
++def pendulum():
++    plate_wall(6, 4.75)
++    box('Full width lower stone plinth', (0, -.03, .17), (6, 1.30, .34), 'stone_dark', True)
++    for x in (-2.57, 2.57):
++        box('Side wall relief panel', (x, .52, 2.64), (.52, .10, 3.36), 'steel_dark', True)
++        for zz in (1.25, 2.13, 3.01, 3.89):
++            box('Side wall brass hash', (x, .59, zz), (.24, .055, .07), 'brass')
++    box('Case red recessed back', (0, .59, 2.41), (3.53, .16, 4.24), 'red_lacquer', True)
++    for x in (-1.86, 1.86):
++        box('Carved dark case pillar', (x, .86, 2.45), (.23, .76, 4.44), 'wood_dark', True)
++        box('Pillar inset', (x, 1.25, 2.45), (.075, .04, 3.80), 'wood')
++        for z in (.39, 4.35):
++            box('Case pillar ferrule', (x, .88, z), (.33, .83, .16), 'brass', True)
++    for zz, w, h in ((.30, 4.15, .20), (.51, 3.94, .15), (4.58, 4.17, .20), (4.76, 3.83, .16)):
++        box('Stacked case molding', (0, .83, zz), (w, .83, h), 'wood_dark', True)
++    crown = [(-1.45, 4.81), (-.66, 4.89), (-.32, 5), (.32, 5), (.66, 4.89), (1.45, 4.81)]
++    extrude('Pediment with irregular crown', crown, .50, 1.15, 'brass', True)
++    ring('Pendulum pivot collar', (0, .94, 4.09), .30, .18, .15, 'brass_dark', n=24)
++    cylinder('Pivot pin', (0, 1.04, 4.09), .13, .18, 'steel', n=12, bevel=True)
++    beam('Long pendulum steel rod', (0, 1.03, 4.09), (.29, 1.03, 1.39), .12, .12, 'steel', True)
++    cylinder('Heavy pendulum bob disc', (.29, 1.02, 1.39), .77, .24, 'brass', n=32, bevel=True)
++    ring('Gold bob annulus', (.29, 1.17, 1.39), .74, .59, .065, 'gold', n=32)
++    cylinder('Bob central medallion', (.29, 1.19, 1.39), .28, .08, 'brass_dark', n=16, bevel=True)
++    star(.29, 1.25, 1.39, .16, 'gold')
++    box('Tall glass case front', (0, 1.31, 2.55), (3.43, .055, 3.90), 'glass')
++    # Fine brass glazing bars and corner plates frame the transparent sheet.
++    for x in (-1.69, 1.69):
++        box('Glass edge trim', (x, 1.36, 2.55), (.055, .045, 3.92), 'brass')
++    for z in (.61, 4.48):
++        box('Glass horizontal trim', (0, 1.36, z), (3.43, .045, .055), 'brass')
++    for x in (-1.48, 1.48):
++        for z in (.82, 4.24):
++            box('Glass corner escutcheon', (x, 1.36, z), (.18, .05, .18), 'brass_dark')
++    box('Clock case door keyhole', (1.57, 1.40, 2.39), (.10, .06, .18), 'gold', True)
++
++
++def filler():
++    masonry(4, 1.86, front=.58, back=-.55, rows=3)
++    box('Filler foundation molding', (0, .08, .12), (4, 1.26, .24), 'stone_dark', True)
++    box('Filler band backing', (0, .10, 2.26), (4, 1.30, .86), 'iron_dark')
++    for j in range(3):
++        x = -4 / 3 + j * 4 / 3
++        box('Filler navy iron panel', (x, .79, 2.26), (1.27, .12, .70), 'navy_paint', True)
++        for xx in (x - .52, x + .52):
++            for z in (2.03, 2.49):
++                rivet(xx, .89, z, 'brass', .05)
++    for x in (-.67, .67):
++        box('Dark panel seam', (x, .87, 2.26), (.045, .025, .71), 'dial_mark')
++    box('Band lower rolled edge', (0, .22, 1.87), (4, 1.45, .13), 'steel', True)
++    box('Continuous brass cap rail', (0, .18, 2.76), (4, 1.44, .18), 'brass', True)
++    for j in range(9):
++        x = -1.78 + j * .445
++        top = 3.0 if j % 3 != 1 else 2.95
++        tooth = [(x - .15, 2.83), (x + .15, 2.83),
++                 (x + .105, top), (x - .105, top)]
++        extrude('Chamfered gear tooth crenellation', tooth, .15, .78,
++                'brass_dark' if j % 3 == 0 else 'brass', True)
++    # An inset gear relief breaks the otherwise horizontal filler silhouette.
++    gear(.12, .94, 2.26, .30, 'steel', 'steel_dark', teeth=10)
++
++
++def girder():
++    # No solid wall/sky card: this piece is genuinely open to the void.
++    for z in (.08, .98):
++        box('Railing I beam web', (0, .36, z), (6, .16, .16), 'steel')
++        for zz in (z - .07, z + .07):
++            box('Railing I beam flange', (0, .34, zz), (6, .52, .08), 'steel', True)
++    for x in (-2.88, -1.0, 1.0, 2.88):
++        box('Railing upright', (x, .33, .55), (.16, .44, 1.10), 'steel', True)
++        box('Upright foot gusset', (x, .60, .17), (.24, .06, .31), 'iron')
++        for z in (.17, .91):
++            rivet(x, .65, z, 'brass', .06)
++    for left, right in ((-2.83, -1.06), (-.94, .94), (1.06, 2.83)):
++        for lo, hi in ((.20, .87), (.87, .20)):
++            beam('Railing X brace', (left, .37, lo), (right, .37, hi), .09, .11, 'iron')
++        rivet((left + right) / 2, .46, .535, 'brass', .065)
++    # The load-bearing platform edge is behind the rail and exactly at Z=0.
++    box('Platform lip top flange', (0, -.28, -.055), (6, 1.12, .11), 'steel', True)
++    box('Platform lip bottom flange', (0, -.28, -.46), (6, 1.12, .10), 'iron', True)
++    box('Deep edge girder web', (0, -.28, -.25), (6, .17, .43), 'iron_dark')
++    for x in (-2.84, -.95, .95, 2.84):
++        box('Hanging truss vertical', (x, -.41, -2.02), (.19, .42, 3.96), 'iron_dark', True)
++        for zz in (-.60, -2.03, -3.82):
++            box('Truss gusset plate', (x, -.12, zz), (.30, .10, .30), 'steel_dark')
++            rivet(x, -.04, zz, 'brass', .065)
++    for zz in (-2.03, -3.91):
++        box('Hanging truss cross chord', (0, -.41, zz), (6, .35, .18), 'iron_dark', True)
++    for left, right in ((-2.84, -.95), (-.95, .95), (.95, 2.84)):
++        for bottom, top in ((-3.82, -2.12), (-1.94, -.46)):
++            beam('Suspended X diagonal', (left, -.40, bottom), (right, -.40, top), .12, .20, 'iron_dark')
++            beam('Suspended X return', (left, -.40, top), (right, -.40, bottom), .12, .20, 'iron_dark')
++    gear(-1.88, -.09, -1.20, .52, 'brass_dark', 'iron', 14, .1)
++    gear(1.86, -.09, -2.91, .65, 'brass_dark', 'iron', 16, .12)
++    gear(.79, -.09, -2.85, .43, 'brass_dark', 'iron', 11, .21)
++
++
++SPECS = [
++    ('Wall_Storehouse', 6, 4.0, storehouse),
++    ('Wall_Gears', 6, 4.5, gears),
++    ('Wall_BellArch', 6, 4.5, bell_arch),
++    ('Wall_DialBack', 8, 4.76, dial_back),
++    ('Wall_Pendulum', 6, 5.0, pendulum),
++    ('Wall', 4, 3.0, filler),
++    ('Wall_Girder', 6, 1.1, girder),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return tuple(Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++                 for fn in (min, max))
++
++
++def finish(name, width, height):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True)
++        bpy.context.view_layer.objects.active = obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS:
++        obj.select_set(True)
++    bpy.context.view_layer.objects.active = PARTS[0]
++    bpy.ops.object.join()
++    obj = bpy.context.object
++    obj.name, obj.data.name = name, name + '_Mesh'
++    count = triangles(obj)
++    if count > 8000:
++        # Material boundaries survive; the broad forms are always constructed
++        # first, so this only removes excess bevel tessellation/detail.
++        mod = obj.modifiers.new('Triangle budget preserving material borders', 'DECIMATE')
++        mod.ratio = 7900 / count
++        mod.delimit = {'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    bm = bmesh.new()
++    bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges), name
++    bm.to_mesh(obj.data)
++    bm.free()
++    for poly in obj.data.polygons:
++        poly.use_smooth = False
++    obj.data.update()
++    obj.location, obj.rotation_euler, obj.scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
++    bpy.context.view_layer.update()
++    low, high = bounds(obj)
++    assert abs(low.x + width / 2) < 1e-4 and abs(high.x - width / 2) < 1e-4, (name, low, high)
++    floor = -4 if name == 'Wall_Girder' else 0
++    assert abs(low.z - floor) < 1e-4, (name, low)
++    assert high.z <= height + .025, (name, high, height)
++    assert 1.1 <= high.y - low.y <= 2.25, (name, low, high)
++    assert triangles(obj) <= 8000, (name, triangles(obj))
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co), name
++    used = {obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used) >= 6 and used.issubset(ROLES), (name, used)
++    for mat in obj.data.materials:
++        assert tuple(mat.diffuse_color) == (.5, .5, .5, 1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value) == (.5, .5, .5, 1)
++    obj['front'], obj['module_width_m'] = '+Y', width
++    obj['triangle_count'], obj['chapter'] = triangles(obj), 'Inside the Clockwork'
++    obj['origin_rule'] = 'Bottom center; suspended truss intentionally extends to Z=-4' if name == 'Wall_Girder' else 'Bottom center'
++    destination = OUTPUT / f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(
++        filepath=str(destination), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False,
++    )
++    assert destination.is_file() and destination.stat().st_size > 1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d, 4) for d in obj.dimensions)}', flush=True)
++    return obj
++
++
++def preview(objects):
++    """A single above-front contact sheet; exported FBXs are never rewritten."""
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 1800, 1000
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.render.film_transparent = False
++    scene.view_settings.view_transform = 'Standard'
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.show_shadows, shade.show_cavity = False, True
++    shade.cavity_type = 'BOTH'
++    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.25, 1.1
++    shade.show_specular_highlight = False
++    shade.background_type, shade.background_color = 'WORLD', (.032, .043, .068)
++    if scene.world is None:
++        scene.world = bpy.data.worlds.new('Preview world')
++    scene.world.color = (.032, .043, .068)
++    helpers = []
++    locations = [obj.location.copy() for obj in objects]
++    try:
++        for role, mat in MATS.items():
++            mat.diffuse_color = (*PALETTE.get(role, (.5, .5, .5)), .18 if role == 'glass' else 1)
++        # Four modules across the back, three across the front. Truss remains
++        # fully visible below its platform, without a floor plane to hide it.
++        positions = [(-12.4, -3.4), (-4.2, -3.4), (4.0, -3.4), (12.6, -3.4),
++                     (-9.0, 3.7), (-1.2, 3.7), (7.2, 3.7)]
++        for obj, (x, y) in zip(objects, positions):
++            obj.location = (x, y, 0)
++            obj.show_transparent = True
++        camera = bpy.data.objects.new('Review camera', bpy.data.cameras.new('Review camera'))
++        scene.collection.objects.link(camera)
++        helpers.append(camera)
++        scene.camera = camera
++        camera.data.type, camera.data.ortho_scale = 'ORTHO', 35.8
++        target = Vector((.4, 0, .65))
++        elevation = math.radians(55)
++        camera.location = target + Vector((0, 45 * math.cos(elevation), 45 * math.sin(elevation)))
++        camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
++
++        def caption(body, loc, size, role='starlight'):
++            data = bpy.data.curves.new('Review type', 'FONT')
++            data.body, data.align_x, data.size = body, 'CENTER', size
++            data.materials.append(MATS[role])
++            obj = bpy.data.objects.new('Review caption', data)
++            scene.collection.objects.link(obj)
++            obj.location, obj.rotation_euler = loc, camera.rotation_euler
++            helpers.append(obj)
++
++        descriptions = ['S1 / SPRING STORES', 'S2 / ENGINE ROOM', 'S3 / BELFRY',
++                        'S4 / BEHIND THE DIAL', 'LANDMARK / PENDULUM',
++                        'FILLER / BATTLEMENT', 'S4 / SUSPENDED EDGE']
++        for obj, desc in zip(objects, descriptions):
++            y = obj.location.y + (3.30 if obj.name == 'Wall_Girder' else 2.00)
++            caption(obj.name, (obj.location.x, y, -.18), .30)
++            caption(desc, (obj.location.x, y + .46, -.18), .17, 'brass')
++        caption('IV  /  INSIDE THE CLOCKWORK', (.4, -5.8, 5.2), .52)
++        caption('MODULAR WALLS     /     +Y FRONT     /     METRE SCALE',
++                (.4, -5.1, 5.2), .23, 'brass')
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++        print(f'PREVIEW {PREVIEW}', flush=True)
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            bpy.data.objects.remove(obj, do_unlink=True)
++        for obj, loc in zip(objects, locations):
++            obj.location, obj.show_transparent = loc, False
++        for mat in MATS.values():
++            mat.diffuse_color = (.5, .5, .5, 1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials):
++        bpy.data.materials.remove(mat)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1.0
++    materials()
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = []
++    for index, (name, width, height, build) in enumerate(SPECS):
++        random.seed(41031 + index * 7919)
++        PARTS = []
++        build()
++        objects.append(finish(name, width, height))
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects) == 7 and all(o.type == 'MESH' for o in scene.objects)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py" in C:\Project\Cat_Tang
+ succeeded in 3944ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch4_walls.py:50: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Storehouse.fbx'
+export finished in 0.0096 sec.
+EXPORTED Wall_Storehouse 7900 (6.0, 2.106, 4.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Gears.fbx'
+export finished in 0.0081 sec.
+EXPORTED Wall_Gears 6968 (6.0, 1.86, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_BellArch.fbx'
+export finished in 0.0066 sec.
+EXPORTED Wall_BellArch 4992 (6.0, 2.1975, 4.5)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_DialBack.fbx'
+export finished in 0.0069 sec.
+EXPORTED Wall_DialBack 5328 (8.0, 2.225, 4.76)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Pendulum.fbx'
+export finished in 0.0072 sec.
+EXPORTED Wall_Pendulum 4572 (6.0, 2.11, 5.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall.fbx'
+export finished in 0.0060 sec.
+EXPORTED Wall 3020 (4.0, 1.8955, 3.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch4\\Kit_Wall_Girder.fbx'
+export finished in 0.0073 sec.
+EXPORTED Wall_Girder 5672 (6.0, 1.515, 5.1)
+00:03.468  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_walls_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch4_walls_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git status --short; Get-ChildItem -LiteralPath 'Game/Assets/Art/Characters/Ch4' -Filter 'Kit_Wall*.fbx' | Select-Object Name,Length; Get-Item -LiteralPath 'Art/tools/specs/blender_kit_ch4_walls_preview.png' | Select-Object Name,Length" in C:\Project\Cat_Tang
+ succeeded in 269ms:
+ M Game/Assets/Data/Tables/Chapter.csv
+ M Game/Assets/Editor/ModelPalette.cs
+ M HANDOFF.md
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+?? .tripo/
+?? Art/tools/blender_kit_ch4_gates.py
+?? Art/tools/blender_kit_ch4_props.py
+?? Art/tools/blender_kit_ch4_walls.py
+?? Art/tools/specs/_ch4_common.md
+?? Art/tools/specs/blender_kit_ch4_gates_preview.png
+?? Art/tools/specs/blender_kit_ch4_props_preview.png
+?? Art/tools/specs/blender_kit_ch4_walls_preview.png
+?? Art/tools/specs/kit_ch4_gates.log
+?? Art/tools/specs/kit_ch4_gates_spec.md
+?? Art/tools/specs/kit_ch4_props.log
+?? Art/tools/specs/kit_ch4_props_spec.md
+?? Art/tools/specs/kit_ch4_walls.log
+?? Art/tools/specs/kit_ch4_walls_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Game/Assets/Art/Characters/Ch4/
+?? docs/images/ch4/
+?? docs/tools/build_ch4_ppt.js
+
+Name                               Length
+----                               ------
+Kit_Wall.fbx                        59612
+Kit_Wall_BellArch.fbx               88124
+Kit_Wall_DialBack.fbx               88812
+Kit_Wall_Gears.fbx                 109084
+Kit_Wall_Girder.fbx                 87116
+Kit_Wall_Pendulum.fbx               79596
+Kit_Wall_Storehouse.fbx            137436
+blender_kit_ch4_walls_preview.png 2142004
+
+
+
+codex
+Created [blender_kit_ch4_walls.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch4_walls.py).
+
+Ran Blender 5.3 successfully: all 7 FBXs exported with exact widths and 3,020–7,900 triangles each. Inspected and refined the [1800×1000 preview](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch4_walls_preview.png).
+tokens used
+50,068
+Created [blender_kit_ch4_walls.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch4_walls.py).
+
+Ran Blender 5.3 successfully: all 7 FBXs exported with exact widths and 3,020–7,900 triangles each. Inspected and refined the [1800×1000 preview](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch4_walls_preview.png).

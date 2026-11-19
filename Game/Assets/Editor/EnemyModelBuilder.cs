@@ -412,12 +412,15 @@ namespace CatTang.EditorTools
             var sets = new (string src, string dir, Dictionary<string, Color> pal)[]
             {
                 (Ch1Src, KitDir, ModelPalette.Ch1), (Ch2Src, Kit2Dir, ModelPalette.Ch2), (Ch3Src, Kit3Dir, ModelPalette.Ch3),
+                (Ch4Src, Kit4Dir, ModelPalette.Ch4),
             };
             int made = 0;
             try
             {
                 foreach (var (src, dir, pal) in sets)
                 {
+                    if (!File.Exists(src + "Kit_Gate_S1.fbx")) continue;
+                    Directory.CreateDirectory(dir);
                     SrcDir = src;
                     ModelPalette.Active = pal;
                     for (int n = 1; n <= 5; n++)
@@ -459,6 +462,56 @@ namespace CatTang.EditorTools
                 SrcDir = Ch1Src;
                 ModelPalette.Active = ModelPalette.Ch1;
             }
+        }
+
+        // 4장 맵 키트 (2026-11-19, 블렌더 + Codex, 회색 + 역할 재질 → ModelPalette.Ch4 느와르). 명세 Art/tools/specs/kit_ch4_{walls,props,gates}_spec.md + _ch4_common.md
+        const string Ch4Src = "Assets/Art/Characters/Ch4/";
+        const string Kit4Dir = "Assets/Resources/Kit/Ch4/";
+        static readonly (string name, float size, char fit, string outName)[] Kit4 =
+        {
+            // 벽면 (blender_kit_ch4_walls.py) — 폭이 정확해야 줄이 맞음
+            ("Kit_Wall_Storehouse", 6f, 'w', "Facade_Storehouse"),
+            ("Kit_Wall_Gears", 6f, 'w', "Facade_Gears"),
+            ("Kit_Wall_BellArch", 6f, 'w', "Facade_BellArch"),
+            ("Kit_Wall_DialBack", 8f, 'w', "Facade_DialBack"),
+            ("Kit_Wall_Pendulum", 6f, 'w', "Facade_Pendulum"),
+            ("Kit_Wall_Girder", 6f, 'w', "Facade_Girder"),
+            ("Kit_Wall", 4f, 'w', "Wall"),
+            // 방 기믹 · 오브젝트 · 엄폐물 · 상인 (blender_kit_ch4_props.py)
+            ("Kit_GearFloor", 8f, 'w', "GearFloor"),
+            ("Kit_WindSpring", 1.5f, 'h', "WindSpring"),
+            ("Kit_GearWheel", 1.6f, 'h', "GearWheel"),
+            ("Kit_OldBell", 2.4f, 'h', "OldBell"),
+            ("Kit_GearCrate", 1.6f, 'w', "GearCrate"),
+            ("Kit_BrokenClockPillar", 2.6f, 'h', "BrokenClockPillar"),
+            ("Kit_SpringBarrel", 1.3f, 'h', "SpringBarrel"),
+            ("Kit_MusicBox", 2.6f, 'w', "MusicBox"),
+            ("Kit_CogBits", 1.2f, 'w', "CogBits"),
+            ("Kit_ScrewBits", 1.0f, 'w', "ScrewBits"),
+            ("Kit_FloorGrate", 2.0f, 'w', "FloorGrate"),
+        };
+
+        [MenuItem("CatTang/4장 키트 만들기 (블렌더)")]
+        public static void BuildCh4Kit()
+        {
+            Directory.CreateDirectory(Kit4Dir);
+            SrcDir = Ch4Src;
+            ModelPalette.Active = ModelPalette.Ch4;
+            try
+            {
+                int made = 0;
+                foreach (var k in Kit4)
+                    if (File.Exists(Ch4Src + k.name + ".fbx") && Build(k.name, k.size, 180f, k.fit, Kit4Dir, k.outName)) made++;
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log($"[EnemyModelBuilder] 4장 키트 {made}개");
+            }
+            finally
+            {
+                SrcDir = Ch1Src;
+                ModelPalette.Active = ModelPalette.Ch1;
+            }
+            BuildGates();
         }
 
         // ---------- 메인 마을 키트 (2026-11-18 사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌 — 새벽에 사라져 가는 서부 마을, 허공의 큰 섬) ----------

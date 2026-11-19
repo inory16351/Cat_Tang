@@ -54,6 +54,13 @@ namespace CatTang
         /// <summary>일반 적 웨이브 구성: 무법자 = 챕터 사격형 비율 + 10%, 폭탄병 25%, 나머지 깡패</summary>
         public static Enemy RandomMinion(Vector3 pos, ChapterDef ch, bool elite = false)
         {
+            if (ch != null && ch.Id == 4)
+            {
+                // 4장 적 모델이 아직 없어 3장 적을 빌려 씀 → 4장 레이저 눈빛 꼬리만 붙임 (EnemyCh4가 생기면 거기서)
+                var e4 = RandomCh3(pos, ch, elite);
+                EyeTrail.Attach(e4);
+                return e4;
+            }
             if (ch != null && ch.Id >= 3) return RandomCh3(pos, ch, elite);
             if (ch != null && ch.Id == 2)
             {

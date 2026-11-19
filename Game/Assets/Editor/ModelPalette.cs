@@ -139,6 +139,40 @@ namespace CatTang.EditorTools
             { "boss_cream", new Color(0.95f, 0.92f, 0.9f) },
         };
 
+        // 4장 (시계 장치 속, 2026-11-19 사용자: 느와르 — 강한 흑백 대비, 색은 붉은 포인트만, 적 공격 궤적은 빨간 계열).
+        // 금속 · 돌 · 나무 전부 검정 ~ 흰색 사이 무채색으로 명암을 크게 벌리고, 놋쇠 · 금도 은빛 흰색으로. 붉은색은 칠 · 보석 · 리본만.
+        // 상인(오르골)만 따뜻한 색 조금 (velvet · lamp_warm)
+        public static readonly Dictionary<string, Color> Ch4 = new()
+        {
+            { "steel", new Color(0.78f, 0.78f, 0.8f) },
+            { "steel_dark", new Color(0.32f, 0.32f, 0.34f) },
+            { "iron", new Color(0.2f, 0.2f, 0.21f) },
+            { "iron_dark", new Color(0.08f, 0.08f, 0.09f) },
+            { "silver", new Color(0.95f, 0.95f, 0.96f) },
+            { "brass", new Color(0.9f, 0.89f, 0.86f) },
+            { "brass_dark", new Color(0.42f, 0.41f, 0.4f) },
+            { "gold", new Color(1f, 0.99f, 0.95f) },
+            { "copper", new Color(0.6f, 0.59f, 0.58f) },
+            { "navy_paint", new Color(0.13f, 0.13f, 0.15f) },
+            { "navy_dark", new Color(0.05f, 0.05f, 0.06f) },
+            { "red_lacquer", new Color(0.78f, 0.06f, 0.08f) },
+            { "red_dark", new Color(0.42f, 0.03f, 0.05f) },
+            { "gem_red", new Color(1f, 0.1f, 0.12f) },
+            { "wood", new Color(0.5f, 0.49f, 0.48f) },
+            { "wood_dark", new Color(0.17f, 0.17f, 0.17f) },
+            { "stone", new Color(0.66f, 0.66f, 0.66f) },
+            { "stone_dark", new Color(0.26f, 0.26f, 0.27f) },
+            { "dial_face", new Color(0.97f, 0.97f, 0.95f) },
+            { "dial_mark", new Color(0.04f, 0.04f, 0.05f) },
+            { "glass", new Color(0.86f, 0.88f, 0.9f) },
+            { "starlight", Color.white },
+            { "night_sky", new Color(0.02f, 0.02f, 0.03f) },
+            { "porcelain", new Color(0.98f, 0.97f, 0.96f) },
+            { "ribbon_red", new Color(0.86f, 0.08f, 0.1f) },
+            { "velvet", new Color(0.55f, 0.06f, 0.1f) },
+            { "lamp_warm", new Color(1f, 0.84f, 0.6f) },
+        };
+
         // 메인 마을 (2026-11-18 사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌 — 새벽에 사라져 가는 서부 마을, 허공에 뜬 큰 섬)
         // 물체는 따뜻하게(바랜 나무 · 놋쇠 · 금 · 크림 · 녹 · 새벽 장밋빛 칠), 차가운 색은 하늘 · 허공에만. 새벽 남색 조명 아래서도 칙칙하지 않게 밝게
         public static readonly Dictionary<string, Color> Village = new()

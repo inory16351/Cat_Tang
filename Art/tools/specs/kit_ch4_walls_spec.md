@@ -1,0 +1,19 @@
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch4_walls.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_walls.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece. Then look at the preview PNG and fix anything that reads badly.
+Read `Art/tools/specs/_ch4_common.md` first: it has the material names, richness, coordinate and export rules you must follow.
+
+## Goal
+WALL modules that line the edges of rectangular combat rooms inside the clock tower. The game tiles them side by side along a wall line, so each module has a mostly flat back, a clear front (+Y), and EXACTLY the width listed (X from -W/2 to +W/2; small bits may overhang <= 0.2 m). Depth (Y) about 1.2-2.2 m, main front face near Y = +1.0. Seen from above-front, so the front face, top silhouette and top surfaces matter most. Height 3-5 m unless stated (the game lowers the south wall). No rows of identical plain boxes, irregular top silhouettes, and the ends (X = +-W/2) must meet neighbours cleanly.
+Stages climb the tower: S1 spring storehouse (bottom, closed, wooden shelves and crates) → S2 gear engine room (huge meshing gears in the walls) → S3 bell tower (open arches, bells, more night sky) → S4 corridor behind the dial (back of a giant translucent clock face, girders, lots of starry sky).
+
+## Pieces
+1. `Wall_Storehouse` 6 m (S1): a `stone` / `stone_dark` block wall 4 m high with tall `wood_dark` shelving racks in front holding coiled springs (`steel`), boxed gears and small crates, an `iron` ladder leaning on one rack, `brass` lamp bracket with a `lamp_warm` bulb.
+2. `Wall_Gears` 6 m (S2): a riveted `navy_paint` iron-plate wall 4.5 m high (panels framed in `iron` with `brass_dark` rivet rows) with 3 big partly-embedded gears of different sizes (diameters 3.2, 2.0, 1.4) meshing with each other on the front face (`brass`, `copper`, `steel` - each a different material, teeth in the darker variant), a horizontal `steel` drive shaft with `brass` bearings, a `red_lacquer` pressure dial (`dial_face` + `dial_mark`).
+3. `Wall_BellArch` 6 m (S3): `stone` wall 4.5 m high with a big round-topped OPEN arch (2.8 wide x 3.4 high) in the middle through which you see a `night_sky` panel set 0.6 m behind with 6-8 `starlight` dots; a small `copper` bell hanging inside the arch top from an `iron` bracket; `brass` keystone, `stone_dark` voussoirs alternating with `stone`, `navy_paint` frieze band with `gold` star studs.
+4. `Wall_DialBack` 8 m (S4): the BACK of a giant clock face: a huge `glass` disc segment (translucent dial, mirrored Roman-numeral ticks as raised `dial_mark` bars, part of a circle of radius 6 whose center is above and behind, so the module shows a curved arc) held by radial `steel` girders and `iron_dark` truss beams with `brass` rivets; behind the glass a `night_sky` panel with `starlight` dots; the back of two huge clock HANDS (`dial_mark`, with `gold` counterweight) crossing the glass.
+5. `Wall_Pendulum` 6 m (any stage, landmark): `navy_paint` panelled wall 5 m high with a tall glass-fronted case (`wood_dark` frame, `glass` front) in which a big `brass` pendulum disc hangs on a `steel` rod, `gold` bob ring, `red_lacquer` inner back panel.
+6. `Wall` 4 m x 3 m: generic filler: `stone` blocks below, riveted `navy_paint` iron band above, `brass` cap rail with gear-tooth crenellation, `dial_mark` seams.
+7. `Wall_Girder` 6 m (S4, open-sided edge): a LOW edge (1.1 m high) of a steel girder walkway: `steel` I-beam railing with `iron` X-bracing and `brass` rivets; behind it (negative Y), hanging DOWN from Z 0 to Z -4, a vertical truss of `iron_dark` beams and a few gears (`brass_dark`), so it reads as the edge of a high platform above the starry void. Front face of the railing at about Y = +0.6.
+
+Budgets: up to ~8000 tris each.

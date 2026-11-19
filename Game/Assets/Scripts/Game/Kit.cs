@@ -78,7 +78,7 @@ namespace CatTang
             // 스테이지 1(황무지 절벽길)은 절벽 바위 모듈, 그 뒤(마을)는 건물 정면 모듈. module을 주면 그것 (술집 실내 = PlankWall)
             var rm = RunManager.Instance;
             bool cliff = rm && rm.stageIndex == 0 && !rm.IsMidBossRoom && Has(ch, "Cliff");
-            if (module == null && !cliff && wallCube && (Has(ch, Facades[0]) || Ch2Kit.Is(ch) || Ch3Kit.Is(ch))) return BuildingRow(ch, wallCube, inward, hideCube);
+            if (module == null && !cliff && wallCube && (Has(ch, Facades[0]) || Ch2Kit.Is(ch) || Ch3Kit.Is(ch) || Ch4Kit.Is(ch))) return BuildingRow(ch, wallCube, inward, hideCube);
             var prefab = Prefab(ch, module ?? (cliff ? "Cliff" : "Wall"));
             if (!prefab || !wallCube) return false;
             var t = wallCube.transform;
@@ -128,8 +128,9 @@ namespace CatTang
             var t = wallCube.transform;
             // 정면 세트: 1장 = 서부 건물 8종, 2장 = 장소별 역 건물 (Ch2Kit.Facades)
             var names = Facades; var widths = FacadeW;
-            bool ch2 = Ch2Kit.Is(ch), ch3 = Ch3Kit.Is(ch);
+            bool ch2 = Ch2Kit.Is(ch), ch3 = Ch3Kit.Is(ch), ch4 = Ch4Kit.Is(ch);
             if (ch3) (names, widths) = Ch3Kit.Facades();
+            if (ch4) (names, widths) = Ch4Kit.Facades();
             if (ch2)
             {
                 (names, widths) = Ch2Kit.Facades();
@@ -153,7 +154,7 @@ namespace CatTang
             var rnd = new System.Random(Mathf.RoundToInt(t.position.x * 17.3f + t.position.z * 5.1f) ^ 0x5bd1);
             float R(float lo, float hi) => lo + (float)rnd.NextDouble() * (hi - lo);
             // 남쪽 벽(카메라 쪽, 정면이 북쪽을 봄)은 플레이어를 가리지 않게 낮춤
-            float hMul = inward.z > 0.5f ? (ch2 ? 0.55f : ch3 ? Ch3Kit.SouthWallMul() : 0.72f) : 1f;      // 2장 역 건물은 키가 커서(6~7m) 더 낮춤
+            float hMul = inward.z > 0.5f ? (ch2 ? 0.55f : ch3 ? Ch3Kit.SouthWallMul() : ch4 ? Ch4Kit.SouthWallMul() : 0.72f) : 1f;      // 2장 역 건물은 키가 커서(6~7m) 더 낮춤
             float x = -len / 2;
             int last = -1;
             bool first = true;
@@ -188,7 +189,7 @@ namespace CatTang
                 {
                     // 3m보다 짧게 남음: 가장 좁은 건물을 줄여 넣거나, 아주 짧으면 울타리
                     if (left < 2.2f) { if (alleys) Alley(ch, holder, axis * (x + left / 2), inward, yaw, left, face, rnd); break; }
-                    if (ch2 || ch3)
+                    if (ch2 || ch3 || ch4)
                     {
                         // 가장 좁은 정면을 줄여 넣음
                         pick = 0; for (int i = 1; i < widths.Length; i++) if (widths[i] < widths[pick] && Has(ch, names[i])) pick = i;
@@ -203,7 +204,7 @@ namespace CatTang
                 float back = R(0f, 0.7f);
                 // 정면 본체 앞면 위치: 1장 조각은 +1.1, 2장 조각은 모델 경계에서 잼 (차양 · 캐노피 기둥 포함)
                 bool borrowed = names[pick].StartsWith("@");                 // 3장 거울 속 마을: 1장 건물을 좌우 반전
-                float front = borrowed ? FacadeFront : (ch2 || ch3) ? Mathf.Min(LocalBounds(prefab).max.z, 1.4f) : FacadeFront;
+                float front = borrowed ? FacadeFront : (ch2 || ch3 || ch4) ? Mathf.Min(LocalBounds(prefab).max.z, 1.4f) : FacadeFront;
                 go.transform.localPosition = axis * (x + w / 2) + inward * (face - front - back);
                 go.transform.localRotation = Quaternion.Euler(0, yaw, 0);
                 var s0 = go.transform.localScale;
@@ -294,7 +295,8 @@ namespace CatTang
             var rnd = new System.Random(seed * 7 + 3);
             int n = Mathf.RoundToInt(size.x * size.y / 14f);
             var bits = GroundBits; var weights = GroundWeight;
-            if (Ch3Kit.Is(ch)) { bits = Ch3Kit.GroundBits; weights = Ch3Kit.GroundWeights(); }   // 3장: 조약돌 · 수정 조각 · 물결
+            if (Ch3Kit.Is(ch)) { bits = Ch3Kit.GroundBits; weights = Ch3Kit.GroundWeights(); }
+            if (Ch4Kit.Is(ch)) { bits = Ch4Kit.GroundBits; weights = Ch4Kit.GroundWeights(); }   // 4장: 톱니 · 나사 · 바닥 철창   // 3장: 조약돌 · 수정 조각 · 물결
             float total = 0; foreach (var w in weights) total += w;
             var holder = new GameObject("GroundBits").transform;
             holder.SetParent(root, false);

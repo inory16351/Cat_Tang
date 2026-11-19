@@ -629,7 +629,219 @@ def bake_c3water():
         render(sc, "c3water", f)
 
 
-SETS = {"fire": bake_fire, "smoke": bake_smoke, "spark": bake_spark, "mist": bake_mist, "dodge": bake_dodge, "memclock": bake_memclock, "memshatter": bake_memshatter,
+# ---------- 4장 (시계 장치 속, 느와르) 일반 몬스터 탄 · 불똥 (2026-11-19 사용자: 흑백 대비, 적 공격 궤적은 빨간 계열, 이미지 + 블렌더로) ----------
+# 빨강 계열: 정면 = 흰 심지 → 연분홍 → 새빨강 → 짙은 핏빛 테, 금속 = 흰 → 은 → 강철, 잉크 = 거의 검정
+C4_RED = [(0.0, (1, 0.96, 0.95)), (0.05, (1, 0.62, 0.58)), (0.16, (1, 0.12, 0.12)), (0.36, (0.7, 0.03, 0.05)), (0.62, (0.32, 0.0, 0.02))]
+C4_STEEL = [(0.0, (1, 1, 1)), (0.18, (0.86, 0.86, 0.9)), (0.45, (0.55, 0.55, 0.6)), (0.72, (0.22, 0.22, 0.26))]
+C4_INK = (0.02, 0.02, 0.03)
+
+
+def ink4(sc, thick):
+    set_line_color(sc, C4_INK)
+    sc.render.line_thickness = thick
+    for s_ in sc.view_layers[0].freestyle_settings.linesets:
+        s_.linestyle.thickness = thick
+
+
+def laser_rod(name, mat, length, r, tip=0.25, sides=8):
+    """가는 레이저 막대: +X로 뾰족, 뒤도 뾰족 (원기둥 + 양끝 뿔). 정면 = 흰 심지, 가장자리 = 빨강 (toon facing)"""
+    verts, faces = [(length / 2 + tip, 0, 0), (-length / 2 - tip, 0, 0)], []
+    for x in (length / 2, -length / 2):
+        for k in range(sides):
+            a = TAU * k / sides
+            verts.append((x, math.cos(a) * r, math.sin(a) * r))
+    for k in range(sides):
+        a0, a1 = 2 + k, 2 + (k + 1) % sides
+        b0, b1 = 2 + sides + k, 2 + sides + (k + 1) % sides
+        faces += [(0, a1, a0), (a0, a1, b1, b0), (1, b0, b1)]
+    ob = mesh_obj(name, mat, verts, faces, smooth=True)
+    me = ob.data
+    bm = bmesh.new(); bm.from_mesh(me)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(me); bm.free()
+    return ob
+
+
+def bake_c4orb():
+    """4장 적 구슬 탄 = 레이저 구슬 (반복 16장): 흰 심지 빨간 에너지 구슬 + 엇갈린 가는 레이저 고리 2개가 돌고, 4갈래 은빛 빛살"""
+    sc = reset(); ink4(sc, 1.8)
+    om = toon_mat("c4orb", C4_RED)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.5, segments=24, ring_count=12)
+    orb = bpy.context.active_object; orb.data.materials.append(om)
+    bpy.ops.object.shade_smooth()
+    rings = []
+    for i in range(2):
+        rm = toon_mat(f"c4ring{i}", C4_RED)
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.82, minor_radius=0.035, major_segments=64, minor_segments=8)
+        rg = bpy.context.active_object; rg.data.materials.append(rm)
+        rings.append((rg, rm, i))
+    gm = toon_mat("c4glint", C4_STEEL)
+    glint = star_obj("glint", gm, 4, 1.35, 0.05, 0.03)
+    for f in range(FRAMES):
+        t = f / FRAMES
+        setv(om, "heat", 0.78)
+        for rg, rm, i in rings:
+            rg.rotation_euler = (math.pi / 2 - 1.1 + 0.5 * i, TAU * t * (1 if i else -1) * 0.5 + 1.2 * i, 0.4 * i)
+            setv(rm, "heat", 0.72)
+        k = 0.8 + 0.2 * math.sin(TAU * 2 * t)
+        glint.scale = (k, k, k)
+        glint.rotation_euler = (0, TAU / 4 * t, 0)
+        render(sc, "c4orb", f)
+
+
+def bake_c4needle():
+    """4장 적 바늘 · 직선 탄 = 레이저 볼트 (반복 16장): +X로 뾰족한 가는 레이저 막대 + 뒤로 끌리는 속도선 3가닥"""
+    sc = reset(); ink4(sc, 1.6)
+    m = toon_mat("c4bolt", C4_RED)
+    bolt = laser_rod("bolt", m, 1.5, 0.11, 0.3)
+    bolt.location = (0.35, 0, 0)
+    streaks = []
+    for i, (y, L) in enumerate(((0.0, 1.1), (0.16, 0.7), (-0.16, 0.55))):
+        sm = toon_mat(f"c4st{i}", C4_RED)
+        s = laser_rod(f"st{i}", sm, L, 0.035, 0.1, 6)
+        s.location = (-0.75 - L / 2 + (0.35 if i == 0 else 0), 0, y)
+        streaks.append((s, sm, i))
+    for f in range(FRAMES):
+        t = f / FRAMES
+        setv(m, "heat", 0.8)
+        bolt.rotation_euler = (TAU / 8 * t, 0, 0)
+        for s, sm, i in streaks:
+            ph = (t * 2 + i / 3) % 1
+            s.scale = (0.6 + 0.4 * (1 - ph), 1, 1)
+            setv(sm, "heat", 0.55)
+            setv(sm, "dissolve", 0.25 * ph)
+        render(sc, "c4needle", f)
+
+
+def bake_c4spark():
+    """4장 탄 맞음 · 튕김 = 레이저 섬광 (한 번 16장): 흰 4갈래 섬광 → 가는 레이저 가시 8개가 쭉 뻗었다 가늘어지고, 빨간 고리 · 작은 불똥"""
+    sc = reset(); ink4(sc, 1.4)
+    rnd = random.Random(44)
+    cm = toon_mat("c4flash", C4_STEEL)
+    core = star_obj("core", cm, 4, 0.95, 0.12, 0.07)
+    rm = toon_mat("c4sring", C4_RED)
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.5, minor_radius=0.03, major_segments=64, minor_segments=8)
+    ring = bpy.context.active_object; ring.data.materials.append(rm)
+    ring.rotation_euler = (math.pi / 2, 0, 0)
+    spikes = []
+    for i in range(8):
+        m = toon_mat(f"c4sp{i}", C4_RED)
+        o = laser_rod(f"sp{i}", m, 1.0, 0.045, 0.2, 6)
+        o["a"] = TAU * i / 8 + rnd.uniform(-0.15, 0.15); o["L"] = rnd.uniform(0.8, 1.25)
+        spikes.append((o, m))
+    bits = []
+    for i in range(8):
+        m = toon_mat(f"c4b{i}", C4_RED)
+        o = gem_obj(f"b{i}", m, 0.06)
+        o["a"] = rnd.uniform(0, TAU); o["d"] = rnd.uniform(0.7, 1.3)
+        bits.append((o, m))
+    for f in range(FRAMES):
+        t = f / (FRAMES - 1)
+        pop = math.sin(min(1, t / 0.1) * math.pi / 2) * max(0.0, 1 - max(0, t - 0.1) / 0.3)
+        core.scale = (pop, pop, pop); core.hide_render = pop <= 0.01
+        core.rotation_euler = (0, 0.4 + t * 0.8, 0)
+        s = 0.3 + 2.1 * ease_out(t, 3)
+        ring.scale = (s, s, s); ring.hide_render = t >= 0.55
+        setv(rm, "heat", 0.6); setv(rm, "dissolve", max(0, (t - 0.25) / 0.3) * 0.6)
+        for o, m in spikes:
+            grow = ease_out(min(1, t / 0.25), 3)
+            thin = max(0.001, 1 - max(0, (t - 0.2) / 0.5))
+            L = o["L"] * grow
+            o.location = (math.cos(o["a"]) * (0.25 + L / 2), 0, math.sin(o["a"]) * (0.25 + L / 2))
+            o.rotation_euler = (0, -o["a"], 0)
+            o.scale = (max(0.001, L), thin, thin)
+            o.hide_render = thin <= 0.01 or L <= 0.01
+            setv(m, "heat", 0.75 - 0.25 * t)
+        for o, m in bits:
+            r = o["d"] * ease_out(t, 2)
+            o.location = (math.cos(o["a"]) * r, 0, math.sin(o["a"]) * r - 0.2 * t * t)
+            sc_ = max(0.001, 1 - max(0, (t - 0.5) / 0.5)); o.scale = (sc_, sc_, sc_); o.hide_render = sc_ <= 0.01
+            setv(m, "heat", 0.65)
+        render(sc, "c4spark", f)
+
+
+def ribbon_obj(name, mat, pts, widths, notch=0.6, y=0.0):
+    """카메라를 향한 평평한 리본 띠 (XZ 평면). pts = 머리 → 꼬리 순 점들, widths = 점마다 폭.
+    꼬리 끝은 리본 꼬리(제비꼬리, V자로 파임): 마지막 점 양 끝이 뒤로 뻗고 가운데가 notch × 폭만큼 앞으로 파임"""
+    n = len(pts)
+    verts, faces = [], []
+    def side(i):
+        a = pts[max(0, i - 1)]; b = pts[min(n - 1, i + 1)]
+        dx, dz = b[0] - a[0], b[1] - a[1]
+        L = math.hypot(dx, dz) or 1.0
+        return (-dz / L, dx / L), (dx / L, dz / L)
+    for i, (p, w) in enumerate(zip(pts, widths)):
+        (sx, sz), _ = side(i)
+        verts.append((p[0] + sx * w / 2, y, p[1] + sz * w / 2))
+        verts.append((p[0] - sx * w / 2, y, p[1] - sz * w / 2))
+    for i in range(n - 1):
+        faces.append((2 * i, 2 * i + 1, 2 * i + 3, 2 * i + 2))
+    # 꼬리 V 파임: 마지막 두 꼭짓점 사이 가운데 점을 앞(머리 쪽)으로 당김
+    (sx, sz), (fx, fz) = side(n - 1)
+    p, w = pts[-1], widths[-1]
+    verts.append((p[0] - fx * w * notch, y, p[1] - fz * w * notch))
+    c = len(verts) - 1
+    faces[-1] = (2 * (n - 2), 2 * (n - 2) + 1, 2 * (n - 1) + 1, c, 2 * (n - 1))
+    return mesh_obj(name, mat, verts, faces)
+
+
+def flat_mat(name, rgb):
+    """한 색 평면 재질 (리본 띠: 정면 = 카메라라 facing 띠가 안 갈리므로 층을 겹쳐 색 띠를 만듦)"""
+    return toon_mat(name, [(0.0, rgb), (1.0, rgb)])
+
+
+def ribbon_layers(name, pts, widths, notch=0.6):
+    """레이저 리본 3겹: 바깥 핏빛 테 → 새빨강 → 흰 심지 (앞으로 갈수록 좁음, 잉크는 바깥 테에만 걸림)"""
+    obs = []
+    for k, (rgb, wk, dy) in enumerate((((0.42, 0.0, 0.03), 1.0, 0.0), ((1.0, 0.1, 0.12), 0.72, -0.01), ((1.0, 0.97, 0.95), 0.3, -0.02))):
+        m = flat_mat(f"{name}_m{k}", rgb)
+        obs.append((ribbon_obj(f"{name}{k}", m, pts, [w * wk for w in widths], notch, dy), m))
+    return obs
+
+
+def bake_c4slash():
+    """4장 근접 베기 = 칼끝이 그리는 레이저 리본 (한 번 16장, 카메라를 향한 XZ 면 = 게임에선 바닥 쪽으로 눕힘):
+    칼끝(은빛 별)이 120° 호를 쭉 그으며 레이저 리본을 남기고, 리본 꼬리(제비꼬리)가 칼끝을 따라오며 줄어 사라짐. 가운데 = 휘두르는 몸, +X = 정면"""
+    sc = reset(); ink4(sc, 1.4)
+    R = 1.25
+    hm = toon_mat("c4head", C4_STEEL)
+    head = star_obj("head", hm, 4, 0.35, 0.06, 0.04)
+    head.location.y = -0.05
+    live = []
+    for f in range(FRAMES):
+        for o, m in live:
+            bpy.data.objects.remove(o, do_unlink=True)
+        live = []
+        t = f / (FRAMES - 1)
+        sweep = ease_out(min(1, t / 0.3), 2)                  # 칼끝 0~1
+        tail = ease_out(max(0, (t - 0.22) / 0.62), 2)         # 꼬리가 따라옴
+        a0, a1 = -60 + 120 * tail, -60 + 120 * sweep
+        if a1 - a0 > 2:
+            N = 24
+            pts = [(math.cos(math.radians(a1 - (a1 - a0) * i / (N - 1))) * R, math.sin(math.radians(a1 - (a1 - a0) * i / (N - 1))) * R) for i in range(N)]
+            thick = 0.36 * max(0.35, 1 - max(0, t - 0.3) / 0.7)
+            widths = [thick * (1.0 - 0.35 * i / (N - 1)) for i in range(N)]   # 칼끝 쪽이 두껍고 꼬리로 갈수록 살짝 좁음
+            live = ribbon_layers(f"arc{f}_", pts, widths, 0.75)
+        a = math.radians(a1)
+        head.location.x, head.location.z = math.cos(a) * R, math.sin(a) * R
+        k = 1.0 if t < 0.32 else max(0.001, 1 - (t - 0.32) / 0.15)
+        head.scale = (k, k, k); head.hide_render = k <= 0.01
+        render(sc, "c4slash", f)
+
+
+def bake_c4strip():
+    """이동 궤적 텍스처 (1장, 눈빛 꼬리 · 돌진 자국): 가로 리본 — 왼쪽(U=0) = 머리 둥근 끝, 오른쪽(U=1) = 리본 꼬리(제비꼬리).
+    흰 심지 · 새빨강 · 핏빛 테 · 잉크선. TrailRenderer는 머리 → 꼬리로 U 0 → 1이라 꼬리 끝이 늘 리본 꼬리로 끝남"""
+    sc = reset(); ink4(sc, 1.2)
+    N = 20
+    pts = [(-1.5 + 3.0 * i / (N - 1), 0.0) for i in range(N)]
+    widths = [0.62 * (1.0 - 0.25 * i / (N - 1)) for i in range(N)]
+    ribbon_layers("strip", pts, widths, 0.9)
+    render(sc, "c4strip", 0)
+
+
+SETS = {"c4orb": bake_c4orb, "c4needle": bake_c4needle, "c4spark": bake_c4spark, "c4slash": bake_c4slash, "c4strip": bake_c4strip,
+        "fire": bake_fire, "smoke": bake_smoke, "spark": bake_spark, "mist": bake_mist, "dodge": bake_dodge, "memclock": bake_memclock, "memshatter": bake_memshatter,
         "c3orb": bake_c3orb, "c3shard": bake_c3shard, "c3spark": bake_c3spark, "c3water": bake_c3water}
 only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(SETS)
 for n in only:
