@@ -541,11 +541,24 @@ namespace CatTang
 
         void OnPlayerDeath(Health h) => EndRun(false);
 
+        /// <summary>이번 판에서 지금까지 얻은 시간의 조각 (기억 · 코스튬 보너스 포함) — 판이 끝날 때 받는 양</summary>
+        public int ShardGainPreview => Mathf.RoundToInt(shardsThisRun * (1 + Meta.Stat("ShardGain") + PlayerController.CostumeStat("MemoryShardGainAdd")));
+
+        /// <summary>전투 포기 (ESC 확인 창의 '예', 2026-11-19 사용자): 판 끝 처리 + 얻은 조각만 챙겨 결과 창 없이 마을로</summary>
+        public void GiveUp()
+        {
+            if (runOver) return;
+            runOver = true;
+            Meta.Shards += ShardGainPreview;
+            Meta.RunEnded();
+            ReturnToVillage();
+        }
+
         void EndRun(bool win)
         {
             if (runOver) return;
             runOver = true;
-            int gain = Mathf.RoundToInt(shardsThisRun * (1 + Meta.Stat("ShardGain") + PlayerController.CostumeStat("MemoryShardGainAdd")));
+            int gain = ShardGainPreview;
             shardsThisRun = gain;
             Meta.Shards += gain;
             Meta.RunEnded();

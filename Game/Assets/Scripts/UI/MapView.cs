@@ -16,6 +16,10 @@ namespace CatTang
         RectTransform panel, content, cat;
         Text title;
         bool open;
+        static MapView live;
+        static int closedFrame = -1;
+        /// <summary>이 프레임 Esc를 지도가 썼는지 (GameUI가 전투 포기 창을 안 열게)</summary>
+        public static bool EscUsed => (live && live.open) || closedFrame == Time.frameCount;
         object builtFor;                       // 어떤 레이아웃으로 그렸는지 (바뀌면 다시 그림)
         float scale;
         Vector2 worldMin;
@@ -89,8 +93,11 @@ namespace CatTang
             Refresh(rm);
         }
 
+        void OnEnable() => live = this;
+
         void Toggle(bool on)
         {
+            if (open && !on) closedFrame = Time.frameCount;
             open = on;
             canvas.gameObject.SetActive(on);
             builtFor = null;                 // 열 때마다 새로 (문 · 방 상태 반영)

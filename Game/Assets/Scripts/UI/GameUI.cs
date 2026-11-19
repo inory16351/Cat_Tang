@@ -276,7 +276,7 @@ namespace CatTang
             heatText = UIKit.Label("Heat", hudRoot, new Vector2(0.5f, 0), new Vector2(390, 40 + up), new Vector2(260, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Gold);
             skillText = UIKit.Label("Skill", hudRoot, new Vector2(1, 0), new Vector2(-30, 30), new Vector2(420, 130), 20, TextAnchor.LowerRight);
             var help = UIKit.Label("Help", hudRoot, new Vector2(0, 0), new Vector2(26, 26), new Vector2(560, 150), 18, TextAnchor.LowerLeft, false, new Color(1, 1, 1, 0.55f));
-            help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리 · M 지도" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\n우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리";
+            help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리 · M 지도" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\n우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리 · Esc 포기";
             // 상호작용 안내
             prompt = UIKit.Img("Prompt", hudRoot, "button", new Vector2(0.5f, 0), new Vector2(0, 340 + up), new Vector2(460, 84), true, 2.2f).gameObject;
             promptText = UIKit.Label("Text", prompt.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 2), new Vector2(420, 60), 28, TextAnchor.MiddleCenter, true);
@@ -312,6 +312,8 @@ namespace CatTang
                 }
                 if (kb.escapeKey.wasPressedThisFrame && current && !resultsOpen) CloseAll();
                 else if (kb.escapeKey.wasPressedThisFrame && village && !current && !player.InputLocked && !leaving && !VillageMap.EscUsed) OpenVillageMenu();   // 깨어나는 중엔 안 열림
+                else if (kb.escapeKey.wasPressedThisFrame && !village && !current && !resultsOpen && !player.InputLocked && !leaving && !MapView.EscUsed
+                         && player.health.Alive) OpenGiveUp();                 // 판 안: 전투 포기하고 마을로 갈지 묻기
             }
             UpdateDodge();
             UpdateHeatGlow();
@@ -724,6 +726,30 @@ namespace CatTang
             info.text = $"슬롯 {Meta.ActiveSlot}  ·  넘은 장 {Meta.ChaptersCleared}  ·  시간의 조각 {Meta.Shards}";
             UIKit.MakeButton("Resume", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(400, 90), "계속하기", CloseAll, 30);
             UIKit.MakeButton("Lobby", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -120), new Vector2(400, 90), "메인 로비로", () => StartCoroutine(ToLobbyCo()), 30);
+        }
+
+        // ---------- 판: ESC = 전투 포기 확인 (2026-11-19 사용자) ----------
+        // 예 = 판 끝(죽었을 때와 같은 처리), 이번 판에서 얻은 시간의 조각만 챙겨 마을로. 결과 창 없이 바로
+        public void OpenGiveUp()
+        {
+            var go = OpenScreen("GiveUp");                                     // 게임 멈춤
+            UIKit.Dim(go.transform);
+            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 440), true);
+            UIKit.Banner("잠시 멈춤", panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 440);
+            UIKit.CloseButton(panel.transform, CloseAll);
+            var q = UIKit.Label("Question", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 50), new Vector2(700, 50), 30, TextAnchor.MiddleCenter, true, UIKit.Cream);
+            q.text = "전투를 포기하고 마을로 이동하시겠습니까?";
+            var rm = RunManager.Instance;
+            var info = UIKit.Label("Info", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 0), new Vector2(700, 36), 22, TextAnchor.MiddleCenter, false, UIKit.Muted);
+            info.text = rm ? $"이번 판에서 얻은 시간의 조각 {rm.ShardGainPreview}개만 가져갑니다" : "";
+            UIKit.MakeButton("Yes", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(-150, -100), new Vector2(260, 84), "예", () =>
+            {
+                if (leaving) return;
+                leaving = true;
+                CloseAll();
+                RunManager.Instance?.GiveUp();
+            }, 30);
+            UIKit.MakeButton("No", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(150, -100), new Vector2(260, 84), "아니오", CloseAll, 30);
         }
 
         IEnumerator ToLobbyCo()
