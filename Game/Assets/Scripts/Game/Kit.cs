@@ -23,6 +23,13 @@ namespace CatTang
 
         public static bool Has(ChapterDef ch, string name) => Prefab(ch, name);
 
+        /// <summary>스테이지별 키트 이름 (2026-11-19 사용자: 문 · 복도 디자인을 스테이지마다 다르게): "Gate" → "Gate_S2". 보스 방은 스테이지 4 것</summary>
+        public static string Stage(string baseName)
+        {
+            var rm = RunManager.Instance;
+            return $"{baseName}_S{Mathf.Clamp(rm ? rm.stageIndex : 0, 0, 3) + 1}";
+        }
+
         /// <summary>장과 상관없이 같은 모델을 쓰는 픽업(하트 · 경험치 보석): 그 장 키트에 없으면 1장 것</summary>
         public static GameObject Shared(ChapterDef ch, string name)
         {

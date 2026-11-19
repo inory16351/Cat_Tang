@@ -153,8 +153,9 @@ namespace CatTang
                     var pick = options[rnd.NextDouble() < 0.45 && options.Contains(last + Dirs[0]) ? options.IndexOf(last + Dirs[0]) : rnd.Next(options.Count)];
                     cells.Add(pick);
                 }
-            var cellSize = CellSize;
-            var roomSize = sizeOverride ?? (boss ? (Ch2Kit.Is(ch) ? Ch2Kit.BossRoomSize : Ch3Kit.Is(ch) ? Ch3Kit.BossRoomSize : new Vector2(34, 30)) : RoomSize);   // 3장 보스 = 거울 제단 지름 40m   // 2장 보스 = 전차대 지름 32m가 들어가게
+            var rmI = RunManager.Instance;   // 2장 보스 = 전차대 지름 32m · 3장 보스 = 거울 제단 지름 40m가 들어가게, 일반 방 = 장 · 스테이지별 크기
+            var roomSize = sizeOverride ?? (boss ? (Ch2Kit.Is(ch) ? Ch2Kit.BossRoomSize : Ch3Kit.Is(ch) ? Ch3Kit.BossRoomSize : new Vector2(34, 30)) : RoomSizeFor(ch != null ? ch.Id : 1, rmI ? rmI.stageIndex : 0));
+            var cellSize = boss ? CellSize : roomSize + new Vector2(Corridor, Corridor);   // 방 칸 간격 = 방 + 복도 10m (방 크기가 장 · 스테이지마다 다름)
             var floor = Mat(boss ? Color.Lerp(ch.Floor, new Color(0.3f, 0.25f, 0.45f), 0.45f) : ch.Floor, 0);
             var wall = Mat(ch.Wall, 4);
             var gateM = Mat(new Color(0.85f, 0.62f, 0.25f), 4);
@@ -214,14 +215,18 @@ namespace CatTang
                         var mid = new Vector3(side.x * (hw + gapLen / 2), 0, side.y * (hd + gapLen / 2));
                         var cor = new GameObject("Corridor").transform;
                         cor.SetParent(info.root, false);
-                        Prim(PrimitiveType.Cube, "Floor", cor, mid + Vector3.down * 0.1f, horizontal ? new Vector3(4.6f, 0.2f, gapLen + 0.4f) : new Vector3(gapLen + 0.4f, 0.2f, 4.6f), floor);
+                        bool dressed = Kit.Has(ch, Kit.Stage("Corridor"));                   // 스테이지별 복도 모델이 있으면 맨 상자는 충돌만 남김
+                        var cf = Prim(PrimitiveType.Cube, "Floor", cor, mid + Vector3.down * 0.1f, horizontal ? new Vector3(4.6f, 0.2f, gapLen + 0.4f) : new Vector3(gapLen + 0.4f, 0.2f, 4.6f), floor);
+                        if (dressed) cf.GetComponent<Renderer>().enabled = false;
                         for (int k = -1; k <= 1; k += 2)
                         {
                             var o = horizontal ? new Vector3(k * 2.6f, 1.25f, 0) : new Vector3(0, 1.25f, k * 2.6f);
                             // 복도 벽도 건물 · 절벽으로 덮음 (맨 상자 X)
                             var cw = Prim(PrimitiveType.Cube, "Wall", cor, mid + o, horizontal ? new Vector3(0.6f, 2.5f, gapLen + 0.4f) : new Vector3(gapLen + 0.4f, 2.5f, 0.6f), wall);
-                            Kit.TileWall(ch, cw, horizontal ? new Vector3(-k, 0, 0) : new Vector3(0, 0, -k));
+                            if (dressed) cw.GetComponent<Renderer>().enabled = false;
+                            else Kit.TileWall(ch, cw, horizontal ? new Vector3(-k, 0, 0) : new Vector3(0, 0, -k));
                         }
+                        DressCorridor(ch, cor, mid, new Vector3(side.x, 0, side.y), gapLen, new Vector3(pos.x, 0, pos.z));
                     }
                 }
                 if (!boss) AddShape(ch, info, rnd);
@@ -243,7 +248,7 @@ namespace CatTang
             {
                 var lastCell = cells[cells.Count - 1];
                 BuildSaloon(ch, layout, origin + new Vector3((lastCell.x + saloonDir.x) * cellSize.x, 0, (lastCell.y + saloonDir.y) * cellSize.y),
-                    new Vector3(-saloonDir.x, 0, -saloonDir.y), cellSize, seed);
+                    new Vector3(-saloonDir.x, 0, -saloonDir.y), roomSize, seed);
             }
             return layout;
         }
@@ -285,7 +290,7 @@ namespace CatTang
             float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
             int S() => rnd.Next(2) == 0 ? -1 : 1;
             double roll = rnd.NextDouble();
-            int want = roll < 0.12 ? 1 : roll < 0.6 ? 2 : 3;
+            int want = (roll < 0.12 ? 1 : roll < 0.6 ? 2 : 3) + (Density(info) >= 1.5f ? 1 : 0);   // 큰 방은 지형지물 하나 더
             var local = new List<Rect>();
             for (int tries = 0; tries < 40 && local.Count < want && pool.Count > 0; tries++)
             {
@@ -317,29 +322,64 @@ namespace CatTang
             }
         }
 
+        /// <summary>
+        /// 스테이지별 복도 · 문틀 (2026-11-19 사용자: 문 · 복도 디자인을 스테이지마다 다르게, 블렌더 + Codex — Art/tools/blender_kit_ch{1,2,3}_gates.py).
+        /// Corridor_S# = 바닥 + 양옆 벽 한 덩어리(길이 10.4m), Portal_S# = 방 벽 구멍 둘레 문틀 → 이쪽 방 벽 · 저쪽 방 벽 양 끝에 놓음.
+        /// 충돌은 맨 상자(복도 바닥 · 벽)가 그대로 맡음. 모델이 없는 장은 예전처럼 맨 상자 + 벽 모듈
+        /// </summary>
+        static void DressCorridor(ChapterDef ch, Transform cor, Vector3 mid, Vector3 dir, float gapLen, Vector3 nearWall)
+        {
+            float yaw = Quaternion.LookRotation(dir).eulerAngles.y;
+            var c = Kit.Place(ch, Kit.Stage("Corridor"), cor, mid, yaw, 1f, false);
+            if (c) c.transform.localScale = Vector3.Scale(c.transform.localScale, new Vector3(1, 1, (gapLen + 0.4f) / 10.4f));
+            string portal = Kit.Stage("Portal");
+            if (!Kit.Has(ch, portal)) return;
+            nearWall.y = 0;
+            Kit.Place(ch, portal, cor, nearWall, yaw + 180f, 1f, false);              // 이쪽 방: 정면이 방 안쪽
+            Kit.Place(ch, portal, cor, nearWall + dir * gapLen, yaw, 1f, false);      // 저쪽 방: 정면이 저쪽 방 안쪽
+        }
+
         static Vector2 ClosestPoint(Rect r, Vector2 p) => new(Mathf.Clamp(p.x, r.xMin, r.xMax), Mathf.Clamp(p.y, r.yMin, r.yMax));
 
         // ---------- 술집 홀 (중간 보스, 2026-11-17 사용자: 건물로 걸어 들어가 이어지게) ----------
         // 스테이지 2 마지막 방에서 복도를 지나 술집 여닫이문으로 들어감 → 홀 안에서 싸움 → 이기면 북쪽 뒷문이 열리고
         // 그 너머에 스테이지 3이 이어 지어짐 (RunManager). 실내: 나무 마루 · 판자벽, 바깥 입구 쪽은 건물 정면
         // 방 크기 (2026-11-17 사용자: 모양을 깎는다면 줄이지 말고 키울 것): 24×20 → 28×24. 깎이는 덩어리를 빼도 예전보다 넓음
-        public static readonly Vector2 RoomSize = new(28, 24);
-        public static readonly Vector2 CellSize = new(38, 34);       // 방 칸 간격 = 방 + 복도 10m
-        public static readonly Vector2 SaloonSize = RoomSize;        // 일반 방과 같아야 들어오는 복도 길이가 맞음
-        public const float CellDepth = 34f;               // 방 칸 간격 (스테이지 3을 뒷문 너머에 붙일 때) = CellSize.y
+        public static readonly Vector2 RoomSize = new(28, 24);       // 기준 방 (1장 스테이지 1 · 중간 보스 홀)
+        public static readonly Vector2 CellSize = new(38, 34);       // 보스 방 칸 간격 (방 하나라 상관없음)
+        public static readonly Vector2 SaloonSize = RoomSize;
+        public const float Corridor = 10f;                           // 방 사이 복도 길이
 
-        static void BuildSaloon(ChapterDef ch, StageLayout layout, Vector3 center, Vector3 entrance, Vector2 cellSize, int seed)
+        // 방 크기 규칙 (2026-11-19 사용자: 몬스터 수에 비해 방이 작음, 스테이지 2부터) — 레벨 디자인 md '방 크기 규칙' 표.
+        // 웨이브 적 수가 늘어나는 만큼 장 · 스테이지마다 커짐. 5장 이후는 4장 값
+        static readonly Vector2[,] StageRooms =
+        {
+            { new(28, 24), new(34, 29), new(36, 30), new(38, 31) },
+            { new(34, 29), new(36, 30), new(38, 32), new(40, 33) },
+            { new(36, 30), new(38, 32), new(40, 33), new(42, 35) },
+            { new(38, 32), new(40, 33), new(42, 35), new(44, 37) },
+        };
+
+        public static Vector2 RoomSizeFor(int chapter, int stage) =>
+            StageRooms[Mathf.Clamp(chapter - 1, 0, StageRooms.GetLength(0) - 1), Mathf.Clamp(stage, 0, 3)];
+
+        /// <summary>기준 방(28×24) 대비 넓이 배율, 1 ~ 1.8 — 오브젝트 · 엄폐물 수를 방 크기에 비례해 늘림</summary>
+        public static float Density(RoomInfo info) => info == null ? 1f : Mathf.Clamp(info.size.x * info.size.y / (RoomSize.x * RoomSize.y), 1f, 1.8f);
+        public static int Scaled(int n, RoomInfo info) => Mathf.RoundToInt(n * Density(info));
+
+        /// <summary>중간 보스 홀 뒷문 너머 스테이지 3 첫 방 가운데까지 거리 (홀 깊이 / 2 + 복도 + 스테이지 3 방 깊이 / 2)</summary>
+        public static float BackAttachDistance(ChapterDef ch, RoomInfo hall) =>
+            hall.size.y / 2 + Corridor + RoomSizeFor(ch != null ? ch.Id : 1, 2).y / 2;
+
+        static void BuildSaloon(ChapterDef ch, StageLayout layout, Vector3 center, Vector3 entrance, Vector2 stageRoom, int seed)
         {
             var rnd = new System.Random(seed + 77);
             var size = SaloonSize;
-            if (Ch3Kit.Is(ch))
-            {
-                // 3장 거울 극장 (2026-11-18 사용자: 훨씬 크게) 36×32m: 들어오는 쪽 벽은 제자리(복도와 맞음), 나머지 방향으로 넓힘.
-                // 옆 · 뒤 칸 방과는 복도 10m 틈 안에서 늘어나 겹치지 않음. 뒷문 복도는 CellDepth - hd - 12 = 6m
-                size = Ch3Kit.TheaterSize;
-                float extra = Mathf.Abs(entrance.x) > 0.5f ? (size.x - RoomSize.x) / 2 : (size.y - RoomSize.y) / 2;
-                center -= entrance * extra;
-            }
+            if (Ch3Kit.Is(ch)) size = Ch3Kit.TheaterSize;                   // 3장 거울 극장 (2026-11-18 사용자: 훨씬 크게) 36×32m
+            // 들어오는 벽이 스테이지 2 마지막 방에서 복도 10m 거리에 오게 맞춤 (일반 방 크기가 장 · 스테이지마다 달라 홀과 다름).
+            // 뒷문 복도도 10m, 스테이지 3 첫 방은 RunManager가 BackAttachDistance에 지음
+            float extra = Mathf.Abs(entrance.x) > 0.5f ? (size.x - stageRoom.x) / 2 : (size.y - stageRoom.y) / 2;
+            center -= entrance * extra;
             var info = new RoomInfo { center = center, size = size, midBoss = true, farSide = Vector3.forward };
             bool hall2 = Ch2Kit.Is(ch);                                      // 2장: 대합실 (태엽 역장)
             bool hall3 = Ch3Kit.Is(ch);                                      // 3장: 거울 극장 (신기루 마술사) — 뒷벽 무대 커튼, 양옆 거울 벽, 바닥 거울, 장애물 없음
@@ -385,16 +425,25 @@ namespace CatTang
                 // 복도: 입구 쪽은 스테이지 2 마지막 방이 이미 지음. 뒷문 쪽은 스테이지 3 첫 방(깊이 20)의 남쪽 벽까지
                 if (side == back)
                 {
-                    float gapLen = CellDepth - hd - RoomSize.y / 2;
+                    float gapLen = Corridor;                                   // 스테이지 3 첫 방은 BackAttachDistance에 지어짐
                     var mid = new Vector3(0, 0, hd + gapLen / 2);
                     var cor = new GameObject("BackCorridor").transform;
                     cor.SetParent(info.root, false);
                     cor.localPosition = Vector3.zero;
+                    bool dressed = Kit.Has(ch, Kit.Stage("Corridor"));
                     var cf = Prim(PrimitiveType.Cube, "Floor", cor, mid + Vector3.down * 0.1f, new Vector3(4.6f, 0.2f, gapLen + 0.4f), floorM);
-                    var cg = new GameObject("CorridorGround").transform; cg.SetParent(cor, false); cg.localPosition = mid;
-                    Kit.TileFloor(ch, cg, new Vector2(4.6f, gapLen + 0.4f), cf, seed + 5, "Ground", false);
+                    if (dressed) cf.GetComponent<Renderer>().enabled = false;
+                    else
+                    {
+                        var cg = new GameObject("CorridorGround").transform; cg.SetParent(cor, false); cg.localPosition = mid;
+                        Kit.TileFloor(ch, cg, new Vector2(4.6f, gapLen + 0.4f), cf, seed + 5, "Ground", false);
+                    }
                     for (int k = -1; k <= 1; k += 2)
-                        Prim(PrimitiveType.Cube, "Wall", cor, mid + new Vector3(k * 2.6f, 1.25f, 0), new Vector3(0.6f, 2.5f, gapLen + 0.4f), wall);
+                    {
+                        var cw = Prim(PrimitiveType.Cube, "Wall", cor, mid + new Vector3(k * 2.6f, 1.25f, 0), new Vector3(0.6f, 2.5f, gapLen + 0.4f), wall);
+                        if (dressed) cw.GetComponent<Renderer>().enabled = false;
+                    }
+                    DressCorridor(ch, cor, mid, Vector3.forward, gapLen, new Vector3(0, 0, hd));
                 }
             }
             if (hall2) { Ch2Kit.WaitingHall(ch, info, hw, hd, rnd); layout.rooms.Add(info); return; }
@@ -437,13 +486,13 @@ namespace CatTang
             int si = 0;
             Vector3 Next() => si < spots.Count ? spots[si++] + new Vector3((float)rnd.NextDouble() - 0.5f, 0, (float)rnd.NextDouble() - 0.5f) : Vector3.zero;
 
-            int kegs = boss ? 0 : rnd.Next(2, 5);
+            int kegs = boss ? 0 : Scaled(rnd.Next(2, 5), info);
             for (int k = 0; k < kegs; k++)
             {
                 var go = Kit.Place(ch, "Keg", root, Next(), rnd.Next(360));
                 if (go) PowderKeg.Make(go);
             }
-            int cover = boss ? 2 : rnd.Next(3, 6);
+            int cover = boss ? 2 : Scaled(rnd.Next(3, 6), info);
             string[] kinds = { "Wagon", "Crates", "Fence" };
             for (int k = 0; k < cover; k++)
             {
@@ -475,6 +524,11 @@ namespace CatTang
             var go = new GameObject("Door_" + kind);
             go.transform.SetParent(root, false);
             go.transform.localPosition = pos;
+            var rch = RunManager.Instance ? RunManager.Instance.Chapter : null;
+            if (Kit.Has(rch, "RewardDoor"))
+                Kit.Place(rch, "RewardDoor", go.transform, Vector3.zero, 180f, 1f, false);   // 장별 보상 문 (블렌더 + Codex), 정면이 방 쪽(−Z)
+            else
+            {
             var frame = Mat(new Color(0.85f, 0.62f, 0.25f), 4);
             Prim(PrimitiveType.Cube, "Post_L", go.transform, new Vector3(-1.3f, 1.4f, 0), new Vector3(0.35f, 2.8f, 0.35f), frame, false);
             Prim(PrimitiveType.Cube, "Post_R", go.transform, new Vector3(1.3f, 1.4f, 0), new Vector3(0.35f, 2.8f, 0.35f), frame, false);
@@ -482,6 +536,7 @@ namespace CatTang
             var wood = Mat(kind == RewardKind.Boss ? new Color(0.55f, 0.18f, 0.2f) : new Color(0.55f, 0.36f, 0.22f), 3);
             Prim(PrimitiveType.Cube, "Leaf_L", go.transform, new Vector3(-0.6f, 1.2f, 0.05f), new Vector3(1.1f, 1.5f, 0.12f), wood, false, new Vector3(0, -12, 0));
             Prim(PrimitiveType.Cube, "Leaf_R", go.transform, new Vector3(0.6f, 1.2f, 0.05f), new Vector3(1.1f, 1.5f, 0.12f), wood, false, new Vector3(0, 12, 0));
+            }
             Interactable.WorldIcon(go.transform, RoomDoor.IconOf(kind), new Vector3(0, 4.1f, 0), 1.3f);
             Interactable.WorldLabel(go.transform, RoomDoor.NameOf(kind), new Vector3(0, 3.25f, -0.4f), 0.06f, UIKit.Gold);
             var d = go.AddComponent<RoomDoor>();

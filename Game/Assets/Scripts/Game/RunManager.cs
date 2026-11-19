@@ -513,7 +513,7 @@ namespace CatTang
             {
                 // 술집 뒷문 너머에 다음 스테이지를 이어 지음 (순간이동 없음). 고르지 않은 문들은 치움
                 foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
-                BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward, hall.center + new Vector3(0, 0, RoomBuilder.CellDepth));
+                BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward, hall.center + new Vector3(0, 0, RoomBuilder.BackAttachDistance(Chapter, hall)));
                 WoodGate.Break(hall.backGate);                           // 스테이지 3이 지어진 뒤에 뒷문 열림
                 ui?.Toast("뒷문이 열렸다 — 뒷문 너머로");
                 return;

@@ -49,7 +49,7 @@ namespace CatTang
             int n = rnd.NextDouble() < 0.5 ? 2 : 3;
             for (int k = 0; k < n; k++)
             {
-                var s = slots[k];
+                var s = new Vector2(slots[k].x * info.size.x / 28f, slots[k].y * info.size.y / 24f);   // 방 크기에 비례
                 float yaw = s.y > 0 ? 180f : 0f;                               // 열린 면(+Z)이 방 가운데를 보게
                 var go = Kit.Place(ch, "LM_Coach", info.root, new Vector3(s.x, 0, s.y), yaw, 1f, false);
                 if (!go) continue;
@@ -123,7 +123,7 @@ namespace CatTang
             // 광차 1~2 (야적장 · 기관고): 선로 위, 먼 쪽 끝을 향함
             if ((stage == 0 || stage >= 3) && !float.IsNaN(railZ))
             {
-                int carts = rnd.Next(1, 3);
+                int carts = Mathf.Min(2, RoomBuilder.Scaled(rnd.Next(1, 3), info));
                 for (int k = 0; k < carts; k++)
                 {
                     float x = (k == 0 ? -1 : 1) * (4f + (float)rnd.NextDouble() * 5f);
@@ -135,7 +135,7 @@ namespace CatTang
             // 증기 밸브 2~3 (승강장 · 기관고)
             if (stage == 1 || stage >= 3)
             {
-                int n = rnd.Next(2, 4);
+                int n = RoomBuilder.Scaled(rnd.Next(2, 4), info);
                 for (int k = 0; k < n; k++)
                 {
                     var p = Next();
@@ -148,7 +148,7 @@ namespace CatTang
             // 공중에 멈춘 짐 2~4 (야적장 · 승강장 · 객차)
             if (stage <= 2)
             {
-                int n = rnd.Next(2, 5);
+                int n = RoomBuilder.Scaled(rnd.Next(2, 5), info);
                 for (int k = 0; k < n; k++)
                 {
                     var go = Kit.Place(ch, "FloatLuggage", root, Next() + Vector3.up * FlyingLuggage.Height, rnd.Next(360), 1.1f, false);
@@ -157,7 +157,7 @@ namespace CatTang
             }
             // 부서지는 엄폐물 3~5 (짐 더미 · 벤치 · 상자)
             string[] kinds = { "LuggagePile", "Bench", "Crates" };
-            int cover = rnd.Next(3, 6);
+            int cover = RoomBuilder.Scaled(rnd.Next(3, 6), info);
             for (int k = 0; k < cover; k++)
             {
                 string kind = kinds[rnd.Next(kinds.Length)];
@@ -171,7 +171,7 @@ namespace CatTang
             for (int i = poses.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); (poses[i], poses[j]) = (poses[j], poses[i]); }
             if (poses.Count > 0)
             {
-                int people = rnd.Next(6, 9);
+                int people = RoomBuilder.Scaled(rnd.Next(6, 9), info);
                 for (int k = 0; k < people && si < spots.Count; k++)
                 {
                     string pose = poses[k % poses.Count];

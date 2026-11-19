@@ -97,14 +97,14 @@ namespace CatTang
             Vector3 Next() => si < spots.Count ? spots[si++] + new Vector3((float)rnd.NextDouble() - 0.5f, 0, (float)rnd.NextDouble() - 0.5f) * 0.8f : Vector3.zero;
 
             // 기억 수정 2~4
-            int crystals = rnd.Next(2, 5);
+            int crystals = RoomBuilder.Scaled(rnd.Next(2, 5), info);
             for (int k = 0; k < crystals && si < spots.Count; k++)
             {
                 var go = Kit.Place(ch, "MemoryCrystal", root, Next(), rnd.Next(360));
                 if (go) MemoryCrystal.Make(go);
             }
             // 분수 샘 1~2
-            int fountains = rnd.Next(1, 3);
+            int fountains = RoomBuilder.Scaled(rnd.Next(1, 3), info);
             for (int k = 0; k < fountains && si < spots.Count; k++)
             {
                 var go = Kit.Place(ch, "Fountain", root, Next(), rnd.Next(4) * 90f);
@@ -112,7 +112,7 @@ namespace CatTang
             }
             // 신기루 엄폐물 3~5 (모래 바위 · 무너진 기둥 · 선 거울), 내구 40. 선 거울은 거울 너머 검객이 튀어나오는 자리이기도 함
             string[] kinds = Stage >= 3 ? new[] { "FallenPillar", "StandMirror", "StandMirror" } : new[] { "FallenPillar", "StandMirror", "StandMirror", "SandRock" };
-            int cover = rnd.Next(3, 6);
+            int cover = RoomBuilder.Scaled(rnd.Next(3, 6), info);
             for (int k = 0; k < cover && si < spots.Count; k++)
             {
                 string kind = kinds[rnd.Next(kinds.Length)];

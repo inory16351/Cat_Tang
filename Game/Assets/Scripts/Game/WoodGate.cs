@@ -33,7 +33,8 @@ namespace CatTang
             g.box = go.AddComponent<BoxCollider>();
             g.box.center = new Vector3(0, Height / 2, 0);
             g.box.size = new Vector3(Width, Height, Thick);
-            var prefab = Kit.Prefab(ch, "WoodGate");
+            // 스테이지별 문(블렌더 + Codex, Art/tools/blender_kit_ch{1,2,3}_gates.py) → 장 기본 나무 문 → 1장 나무 문
+            var prefab = Kit.Prefab(ch, Kit.Stage("Gate")) ?? Kit.Prefab(ch, "WoodGate") ?? Kit.Prefab(ch, "@1/WoodGate");
             if (prefab)
             {
                 var v = Object.Instantiate(prefab, go.transform, false);

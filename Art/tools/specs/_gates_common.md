@@ -1,0 +1,23 @@
+## Common rules for STAGE GATES / CORRIDORS / PORTALS / REWARD DOOR (all chapters)
+Top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size → chunky silhouettes, clear shapes, no tiny detail, slight hand-made irregularity (seeded random per piece, fixed seeds). BEVEL modifier (0.012-0.04, 2 segments, angle limit, clamp overlap) on hard parts.
+Rooms are connected by a straight corridor exactly 10 m long and 4.6 m wide (floor), with a doorway opening 4.6 m wide in each room wall. Every STAGE of a chapter has its own look (4 stages per chapter), described in the chapter spec.
+Materials: ALL GREY (0.5,0.5,0.5) flat Principled BSDF, NO textures, named by ROLE exactly as the chapter spec allows (the game recolors by material NAME). Do not invent other names.
+Blender Z-up. Export settings for every FBX:
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Recalc normals outward. No cameras/lights in the export. Print `EXPORTED <Name> <objects> <tris> <dims>` per FBX and `DONE` at the end.
+
+### Piece types (make all of them for each stage n = 1..4, plus one reward door per chapter)
+1. `Gate_S<n>` — PRE-FRACTURED barrier that slams shut in the doorway when a fight starts and BURSTS INTO PIECES when the room is cleared. The game flings every piece separately, so build it from MANY SEPARATE mesh objects (10–24 pieces) that together look like one intact gate (no visible gaps when assembled).
+   - Overall width 4.6 (X -2.3..+2.3), height 2.4–2.7 (Z from 0), thickness ≤ 0.35 centered on Y=0, front = +Y. The whole gate design is laid out around (0,0,0) = bottom center.
+   - Objects named `Piece_00`, `Piece_01`, … ; each piece's ORIGIN at its own geometric center (origin_set ORIGIN_GEOMETRY), but keep its world position so the assembled gate is intact. Do NOT join pieces. Break edges should look like the material (jagged splinters for wood, clean cuts / bent bars for iron, sharp facets for crystal / stone, puffy lumps for cloud).
+   - Plus 3 small debris templates `Splinter_0`, `Splinter_1`, `Splinter_2` (0.2–0.45 long chips of the gate's main material) placed INSIDE the gate volume at (0, 0, 1.3) so they are hidden.
+   - ≤ 6000 tris. All pieces + splinters exported together to `Kit_Gate_S<n>.fbx` (flat hierarchy).
+2. `Corridor_S<n>` — the visual dressing of the 10 m corridor, ONE joined mesh. Corridor runs along Y from -5.2 to +5.2 (10.4 long), origin at (0,0,0) = floor center.
+   - Floor strip 4.6 wide (X -2.3..+2.3), top surface at Z=0.02 (thin slab, bottom at -0.2), with stage-themed surface detail (planks / rails / tiles / stepping stones …) modeled as shallow raised shapes (≤ 0.06 high) so it reads from above.
+   - Side walls / edges on BOTH sides occupying X ±2.3..±2.9 (0.6 thick), max height 2.5 (keep tops low so the player is never hidden from a high camera). Break walls up with posts, buttresses, crates, rocks, railings — readable rhythm every ~2–2.6 m. Open-sided stages (bridges, sky paths) use low railings / edges instead (≤ 1.1 high) but still occupy X ±2.3..±2.9.
+   - ≤ 7000 tris. Export `Kit_Corridor_S<n>.fbx`.
+3. `Portal_S<n>` — the doorway frame that sits in a room wall around the corridor opening, ONE joined mesh. Origin (0,0,0) = bottom center of the opening. Opening clear width 4.6 (nothing between X -2.3..+2.3 below Z 2.9), frame / pillars occupy X ±2.3..±3.4, total height 3.4–4.2, depth Y -0.6..+0.6. Front = +Y (room side); the game places it at both ends of the corridor. Stage-themed crown / lintel on top. ≤ 4000 tris. Export `Kit_Portal_S<n>.fbx`.
+4. `RewardDoor` (one per chapter) — the free-standing reward door that appears at the end of a stage (the player walks into it to pick the reward shown above it). Width 3.0, height 3.0, depth ~0.5, origin bottom center, front +Y. Objects: `Frame` (posts + lintel + small base, one mesh) and two door leaves `Leaf_L` and `Leaf_R` (each ~1.1 wide × 1.6–2.2 tall; put each leaf's ORIGIN on its hinge line at its OUTER edge so the game can swing it). Chapter-themed and a bit more ornate than the gates (it is a reward). ≤ 5000 tris. Export `Kit_RewardDoor.fbx` (3 objects).
+
+### Preview
+Render ONE preview PNG of everything laid out in a grid (rows = stages, columns = Gate / Corridor / Portal, reward door at the end), Workbench engine, flat MATERIAL color with a distinct viewport color per material name, camera ~55 deg from above-front, 1800x1000, to `Art/tools/specs/<script name without .py>_preview.png`. The preview must not change the exported FBX files.

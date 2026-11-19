@@ -83,6 +83,20 @@ namespace CatTang.EditorTools
             ("Kit_SandBomb", 0.55f, 0f, 'h', KitDir, "SandBomb"),
             // 방 사이 나무 문 — 미리 쪼갠 조각(Piece_XX) + 가시 조각(Splinter_X), 클리어하면 WoodGate가 조각을 날림 (blender_kit_woodgate.py)
             ("Kit_WoodGate", 4.6f, 180f, 'w', KitDir, "WoodGate"),
+            // 스테이지별 문 · 복도 · 문틀 + 보상 문 (2026-11-19, blender_kit_ch1_gates.py)
+            ("Kit_Gate_S1", 4.6f, 180f, 'w', KitDir, "Gate_S1"),
+            ("Kit_Corridor_S1", 10.4f, 180f, 'd', KitDir, "Corridor_S1"),
+            ("Kit_Portal_S1", 6.8f, 180f, 'w', KitDir, "Portal_S1"),
+            ("Kit_Gate_S2", 4.6f, 180f, 'w', KitDir, "Gate_S2"),
+            ("Kit_Corridor_S2", 10.4f, 180f, 'd', KitDir, "Corridor_S2"),
+            ("Kit_Portal_S2", 6.8f, 180f, 'w', KitDir, "Portal_S2"),
+            ("Kit_Gate_S3", 4.6f, 180f, 'w', KitDir, "Gate_S3"),
+            ("Kit_Corridor_S3", 10.4f, 180f, 'd', KitDir, "Corridor_S3"),
+            ("Kit_Portal_S3", 6.8f, 180f, 'w', KitDir, "Portal_S3"),
+            ("Kit_Gate_S4", 4.6f, 180f, 'w', KitDir, "Gate_S4"),
+            ("Kit_Corridor_S4", 10.4f, 180f, 'd', KitDir, "Corridor_S4"),
+            ("Kit_Portal_S4", 6.8f, 180f, 'w', KitDir, "Portal_S4"),
+            ("Kit_RewardDoor", 3.0f, 180f, 'w', KitDir, "RewardDoor"),
             // 체력 회복 하트 (적 처치 드롭 · 상인, blender_kit_heart.py) — HeartPickup이 띄워 돌림
             ("Kit_Heart", 0.6f, 0f, 'w', KitDir, "Heart"),
             ("Kit_XpGem", 0.35f, 0f, 'h', KitDir, "XpGem"),          // 경험치 보석 (blender_kit_xpgem.py, XpOrb가 씀)
@@ -155,6 +169,20 @@ namespace CatTang.EditorTools
             ("Kit_Facade_Canopy", 8f, 180f, 'w', Kit2Dir, "Facade_Canopy"),
             ("Kit_Facade_Ticket", 5f, 180f, 'w', Kit2Dir, "Facade_Ticket"),
             ("Kit_Wall", 4f, 180f, 'w', Kit2Dir, "Wall"),
+            // 스테이지별 문 · 복도 · 문틀 + 보상 문 (2026-11-19, blender_kit_ch2_gates.py)
+            ("Kit_Gate_S1", 4.6f, 180f, 'w', Kit2Dir, "Gate_S1"),
+            ("Kit_Corridor_S1", 10.4f, 180f, 'd', Kit2Dir, "Corridor_S1"),
+            ("Kit_Portal_S1", 6.8f, 180f, 'w', Kit2Dir, "Portal_S1"),
+            ("Kit_Gate_S2", 4.6f, 180f, 'w', Kit2Dir, "Gate_S2"),
+            ("Kit_Corridor_S2", 10.4f, 180f, 'd', Kit2Dir, "Corridor_S2"),
+            ("Kit_Portal_S2", 6.8f, 180f, 'w', Kit2Dir, "Portal_S2"),
+            ("Kit_Gate_S3", 4.6f, 180f, 'w', Kit2Dir, "Gate_S3"),
+            ("Kit_Corridor_S3", 10.4f, 180f, 'd', Kit2Dir, "Corridor_S3"),
+            ("Kit_Portal_S3", 6.8f, 180f, 'w', Kit2Dir, "Portal_S3"),
+            ("Kit_Gate_S4", 4.6f, 180f, 'w', Kit2Dir, "Gate_S4"),
+            ("Kit_Corridor_S4", 10.4f, 180f, 'd', Kit2Dir, "Corridor_S4"),
+            ("Kit_Portal_S4", 6.8f, 180f, 'w', Kit2Dir, "Portal_S4"),
+            ("Kit_RewardDoor", 3.0f, 180f, 'w', Kit2Dir, "RewardDoor"),
             ("Kit_Cliff_Embankment", 6f, 180f, 'w', Kit2Dir, "Cliff"),
             // 소품 · 폭발물 (blender_kit_ch2_props.py)
             ("Kit_SteamValve", 1.6f, 180f, 'h', Kit2Dir, "SteamValve"),
@@ -326,6 +354,20 @@ namespace CatTang.EditorTools
             ("Kit_Wall_Arch", 6f, 'w', "Facade_Arch"),
             ("Kit_Wall_MirrorFrame", 4f, 'w', "Facade_MirrorFrame"),
             ("Kit_Wall", 4f, 'w', "Wall"),
+            // 스테이지별 문 · 복도 · 문틀 + 보상 문 (2026-11-19, blender_kit_ch3_gates.py)
+            ("Kit_Gate_S1", 4.6f, 'w', "Gate_S1"),
+            ("Kit_Corridor_S1", 10.4f, 'd', "Corridor_S1"),
+            ("Kit_Portal_S1", 6.8f, 'w', "Portal_S1"),
+            ("Kit_Gate_S2", 4.6f, 'w', "Gate_S2"),
+            ("Kit_Corridor_S2", 10.4f, 'd', "Corridor_S2"),
+            ("Kit_Portal_S2", 6.8f, 'w', "Portal_S2"),
+            ("Kit_Gate_S3", 4.6f, 'w', "Gate_S3"),
+            ("Kit_Corridor_S3", 10.4f, 'd', "Corridor_S3"),
+            ("Kit_Portal_S3", 6.8f, 'w', "Portal_S3"),
+            ("Kit_Gate_S4", 4.6f, 'w', "Gate_S4"),
+            ("Kit_Corridor_S4", 10.4f, 'd', "Corridor_S4"),
+            ("Kit_Portal_S4", 6.8f, 'w', "Portal_S4"),
+            ("Kit_RewardDoor", 3.0f, 'w', "RewardDoor"),
             ("Kit_Cliff_Island", 6f, 'w', "Facade_Island"),
             ("Kit_Wall_Cloud", 6f, 'w', "Facade_Cloud"),
             // 소품 · 폭발물 (blender_kit_ch3_props.py)
@@ -362,6 +404,38 @@ namespace CatTang.EditorTools
             ("Kit_Ch3_Magician", 4.0f, 'h', "Ch3_Magician"),
             ("Kit_Ch3_Whale", 14f, 'd', "Ch3_Whale"),
         };
+
+        /// <summary>스테이지별 문 · 복도 · 문틀 + 보상 문만 다시 빌드 (1 · 2 · 3장, blender_kit_ch{1,2,3}_gates.py)</summary>
+        [MenuItem("CatTang/스테이지 문 · 복도 만들기 (블렌더)")]
+        public static void BuildGates()
+        {
+            var sets = new (string src, string dir, Dictionary<string, Color> pal)[]
+            {
+                (Ch1Src, KitDir, ModelPalette.Ch1), (Ch2Src, Kit2Dir, ModelPalette.Ch2), (Ch3Src, Kit3Dir, ModelPalette.Ch3),
+            };
+            int made = 0;
+            try
+            {
+                foreach (var (src, dir, pal) in sets)
+                {
+                    SrcDir = src;
+                    ModelPalette.Active = pal;
+                    for (int n = 1; n <= 5; n++)
+                        foreach (var (b, size, fit) in n <= 4
+                            ? new[] { ($"Gate_S{n}", 4.6f, 'w'), ($"Corridor_S{n}", 10.4f, 'd'), ($"Portal_S{n}", 6.8f, 'w') }
+                            : new[] { ("RewardDoor", 3.0f, 'w') })
+                            if (File.Exists(src + "Kit_" + b + ".fbx") && Build("Kit_" + b, size, 180f, fit, dir, b)) made++;
+                }
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log($"[EnemyModelBuilder] 스테이지 문 · 복도 {made}개");
+            }
+            finally
+            {
+                SrcDir = Ch1Src;
+                ModelPalette.Active = ModelPalette.Ch1;
+            }
+        }
 
         [MenuItem("CatTang/3장 키트 만들기 (블렌더)")]
         public static void BuildCh3Kit()
