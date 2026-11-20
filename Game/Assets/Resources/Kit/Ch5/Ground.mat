@@ -24,23 +24,27 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 15916b2eedd2de245ac9a76399b3d251, type: 3}
+        m_Texture: {fileID: 2800000, guid: 663fa8d365d6e664da7cd05a8220ef15, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Tex2:
-        m_Texture: {fileID: 2800000, guid: 5abd85e199fea354db4dc75e94ea2cdd, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3aefc4b8d145ab441a86b26d5d0b0e2d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Tex3:
-        m_Texture: {fileID: 2800000, guid: 308c72f1968b6524697b265b999c58f2, type: 3}
+        m_Texture: {fileID: 2800000, guid: 6af56addb7423bd49a7f59c946c54874, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Tex4:
-        m_Texture: {fileID: 2800000, guid: 35c09dc1ca0362a4bad30822ab9f3d21, type: 3}
+        m_Texture: {fileID: 2800000, guid: ccda459a9142d59489410653085b3eb0, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Tex5:
-        m_Texture: {fileID: 2800000, guid: 4fe7b72ba9d4b554f97b1428aab16808, type: 3}
+        m_Texture: {fileID: 2800000, guid: ff679ee180f1f8e418202d37118c0894, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Tex6:
+        m_Texture: {fileID: 2800000, guid: 73a40be3dc6e10241a8ab236c92c85f2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -48,17 +52,30 @@ Material:
     - _AmbientStrength: 0.25
     - _BrawlActor: 0
     - _Brightness: 1
-    - _Contrast: 0.6
-    - _Darken: 0.78
-    - _Desat: 0.5
-    - _Glow: 1.6
+    - _ChunkCount: 6
+    - _ChunkSize: 5
+    - _ChunkSplit: 0.6
+    - _ChunkTile: 6
+    - _Contrast: 0.8
+    - _Darken: 0.85
+    - _DebugShard: 2
+    - _Desat: 0.05
+    - _EchoChance: 0.3
+    - _GapChance: 0.5
+    - _GapMax: 1
+    - _Glow: 1.3
     - _GlowSpeed: 1.4
     - _HatchDensity: 28
     - _HatchStrength: 0
     - _HatchWidth: 0.28
     - _InkStrength: 0
     - _InkWidth: 0
+    - _MeridianShift: 0.35
+    - _MeridianWidth: 0.16
+    - _MeridianX: 0
     - _Mid: 0.24
+    - _MirrorChance: 0.12
+    - _MirrorFacet: 1.1
     - _OuterOutlineWidth: 0
     - _OuterStencilRef: 0
     - _OutlineVertexAlpha: 0
@@ -75,28 +92,41 @@ Material:
     - _RimPower: 3
     - _RimStrength: 0
     - _RimThreshold: 0.55
+    - _RimWidth: 0.07
     - _Saturation: 1
-    - _SeamWidth: 0.018
+    - _SeamGlow: 0.35
+    - _SeamWidth: 0.035
     - _SecondShadeThreshold: 0.12
     - _ShadeDark: 0.62
     - _ShadeSoftness: 0.015
     - _ShadeThreshold: 0.45
-    - _Soft: 1.6
+    - _SinkChance: 0.28
+    - _SinkShade: 0.45
+    - _Soft: 0.8
     - _StarTwinkle: 0.8
     - _SwirlScale: 0.09
-    - _WarpAmount: 0.012
+    - _TickFlash: 0.6
+    - _VoidDepth: 3.5
+    - _VoidSeam: 0.35
+    - _VortexChance: 0.55
+    - _VortexTwist: 0.9
+    - _WarpAmount: 0.004
     - _WarpFreq: 1.7
     - _WarpSpeed: 0.45
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _GlowColor: {r: 1, g: 0.78, b: 0.29999998, a: 1}
+    - _GlowColor: {r: 0.55, g: 0.88, b: 1, a: 1}
     - _InkColor: {r: 0.11999995, g: 0.06999998, b: 0.13999996, a: 1}
+    - _MeridianColor: {r: 0.95, g: 0.74, b: 0.37999994, a: 1}
+    - _MirrorDark: {r: 0.2, g: 0.3, b: 0.46, a: 1}
+    - _MirrorLight: {r: 0.56, g: 0.76, b: 0.92, a: 1}
     - _OuterOutlineColor: {r: 0.78, g: 0.06999998, b: 0.11999995, a: 1}
     - _OutlineColor: {r: 0.079999976, g: 0.049999982, b: 0.079999976, a: 1}
     - _PatchTile: {r: 1.3, g: 0.8, b: 1.7, a: 1.1}
     - _RimColor: {r: 1, g: 0.78, b: 0.34999996, a: 1}
     - _SecondShadeColor: {r: 0.37999994, g: 0.31999996, b: 0.5, a: 1}
     - _ShadeColor: {r: 0.78, g: 0.62, b: 0.66, a: 1}
-    - _Tint: {r: 0.82, g: 0.8, b: 1, a: 1}
+    - _Tint: {r: 0.92, g: 0.98, b: 1.06, a: 1}
+    - _VoidColor: {r: 0.04, g: 0.09, b: 0.24, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

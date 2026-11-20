@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\audio-studio-mcp\\outputs\\e4m_glitch_v1.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e4m_glitch",
+    "original_idea": "지직거리는 글리치와 함께 순간이동 (4장 중간 보스 진자 집행관)",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, digital glitch of a corrupted hologram, a clockwork knight flickering out of reality, rapid stuttering bit-crushed static buzz with jittery crackles, ends in a sudden cut, harsh electric static, data corruption, metallic ticking undertone, close mic, dry, video game sound effect.",
+    "sound_fields": {
+      "source": "digital glitch of a corrupted hologram, a clockwork knight flickering out of reality",
+      "action": "rapid stuttering bit-crushed static buzz with jittery crackles, ends in a sudden cut",
+      "material": "harsh electric static, data corruption, metallic ticking undertone",
+      "space": "close mic, dry, video game sound effect"
+    },
+    "bpm": null,
+    "seconds": 1.2,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 2,
+    "seed": 1272381227,
+    "candidate": 1,
+    "file": "e4m_glitch_v1.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-20T11:00:28",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -2.08,
+    "raw_peak_dbfs": -2.08,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-20T11:01:20",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 1.2,
+  "steps": [
+    "trim_silence -50.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/40.0 ms",
+    "peak normalize -1.0 dBFS (+1.08 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1122,
+  "file": "e4m_glitch_1.ogg"
+}

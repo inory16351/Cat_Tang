@@ -139,6 +139,10 @@ namespace CatTang.EditorTools
             { "Ch4_Dancer", ("ch4m_dancerspin", 0.6f, null, 0, true) },
             { "Ch4_Assassin", ("ch4m_assassinstab", 0.9f, null, 0, false) },
             { "Ch4_Knight", ("ch4m_knightswingr", 1.2f, null, 0, false) },
+            // 4장 보스 (Hyper3D, 2026-11-20): 집행관 · 시침 = 진자 기사 모션, 분침 = 초침 자객 모션을 빌려 씀
+            { "Ch4_Executioner", ("ch4m_knightswingr", 1.2f, null, 0, false) },
+            { "Ch4_HourHand", ("ch4m_knightswingr", 1.2f, null, 0, false) },
+            { "Ch4_MinuteHand", ("ch4m_assassinstab", 0.9f, null, 0, false) },
             { "Ch4_Repairman", ("ch4m_repairtoss", 0.65f, null, 0, false) },
             // 5장 (2026-11-19 사용자: 앞 장 모션 재활용 말고 다른 느낌으로) → 전용 클립 (EnemyMotions.Ch5, 글리치 · 둥실). 보스는 아직 행동이 없어 기본 공격만
             { "Ch5_Gunner", ("ch5m_gunnershot", 0.85f, null, 0, false) },
@@ -147,6 +151,7 @@ namespace CatTang.EditorTools
             { "Ch5_Assassin", ("ch5m_assassinslash", 0.9f, null, 0, false) },
             { "Ch5_Caster", ("ch5m_casterlob", 0.55f, "ch5m_casteropen", 0.6f, false) },
             { "Ch5_Boss", ("ch5m_bossreap", 1.4f, null, 0, false) },
+            { "Ch5_LordOfTime", ("ch5m_bossreap", 1.4f, null, 0, false) },
             // 2장: 전용 클립 (Ch2Motion — 근육 커브로 만든 코드 클립, 짐꾼은 PorterRig)
             { "Ch2_Conductor", ("ch2m_conductorflick", 0.9f, null, 0, false) },
             { "Ch2_Conductor_Plus", ("ch2m_conductorflick", 0.8f, null, 0, false) },
@@ -180,6 +185,10 @@ namespace CatTang.EditorTools
             { "Ch4_Dancer", new[] { ("Rise", "ch4m_dancerrise", 0.4f, false), ("Spin", "ch4m_dancerspin", 0.6f, true), ("Finale", "ch4m_dancerfinale", 0.7f, false) } },
             { "Ch4_Assassin", new[] { ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
             { "Ch4_Knight", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
+            // 4장 보스 (Hyper3D, 2026-11-20): 집행관 · 시침 = 진자 기사 모션, 분침 = 초침 자객 모션을 빌려 씀
+            { "Ch4_Executioner", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
+            { "Ch4_HourHand", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
+            { "Ch4_MinuteHand", new[] { ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
             { "Ch4_Repairman", new[] { ("Wind", "ch4m_repairwind", 0.95f, false), ("Toss", "ch4m_repairtoss", 0.65f, false) } },
             { "Ch5_Gunner", new[] { ("Shot", "ch5m_gunnershot", 0.85f, false) } },
             { "Ch5_Witch", new[] { ("Cast", "ch5m_witchcast", 0.95f, false), ("Link", "ch5m_witchlink", 0.65f, false) } },
@@ -187,6 +196,7 @@ namespace CatTang.EditorTools
             { "Ch5_Assassin", new[] { ("Dive", "ch5m_assassindive", 0.45f, false), ("Emerge", "ch5m_assassinemerge", 1.4f, false), ("Slash", "ch5m_assassinslash", 0.9f, false), ("Breath", "ch5m_assassinbreath", 1.0f, false) } },
             { "Ch5_Caster", new[] { ("Open", "ch5m_casteropen", 0.6f, false), ("Lob", "ch5m_casterlob", 0.55f, false) } },
             { "Ch5_Boss", new[] { ("ReapWind", "ch5m_bossreapwind", 1.1f, false), ("ReapDash", "ch5m_bossreapdash", 1.05f, false), ("Reap", "ch5m_bossreap", 1.4f, false), ("Cast", "ch5m_bosscast", 1.1f, false), ("Spear", "ch5m_bossspear", 1.2f, false) } },
+            { "Ch5_LordOfTime", new[] { ("ReapWind", "ch5m_bossreapwind", 1.1f, false), ("ReapDash", "ch5m_bossreapdash", 1.05f, false), ("Reap", "ch5m_bossreap", 1.4f, false), ("Cast", "ch5m_bosscast", 1.1f, false), ("Spear", "ch5m_bossspear", 1.2f, false) } },
         };
         // 달리기 대신 쓸 전용 걷기 (없으면 고양이 run)
         static readonly Dictionary<string, string> Walks = new()
@@ -195,6 +205,10 @@ namespace CatTang.EditorTools
             { "Ch4_Ringer", "ch4m_ringerrun" },
             { "Ch4_Assassin", "ch4m_assassinrun" },
             { "Ch4_Knight", "ch4m_knightwalk" },
+            // 4장 보스 (Hyper3D, 2026-11-20): 집행관 · 시침 = 진자 기사 모션, 분침 = 초침 자객 모션을 빌려 씀
+            { "Ch4_Executioner", "ch4m_knightwalk" },
+            { "Ch4_HourHand", "ch4m_knightwalk" },
+            { "Ch4_MinuteHand", "ch4m_assassinrun" },
             { "Ch4_Repairman", "ch4m_repairscurry" },
             { "Ch5_Gunner", "ch5m_gunnerwalk" },
             { "Ch5_Witch", "ch5m_witchwalk" },
@@ -202,6 +216,7 @@ namespace CatTang.EditorTools
             { "Ch5_Assassin", "ch5m_assassinrun" },
             { "Ch5_Caster", "ch5m_casterwalk" },
             { "Ch5_Boss", "ch5m_bosswalk" },
+            { "Ch5_LordOfTime", "ch5m_bosswalk" },
         };
 
         // 고양이 idle 대신 쓸 전용 idle (무기 든 팔을 고정)
@@ -211,6 +226,10 @@ namespace CatTang.EditorTools
             { "Ch4_Ringer", "ch4m_ringeridle" },
             { "Ch4_Assassin", "ch4m_assassinidle" },
             { "Ch4_Knight", "ch4m_knightidle" },
+            // 4장 보스 (Hyper3D, 2026-11-20): 집행관 · 시침 = 진자 기사 모션, 분침 = 초침 자객 모션을 빌려 씀
+            { "Ch4_Executioner", "ch4m_knightidle" },
+            { "Ch4_HourHand", "ch4m_knightidle" },
+            { "Ch4_MinuteHand", "ch4m_assassinidle" },
             { "Ch4_Repairman", "ch4m_repairidle" },
             { "Ch5_Gunner", "ch5m_gunneridle" },
             { "Ch5_Witch", "ch5m_witchidle" },
@@ -218,6 +237,7 @@ namespace CatTang.EditorTools
             { "Ch5_Assassin", "ch5m_assassinidle" },
             { "Ch5_Caster", "ch5m_casteridle" },
             { "Ch5_Boss", "ch5m_bossidle" },
+            { "Ch5_LordOfTime", "ch5m_bossidle" },
         };
 
         /// <summary>4장 강화형(Ch4_*_Plus)은 기본 적의 무기 · 손잡이 각도 · 스킬 모션 · idle · 걸음을 그대로 씀</summary>
@@ -677,6 +697,8 @@ namespace CatTang.EditorTools
             ("Ch4_Soldier", 2.5f), ("Ch4_Ringer", 2.4f), ("Ch4_Dancer", 2.6f), ("Ch4_Assassin", 2.6f), ("Ch4_Knight", 3.0f), ("Ch4_Repairman", 2.3f),
             // 강화형 (2026-11-19 사용자: 색만 바꾸지 말고 이전 장처럼 새로 뽑기 — 같은 배색, 더 강력한 모습): 기본보다 약 15% 큼 (1 · 2장 강화형과 같은 비율)
             ("Ch4_Soldier_Plus", 2.9f), ("Ch4_Ringer_Plus", 2.75f), ("Ch4_Dancer_Plus", 3.0f), ("Ch4_Assassin_Plus", 3.0f), ("Ch4_Knight_Plus", 3.45f), ("Ch4_Repairman_Plus", 2.65f),
+            // 보스 (2026-11-20 사용자: Hyper3D로 다시, 컨셉 아트 느낌 살려서 · 집행관 · 시침은 육중하게): 원화 Art/tripo_input/ch4_boss/*_concept.png → Hyper3D 생성 + 리깅
+            ("Ch4_Executioner", 4.2f), ("Ch4_HourHand", 5.0f), ("Ch4_MinuteHand", 4.0f),
         };
         // 무기: 적 이름 → (무기, 손) 목록. 손 = true 오른손
         static readonly Dictionary<string, (string weapon, bool right)[]> Weapons4 = new()
@@ -688,6 +710,9 @@ namespace CatTang.EditorTools
             { "Ch4_Repairman", new[] { ("Wrench", true) } },
             // 강화 기사 (2026-11-19 사용자: Tripo가 계속 오류 → 블렌더로 추가 장비 + 주 무기): 기본 기사 몸(Ch4_Knight_Plus.fbx = 기본 FBX 복사 + 녹슨 텍스처) + 큰 양날 진자 낫
             { "Ch4_Knight_Plus", new[] { ("PendulumScythePlus", true) } },
+            // 쌍둥이 보스: 시침 = 문자판 대검, 분침 = 레이피어 (집행관은 팔 자체가 칼날이라 없음)
+            { "Ch4_HourHand", new[] { ("Greatsword", true) } },
+            { "Ch4_MinuteHand", new[] { ("Rapier", true) } },
         };
         // 강화형 추가 장비: 블렌더 + Codex Kit_KP_*.fbx (원점 = 붙일 뼈 자리, +Y 앞 · +X 오른쪽, 2.2m 기사 기준) → Resources/Kit/Ch4/KP_*
         // → 뼈 아래에 몸 방향 그대로(쉬는 자세 기준) 붙임. 명세 Art/tools/specs/kit_ch4_knight_plus_spec.md

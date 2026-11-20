@@ -441,6 +441,7 @@ namespace CatTang
         {
             if (ch.Id == 2) return MidBoss2(pos, ch);
             if (ch.Id == 3) return MidBoss3(pos, ch);
+            if (ch.Id == 4) return MidBoss4(pos, ch);
             var e = Root("MidBoss_BountyHunter", pos, 1080 * ch.HpMul, Enemy.Kind.Boss, 1.3f, 3.8f);
             if (!AttachModel(e, "Ch1_MidBoss"))
             {
@@ -502,6 +503,25 @@ namespace CatTang
             return e;
         }
 
+        // 4장 중간 보스: 진자 집행관 · 체력 5400 (기획서) · Hyper3D 모델 Ch4_Executioner (없으면 강화 기사 모델) · 행동 Ch4MidBoss (전광석화 점멸)
+        static Enemy MidBoss4(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("MidBoss_PendulumExecutioner", pos, 5400, Enemy.Kind.Boss, 1.3f, 4.2f);
+            if (!AttachModel(e, "Ch4_Executioner") && !AttachModel(e, "Ch4_Knight_Plus")) Proto2(e, ch, new Color(0.35f, 0.35f, 0.38f), 3.8f, 1.2f);
+            e.speed = 3.5f;
+            e.chapter = ch;
+            e.chapterDmg = 1f;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch4MidBoss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            EyeTrail.Attach(e);
+            return e;
+        }
+
+        /// <summary>4장 초침 자객 (집행관 호출용)</summary>
+        public static Enemy Assassin4(Vector3 pos, ChapterDef ch) =>
+            Make4("Enemy_TickAssassin", "Ch4_Assassin", pos, ch, false, 156, Enemy.Kind.TickAssassin, 0.55f, 2.6f, 0f, 0, Enemy.StabDmg);
+
         // 3장 보스: 거울 고래 · 체력 7020(표) · 이속 3 (블렌더 + Codex 길이 14m, 조각 움직임 WhaleAnim)
         static Enemy Boss3(Vector3 pos, ChapterDef ch)
         {
@@ -534,7 +554,7 @@ namespace CatTang
         static Enemy Boss5(Vector3 pos, ChapterDef ch)
         {
             var e = Root("Boss_LordOfTime", pos, ch.BossHp, Enemy.Kind.Boss, 1.8f, 5.6f);
-            if (!AttachModel(e, "Ch5_Boss")) Proto2(e, ch, new Color(0.3f, 0.18f, 0.5f), 5.2f, 1.8f);
+            if (!AttachModel(e, "Ch5_LordOfTime") && !AttachModel(e, "Ch5_Boss")) Proto2(e, ch, new Color(0.3f, 0.18f, 0.5f), 5.2f, 1.8f);
             e.speed = 3.5f;
             e.chapter = ch;
             e.chapterDmg = 1f;

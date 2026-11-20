@@ -86,20 +86,32 @@ namespace CatTang.EditorTools
                 int made = 0;
                 foreach (var k in Kit5)
                     if (File.Exists(Ch5Src + k.name + ".fbx") && Build(k.name, k.size, 180f, k.fit, Kit5Dir, k.outName)) made++;
-                GroundMat("Ground", "Assets/Art/Env/Ch5/ground_ch5.png", Kit5Dir, mirror: false);
-                // 바닥 셰이더: 깨진 거울 판석 그림을 일렁이게 일그러뜨리고 금 균열을 맥동시킴 (CatTang/RiftFloor)
+                GroundMat("Ground", "Assets/Art/Env/Ch5/ground_ch5_a.png", Kit5Dir, mirror: false);
+                // 바닥 셰이더 (CatTang/RiftFloor): 2026-11-20 사용자: 어지러운 패턴을 한 그림에 섞으니 가시성만 떨어짐 →
+                // 패턴 하나씩 담은 바닥 6장(판석 · 체커 · 판자 · 역 타일 · 시계판 석판 · 자갈)을 불규칙한 다각형 조각으로 나눠 섞고, 같은 패턴 이웃은 합침
                 var gm = AssetDatabase.LoadAssetAtPath<Material>(Kit5Dir + "Ground.mat");
                 var rf = Shader.Find("CatTang/RiftFloor");
                 if (gm && rf)
                 {
                     var tex = gm.GetTexture("_BaseMap"); gm.shader = rf; gm.SetTexture("_BaseMap", tex);
-                    // 패치워크 (2026-11-20 사용자: 여러 패턴을 불규칙하게 섞은 바닥, 초현실주의): 앞 장 바닥 4종을 녹은 경계로 섞음
-                    var pt = new[] { ("_Tex2", "Assets/Art/Env/Ch4/ground_ch4.png"), ("_Tex3", "Assets/Art/Env/Ch1/saloon_floor.png"), ("_Tex4", "Assets/Art/Env/Ch2/ground_ch2.png"), ("_Tex5", "Assets/Art/Env/Ch3/ground_ch3.png") };
-                    foreach (var (prop, path) in pt) { var t2 = AssetDatabase.LoadAssetAtPath<Texture2D>(path); if (t2) gm.SetTexture(prop, t2); }
-                    gm.SetFloat("_Desat", 0.5f); gm.SetFloat("_Darken", 0.78f); gm.SetColor("_Tint", new Color(0.82f, 0.8f, 1f)); gm.SetFloat("_Contrast", 0.6f);
-                    gm.SetFloat("_PatchAmount", 0.35f); gm.SetFloat("_PatchScale", 0.07f); gm.SetFloat("_PatchWarp", 1.4f);
+                    gm.SetTextureScale("_BaseMap", Vector2.one); gm.SetTextureOffset("_BaseMap", Vector2.zero);
+                    var pt = new[] { ("_Tex2", "b"), ("_Tex3", "c"), ("_Tex4", "d"), ("_Tex5", "e"), ("_Tex6", "f") };
+                    int count = 1;
+                    foreach (var (prop, key) in pt) { var t2 = AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/Art/Env/Ch5/ground_ch5_{key}.png"); if (t2) { gm.SetTexture(prop, t2); count++; } }
+                    gm.SetFloat("_ChunkCount", count); gm.SetFloat("_ChunkSize", 5f); gm.SetFloat("_ChunkSplit", 0.6f); gm.SetFloat("_ChunkTile", 6f);
+                    gm.SetFloat("_SeamWidth", 0.035f); gm.SetFloat("_SeamGlow", 0.35f);
+                    // 그림 자체가 조용한 단일 패턴이라 가시성 보정은 약하게, 일렁임도 약하게
+                    gm.SetFloat("_Desat", 0.05f); gm.SetFloat("_Darken", 0.85f); gm.SetColor("_Tint", new Color(0.92f, 0.98f, 1.06f)); gm.SetFloat("_Contrast", 0.8f); gm.SetFloat("_Soft", 0.8f);
+                    // 배색 (2026-11-20 사용자: 보라색이 별로 → 푸른 계열로 몽환적 · 신비롭게): 바닥 그림은 ground_texture_ch5.py가 푸른 계열로 돌림,
+                    // 거울 = 푸른 하늘빛, 허공 = 짙은 남색, 이음매 빛 = 금 대신 옅은 청록 (별빛 같은 차가운 빛)
+                    gm.SetColor("_MirrorDark", new Color(0.2f, 0.3f, 0.46f)); gm.SetColor("_MirrorLight", new Color(0.56f, 0.76f, 0.92f));
+                    gm.SetColor("_VoidColor", new Color(0.04f, 0.09f, 0.24f)); gm.SetColor("_GlowColor", new Color(0.55f, 0.88f, 1f)); gm.SetFloat("_Glow", 1.3f);
+                    // v6 시간 균열 (2026-11-20 사용자: 시간의 뒤틀림과 균열이 안 보임): 허공 위 깨진 판 · 넓은 틈으로 시차 허공 · 가장자리 빛 똑딱 · 시계 소용돌이 · 잔상
+                    gm.SetFloat("_GapChance", 0.5f); gm.SetFloat("_GapMax", 1.0f); gm.SetFloat("_RimWidth", 0.07f);
+                    gm.SetFloat("_WarpAmount", 0.004f);
                     EditorUtility.SetDirty(gm);
                 }
+                RiseFx5();
                 // 균열이 깨질 때 튀는 유리 조각 (메시 파티클): FBX를 그대로 Resources로 + 빛 안 받는 단색 재질
                 foreach (var fx in new[] { "FX_GlassShard", "FX_GlassShard2" })
                     if (File.Exists(Ch5Src + "Kit_" + fx + ".fbx")) { AssetDatabase.DeleteAsset(Kit5Dir + fx + ".fbx"); AssetDatabase.CopyAsset(Ch5Src + "Kit_" + fx + ".fbx", Kit5Dir + fx + ".fbx"); }
@@ -141,7 +153,7 @@ namespace CatTang.EditorTools
                 EditorUtility.SetDirty(m);
                 return m;
             }
-            var crack = Get("Glow_CrackGold", new Color(1f, 0.85f, 0.42f, 1f), 0.3f);
+            var crack = Get("Glow_CrackGold", new Color(0.5f, 0.92f, 1f, 1f), 0.3f);          // v2 천문대: 청록 시간 균열 (재질 이름은 예전 그대로)
             var star = Get("Glow_Starlight", new Color(1f, 0.98f, 0.92f, 1f), 0.2f);
             var mirror = Get("Glow_Mirror5", new Color(0.82f, 0.88f, 1f, 1f), 0.6f);
             var magenta = Get("Glow_Magenta", new Color(1f, 0.3f, 0.78f, 1f), 0.3f);
@@ -167,7 +179,7 @@ namespace CatTang.EditorTools
         // 키: 4장과 같은 2등신 인형 비율 (고양이 머리 기준), 거인 · 보스는 크게. 강화형은 약 15% 크게 (1 · 2 · 4장 강화형과 같은 비율)
         static readonly (string name, float size)[] Models5 =
         {
-            ("Ch5_Gunner", 2.5f), ("Ch5_Witch", 2.5f), ("Ch5_Giant", 3.4f), ("Ch5_Assassin", 2.6f), ("Ch5_Caster", 2.5f), ("Ch5_Boss", 5.6f),
+            ("Ch5_Gunner", 2.5f), ("Ch5_Witch", 2.5f), ("Ch5_Giant", 3.4f), ("Ch5_Assassin", 2.6f), ("Ch5_Caster", 2.5f), ("Ch5_Boss", 5.6f), ("Ch5_LordOfTime", 6.2f),   // 2026-11-20 사용자: 진짜 시간의 주인 / 사신 느낌, 위압감 → Hyper3D 새 모델 (원화 Art/tripo_input/ch5_boss/lord_of_time.png)
             ("Ch5_Gunner_Plus", 2.9f), ("Ch5_Witch_Plus", 2.9f), ("Ch5_Giant_Plus", 3.9f), ("Ch5_Assassin_Plus", 3.0f), ("Ch5_Caster_Plus", 2.9f),
         };
         // 무기: 적 이름 → (무기, 손) 목록. 손 = true 오른손. 강화형은 큰 강화 무기
@@ -179,6 +191,7 @@ namespace CatTang.EditorTools
             { "Ch5_Assassin", new[] { ("RiftBlade", true), ("RiftBlade", false) } },
             { "Ch5_Caster", new[] { ("RiftCenser", true) } },
             { "Ch5_Boss", new[] { ("TimeScythe", true) } },
+            { "Ch5_LordOfTime", new[] { ("TimeScythe", true) } },
             { "Ch5_Gunner_Plus", new[] { ("ShardRiflePlus", true) } },
             { "Ch5_Witch_Plus", new[] { ("StarStaffPlus", true) } },
             { "Ch5_Giant_Plus", new[] { ("RuinMaulPlus", true) } },
@@ -286,6 +299,88 @@ namespace CatTang.EditorTools
                 Debug.Log($"[EnemyModelBuilder] 5장 무기 · 강화 파츠 {made}개");
             }
             finally { SrcDir = Ch1Src; ModelPalette.Active = ModelPalette.Ch1; }
+        }
+
+        // ---------- 떠오르는 부스러기 (2026-11-20 사용자: 마을처럼 파티클로 분리되어 상승하는 부스러기, 벽과 중간중간 오브젝트에도) ----------
+        // 마을 RiseSpot(VillageKitBuilder)과 같은 짜임: 돌 · 놋쇠 조각이 천천히 돌며 떠오르다 작아져 사라짐 + 청록 빛 모래.
+        // 배색 = 천문대(남색 벽돌 · 흰 돌 · 놋쇠 · 청록). 프리팹 Resources/Kit/Ch5/FX_Rise → Ch5Rise.Scatter가 벽 꼭대기 · 지형지물 · 엄폐물에 군데군데 붙임
+        static void RiseFx5()
+        {
+            Material Mat(string name, string tex, bool additive)
+            {
+                string p = Kit5Dir + name + ".mat";
+                var m = AssetDatabase.LoadAssetAtPath<Material>(p);
+                if (!m) { m = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit")); AssetDatabase.CreateAsset(m, p); }
+                m.SetColor("_BaseColor", Color.white);
+                if (tex != null)
+                {
+                    m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Env/Village/" + tex));
+                    m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", additive ? 2f : 0f);
+                    m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha); m.SetFloat("_DstBlend", (float)(additive ? UnityEngine.Rendering.BlendMode.One : UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha)); m.SetFloat("_ZWrite", 0f);
+                    m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                    m.renderQueue = 3000;
+                }
+                EditorUtility.SetDirty(m);
+                return m;
+            }
+            var root = new GameObject("FX_Rise");
+            var go = new GameObject("Bits");
+            go.transform.SetParent(root.transform, false);
+            go.transform.localRotation = Quaternion.Euler(-90, 0, 0);
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.loop = true; main.prewarm = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(4.5f, 7.5f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.35f, 0.75f);
+            main.startSize3D = true;
+            main.startSizeX = new ParticleSystem.MinMaxCurve(0.2f, 0.5f);
+            main.startSizeY = new ParticleSystem.MinMaxCurve(0.1f, 0.22f);
+            main.startSizeZ = new ParticleSystem.MinMaxCurve(0.16f, 0.4f);
+            main.startRotation3D = true;
+            main.startRotationX = main.startRotationY = main.startRotationZ = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2);
+            var grad = new Gradient();
+            grad.SetKeys(new[] { new GradientColorKey(new Color(0.2f, 0.27f, 0.45f), 0f), new GradientColorKey(new Color(0.86f, 0.9f, 0.96f), 0.3f), new GradientColorKey(new Color(0.36f, 0.46f, 0.62f), 0.55f),
+                                 new GradientColorKey(new Color(0.92f, 0.74f, 0.4f), 0.8f), new GradientColorKey(new Color(0.5f, 0.92f, 1f), 1f) },
+                         new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 1) });
+            main.startColor = new ParticleSystem.MinMaxGradient(grad) { mode = ParticleSystemGradientMode.RandomColor };
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 60;
+            var em = ps.emission; em.rateOverTime = 5f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 14f; sh.radius = 0.7f;
+            var rot = ps.rotationOverLifetime; rot.enabled = true; rot.separateAxes = true;
+            rot.x = rot.y = rot.z = new ParticleSystem.MinMaxCurve(-0.9f, 0.9f);
+            var sol = ps.sizeOverLifetime; sol.enabled = true;
+            sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0, 0.2f), new Keyframe(0.15f, 1), new Keyframe(0.75f, 0.8f), new Keyframe(1, 0)));
+            var noise = ps.noise; noise.enabled = true; noise.strength = 0.25f; noise.frequency = 0.3f; noise.scrollSpeed = 0.15f;
+            var pr = go.GetComponent<ParticleSystemRenderer>();
+            pr.renderMode = ParticleSystemRenderMode.Mesh;
+            pr.mesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+            pr.sharedMaterial = Mat("FX_RiseBitsMat", null, false);
+            pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            pr.alignment = ParticleSystemRenderSpace.World;
+            var g2 = new GameObject("Motes");
+            g2.transform.SetParent(go.transform, false);
+            var ps2 = g2.AddComponent<ParticleSystem>();
+            var m2 = ps2.main;
+            m2.loop = true; m2.prewarm = true;
+            m2.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 6f);
+            m2.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 1.1f);
+            m2.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.26f);
+            m2.startColor = new ParticleSystem.MinMaxGradient(new Color(0.55f, 0.92f, 1f), new Color(0.95f, 0.85f, 0.6f));
+            m2.simulationSpace = ParticleSystemSimulationSpace.World;
+            m2.maxParticles = 110;
+            var e2 = ps2.emission; e2.rateOverTime = 14f;
+            var s2 = ps2.shape; s2.shapeType = ParticleSystemShapeType.Cone; s2.angle = 10f; s2.radius = 0.6f;
+            var c2 = ps2.colorOverLifetime; c2.enabled = true;
+            var gr = new Gradient();
+            gr.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) }, new[] { new GradientAlphaKey(0, 0), new GradientAlphaKey(1, 0.15f), new GradientAlphaKey(0.6f, 0.7f), new GradientAlphaKey(0, 1) });
+            c2.color = gr;
+            var pr2 = g2.GetComponent<ParticleSystemRenderer>();
+            pr2.renderMode = ParticleSystemRenderMode.Billboard;
+            pr2.sharedMaterial = Mat("FX_RiseMotesMat", "spark.png", true);
+            pr2.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            PrefabUtility.SaveAsPrefabAsset(root, Kit5Dir + "FX_Rise.prefab");
+            Object.DestroyImmediate(root);
         }
 
         // 5장 무기 방향 (2026-11-19 사용자: 보스 · 마녀 손 위치 이상함). 무기 원점 = 손잡이, 긴 축 = 무기 +Y (Kit_W_* 측정).

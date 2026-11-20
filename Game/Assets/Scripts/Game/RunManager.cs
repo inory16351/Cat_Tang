@@ -80,8 +80,8 @@ namespace CatTang
         }
 
         // ---------- 스테이지 ----------
-        bool HasMidBoss => chapter <= 3;                 // 1장 술집 · 2장 대합실 · 3장 거울 극장
-        string MidBossName => chapter == 3 ? "신기루 마술사" : chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
+        bool HasMidBoss => chapter <= 4;                 // 1장 술집 · 2장 대합실 · 3장 거울 극장 · 4장 진자 홀
+        string MidBossName => chapter == 4 ? "진자 집행관" : chapter == 3 ? "신기루 마술사" : chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
 
         void BuildMidBoss()
         {

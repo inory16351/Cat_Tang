@@ -37,7 +37,7 @@ namespace CatTang
         /// <summary>장별 곡: bgm_{kind}_{장} (stage · midboss · boss, 2026-11-19 audio-studio로 생성). 없으면 1장 곡, 중간 보스 곡이 없으면 보스 곡</summary>
         public static void PlayFor(string kind, int chapter)
         {
-            // 곡이 아직 없는 장(4 · 5장)은 1장 곡으로
+            // 곡이 없는 장은 1장 곡으로 (2026-11-20: 1 ~ 5장 맵 · 중간 보스 · 보스 곡 전부 있음 — 4장은 Gemini 3곡 추가)
             foreach (var n in new[] { $"bgm_{kind}_{chapter}", $"bgm_{kind}_1", kind == "midboss" ? $"bgm_boss_{chapter}" : null, kind == "midboss" ? "bgm_boss_1" : null })
                 if (n != null && Resources.Load<AudioClip>("Audio/" + n)) { Play(n); return; }
             Play($"bgm_{kind}");

@@ -589,4 +589,33 @@ namespace CatTang
             transform.localRotation = Quaternion.Euler(Mathf.Sin(t * 0.5f) * tilt, spin * t, Mathf.Cos(t * 0.43f) * tilt) * baseRot;
         }
     }
+
+    /// <summary>떠오르는 부스러기 (2026-11-20 사용자: 마을처럼 파티클로 분리되어 상승하는 부스러기 — 벽과 중간중간 오브젝트에도):
+    /// 방을 다 지은 뒤 벽(약 30%) · 지형지물(70%) · 엄폐물 · 잔해(35%) 꼭대기에 FX_Rise를 붙임. 방마다 최대 12곳</summary>
+    public static class Ch5Rise
+    {
+        static GameObject fx;
+        public static void Scatter(RoomBuilder.RoomInfo info, System.Random rnd)
+        {
+            if (!fx) fx = Resources.Load<GameObject>("Kit/Ch5/FX_Rise");
+            if (!fx || !info.root) return;
+            int made = 0;
+            foreach (var t in info.root.GetComponentsInChildren<Transform>())
+            {
+                if (made >= 12) break;
+                string n = t.name;
+                double chance = n.StartsWith("Facade_") || n == "Wall" ? 0.3 : n.StartsWith("LM_") ? 0.7 : n.StartsWith("Cover") || n.StartsWith("Warped") || n.StartsWith("FD_") ? 0.35 : 0;
+                if (chance <= 0 || rnd.NextDouble() > chance) continue;
+                var rs = t.GetComponentsInChildren<Renderer>();
+                if (rs.Length == 0) continue;
+                var b = rs[0].bounds;
+                foreach (var r in rs) b.Encapsulate(r.bounds);
+                var at = new Vector3(Mathf.Lerp(b.min.x, b.max.x, 0.25f + (float)rnd.NextDouble() * 0.5f), b.max.y - 0.15f, Mathf.Lerp(b.min.z, b.max.z, 0.25f + (float)rnd.NextDouble() * 0.5f));
+                var go = Object.Instantiate(fx, t, true);
+                go.transform.position = at;
+                go.transform.rotation = Quaternion.identity;
+                made++;
+            }
+        }
+    }
 }

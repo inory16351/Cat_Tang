@@ -231,7 +231,7 @@ namespace CatTang
                 }
                 if (!boss) AddShape(ch, info, rnd);
                 if (!boss && ch != null && ch.Id == 3) MirrorShard.SpawnSet(ch, info, rnd);   // 3장: 떠다니는 거울 조각 3개
-                if (KitProps(ch, info, hw, hd, rnd, boss)) { layout.rooms.Add(info); continue; }
+                if (KitProps(ch, info, hw, hd, rnd, boss)) { if (Ch5Kit.Is(ch)) Ch5Rise.Scatter(info, rnd); layout.rooms.Add(info); continue; }
                 int props = boss ? 8 : 7;
                 for (int k = 0; k < props; k++)
                 {
@@ -382,15 +382,17 @@ namespace CatTang
         {
             var rnd = new System.Random(seed + 77);
             var size = SaloonSize;
-            if (Ch3Kit.Is(ch)) size = Ch3Kit.TheaterSize;                   // 3장 거울 극장 (2026-11-18 사용자: 훨씬 크게) 36×32m
+            if (Ch3Kit.Is(ch)) size = Ch3Kit.TheaterSize;
+            if (Ch4Kit.Is(ch)) size = new Vector2(28f, 24f);                // 4장 진자 홀 (기획서 28×24m)                   // 3장 거울 극장 (2026-11-18 사용자: 훨씬 크게) 36×32m
             // 들어오는 벽이 스테이지 2 마지막 방에서 복도 10m 거리에 오게 맞춤 (일반 방 크기가 장 · 스테이지마다 달라 홀과 다름).
             // 뒷문 복도도 10m, 스테이지 3 첫 방은 RunManager가 BackAttachDistance에 지음
             float extra = Mathf.Abs(entrance.x) > 0.5f ? (size.x - stageRoom.x) / 2 : (size.y - stageRoom.y) / 2;
             center -= entrance * extra;
             var info = new RoomInfo { center = center, size = size, midBoss = true, farSide = Vector3.forward };
             bool hall2 = Ch2Kit.Is(ch);                                      // 2장: 대합실 (태엽 역장)
+            bool hall4 = Ch4Kit.Is(ch);                                      // 4장: 진자 홀 (진자 집행관) — 신전 회랑 벽, 장애물 없음 (점멸 공간)
             bool hall3 = Ch3Kit.Is(ch);                                      // 3장: 거울 극장 (신기루 마술사) — 뒷벽 무대 커튼, 양옆 거울 벽, 바닥 거울, 장애물 없음
-            info.root = new GameObject(hall3 ? "MirrorTheater" : hall2 ? "WaitingHall" : "Saloon").transform;
+            info.root = new GameObject(hall4 ? "PendulumHall" : hall3 ? "MirrorTheater" : hall2 ? "WaitingHall" : "Saloon").transform;
             info.root.SetParent(layout.root, false);
             info.root.position = center;
             float hw = size.x / 2, hd = size.y / 2;
@@ -398,8 +400,8 @@ namespace CatTang
             var gateM = Mat(new Color(0.55f, 0.33f, 0.19f), 4);
             var floorM = Mat(new Color(0.5f, 0.32f, 0.2f), 0);
             var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(size.x, 0.2f, size.y), floorM);
-            Kit.TileFloor(ch, info.root, size, floorGo, seed, hall2 || hall3 ? "Ground" : "SaloonFloor", false);
-            string innerWall = hall3 ? "Facade_MirrorHall" : hall2 ? "Wall" : "PlankWall";
+            Kit.TileFloor(ch, info.root, size, floorGo, seed, hall2 || hall3 || hall4 ? "Ground" : "SaloonFloor", false);
+            string innerWall = hall4 ? "Facade_Pendulum" : hall3 ? "Facade_MirrorHall" : hall2 ? "Wall" : "PlankWall";
             var ent = new Vector2Int(Mathf.RoundToInt(entrance.x), Mathf.RoundToInt(entrance.z));
             var back = new Vector2Int(0, 1);
             foreach (var side in new[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
@@ -425,7 +427,7 @@ namespace CatTang
                 }
                 // 문: 여닫이 술집 문(장식) + 막는 문짝(평소 닫힘 → RunManager가 열어 줌)
                 float doorYaw = Quaternion.LookRotation(inward).eulerAngles.y;
-                if (side == ent && !hall2) Kit.Place(ch, "SaloonDoor", info.root, pos - new Vector3(0, 1.25f, 0) - inward * 0.1f, doorYaw, 1f, false);
+                if (side == ent && !hall2 && !hall4) Kit.Place(ch, "SaloonDoor", info.root, pos - new Vector3(0, 1.25f, 0) - inward * 0.1f, doorYaw, 1f, false);
                 var gate = WoodGate.Make(ch, info.root, side == ent ? "SaloonGate" : "BackGate", new Vector3(pos.x, 0, pos.z), inward, gateM);
                 info.gates.Add(gate);
                 if (side == ent) info.entranceGate = gate; else info.backGate = gate;
@@ -454,7 +456,7 @@ namespace CatTang
                 }
             }
             if (hall2) { Ch2Kit.WaitingHall(ch, info, hw, hd, rnd); layout.rooms.Add(info); return; }
-            if (hall3) { layout.rooms.Add(info); return; }                    // 거울 극장: 장애물 없음 (거울 시계 기믹 공간)
+            if (hall3 || hall4) { layout.rooms.Add(info); return; }                    // 거울 극장: 장애물 없음 (거울 시계 기믹 공간)
             // 실내 소품: 뒷벽 양쪽 카운터(보스가 그 사이에서 나옴), 모서리 술통 더미, 화약통 · 상자
             Kit.Place(ch, "BarCounter", info.root, new Vector3(-7f, 0, hd - 2.2f), 180f);
             Kit.Place(ch, "BarCounter", info.root, new Vector3(7f, 0, hd - 2.2f), 180f);

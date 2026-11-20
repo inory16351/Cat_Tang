@@ -1982,37 +1982,37 @@
   },
   {
     "name": "Kit_LM_ClockHeart",
-    "source_sha256": "546312985a84a088988099f80cc55ce6844f7f21c8cca261328d64b6191d7570",
-    "original_tris": 5874,
-    "warped_tris": 9340,
+    "source_sha256": "f3234a3ba87d600f7b06828438c8ba37f1a22b59c74e930b65b6d01ad4a311fa",
+    "original_tris": 7876,
+    "warped_tris": 8796,
     "original_bounds": [
       [
-        -2.1999998092651367,
         -2.200000047683716,
-        -1.6382558953864645e-07
+        -2.200000047683716,
+        -1.6420565884800453e-07
       ],
       [
-        2.1999998092651367,
         2.200000047683716,
-        4.0
+        2.200000047683716,
+        3.5999999046325684
       ]
     ],
     "warped_bounds": [
       [
-        -2.3413655757904053,
-        -2.231515407562256,
-        -3.276511790772929e-07
+        -2.2009122371673584,
+        -2.2009387016296387,
+        -3.2841131769600906e-07
       ],
       [
-        2.1999998092651367,
         2.200000047683716,
-        3.8908748626708984
+        2.200000047683716,
+        3.558098316192627
       ]
     ],
     "size_ratios": [
-      1.032128586086671,
-      1.0071625816353325,
-      0.9727187167850677
+      1.0002073157872435,
+      1.0002133304376313,
+      0.9883606701003582
     ],
     "gain": [
       1.0,
@@ -2020,65 +2020,69 @@
       1.0
     ],
     "seed": 1566514458324101659,
-    "min_sampled_jacobian": 0.41083624958992004,
-    "min_face_normal_agreement": 0.4533421443775296,
-    "inherited_numerical_slivers": 14,
-    "max_displacement": 1.7005641587557139,
-    "bottom_locked_vertices": 768,
+    "min_sampled_jacobian": 0.40310418605804443,
+    "min_face_normal_agreement": 0.6977404113858938,
+    "inherited_numerical_slivers": 0,
+    "max_displacement": 0.9669157475304361,
+    "bottom_locked_vertices": 480,
     "object_count": 1,
     "material_slots": {
       "LM_ClockHeart": [
         "brass",
         "crack_gold",
-        "dial_face",
-        "dial_mark",
+        "crystal",
         "gold",
-        "gold_dark",
+        "indigo",
+        "marble",
+        "mirror",
+        "porcelain",
+        "red_lacquer",
         "starlight",
-        "violet_dark"
+        "steel",
+        "void_stone_dark"
       ]
     },
     "uv_layers": {
       "LM_ClockHeart": []
     },
-    "roundtrip_bbox_error": 1.638255883141767e-07,
+    "roundtrip_bbox_error": 1.6420565814244184e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_LM_DesertShard",
-    "source_sha256": "d80f12686b076f3b022e6db22960b1bd5d5d41b4b27e9e8b676ce3ffffbc0ae3",
-    "original_tris": 3610,
-    "warped_tris": 10340,
+    "source_sha256": "f3f1b88d84592e597d61b70ce2724100ebdac59c1a6d4af00c442939b0d8bf17",
+    "original_tris": 2552,
+    "warped_tris": 7656,
     "original_bounds": [
       [
         -2.0,
-        -1.5,
-        -1.1324685544877866e-07
+        -1.2999999523162842,
+        -9.625982499983365e-08
       ],
       [
         2.0,
-        1.5,
-        3.4000000953674316
+        1.2999999523162842,
+        2.4000000953674316
       ]
     ],
     "warped_bounds": [
       [
-        -2.185246467590332,
-        -1.7275315523147583,
-        -2.2649371089755732e-07
+        -2.3405892848968506,
+        -1.7204911708831787,
+        -1.925196499996673e-07
       ],
       [
-        2.2789700031280518,
-        1.5,
-        3.1796576976776123
+        2.285750150680542,
+        1.587354302406311,
+        2.3571665287017822
       ]
     ],
     "size_ratios": [
-      1.116054117679596,
-      1.0758438905080159,
-      0.9351934164205176
+      1.1565848588943481,
+      1.2722483056232858,
+      0.982152681980993
     ],
     "gain": [
       1.0,
@@ -2086,106 +2090,111 @@
       1.0
     ],
     "seed": 16656365149159627995,
-    "min_sampled_jacobian": 0.48388075828552246,
-    "min_face_normal_agreement": 0.5264201448298991,
-    "inherited_numerical_slivers": 112,
-    "max_displacement": 1.2668837730699583,
-    "bottom_locked_vertices": 574,
+    "min_sampled_jacobian": 0.6142147183418274,
+    "min_face_normal_agreement": 0.4738044738769531,
+    "inherited_numerical_slivers": 0,
+    "max_displacement": 0.829492362853001,
+    "bottom_locked_vertices": 265,
     "object_count": 1,
     "material_slots": {
       "LM_DesertShard": [
+        "brass",
         "crack_gold",
-        "crystal",
+        "dial_face",
+        "dial_mark",
         "gold",
-        "mirror",
-        "sand",
-        "violet_dark",
-        "void_stone"
+        "gold_dark",
+        "marble",
+        "marble_dark",
+        "void_stone",
+        "void_stone_dark"
       ]
     },
     "uv_layers": {
       "LM_DesertShard": []
     },
-    "roundtrip_bbox_error": 1.6442537876996683e-07,
+    "roundtrip_bbox_error": 1.532214378321929e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_LM_Hourglass",
-    "source_sha256": "ac7910fbffcca69b40251beed700406617aa17ca02342501332940741a7a7847",
-    "original_tris": 6398,
-    "warped_tris": 15870,
+    "source_sha256": "36574d791b91a2a215abd9689f09e45c87c3a37f0a09bea9d31d989fb396f47d",
+    "original_tris": 4404,
+    "warped_tris": 11274,
     "original_bounds": [
       [
         -1.399999976158142,
         -1.399999976158142,
-        -1.034321286397244e-07
+        -1.0380961157352431e-07
       ],
       [
         1.399999976158142,
         1.399999976158142,
-        4.400000095367432
+        2.799999952316284
       ]
     ],
     "warped_bounds": [
       [
         -1.399999976158142,
-        -1.4260423183441162,
-        -2.068642572794488e-07
+        -1.399999976158142,
+        -2.0761922314704861e-07
       ],
       [
-        1.9040000438690186,
+        1.6305415630340576,
         1.399999976158142,
-        4.2865214347839355
+        2.4189860820770264
       ]
     ],
     "size_ratios": [
-      1.1800000272478381,
-      1.009300921802877,
-      0.9742093964871965
+      1.0823362824292913,
+      1.0,
+      0.8639236204993396
     ],
     "gain": [
-      0.6776454448699951,
+      1.0,
       1.0,
       1.0
     ],
     "seed": 15078618318057896007,
-    "min_sampled_jacobian": 0.3918560743331909,
-    "min_face_normal_agreement": 0.7098754495382309,
+    "min_sampled_jacobian": 0.42514246702194214,
+    "min_face_normal_agreement": 0.6309166103601456,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.3460895249338645,
-    "bottom_locked_vertices": 2030,
+    "max_displacement": 0.8978400783787711,
+    "bottom_locked_vertices": 505,
     "object_count": 1,
     "material_slots": {
       "LM_Hourglass": [
+        "brass",
         "crack_gold",
-        "crystal",
         "gold",
-        "gold_dark",
         "marble",
-        "sand",
-        "violet"
+        "marble_dark",
+        "night_sky",
+        "starlight",
+        "void_stone_dark",
+        "wood_dark"
       ]
     },
     "uv_layers": {
       "LM_Hourglass": []
     },
-    "roundtrip_bbox_error": 2.5988771365453523e-07,
+    "roundtrip_bbox_error": 1.0380960994395555e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_LM_MirrorMonolith",
-    "source_sha256": "9b1cbf56709234d9736a15bbaf20438eda39b539ed0d0f2720f94f3974d369ab",
-    "original_tris": 2332,
-    "warped_tris": 6996,
+    "source_sha256": "edcda742c709c45cc70cb0e8b0f5c6065f80c4949eac21787e8d2ad7275b6830",
+    "original_tris": 2650,
+    "warped_tris": 7950,
     "original_bounds": [
       [
         -1.5,
         -1.2000000476837158,
-        -8.833254838691573e-08
+        -8.8710038426143e-08
       ],
       [
         1.5,
@@ -2197,18 +2206,18 @@
       [
         -1.5,
         -1.2000000476837158,
-        -1.7666509677383146e-07
+        -1.77420076852286e-07
       ],
       [
-        1.6417405605316162,
+        1.5,
         1.2000000476837158,
-        4.345277309417725
+        4.402065277099609
       ]
     ],
     "size_ratios": [
-      1.0472468535105388,
       1.0,
-      0.9446255226946964
+      1.0,
+      0.9569707330827344
     ],
     "gain": [
       1.0,
@@ -2216,159 +2225,170 @@
       1.0
     ],
     "seed": 16498699651216880377,
-    "min_sampled_jacobian": 0.37307009100914,
-    "min_face_normal_agreement": 0.3863855451345444,
+    "min_sampled_jacobian": 0.283819317817688,
+    "min_face_normal_agreement": 0.38950149714946747,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.2120684833494983,
-    "bottom_locked_vertices": 627,
+    "max_displacement": 1.172975186762682,
+    "bottom_locked_vertices": 1224,
     "object_count": 1,
     "material_slots": {
       "LM_MirrorMonolith": [
+        "brass",
         "crack_gold",
         "gold",
+        "gold_dark",
+        "iron_dark",
         "marble",
         "marble_dark",
-        "mirror",
-        "mirror_back",
-        "starlight",
-        "violet"
+        "red_lacquer",
+        "steel",
+        "void_stone",
+        "void_stone_dark"
       ]
     },
     "uv_layers": {
       "LM_MirrorMonolith": []
     },
-    "roundtrip_bbox_error": 8.833254672662198e-08,
+    "roundtrip_bbox_error": 8.871003639826875e-08,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_LM_SaloonFragment",
-    "source_sha256": "58f4dc0a41cdcb290e90abbd4f3a3ff9413956c36196c2e3f6a1a9504461e019",
-    "original_tris": 6490,
-    "warped_tris": 19470,
+    "source_sha256": "8ef7aaff377961e2357baff98acba72f4eaf6d047c719b2f77a913a7b5ae7e05",
+    "original_tris": 4656,
+    "warped_tris": 13968,
     "original_bounds": [
       [
-        -2.3000001907348633,
-        -1.5,
-        -1.1324685544877866e-07
+        -2.299999952316284,
+        -1.600000023841858,
+        -1.1890919893176033e-07
       ],
       [
-        2.3000001907348633,
-        1.5,
+        2.299999952316284,
+        1.600000023841858,
         3.5999999046325684
       ]
     ],
     "warped_bounds": [
       [
-        -2.9719953536987305,
-        -1.6346888542175293,
-        -2.2649371089755732e-07
+        -2.299999952316284,
+        -1.600000023841858,
+        -2.3781839786352066e-07
       ],
       [
-        2.3000001907348633,
-        1.5,
-        3.2898852825164795
+        2.299999952316284,
+        1.600000023841858,
+        3.0302956104278564
       ]
     ],
     "size_ratios": [
-      1.1460858928775046,
-      1.0448963642120361,
-      0.913857049840027
+      1.0,
+      1.0,
+      0.8417488082002225
     ],
     "gain": [
-      0.8500000238418579,
-      0.8500000238418579,
-      0.8500000238418579
+      1.0,
+      1.0,
+      1.0
     ],
     "seed": 14125231043567756234,
-    "min_sampled_jacobian": 0.473160982131958,
-    "min_face_normal_agreement": 0.23962788633070886,
-    "inherited_numerical_slivers": 4,
-    "max_displacement": 1.216123823406463,
-    "bottom_locked_vertices": 364,
+    "min_sampled_jacobian": 0.3588739335536957,
+    "min_face_normal_agreement": 0.6923856735229492,
+    "inherited_numerical_slivers": 0,
+    "max_displacement": 1.2810302697152058,
+    "bottom_locked_vertices": 2367,
     "object_count": 1,
     "material_slots": {
       "LM_SaloonFragment": [
-        "cloth",
+        "brass",
         "crack_gold",
+        "crystal",
+        "dial_face",
+        "dial_mark",
         "gold",
-        "lamp_warm",
-        "violet",
+        "gold_dark",
+        "marble",
+        "marble_dark",
         "void_stone",
-        "wood",
-        "wood_dark"
+        "void_stone_dark"
       ]
     },
     "uv_layers": {
       "LM_SaloonFragment": []
     },
-    "roundtrip_bbox_error": 2.6394747456502225e-07,
+    "roundtrip_bbox_error": 1.1890919780111939e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_LM_TrainFragment",
-    "source_sha256": "1ce4dc299dcee7529f147c819f7415c64a849364fdff079dc7f021e2dc2923bd",
-    "original_tris": 7666,
-    "warped_tris": 20110,
+    "source_sha256": "2ec5565e8cb51715a55cf3951f1279281e24fcf78c018ff553062a5b8093bfdf",
+    "original_tris": 4492,
+    "warped_tris": 13476,
     "original_bounds": [
       [
         -2.700000047683716,
         -1.2999999523162842,
-        7.892624864780373e-08
+        -9.337213668914046e-08
       ],
       [
         2.700000047683716,
         1.2999999523162842,
-        3.0
+        3.1999998092651367
       ]
     ],
     "warped_bounds": [
       [
-        -2.7446107864379883,
-        -1.428865909576416,
-        1.5785249729560746e-07
+        -2.700000047683716,
+        -1.2999999523162842,
+        -1.8674427337828092e-07
       ],
       [
-        3.064457654953003,
-        1.6418225765228271,
-        2.623793601989746
+        2.700000047683716,
+        1.300345778465271,
+        2.7266783714294434
       ]
     ],
     "size_ratios": [
-      1.0757533960739172,
-      1.1810340764351652,
-      0.874597864030742
+      1.0,
+      1.0001330100621815,
+      0.8520870461759682
     ],
     "gain": [
-      0.8500000238418579,
-      0.7437641024589539,
-      0.8500000238418579
+      1.0,
+      1.0,
+      1.0
     ],
     "seed": 2296841108501098501,
-    "min_sampled_jacobian": 0.480622798204422,
-    "min_face_normal_agreement": 0.31162436050362885,
+    "min_sampled_jacobian": 0.5478247404098511,
+    "min_face_normal_agreement": 0.5889581590890884,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.0470451245216226,
-    "bottom_locked_vertices": 407,
+    "max_displacement": 1.1260356771760929,
+    "bottom_locked_vertices": 1534,
     "object_count": 1,
     "material_slots": {
       "LM_TrainFragment": [
         "brass",
         "crack_gold",
+        "gold",
+        "gold_dark",
+        "iron",
         "iron_dark",
+        "marble",
+        "marble_dark",
         "mirror",
-        "red_lacquer",
         "steel",
-        "void_stone"
+        "void_stone_dark",
+        "wood_dark"
       ]
     },
     "uv_layers": {
       "LM_TrainFragment": []
     },
-    "roundtrip_bbox_error": 1.4296925309451215e-07,
+    "roundtrip_bbox_error": 9.337213699006848e-08,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
@@ -2851,58 +2871,60 @@
   },
   {
     "name": "Kit_Wall",
-    "source_sha256": "d47a255ccb70fb8454cb1f2718ba2e8ec9a5c2362ad0bbb771df23fd3a863b01",
-    "original_tris": 2928,
-    "warped_tris": 8784,
+    "source_sha256": "d9e60734edf1db3e30f3c01e569ca3a0461b35e28320d88a8503114c532909ee",
+    "original_tris": 4064,
+    "warped_tris": 12192,
     "original_bounds": [
       [
         -2.0,
-        -0.6196303963661194,
-        -6.983555778106165e-08
+        -0.6000000238418579,
+        -7.361045817333434e-08
       ],
       [
         2.0,
-        1.1105002164840698,
-        3.0
+        1.197500228881836,
+        3.919999837875366
       ]
     ],
     "warped_bounds": [
       [
-        -2.617523193359375,
-        -0.853908360004425,
-        -1.396711155621233e-07
+        -2.7200000286102295,
+        -0.9235498309135437,
+        -1.4722091634666867e-07
       ],
       [
-        2.483226776123047,
-        1.4219238758087158,
-        2.9938831329345703
+        2.466123104095459,
+        1.448143720626831,
+        3.8977160453796387
       ]
     ],
     "size_ratios": [
-      1.2751874923706055,
-      1.3154106854791825,
-      0.9979610443589874
+      1.2965307831764221,
+      1.319439898796467,
+      0.9943153589288524
     ],
     "gain": [
-      1.0,
-      0.3263421952724457,
+      0.9301978945732117,
+      0.33868998289108276,
       1.0
     ],
     "seed": 10693687896948406692,
-    "min_sampled_jacobian": 0.26362404227256775,
-    "min_face_normal_agreement": 0.36191365122795105,
+    "min_sampled_jacobian": 0.29850852489471436,
+    "min_face_normal_agreement": 0.46250929310917854,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.172712229632122,
-    "bottom_locked_vertices": 416,
+    "max_displacement": 1.2923612795450221,
+    "bottom_locked_vertices": 483,
     "object_count": 1,
     "material_slots": {
       "Wall": [
+        "brass",
         "crack_gold",
+        "dial_face",
+        "dial_mark",
         "gold",
-        "gold_dark",
+        "indigo",
         "marble",
         "marble_dark",
-        "violet",
         "void_stone",
         "void_stone_dark"
       ]
@@ -2910,128 +2932,128 @@
     "uv_layers": {
       "Wall": []
     },
-    "roundtrip_bbox_error": 1.9196725848906467e-07,
+    "roundtrip_bbox_error": 2.495233822120623e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_Wall_ClockHeart",
-    "source_sha256": "bcc733d1829a989de9706b4d418e74a711a63b788890eb4ca93bcaff7451ac24",
-    "original_tris": 6628,
-    "warped_tris": 19884,
+    "source_sha256": "c34d7d196ac051ad603a3ac656a9080840030da7ed0570d38d76007f779e6c8b",
+    "original_tris": 6698,
+    "warped_tris": 20094,
     "original_bounds": [
       [
         -4.0,
-        -0.6179410219192505,
-        -6.983555778106165e-08
+        -0.9512497782707214,
+        -7.361045817333434e-08
       ],
       [
         4.0,
-        1.4060002565383911,
-        4.989999771118164
+        1.1400001049041748,
+        5.012797832489014
       ]
     ],
     "warped_bounds": [
       [
-        -4.7171406745910645,
-        -0.9822501540184021,
-        -1.396711155621233e-07
+        -4.675388336181641,
+        -1.271210789680481,
+        -1.4722091634666867e-07
       ],
       [
-        5.266325950622559,
-        1.5339757204055786,
-        4.679073810577393
+        4.83649206161499,
+        1.24038565158844,
+        4.88960599899292
       ]
     ],
     "size_ratios": [
-      1.2479333281517029,
-      1.2432307008166428,
-      0.9376901862823817
+      1.1889850497245789,
+      1.2010026064724277,
+      0.9754245361964031
     ],
     "gain": [
-      1.0,
-      0.21913142502307892,
-      1.0
+      0.8500000238418579,
+      0.18287992477416992,
+      0.8500000238418579
     ],
     "seed": 8557338625361643461,
-    "min_sampled_jacobian": 0.30619823932647705,
-    "min_face_normal_agreement": 0.05452610971406102,
-    "inherited_numerical_slivers": 640,
-    "max_displacement": 2.005827953544398,
-    "bottom_locked_vertices": 1798,
+    "min_sampled_jacobian": 0.37795621156692505,
+    "min_face_normal_agreement": 0.3523993317503482,
+    "inherited_numerical_slivers": 0,
+    "max_displacement": 1.7645502575075471,
+    "bottom_locked_vertices": 1784,
     "object_count": 1,
     "material_slots": {
       "Wall_ClockHeart": [
         "brass",
         "crack_gold",
-        "dial_face",
-        "dial_mark",
         "gold",
         "gold_dark",
-        "indigo",
-        "starlight",
-        "steel",
-        "violet_dark",
-        "void_stone_dark"
+        "marble",
+        "marble_dark",
+        "mirror",
+        "void_stone",
+        "void_stone_dark",
+        "wood_dark"
       ]
     },
     "uv_layers": {
       "Wall_ClockHeart": []
     },
-    "roundtrip_bbox_error": 3.0609614044057365e-07,
+    "roundtrip_bbox_error": 2.495233822120623e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_Wall_DebrisEdge",
-    "source_sha256": "8ef22687a2629c5401bac67abb68f65075a58dd6dec879920d18d2ec6ebbcfbd",
-    "original_tris": 2542,
-    "warped_tris": 7626,
+    "source_sha256": "18c5668f08f40ac71cb43b2753f516c98927cec0823aacd069b706629635fc07",
+    "original_tris": 4008,
+    "warped_tris": 12024,
     "original_bounds": [
       [
         -3.0,
-        -0.949999988079071,
+        -0.9000000357627869,
         -3.5
       ],
       [
         3.0,
-        0.7000000476837158,
-        1.399999976158142
+        0.7383280396461487,
+        1.5199999809265137
       ]
     ],
     "warped_bounds": [
       [
-        -3.9011640548706055,
-        -1.1152825355529785,
+        -4.079999923706055,
+        -1.1280362606048584,
         -3.5
       ],
       [
-        3.191534996032715,
-        0.9524500370025635,
-        1.3904516696929932
+        3.2817721366882324,
+        1.0332270860671997,
+        1.4114364385604858
       ]
     ],
     "size_ratios": [
-      1.1821165084838867,
-      1.253171228932513,
-      0.9980513660180392
+      1.2269620100657146,
+      1.3191883720436122,
+      0.97837379625926
     ],
     "gain": [
-      0.8500000238418579,
-      0.18957403302192688,
-      0.8500000238418579
+      0.9970180988311768,
+      0.2729521691799164,
+      1.0
     ],
     "seed": 11444122144442349258,
-    "min_sampled_jacobian": 0.2671051621437073,
-    "min_face_normal_agreement": 0.6049092663452029,
+    "min_sampled_jacobian": 0.18020962178707123,
+    "min_face_normal_agreement": 0.4582273429259658,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.2453491653060826,
-    "bottom_locked_vertices": 40,
+    "max_displacement": 1.361545638408359,
+    "bottom_locked_vertices": 25,
     "object_count": 1,
     "material_slots": {
       "Wall_DebrisEdge": [
+        "brass",
         "crack_gold",
         "crystal",
         "marble",
@@ -3050,279 +3072,281 @@
   },
   {
     "name": "Kit_Wall_MemoryClock",
-    "source_sha256": "92d88de901b9cdb6c0123bbe863d199cabc1f05ac70455947c911fc2e2d22831",
-    "original_tris": 4018,
-    "warped_tris": 12054,
+    "source_sha256": "3518ca5d10c60eefbe1ad1b05d40065d59cecd639be7673ca298feae82faae7c",
+    "original_tris": 5964,
+    "warped_tris": 17892,
     "original_bounds": [
       [
         -3.0,
-        -0.6103937029838562,
-        -6.983555778106165e-08
+        -0.6000000238418579,
+        -7.361045817333434e-08
       ],
       [
         3.0,
-        1.4169977903366089,
-        4.399966716766357
+        1.595000147819519,
+        4.619999885559082
       ]
     ],
     "warped_bounds": [
       [
         -3.9179999828338623,
-        -0.9115252494812012,
-        -1.396711155621233e-07
+        -0.9358347058296204,
+        -1.4722091634666867e-07
       ],
       [
-        3.0,
-        1.461796522140503,
-        4.394973278045654
+        3.007673978805542,
+        1.5521947145462036,
+        4.6075286865234375
       ]
     ],
     "size_ratios": [
-      1.152999997138977,
-      1.1706283165586155,
-      0.9988651189968278
+      1.1542789936065674,
+      1.1334985354909108,
+      0.9973006062454844
     ],
     "gain": [
-      0.6995528936386108,
-      0.4470774829387665,
+      0.6573145389556885,
+      0.4277060329914093,
       0.8500000238418579
     ],
     "seed": 16159723210968617684,
-    "min_sampled_jacobian": 0.2789319157600403,
-    "min_face_normal_agreement": 0.6500101978716923,
+    "min_sampled_jacobian": 0.26732584834098816,
+    "min_face_normal_agreement": 0.6756464242935181,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.3130060991274861,
-    "bottom_locked_vertices": 777,
+    "max_displacement": 1.3617446896943406,
+    "bottom_locked_vertices": 1393,
     "object_count": 1,
     "material_slots": {
       "Wall_MemoryClock": [
         "brass",
         "crack_gold",
-        "crystal",
+        "dial_face",
         "dial_mark",
         "gold",
         "gold_dark",
         "indigo",
+        "marble",
         "marble_dark",
         "mirror",
-        "mirror_back",
-        "sand",
+        "night_sky",
+        "starlight",
         "steel",
-        "violet_dark",
-        "void_stone",
-        "void_stone_dark"
+        "void_stone_dark",
+        "wood_dark"
       ]
     },
     "uv_layers": {
       "Wall_MemoryClock": []
     },
-    "roundtrip_bbox_error": 2.484359556976624e-07,
+    "roundtrip_bbox_error": 3.069793826623401e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_Wall_MemoryWest",
-    "source_sha256": "d63daa839cfc6cddbdb5ccd87f5b59bfb7e91e541511f7eef95845004f193400",
-    "original_tris": 5228,
-    "warped_tris": 15684,
+    "source_sha256": "d2851dcdb81adaff2e4811f9646ad3d891187ff5f978527e1f2d7e77ba579fc1",
+    "original_tris": 6480,
+    "warped_tris": 19440,
     "original_bounds": [
       [
         -3.0,
-        -0.6162974238395691,
-        -6.983555778106165e-08
+        -0.6199997067451477,
+        -7.361045817333434e-08
       ],
       [
         3.0,
-        1.4345052242279053,
-        4.200000286102295
+        1.2349998950958252,
+        4.539999961853027
       ]
     ],
     "warped_bounds": [
       [
         -4.079999923706055,
-        -0.9854416251182556,
-        -1.396711155621233e-07
+        -0.9538993239402771,
+        -1.4722091634666867e-07
       ],
       [
-        3.432600259780884,
-        1.6762688159942627,
-        4.042145252227783
+        3.536313772201538,
+        1.524937629699707,
+        4.391183853149414
       ]
     ],
     "size_ratios": [
-      1.2521000305811565,
-      1.2978872552337755,
-      0.9624154713102964
+      1.2693856159845989,
+      1.3363005635066099,
+      0.9672211216869692
     ],
     "gain": [
-      0.9921515583992004,
-      0.23873765766620636,
+      0.9664071202278137,
+      0.18273760378360748,
       1.0
     ],
     "seed": 6586187634116842416,
-    "min_sampled_jacobian": 0.43973010778427124,
-    "min_face_normal_agreement": 0.35962384566664696,
+    "min_sampled_jacobian": 0.50992751121521,
+    "min_face_normal_agreement": 0.3328518941998482,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 2.203985873741053,
-    "bottom_locked_vertices": 1172,
+    "max_displacement": 2.096166270238846,
+    "bottom_locked_vertices": 681,
     "object_count": 1,
     "material_slots": {
       "Wall_MemoryWest": [
+        "brass",
         "crack_gold",
-        "dial_face",
-        "dial_mark",
+        "gold",
         "gold_dark",
         "indigo",
-        "iron",
-        "iron_dark",
-        "steel",
+        "marble",
+        "marble_dark",
+        "night_sky",
+        "starlight",
         "void_stone",
-        "void_stone_dark",
-        "wood",
-        "wood_dark"
+        "void_stone_dark"
       ]
     },
     "uv_layers": {
       "Wall_MemoryWest": []
     },
-    "roundtrip_bbox_error": 3.0609614044057365e-07,
+    "roundtrip_bbox_error": 3.069793826623401e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_Wall_Mirror",
-    "source_sha256": "2f045b0544ddf0775b0edf6a04d015868ccb88517ed09b6c85142e65448079c9",
-    "original_tris": 7224,
-    "warped_tris": 20484,
+    "source_sha256": "43e4cc63d5ec3edf4232396899cc6f85fb991cb3ef3ea0aa7f411f16b6674eb3",
+    "original_tris": 5500,
+    "warped_tris": 16500,
     "original_bounds": [
       [
         -3.0,
-        -0.6196302771568298,
-        -6.983555778106165e-08
+        -0.6299996972084045,
+        -7.361045817333434e-08
       ],
       [
         3.0,
-        1.5061631202697754,
-        4.5
+        1.5575002431869507,
+        4.71999979019165
       ]
     ],
     "warped_bounds": [
       [
-        -4.079999923706055,
-        -1.0022728443145752,
-        -1.396711155621233e-07
+        -3.9169015884399414,
+        -0.9646869897842407,
+        -1.4722091634666867e-07
       ],
       [
-        3.435882329940796,
-        1.696288824081421,
-        4.458159923553467
+        3.3296380043029785,
+        1.57833993434906,
+        4.635853290557861
       ]
     ],
     "size_ratios": [
-      1.252647042274475,
-      1.269437467851791,
-      0.9907022053783964
+      1.2077565987904866,
+      1.1625266255658457,
+      0.9821723512580769
     ],
     "gain": [
-      0.9862276315689087,
-      0.31689777970314026,
-      1.0
+      0.7883772850036621,
+      0.2416301816701889,
+      0.8500000238418579
     ],
     "seed": 15214604225195519740,
-    "min_sampled_jacobian": 0.27353477478027344,
-    "min_face_normal_agreement": 0.0903484895825386,
+    "min_sampled_jacobian": 0.2857052683830261,
+    "min_face_normal_agreement": 0.5035893693566322,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.9827984325399903,
-    "bottom_locked_vertices": 2039,
+    "max_displacement": 1.617264779750691,
+    "bottom_locked_vertices": 911,
     "object_count": 1,
     "material_slots": {
       "Wall_Mirror": [
+        "brass",
         "crack_gold",
+        "dial_face",
+        "dial_mark",
         "gold",
         "gold_dark",
+        "indigo",
         "marble",
         "marble_dark",
-        "mirror",
-        "mirror_back",
         "starlight",
-        "violet",
+        "void_stone",
         "void_stone_dark"
       ]
     },
     "uv_layers": {
       "Wall_Mirror": []
     },
-    "roundtrip_bbox_error": 2.484359556976624e-07,
+    "roundtrip_bbox_error": 2.495233822120623e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false
   },
   {
     "name": "Kit_Wall_StarArch",
-    "source_sha256": "e350f9ef2f09cb662b16050c112f6c12afe8bd544b124318bf3241f48bb7b043",
-    "original_tris": 5544,
-    "warped_tris": 16632,
+    "source_sha256": "56d64de493b4d37c9691d8572a0eab71bf15e7b1d32831dd0a13ea41417c42f8",
+    "original_tris": 5368,
+    "warped_tris": 16104,
     "original_bounds": [
       [
         -3.0,
-        -0.6058452129364014,
-        -7.436543114636152e-08
+        -0.6000000238418579,
+        -7.361045817333434e-08
       ],
       [
         3.0,
-        1.330000400543213,
-        4.799999713897705
+        1.4744350910186768,
+        4.71999979019165
       ]
     ],
     "warped_bounds": [
       [
-        -3.6415553092956543,
-        -0.9542971849441528,
-        -1.4873086229272303e-07
+        -3.606325387954712,
+        -0.9733980298042297,
+        -1.4722091634666867e-07
       ],
       [
-        3.845294952392578,
-        1.505518913269043,
-        4.799999713897705
+        3.887382984161377,
+        1.5883805751800537,
+        4.716599941253662
       ]
     ],
     "size_ratios": [
-      1.2478083769480388,
-      1.2706674959434203,
-      1.0
+      1.2489513953526814,
+      1.2349283167437888,
+      0.9992796930008279
     ],
     "gain": [
       1.0,
-      0.22138701379299164,
+      0.20872029662132263,
       1.0
     ],
     "seed": 4753307144291591151,
-    "min_sampled_jacobian": 0.3822992146015167,
-    "min_face_normal_agreement": 0.646796315908432,
+    "min_sampled_jacobian": 0.40505000948905945,
+    "min_face_normal_agreement": 0.721583254635334,
     "inherited_numerical_slivers": 0,
-    "max_displacement": 1.3298816171641588,
-    "bottom_locked_vertices": 872,
+    "max_displacement": 1.3008662989308817,
+    "bottom_locked_vertices": 975,
     "object_count": 1,
     "material_slots": {
       "Wall_StarArch": [
+        "brass",
         "crack_gold",
         "crystal",
         "gold",
-        "gold_dark",
+        "indigo",
         "marble",
         "marble_dark",
         "night_sky",
         "starlight",
-        "violet",
+        "void_stone",
         "void_stone_dark"
       ]
     },
     "uv_layers": {
       "Wall_StarArch": []
     },
-    "roundtrip_bbox_error": 2.497471449497984e-07,
+    "roundtrip_bbox_error": 3.069793826623401e-07,
     "roundtrip_transform_error": 0.0,
     "floating": false,
     "corridor": false

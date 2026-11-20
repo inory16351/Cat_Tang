@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\audio-studio-mcp\\outputs\\e4m_blink_v1.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e4m_blink",
+    "original_idea": "전광석화처럼 사라졌다 나타남 (4장 중간 보스)",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, armored boss teleporting instantly like lightning, sharp electric zap pop with a quick whoosh, then a heavy metal armor landing clank, electric crackle, heavy steel plates, close mic, dry, punchy game sound effect.",
+    "sound_fields": {
+      "source": "armored boss teleporting instantly like lightning",
+      "action": "sharp electric zap pop with a quick whoosh, then a heavy metal armor landing clank",
+      "material": "electric crackle, heavy steel plates",
+      "space": "close mic, dry, punchy game sound effect"
+    },
+    "bpm": null,
+    "seconds": 1.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 2,
+    "seed": 1887730151,
+    "candidate": 1,
+    "file": "e4m_blink_v1.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-20T11:00:37",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-20T11:01:21",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.524,
+  "steps": [
+    "trim_silence -50.0 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/40.0 ms",
+    "peak normalize -1.0 dBFS (-0.22 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.119,
+  "file": "e4m_blink_1.ogg"
+}
