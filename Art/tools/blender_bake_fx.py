@@ -971,7 +971,247 @@ def bake_c4scrap():
         render(sc, "c4scrap", f)
 
 
-SETS = {"c4grind": bake_c4grind, "c4scrap": bake_c4scrap, "c4orb": bake_c4orb, "c4needle": bake_c4needle, "c4spark": bake_c4spark, "c4slash": bake_c4slash, "c4strip": bake_c4strip,
+# ---------- Chapter 5: cosmic void / broken mirror / gold cracks ----------
+
+def _c5_rgb(hex_rgb):
+    """sRGB art colours -> linear emission, for the existing Standard view."""
+    rgb = [int(hex_rgb[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    return tuple(v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in rgb)
+
+
+def _c5_bands(kind="glass"):
+    palettes = {
+        "glass": [(0.0, "FFFFFF"), (0.12, "EAD9FF"), (0.32, "FF6FD0"), (0.58, "FF2FB4"), (0.86, "3A1A6A")],
+        "void": [(0.0, "24103F"), (0.22, "3A1A6A"), (0.50, "7E237F"), (0.72, "FF2FB4"), (0.93, "FF6FD0")],
+        "white": [(0.0, "FFFFFF"), (0.35, "FFF3FF"), (0.65, "EAD9FF"), (0.90, "FF6FD0")],
+        "gold": [(0.0, "FFF7DB"), (0.18, "FFE8A0"), (0.42, "FFC64A"), (0.82, "B77722")],
+        "pink": [(0.0, "FFFFFF"), (0.08, "FFEDF9"), (0.22, "FF6FD0"), (0.45, "FF2FB4"), (0.90, "3A1A6A")],
+    }
+    return [(p, _c5_rgb(c)) for p, c in palettes[kind]]
+
+
+def _c5_ring(name, mat, radius, width):
+    bpy.ops.mesh.primitive_torus_add(major_radius=radius, minor_radius=width, major_segments=64, minor_segments=8)
+    ob = bpy.context.active_object
+    ob.name = name; ob.data.materials.append(mat)
+    ob.rotation_euler = (math.pi / 2, 0, 0)
+    return ob
+
+
+def _c5_segment(ob, start, end):
+    """Place a unit laser rod between two points (including its pointed caps)."""
+    a, b = Vector(start), Vector(end)
+    ob.location = (a + b) / 2
+    ob.rotation_euler = (b - a).to_track_quat('X', 'Y').to_euler()
+    ob.scale.x = max(0.001, (b - a).length / 1.04)
+
+
+def bake_c5orb():
+    """16-frame loop: dark faceted core, pulsing magenta rim, gold orbit and three glass chips."""
+    from mathutils import Quaternion
+    sc = reset(); ink4(sc, 1.3)
+    vm = toon_mat("c5void", _c5_bands("void"))
+    core = gem_obj("void_core", vm, 0.65)
+    core.rotation_mode = 'QUATERNION'
+    tilt = Quaternion((1, 0, 0), 0.28)
+    gm = toon_mat("c5orbit_gold", _c5_bands("gold"))
+    ring = _c5_ring("gold_orbit", gm, 0.98, 0.023)
+    chips = []
+    for i in range(3):
+        m = toon_mat(f"c5orb_chip{i}", _c5_bands("white"))
+        chips.append(shard_obj(f"orbit_glass{i}", m, 0.11, 0.07, 0.045, 3))
+    for f in range(FRAMES):
+        t = f / FRAMES  # All motions are periodic at t=1, without a duplicated endpoint.
+        core.rotation_quaternion = tilt @ Quaternion((0, 0, 1), TAU / 5 * t)
+        setv(vm, "heat", 0.97 + 0.03 * math.cos(TAU * t))
+        ring.rotation_euler = (math.pi / 3, 0.18 * math.sin(TAU * t), 0.12 * math.sin(TAU * t))
+        orbit = ring.rotation_euler.to_matrix()
+        for i, chip in enumerate(chips):
+            a = TAU * (t + i / 3)
+            chip.location = orbit @ Vector((1.02 * math.cos(a), 1.02 * math.sin(a), 0))
+            chip.rotation_euler = (TAU * t, -a, 0.2)
+        render(sc, "c5orb", f)
+
+
+def bake_c5shard():
+    """16-frame loop: +X crystal splinter, white cutting edge and two chips behind it."""
+    sc = reset(); ink4(sc, 1.2)
+    m = toon_mat("c5splinter", _c5_bands())
+    setv(m, "heat", 0.80)
+    sh = shard_obj("void_splinter", m, 1.10, 0.58, 0.27)
+    sh.location.x = 0.13
+    wm = toon_mat("c5splinter_edge", _c5_bands("white"))
+    edge = laser_rod("white_hot_edge", wm, 1.0, 0.014, 0.02, 6)
+    edge.parent = sh
+    _c5_segment(edge, (0.12, -0.275, 0), (1.10, 0, 0))
+    chips = []
+    for i in range(2):
+        cm = toon_mat(f"c5trail_glass{i}", _c5_bands("white"))
+        o = shard_obj(f"trailing_chip{i}", cm, 0.13, 0.09, 0.05, 3)
+        chips.append(o)
+    for f in range(FRAMES):
+        t = f / FRAMES
+        sh.rotation_euler = (TAU * t, 0, 0)
+        for i, chip in enumerate(chips):
+            a = TAU * t + i * math.pi
+            chip.location = (-0.83 - i * 0.30, -0.02, (0.15 if i == 0 else -0.16) + 0.045 * math.sin(a))
+            chip.rotation_euler = (TAU * t, 0.15 * math.sin(a), 0)
+        render(sc, "c5shard", f)
+
+
+def bake_c5spark():
+    """One shot: frames 0-2 flash, eight triangular mirror chips, magenta ring and six gold sparks."""
+    sc = reset(); ink4(sc, 1.0)
+    rnd = random.Random(505)
+    fm = toon_mat("c5hit_flash", _c5_bands("pink"))
+    flash = star_obj("white_magenta_flash", fm, 4, 0.91, 0.14, 0.07)
+    rim = star_obj("magenta_flash_rim", flat_mat("c5flash_rim", _c5_rgb("FF2FB4")), 4, 1.03, 0.19, 0.06)
+    rim.location.y = 0.10
+    rm = toon_mat("c5hit_ring", _c5_bands("pink"))
+    ring = _c5_ring("magenta_shock", rm, 0.5, 0.022)
+    shards, sparks = [], []
+    for i in range(8):
+        m = toon_mat(f"c5hit_glass{i}", _c5_bands("white" if i % 3 == 0 else "glass"))
+        setv(m, "heat", 1.0 if i % 3 == 0 else 0.82)
+        ob = shard_obj(f"triangular_glass{i}", m, rnd.uniform(0.19, 0.28), 0.10, rnd.uniform(0.065, 0.10), 3)
+        shards.append((ob, m, TAU * i / 8 + rnd.uniform(-0.15, 0.15), rnd.uniform(0.90, 1.20), rnd.uniform(4, 8)))
+    for i in range(6):
+        m = toon_mat(f"c5hit_gold{i}", _c5_bands("gold"))
+        setv(m, "heat", 0.73)
+        ob = laser_rod(f"gold_spark{i}", m, 0.23, 0.018, 0.05, 6)
+        sparks.append((ob, m, TAU * (i + 0.35) / 6))
+    for f in range(FRAMES):
+        t = f / (FRAMES - 1)
+        pop = (0.75, 1.0, 0.48)[min(f, 2)]
+        flash.scale = (pop,) * 3; flash.hide_render = f > 2
+        rim.scale = (pop,) * 3; rim.hide_render = f > 2
+        setv(fm, "heat", 0.97)
+        k = max(0.0, (t - 0.10) / 0.90)
+        ring.scale = (0.25 + 2.30 * ease_out(k, 2),) * 3
+        ring.hide_render = f < 2 or f >= 12
+        setv(rm, "heat", 0.78); setv(rm, "dissolve", min(0.50, max(0, (k - 0.45) / 0.45)))
+        for ob, m, a, distance, spin in shards:
+            r = 0.14 + distance * ease_out(k, 2)
+            ob.location = (math.cos(a) * r, 0, math.sin(a) * r - 0.10 * k * k)
+            ob.rotation_euler = (spin * k, -a + spin * k * 0.6, 0.25)
+            s = max(0.001, 1 - max(0, (k - 0.48) / 0.52))
+            ob.scale = (s,) * 3; ob.hide_render = f < 2 or f == FRAMES - 1
+            setv(m, "dissolve", max(0, (k - 0.55) / 0.45))
+        for ob, m, a in sparks:
+            r = 0.3 + 0.95 * ease_out(k, 2)
+            ob.location = (math.cos(a) * r, -0.02, math.sin(a) * r)
+            ob.rotation_euler = (0, -a, 0)
+            s = max(0.001, 1 - k)
+            ob.scale = (0.4 + 0.6 * s, s, s); ob.hide_render = f < 2 or f >= 14
+            setv(m, "dissolve", max(0, (k - 0.55) / 0.45))
+        render(sc, "c5spark", f)
+
+
+def bake_c5rift():
+    """Vertical air crack: grow 0-7, violet star lens 8-9, shatter 10-15."""
+    sc = reset(); ink4(sc, 0.9)
+    rnd = random.Random(515)
+    pm = flat_mat("c5crack_magenta", _c5_rgb("FF2FB4"))
+    wm = flat_mat("c5crack_white", _c5_rgb("FFF5FF"))
+    gm = flat_mat("c5crack_gold", _c5_rgb("FFC64A"))
+    paths = [
+        [(0, 0), (-0.12, 0.25), (0.10, 0.49), (-0.10, 0.72), (0.07, 0.97), (-0.04, 1.24)],
+        [(0, 0), (0.15, -0.24), (-0.08, -0.47), (0.11, -0.73), (-0.06, -0.98), (0.04, -1.24)],
+        [(0.10, 0.49), (0.39, 0.60), (0.52, 0.85)],
+        [(-0.10, 0.72), (-0.37, 0.80), (-0.46, 0.99)],
+        [(-0.08, -0.47), (-0.37, -0.61), (-0.49, -0.83)],
+        [(0.11, -0.73), (0.38, -0.80), (0.45, -1.01)],
+    ]
+    cracks = []
+    for p, path in enumerate(paths):
+        for j, (a, b) in enumerate(zip(path, path[1:])):
+            outer = laser_rod(f"crack_band{p}_{j}", pm, 1, 0.053 if p < 2 else 0.036, 0.02, 6)
+            inner = laser_rod(f"crack_core{p}_{j}", gm if p >= 2 and j == 1 else wm, 1, 0.018 if p < 2 else 0.012, 0.02, 6)
+            cracks.append((outer, inner, a, b, p))
+    lm = toon_mat("c5rift_lens", _c5_bands("void"))
+    lens = gem_obj("violet_void_lens", lm, 1.0)
+    lens.location.y = 0.12
+    stars = []
+    sm = toon_mat("c5rift_starlight", _c5_bands("white"))
+    for i in range(5):
+        ob = star_obj(f"trapped_star{i}", sm, 4, 0.055 if i % 2 else 0.075, 0.012, 0.015)
+        ob.location = (rnd.uniform(-0.21, 0.21), -0.34, -0.63 + i * 0.30)
+        stars.append(ob)
+    shards = []
+    for i in range(12):
+        m = toon_mat(f"c5rift_glass{i}", _c5_bands("white" if i % 4 == 0 else "glass"))
+        setv(m, "heat", 1.0 if i % 4 == 0 else 0.82)
+        ob = shard_obj(f"rift_mirror_piece{i}", m, rnd.uniform(0.15, 0.27), 0.10, rnd.uniform(0.065, 0.12), 3)
+        shards.append((ob, m, TAU * i / 12 + rnd.uniform(-0.10, 0.10), rnd.uniform(0.85, 1.17), rnd.uniform(3, 7)))
+    rm = toon_mat("c5rift_shock", _c5_bands("pink"))
+    ring = _c5_ring("rift_shatter_ring", rm, 0.5, 0.022)
+    for f in range(FRAMES):
+        reach = 0.10 + 1.18 * min(1.0, f / 7)
+        shatter = max(0.0, (f - 9) / 6)
+        for outer, inner, a, b, p in cracks:
+            amount = min(1.0, max(0.0, (reach - abs(a[1])) / max(0.01, abs(b[1]) - abs(a[1]))))
+            end = (a[0] + (b[0] - a[0]) * amount, a[1] + (b[1] - a[1]) * amount)
+            for ob, depth in ((outer, -0.12), (inner, -0.19)):
+                _c5_segment(ob, (a[0], depth, a[1]), (end[0], depth, end[1]))
+                ob.scale.y = ob.scale.z = max(0.001, 1 - shatter)
+                ob.hide_render = amount <= 0.01 or f >= 14
+        for m in (pm, wm, gm):
+            setv(m, "dissolve", min(1, shatter * 1.25))
+        bulge = 0.82 if f == 8 else 1.0
+        lens.scale = (0.44 * bulge, 0.28, 1.10 * bulge)
+        lens.rotation_euler = (0, 0, 0.12)
+        lens.hide_render = f not in (8, 9)
+        for i, star in enumerate(stars):
+            star.hide_render = f not in (8, 9)
+            star.scale = (0.8 + 0.2 * math.cos(f + i),) * 3
+        for ob, m, a, distance, spin in shards:
+            r = 0.12 + distance * ease_out(shatter, 2)
+            ob.location = (math.cos(a) * r, -0.05, math.sin(a) * r)
+            ob.rotation_euler = (spin * shatter, -a + spin * shatter * 0.55, 0.25)
+            s = max(0.001, 1 - max(0, (shatter - 0.42) / 0.58))
+            ob.scale = (s,) * 3; ob.hide_render = f < 10 or f == 15
+            setv(m, "dissolve", max(0, (shatter - 0.48) / 0.52))
+        ring.scale = (0.5 + 2.05 * ease_out(shatter, 2),) * 3
+        ring.hide_render = f < 10 or f >= 14
+        setv(rm, "heat", 0.80); setv(rm, "dissolve", min(0.50, max(0, (shatter - 0.4) / 0.6)))
+        render(sc, "c5rift", f)
+
+
+def bake_c5strip():
+    """One frame, matching c4strip: white-hot LEFT head, pink body, violet notched RIGHT tail."""
+    sc = reset(); ink4(sc, 1.0)
+    n = 32
+    # Leave a final segment deeper than the V cut, so earlier faces cannot fill the notch.
+    pts = [(-1.40 + 2.34 * i / (n - 2), 0.0) for i in range(n - 1)] + [(1.40, 0.0)]
+    widths = [0.62 * (1 - 0.25 * i / (n - 1)) for i in range(n)]
+    stops = [(0.0, "FFFFFF"), (0.12, "FFF0FC"), (0.30, "FF6FD0"), (0.60, "FF2FB4"), (1.0, "3A1A6A")]
+    for layer, (wk, depth) in enumerate(((1.0, 0.0), (0.73, -0.012), (0.29, -0.024))):
+        ob = ribbon_obj(f"c5strip_layer{layer}", flat_mat(f"c5strip_base{layer}", _c5_rgb("3A1A6A")), pts, [w * wk for w in widths], 0.9 / wk, depth)
+        for i, face in enumerate(ob.data.polygons):
+            u = i / (n - 2)
+            for (a, ca), (b, cb) in zip(stops, stops[1:]):
+                if a <= u <= b:
+                    k = (u - a) / (b - a)
+                    rgb = tuple(x * (1 - k) + y * k for x, y in zip(_c5_rgb(ca), _c5_rgb(cb)))
+                    break
+            if layer == 0:
+                rgb = tuple(v * 0.38 for v in rgb)
+            elif layer == 1:
+                rgb = tuple(v * 0.85 for v in rgb)
+            m = flat_mat(f"c5strip_{layer}_{i}", rgb)
+            # Gradually translucent tail, with the existing noise dissolve convention.
+            nt = m.node_tree
+            mix = next(node for node in nt.nodes if node.type == 'MIX_SHADER')
+            source = mix.inputs[0].links[0].from_socket
+            fade = nt.nodes.new("ShaderNodeMath"); fade.operation = 'MULTIPLY'
+            fade.inputs[1].default_value = 1 - 0.72 * u ** 3
+            nt.links.new(source, fade.inputs[0]); nt.links.new(fade.outputs[0], mix.inputs[0])
+            ob.data.materials.append(m); face.material_index = len(ob.data.materials) - 1
+    render(sc, "c5strip", 0)
+
+
+SETS = {"c5orb": bake_c5orb, "c5shard": bake_c5shard, "c5spark": bake_c5spark, "c5rift": bake_c5rift, "c5strip": bake_c5strip,
+        "c4grind": bake_c4grind, "c4scrap": bake_c4scrap, "c4orb": bake_c4orb, "c4needle": bake_c4needle, "c4spark": bake_c4spark, "c4slash": bake_c4slash, "c4strip": bake_c4strip,
         "fire": bake_fire, "smoke": bake_smoke, "spark": bake_spark, "mist": bake_mist, "dodge": bake_dodge, "memclock": bake_memclock, "memshatter": bake_memshatter,
         "c3orb": bake_c3orb, "c3shard": bake_c3shard, "c3spark": bake_c3spark, "c3water": bake_c3water}
 only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else list(SETS)

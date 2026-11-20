@@ -18,7 +18,7 @@ namespace CatTang.EditorTools
 {
     public static class EnemyMotions
     {
-        const string D1 = "Assets/Art/Characters/Ch1/Anim/", D2 = "Assets/Art/Characters/Ch2/Anim/", D3 = "Assets/Art/Characters/Ch3/Anim/", D4 = "Assets/Art/Characters/Ch4/Anim/";
+        const string D1 = "Assets/Art/Characters/Ch1/Anim/", D2 = "Assets/Art/Characters/Ch2/Anim/", D3 = "Assets/Art/Characters/Ch3/Anim/", D4 = "Assets/Art/Characters/Ch4/Anim/", D5 = "Assets/Art/Characters/Ch5/Anim/";
 
         static readonly Dictionary<string, string> Abbr = new()
         {
@@ -131,12 +131,12 @@ namespace CatTang.EditorTools
             }
         }
 
-        [MenuItem("CatTang/적 전용 모션 클립 만들기 (1 · 2 · 3 · 4장)")]
+        [MenuItem("CatTang/적 전용 모션 클립 만들기 (1 ~ 5장)")]
         public static void MakeAll()
         {
             var idle = Ch2Motion.CatIdle();
             if (!idle) { Debug.LogError("[EnemyMotions] 고양이 idle 클립이 없음"); return; }
-            Ch1(idle); Ch2(idle); Ch3(idle); Ch4(idle);
+            Ch1(idle); Ch2(idle); Ch3(idle); Ch4(idle); Ch5(idle);
             AssetDatabase.SaveAssets();
             Debug.Log("[EnemyMotions] 적 전용 모션 클립 완료");
         }
@@ -393,6 +393,112 @@ namespace CatTang.EditorTools
             HoldArm(CatClip("run"), D4 + "Ch4M_RingerRun", RG_REST + RG_RUNW);
             HoldArm(idle, D4 + "Ch4M_AssassinIdle", AS_REST);
             HoldArm(CatClip("run"), D4 + "Ch4M_AssassinRun", AS_REST + AS_RUNW);
+        }
+
+        // ======================= 5장 (2026-11-19 사용자: 이전 모션 재활용 말고 다른 느낌으로) =======================
+        // '붕괴' 테마: 동작 사이사이에 몸이 깨진 거울처럼 한 프레임씩 튀는 글리치(0.02~0.04초 어긋난 자세)와, 떠 있는 듯 기우뚱한 흔들림.
+        // idle · 걸음도 고양이 클립을 빌리지 않고 이 장 전용으로 만듦 (걸음 = Ch2Motion.Walk 생성기 + 무기 든 팔 자세).
+        // 중간 보스 거울 고양이만 예외: 거울에 비친 분신이라 고양이 기본 모션을 그대로 따라 함 (2026-11-19 사용자)
+        static string G(string pose, string glitch) => pose + " " + glitch;      // 글리치 = 같은 자세에 어긋난 값 덧씀
+        static void Ch5(AnimationClip idle)
+        {
+            System.IO.Directory.CreateDirectory(D5);
+            // ---- 파편 사수 (유리 소총: 오른손, 총구 앞) ----
+            const string GN_REST = "RA.DU=.35 RA.FB=.28 RA.TW=-.3 RF=-.55 RH.DU=.15 LA.DU=.2 LA.FB=.15 LF=-.3";
+            Clip(idle, D5 + "Ch5M_GunnerIdle", true, (0, GN_REST + " HD.TL=.07 SP.LR=.04"), (.9f, GN_REST + " HD.TL=-.05 SP.LR=-.03 CH.FB=-.05"),
+                 (.93f, G(GN_REST, "HD.TL=.16 HD.TN=.18 SP.LR=.08")), (.97f, GN_REST + " HD.TL=-.05"), (1.9f, GN_REST + " HD.TL=.07 SP.LR=.04"));
+            const string GN_AIM = "RA.DU=.42 RA.FB=.62 RA.TW=-.25 RF=-.22 RH.DU=.05 LA.DU=.32 LA.FB=.5 LF=-.45 SP.TW=-.15 HD.ND=-.05 LL.FB=.25 LK=-.2 RL.FB=-.1";
+            const string GN_KICK = GN_AIM + " RA.FB=.35 RF=-.6 SP.FB=-.22 HD.ND=.14 ROOT=-.02";
+            // 단발: 겨눔(0.6 예고) → 반동 순간 몸이 두 번 어긋나 튐 → 제자리
+            Clip(idle, D5 + "Ch5M_GunnerShot", false, (0, GN_REST), (.18f, GN_AIM), (.58f, GN_AIM), (.61f, G(GN_KICK, "SP.LR=.12 HD.TL=.15")), (.64f, G(GN_KICK, "SP.LR=-.1 HD.TL=-.12")), (.68f, GN_KICK), (.85f, GN_REST));
+            Ch2Motion.Walk(idle, D5 + "Ch5M_BaseGunnerStep", 0.62f, 0.2f, 0.07f, 0.06f);
+            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseGunnerStep.anim"), D5 + "Ch5M_GunnerWalk", GN_REST);
+
+            // ---- 별자리 마녀 (별 지팡이: 오른손, 곧게 세움) ----
+            const string WT_REST = "RA.DU=.3 RA.FB=.22 RF=-.9 RH.DU=.1 LA.DU=.25 LA.FB=.2 LF=-.6";
+            // 떠 있는 듯 둥실 (몸 높이 +0.04, 좌우로 기우뚱)
+            Clip(idle, D5 + "Ch5M_WitchIdle", true, (0, WT_REST + " SP.LR=.05 HD.TL=.06"), (1.2f, WT_REST + " SP.LR=-.05 HD.TL=-.06 ROOT=.04 CH.FB=-.06"), (2.4f, WT_REST + " SP.LR=.05 HD.TL=.06"));
+            const string WT_UP = "RA.DU=1.05 RA.FB=.35 RF=-.2 LA.DU=.55 LA.FB=.45 LF=-.15 CH.FB=-.2 HD.ND=.25 ROOT=.04";
+            const string WT_TAP = "RA.DU=.65 RA.FB=.75 RF=-.05 LA.DU=.4 LA.FB=.3 SP.FB=.15 HD.ND=-.1 ROOT=-.02";
+            // 별 박기: 지팡이를 들었다 콕 (별 3개 = 0.33초 간격)
+            Clip(idle, D5 + "Ch5M_WitchCast", false, (0, WT_REST), (.1f, WT_UP), (.2f, WT_TAP + " SP.TW=.25"), (.33f, WT_UP), (.43f, WT_TAP + " SP.TW=-.25"), (.56f, WT_UP), (.66f, WT_TAP), (.69f, G(WT_TAP, "HD.TL=.15 SP.LR=.1")), (.95f, WT_REST));
+            const string WT_SPREAD = "RA.DU=1 RA.FB=-.1 LA.DU=1 LA.FB=-.1 RF=.2 LF=.2 CH.FB=-.3 HD.ND=.3 ROOT=.05";
+            // 선 잇기: 두 팔을 활짝 펴 하늘을 가르듯
+            Clip(idle, D5 + "Ch5M_WitchLink", false, (0, WT_REST), (.15f, WT_SPREAD), (.18f, G(WT_SPREAD, "SP.TW=.2 HD.TN=.2")), (.45f, WT_SPREAD + " SP.TW=-.15"), (.65f, WT_REST));
+            Ch2Motion.Walk(idle, D5 + "Ch5M_BaseWitchStep", 0.7f, 0.14f, 0.1f, 0.02f);
+            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseWitchStep.anim"), D5 + "Ch5M_WitchWalk", WT_REST);
+
+            // ---- 붕괴 거인 (망치: 오른손, 앞아래로 늘어뜨려 끔) ----
+            const string RG5_REST = "RA.DU=.15 RA.FB=.22 RF=-.2 LA.DU=.2 LA.FB=.1 LF=-.25 SP.FB=.14";
+            Clip(idle, D5 + "Ch5M_GiantIdle", true, (0, RG5_REST + " SP.FB=.2 CH.FB=.08 HD.ND=-.1 LS.DU=.1 RS.DU=.1"), (1.4f, RG5_REST + " SP.FB=.1 HD.ND=.02"),
+                 (2.0f, G(RG5_REST, "SP.LR=.1 HD.TL=.12 SP.FB=.12")), (2.05f, RG5_REST + " SP.FB=.12"), (2.8f, RG5_REST + " SP.FB=.2 CH.FB=.08 HD.ND=-.1 LS.DU=.1 RS.DU=.1"));
+            const string RG5_LIFT = "RA.DU=1.5 RA.FB=-.2 RF=-.3 LA.DU=1.3 LA.FB=-.1 LF=-.2 SP.FB=-.35 CH.FB=-.25 HD.ND=.3 LL.FB=.2 LK=-.2 ROOT=.03";
+            const string RG5_SMASH = "RA.DU=.1 RA.FB=.9 RF=.1 LA.DU=.2 LA.FB=.8 LF=.05 SP.FB=.55 CH.FB=.25 HD.ND=-.2 LL.FB=.5 LK=-.5 RL.FB=-.2 RK=-.2 ROOT=-.18";
+            // 내리찍기: 머리 위로 들어 올림(0.8 예고) → 내리꽂는 순간 바닥이 깨지듯 몸이 두 번 떨림 → 박힌 채 버팀
+            Clip(idle, D5 + "Ch5M_GiantSlam", false, (0, RG5_REST), (.5f, RG5_LIFT), (.78f, RG5_LIFT + " SP.FB=-.45"), (.84f, RG5_SMASH), (.87f, G(RG5_SMASH, "SP.LR=.12 ROOT=-.22")), (.9f, G(RG5_SMASH, "SP.LR=-.1")), (1.2f, RG5_SMASH), (1.45f, RG5_REST));
+            const string RG5_COIL = "SP.FB=.5 RA.FB=-.4 LA.FB=-.4 LL.FB=.5 LK=-.6 RL.FB=-.1 RK=-.4 HD.ND=.3 ROOT=-.12";
+            const string RG5_RAM = "SP.FB=.6 RA.FB=.5 RA.DU=.2 LA.FB=-.6 LL.FB=.7 LK=-.2 RL.FB=-.5 RK=.1 HD.ND=.2 ROOT=-.05";
+            Clip(idle, D5 + "Ch5M_GiantDash", false, (0, RG5_REST), (.55f, RG5_COIL), (.62f, RG5_RAM), (1.05f, RG5_RAM), (1.5f, RG5_REST));
+            Ch2Motion.Walk(idle, D5 + "Ch5M_BaseGiantStep", 1.2f, 0.26f, 0.16f, 0.16f);   // 무겁게 끄는 걸음
+            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseGiantStep.anim"), D5 + "Ch5M_GiantWalk", RG5_REST);
+
+            // ---- 균열 자객 (균열 칼 두 자루, 앞으로 겨눔) ----
+            const string RA5_ARMS = "RA.DU=.35 RA.FB=.32 RF=-.5 LA.DU=.35 LA.FB=.32 LF=-.5";
+            const string RA5_REST = RA5_ARMS + " SP.FB=.25 LK=-.25 RK=-.25 LL.FB=.15 RL.FB=.15 ROOT=-.05";
+            // 경련하듯 고개를 홱홱 돌리며 웅크림
+            Clip(idle, D5 + "Ch5M_AssassinIdle", true, (0, RA5_REST), (.5f, RA5_REST + " HD.TN=.3"), (.53f, G(RA5_REST, "HD.TN=-.35 HD.TL=.2")), (1.2f, RA5_REST + " SP.LR=.08"), (1.6f, RA5_REST));
+            const string RA5_SINK = "SP.FB=.75 LL.FB=.65 RL.FB=.65 LK=-.95 RK=-.95 RA.FB=-.5 LA.FB=-.5 HD.ND=-.3 ROOT=-.32";
+            Clip(idle, D5 + "Ch5M_AssassinDive", false, (0, RA5_REST), (.2f, RA5_SINK), (.23f, G(RA5_SINK, "SP.LR=.15")), (.45f, RA5_SINK + " ROOT=-.5"));
+            const string RA5_BURST = "SP.FB=-.2 CH.FB=-.2 RA.DU=1.2 RA.FB=.6 LA.DU=1.2 LA.FB=.6 RF=.2 LF=.2 HD.ND=.2 ROOT=.06";
+            const string RA5_CROSS = "SP.FB=.45 RA.DU=.2 RA.FB=.95 RA.TW=.4 LA.DU=.2 LA.FB=.95 LA.TW=.4 LL.FB=.4 LK=-.3 ROOT=-.08";
+            // 튀어나오기: 균열 아래에서 솟구치며 X자로 올려 베고 → 내려 벰
+            Clip(idle, D5 + "Ch5M_AssassinEmerge", false, (0, RA5_SINK), (.08f, RA5_BURST), (.1f, G(RA5_BURST, "SP.TW=.3")), (.18f, RA5_CROSS), (.5f, RA5_CROSS), (1.4f, RA5_REST));
+            const string RA5_WIND = "RA.DU=.9 RA.FB=-.1 LA.DU=.9 LA.FB=-.1 SP.TW=.35 SP.FB=.1 LK=-.3 RK=-.3";
+            const string RA5_CUT = "RA.DU=.3 RA.FB=.95 LA.DU=.3 LA.FB=.95 SP.TW=-.35 SP.FB=.4 LL.FB=.5 LK=-.3 RL.FB=-.2 ROOT=-.08";
+            Clip(idle, D5 + "Ch5M_AssassinSlash", false, (0, RA5_REST), (.38f, RA5_WIND), (.45f, RA5_WIND + " SP.TW=.45"), (.5f, RA5_CUT), (.53f, G(RA5_CUT, "HD.TL=.2 SP.LR=.1")), (.9f, RA5_CUT));
+            const string RA5_PANT = "SP.FB=.45 LS.DU=.25 RS.DU=.25 RA.FB=.2 LA.FB=.2 HD.ND=-.25 LK=-.3 RK=-.3 ROOT=-.07";
+            Clip(idle, D5 + "Ch5M_AssassinBreath", false, (0, RA5_PANT), (.25f, RA5_PANT + " LS.DU=0 RS.DU=0 HD.ND=-.35"), (.5f, RA5_PANT), (.52f, G(RA5_PANT, "HD.TN=.3")), (.75f, RA5_PANT + " LS.DU=0 RS.DU=0"), (1f, RA5_PANT));
+            Ch2Motion.Walk(idle, D5 + "Ch5M_BaseAssassinStep", 0.38f, 0.24f, 0.05f, 0.25f);   // 낮게 웅크린 빠른 잔걸음
+            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseAssassinStep.anim"), D5 + "Ch5M_AssassinRun", RA5_ARMS);
+
+            // ---- 균열술사 (균열 향로: 오른손에 늘어뜨림, 왼손은 가슴에) ----
+            const string CS_REST = "RA.DU=.4 RA.FB=.35 RF=-.3 LA.DU=.3 LA.FB=.3 LF=-.85 CH.FB=.1 HD.ND=-.1";
+            // 향로를 시계추처럼 흔듦
+            Clip(idle, D5 + "Ch5M_CasterIdle", true, (0, CS_REST + " RA.FB=.22"), (.8f, CS_REST + " RA.FB=.5 SP.LR=.04"), (1.6f, CS_REST + " RA.FB=.22"));
+            const string CS_RAISE = "RA.DU=.95 RA.FB=.8 RF=.1 LA.DU=.9 LA.FB=.6 LF=.1 CH.FB=-.2 HD.ND=.2 ROOT=.02";
+            const string CS_TEAR = "RA.DU=.6 RA.FB=.9 LA.DU=.45 LA.FB=.9 LH.DU=-.5 SP.FB=.2 HD.ND=-.05";
+            // 균열 열기: 두 손을 앞으로 뻗어 허공을 찢음
+            Clip(idle, D5 + "Ch5M_CasterOpen", false, (0, CS_REST), (.2f, CS_RAISE), (.32f, CS_TEAR), (.35f, G(CS_TEAR, "SP.LR=.12 HD.TL=.15")), (.6f, CS_REST));
+            const string CS_BACK = "RA.DU=.9 RA.FB=-.6 RF=-.1 SP.FB=-.3 SP.TW=.35 HD.ND=.2 LA.FB=.4";
+            const string CS_FLING = "RA.DU=1.1 RA.FB=1 RF=.2 SP.FB=.25 SP.TW=-.3 LA.FB=-.2";
+            Clip(idle, D5 + "Ch5M_CasterLob", false, (0, CS_REST), (.26f, CS_BACK), (.32f, CS_FLING), (.55f, CS_REST));
+            Ch2Motion.Walk(idle, D5 + "Ch5M_BaseCasterStep", 0.45f, 0.15f, 0.08f, 0.22f);   // 도망치는 구부정한 걸음
+            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseCasterStep.anim"), D5 + "Ch5M_CasterWalk", CS_REST);
+            // ---- 보스 '시간의 주인' (대낫: 오른손, 자루를 세워 듦) — 2026-11-20 ----
+            // 유령 돌진 베기 (사용자: 낫을 크게 뒤로 들었다가 앞으로 베어 넘기며 유령처럼 돌진, 모션 가감속):
+            //   키 간격으로 가감속 — 들어 올림은 키를 넓게(천천히 출발해 점점 빨리), 꼭대기에서 0.25초 멈칫(예비 동작), 베기는 0.07초(번개처럼),
+            //   넘어간 뒤엔 과하게 넘어갔다(오버슈트) 미끄러지며 감속 → 천천히 제자리. 곡선 접선 = ClampedAuto라 키 사이가 부드럽게 가속 · 감속
+            const string BS_REST = "RA.DU=.3 RA.FB=.25 RF=-.6 RH.DU=.1 LA.DU=.25 LA.FB=.1 LF=-.4 SP.FB=.05";
+            Clip(idle, D5 + "Ch5M_BossIdle", true, (0, BS_REST + " SP.LR=.04 HD.ND=-.05"), (1.6f, BS_REST + " SP.LR=-.04 HD.ND=.02 ROOT=.06 CH.FB=-.05"), (3.2f, BS_REST + " SP.LR=.04 HD.ND=-.05"));
+            // 2026-11-20 사용자: 베어 넘길 때 수평으로, 양손으로 휘두르며 → 낫을 오른쪽 뒤로 수평하게 감음(왼손이 몸을 가로질러 자루를 함께 잡음, 허리를 오른쪽으로 비틂)
+            //   → 몸을 왼쪽으로 풀며 양손으로 앞을 수평하게 쓸어 넘김 → 왼쪽까지 넘어간 자세로 미끄러짐. 손목(RF.TW · RH.*)은 자루가 눕도록
+            const string BS_WIND1 = "RA.DU=.6 RA.FB=-.05 RA.TW=.2 RF=-.35 RF.TW=-.4 RH.IO=.3 LA.DU=.5 LA.FB=.35 LA.TW=-.2 LF=-.35 SP.TW=.35 CH.TW=.15 HD.TN=-.1 ROOT=-.02";
+            const string BS_WIND = "RA.DU=.78 RA.FB=-.38 RA.TW=.35 RF=-.25 RF.TW=-.85 RH.DU=-.2 RH.IO=.6 LA.DU=.68 LA.FB=.6 LA.TW=-.35 LF=-.3 LH.IO=-.4 SP.TW=.72 CH.TW=.38 SP.FB=-.05 HD.TN=-.25 LL.FB=.3 LK=-.3 RL.FB=-.15 RK=-.15 ROOT=-.06";
+            const string BS_TOP = BS_WIND + " SP.TW=.88 CH.TW=.46 ROOT=-.09";
+            Clip(idle, D5 + "Ch5M_BossReapWind", false, (0, BS_REST), (.12f, BS_REST + " SP.FB=.1 ROOT=-.03"), (.5f, BS_WIND1), (.85f, BS_WIND), (1.1f, BS_TOP));
+            const string BS_CUT = "RA.DU=.72 RA.FB=.92 RA.TW=-.2 RF=-.05 RF.TW=-.85 RH.DU=-.2 RH.IO=.6 LA.DU=.62 LA.FB=.45 LA.TW=.2 LF=-.2 LH.IO=-.4 SP.TW=-.55 CH.TW=-.3 SP.FB=.25 HD.TN=.15 LL.FB=.55 LK=-.4 RL.FB=-.4 RK=-.1 ROOT=-.12";
+            const string BS_OVER = BS_CUT + " SP.TW=-.82 CH.TW=-.46 RA.FB=.62 RA.DU=.8 LA.FB=-.05 LA.DU=.55 HD.TN=.3 ROOT=-.16";
+            Clip(idle, D5 + "Ch5M_BossReapDash", false, (0, BS_TOP), (.07f, BS_CUT), (.09f, G(BS_CUT, "SP.LR=.1")), (.3f, BS_OVER), (.42f, BS_OVER + " ROOT=-.18"), (.8f, BS_OVER + " SP.TW=-.6 ROOT=-.12"), (1.05f, BS_REST));
+            const string BS_SIDE = "RA.DU=.95 RA.FB=-.3 RA.TW=.3 RF=-.3 SP.TW=.65 CH.TW=.3 LA.FB=.45 LA.DU=.3 LF=-.3 SP.FB=-.1 LL.FB=.25 LK=-.25 ROOT=-.05";
+            const string BS_SWEEP = "RA.DU=.6 RA.FB=.95 RA.TW=-.3 RF=.05 SP.TW=-.6 CH.TW=-.3 LA.FB=-.3 LA.DU=.35 SP.FB=.35 RL.FB=.3 RK=-.3 ROOT=-.1";
+            Clip(idle, D5 + "Ch5M_BossReap", false, (0, BS_REST), (.6f, BS_SIDE), (.9f, BS_SIDE + " SP.TW=.75"), (.97f, BS_SWEEP), (1.15f, BS_SWEEP + " SP.TW=-.75"), (1.4f, BS_REST));
+            const string BS_CAST = BS_REST + " LA.DU=1.2 LA.FB=.6 LF=.2 LH.DU=-.4 CH.FB=-.2 HD.ND=.2 ROOT=.05";
+            Clip(idle, D5 + "Ch5M_BossCast", false, (0, BS_REST), (.35f, BS_CAST), (.38f, G(BS_CAST, "HD.TL=.12 SP.LR=.08")), (.8f, BS_CAST), (1.1f, BS_REST));
+            const string BS_PULL = BS_REST + " LA.DU=.9 LA.FB=-.5 LF=-.3 SP.TW=.4 SP.FB=-.2 HD.ND=.1";
+            const string BS_THROW = BS_REST + " LA.DU=.8 LA.FB=1.0 LF=.2 SP.TW=-.4 SP.FB=.3 LL.FB=.3 ROOT=-.05";
+            Clip(idle, D5 + "Ch5M_BossSpear", false, (0, BS_REST), (.8f, BS_PULL), (1.0f, BS_PULL + " SP.TW=.5"), (1.06f, BS_THROW), (1.2f, BS_REST));
+            Ch2Motion.Walk(idle, D5 + "Ch5M_BaseBossGlide", 1.4f, 0.14f, 0.08f, 0.1f);   // 사신: 발을 거의 안 떼고 미끄러지듯
+            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseBossGlide.anim"), D5 + "Ch5M_BossWalk", BS_REST);
         }
     }
 }

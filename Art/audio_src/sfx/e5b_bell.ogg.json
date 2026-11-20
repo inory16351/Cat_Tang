@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5b_bell.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5b_bell",
+    "original_idea": "11:59 game SFX: e5b_bell",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, enormous cathedral clock bell, one deep booming toll with a long shimmering metallic decay, bronze bell, huge reverb.",
+    "sound_fields": {
+      "source": "enormous cathedral clock bell",
+      "action": "one deep booming toll with a long shimmering metallic decay",
+      "material": "bronze bell",
+      "space": "huge reverb"
+    },
+    "bpm": null,
+    "seconds": 2.5,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5b_bell.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-20T08:57:26",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": -0.19,
+    "ceiling_gain_db": -0.81
+  },
+  "created": "2026-11-20T08:57:26",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 2.474,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+0.50 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.129,
+  "file": "e5b_bell.ogg"
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5b_beam.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5b_beam",
+    "original_idea": "11:59 game SFX: e5b_beam",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, watchful clock eye beam, charging hum that fires a sharp laser zap, magic energy, close, slight reverb.",
+    "sound_fields": {
+      "source": "watchful clock eye beam",
+      "action": "charging hum that fires a sharp laser zap",
+      "material": "magic energy",
+      "space": "close, slight reverb"
+    },
+    "bpm": null,
+    "seconds": 1.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5b_beam.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-20T08:57:30",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -3.82,
+    "raw_peak_dbfs": -3.82,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-20T08:57:30",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.778,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+2.82 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.2072,
+  "file": "e5b_beam.ogg"
+}

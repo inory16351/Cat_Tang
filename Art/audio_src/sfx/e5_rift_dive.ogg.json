@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5_rift_dive.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5_rift_dive",
+    "original_idea": "11:59 game SFX: e5_rift_dive",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, figure sinking into a crack in space, reversed glassy whoosh pulled into a deep void hum, void energy, glass, close, slight reverb.",
+    "sound_fields": {
+      "source": "figure sinking into a crack in space",
+      "action": "reversed glassy whoosh pulled into a deep void hum",
+      "material": "void energy, glass",
+      "space": "close, slight reverb"
+    },
+    "bpm": null,
+    "seconds": 0.8,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5_rift_dive.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T21:30:03",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -15.22,
+    "raw_peak_dbfs": -15.22,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T21:30:03",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.635,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+14.74 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0838,
+  "file": "e5_rift_dive.ogg"
+}

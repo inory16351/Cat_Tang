@@ -127,7 +127,7 @@ namespace CatTang
             current = null;
             roomIndex = 0;
             var r0 = layout.rooms[0];
-            float back = IsBossRoom && Ch2Kit.Is(Chapter) ? Ch2Kit.BossArenaDiameter / 2 - 3 : IsBossRoom && Ch3Kit.Is(Chapter) ? Ch3Boss.ArenaR - 4 : IsBossRoom && Ch4Kit.Is(Chapter) ? Ch4Kit.ArenaR - 4 : r0.size.y / 2 - 3;   // 2장 보스: 원형 경계 안에서 시작
+            float back = IsBossRoom && Ch2Kit.Is(Chapter) ? Ch2Kit.BossArenaDiameter / 2 - 3 : IsBossRoom && Ch3Kit.Is(Chapter) ? Ch3Boss.ArenaR - 4 : IsBossRoom && Ch4Kit.Is(Chapter) ? Ch4Kit.ArenaR - 4 : IsBossRoom && Ch5Kit.Is(Chapter) ? Ch5Kit.ArenaR - 4 : r0.size.y / 2 - 3;   // 2장 보스: 원형 경계 안에서 시작
             if (!attachOrigin.HasValue) player.Teleport(r0.center - r0.farSide * back + Vector3.up * 0.3f);
             Music.PlayFor(IsBossRoom ? "boss" : "stage", chapter);   // 중간 보스 뒤 스테이지 3에서 맵 곡으로 돌아옴
             ui?.Toast(IsBossRoom ? Chapter.BossName : $"{chapter}장 · 스테이지 {index + 1}/{Stages} — 방 {rooms}개");

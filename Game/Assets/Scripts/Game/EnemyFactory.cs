@@ -54,7 +54,8 @@ namespace CatTang
         /// <summary>일반 적 웨이브 구성: 무법자 = 챕터 사격형 비율 + 10%, 폭탄병 25%, 나머지 깡패</summary>
         public static Enemy RandomMinion(Vector3 pos, ChapterDef ch, bool elite = false)
         {
-            if (ch != null && ch.Id >= 4) return RandomCh4(pos, ch, elite);
+            if (ch != null && ch.Id >= 5) return RandomCh5(pos, ch, elite);
+            if (ch != null && ch.Id == 4) return RandomCh4(pos, ch, elite);
             if (ch != null && ch.Id == 3) return RandomCh3(pos, ch, elite);
             if (ch != null && ch.Id == 2)
             {
@@ -310,6 +311,66 @@ namespace CatTang
             return e;
         }
 
+        // ---------- 5장 (무너지는 시간의 끝, 보라 · 금 우주, 2026-11-19) — 체력 · 피해는 md 5장 값 그대로. 행동 = EnemyCh5.cs, 모델 = Resources/Enemies/Ch5_* ----------
+        // 적 구성: 여섯 종류가 처음부터 섞여 나오고 방마다 3~4종을 뽑아 섞음, 균열술사는 방마다 최대 1 (먼저 잡아야 하는 우선 표적)
+        static object ch5MixRoom;
+        static readonly System.Collections.Generic.List<int> ch5Mix = new();
+        static int ch5Casters, ch5Phantoms;
+
+        static Enemy RandomCh5(Vector3 pos, ChapterDef ch, bool elite)
+        {
+            var room = RunManager.Instance ? (object)RunManager.Instance.CurrentRoom : null;
+            if (room == null || room != ch5MixRoom || ch5Mix.Count == 0)
+            {
+                ch5MixRoom = room;
+                ch5Mix.Clear();
+                ch5Casters = 0; ch5Phantoms = 0;
+                var all = new System.Collections.Generic.List<int> { 0, 1, 2, 3, 4, 5 };
+                int n = Random.value < 0.5f ? 3 : 4;
+                while (ch5Mix.Count < n) { int i = Random.Range(0, all.Count); ch5Mix.Add(all[i]); all.RemoveAt(i); }
+            }
+            int pick = ch5Mix[Random.Range(0, ch5Mix.Count)];
+            // 균열술사는 방마다 1, 거울 허상은 2까지 (분신이 2~3개씩 붙어 화면이 가득 차지 않게)
+            if ((pick == 4 && ch5Casters >= 1) || (pick == 5 && ch5Phantoms >= 2))
+            {
+                var rest = ch5Mix.FindAll(k => (k != 4 || ch5Casters < 1) && (k != 5 || ch5Phantoms < 2));
+                pick = rest.Count > 0 ? rest[Random.Range(0, rest.Count)] : 0;
+            }
+            if (pick == 4) ch5Casters++;
+            if (pick == 5) ch5Phantoms++;
+            return pick switch
+            {
+                0 => Make5("Enemy_ShardGunner", "Ch5_Gunner", pos, ch, elite, 204, Enemy.Kind.ShardGunner, 0.55f, 2.5f, 2.8f, Enemy.ShardDmg, 0),
+                1 => Make5("Enemy_StarWitch", "Ch5_Witch", pos, ch, elite, 204, Enemy.Kind.StarWitch, 0.55f, 2.5f, 2.4f, Enemy.StarDmg, 0),
+                2 => Make5("Enemy_RuinGiant", "Ch5_Giant", pos, ch, elite, 544, Enemy.Kind.RuinGiant, 1.0f, 3.4f, 3.2f, 0, Enemy.SlamDmg),
+                3 => Make5("Enemy_RiftAssassin", "Ch5_Assassin", pos, ch, elite, 272, Enemy.Kind.RiftAssassin, 0.55f, 2.6f, 3.4f, 0, Enemy.RiftSlashDmg),
+                4 => Make5("Enemy_RiftCaster", "Ch5_Caster", pos, ch, elite, 204, Enemy.Kind.RiftCaster, 0.55f, 2.5f, 3.0f, Enemy.VoidDmg, 0),
+                _ => MirrorPhantom(pos, ch, elite),
+            };
+        }
+
+        /// <summary>거울 허상: 내구 204 · 이속 3.0 · 허공 탄 19 (분신 규칙은 3장 분신술사와 같음)</summary>
+        public static Enemy MirrorPhantom(Vector3 pos, ChapterDef ch, bool elite = false)
+        {
+            var e = Make5("Enemy_MirrorPhantom", "Ch5_Phantom", pos, ch, elite, 204, Enemy.Kind.MirrorPhantom, 0.55f, 2.2f, 3.0f, 19f, 0);
+            e.shootInterval = Enemy.TrickShotInterval;
+            return e;
+        }
+
+        static Enemy Make5(string name, string model, Vector3 pos, ChapterDef ch, bool elite, float hp, Enemy.Kind kind, float r, float h, float speed, float shotDmg, float meleeDmg)
+        {
+            var e = Root(name, pos, hp, kind, r, h);
+            if (!AttachModelFor(e, model, elite, out bool plus)) Proto2(e, ch, new Color(0.38f, 0.26f, 0.55f), h * 0.85f, r * 1.1f);
+            e.chapter = ch;
+            e.speed = speed;
+            e.projectileDamage = shotDmg;
+            e.contactDamage = meleeDmg;
+            if (elite) MakeElite(e, plus);
+            e.GetComponent<Health>().RefreshRenderers();
+            EyeTrail.Attach(e, Enemy.Ch5Magenta);   // 빠르게 움직일 때 자홍 눈빛 꼬리 (4장과 같은 규칙)
+            return e;
+        }
+
         // 거울 사수: 내구 108 · 이속 2.8 · 반사탄 12
         public static Enemy MirrorShooter(Vector3 pos, ChapterDef ch, bool elite = false)
         {
@@ -357,10 +418,14 @@ namespace CatTang
             return e;
         }
 
-        /// <summary>신기루 분신: 본체와 같은 모습 · 한 발에 소멸 · 방 정리 · 보상에 안 셈</summary>
+        /// <summary>신기루 분신: 본체와 같은 모습 · 한 발에 소멸 · 방 정리 · 보상에 안 셈.
+        /// 5장 거울 허상의 분신: 그림자를 끔 (그림자 있는 쪽만 진짜)</summary>
         public static Enemy TricksterClone(Vector3 pos, ChapterDef ch, Enemy owner)
         {
-            var e = Trickster(pos, ch, false);
+            bool phantom = owner && owner.kind == Enemy.Kind.MirrorPhantom;
+            var e = phantom ? MirrorPhantom(pos, ch, owner.elite) : Trickster(pos, ch, false);
+            if (phantom)
+                foreach (var r in e.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             e.name = "Enemy_TricksterClone";
             e.cloneOwner = owner;
             e.noReward = true;
@@ -465,8 +530,24 @@ namespace CatTang
             return e;
         }
 
+        // 5장 보스: 시간의 주인 · 체력 15120(표, 1 · 2페이즈 합 — 3페이즈는 60초 버티기) · 이속 3.5 (Tripo 후드 사신 + 블렌더 강화 부품 · 아우라)
+        static Enemy Boss5(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("Boss_LordOfTime", pos, ch.BossHp, Enemy.Kind.Boss, 1.8f, 5.6f);
+            if (!AttachModel(e, "Ch5_Boss")) Proto2(e, ch, new Color(0.3f, 0.18f, 0.5f), 5.2f, 1.8f);
+            e.speed = 3.5f;
+            e.chapter = ch;
+            e.chapterDmg = 1f;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch5Boss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            EyeTrail.Attach(e, Enemy.Ch5Magenta, 4.9f, 0.55f, 0.32f);   // 시계 얼굴 양옆에서 자홍 눈빛 꼬리 (돌진 때)
+            return e;
+        }
+
         public static Enemy Boss(Vector3 pos, ChapterDef ch)
         {
+            if (ch.Id == 5) return Boss5(pos, ch);
             if (ch.Id == 2) return Boss2(pos, ch);
             if (ch.Id == 3) return Boss3(pos, ch);
             var body = M(Color.Lerp(new Color(0.88f, 0.78f, 0.58f), ch.Wall, 0.35f), 6f);

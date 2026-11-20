@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5_star_line.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5_star_line",
+    "original_idea": "11:59 game SFX: e5_star_line",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, beam of starlight connecting two stars, fast rising electric zap that hums and sizzles along a line, magic energy, glass, close, slight reverb.",
+    "sound_fields": {
+      "source": "beam of starlight connecting two stars",
+      "action": "fast rising electric zap that hums and sizzles along a line",
+      "material": "magic energy, glass",
+      "space": "close, slight reverb"
+    },
+    "bpm": null,
+    "seconds": 0.9,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5_star_line.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T21:30:00",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -7.68,
+    "raw_peak_dbfs": -7.68,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-19T21:30:00",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.815,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+6.96 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1693,
+  "file": "e5_star_line.ogg"
+}

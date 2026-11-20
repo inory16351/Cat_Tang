@@ -90,6 +90,7 @@ namespace CatTang
         // 4장 (시계 장치 속, 느와르) = 빨간 계열 구운 3D (2026-11-19 사용자: 흑백 대비, 적 공격 궤적은 빨강): 구슬 → bk_c4orb (달아오른 톱니),
         //   산탄 · 바늘 · 리볼버 · 저격 → bk_c4needle (빨간 시곗바늘), 맞음 · 튕김 → bk_c4spark (톱니 조각 · 빨간 고리)
         public static bool Ch4 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 4;
+        public static bool Ch5 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 5;
 
         static Material[] Ch3Frames(Style s)
         {
@@ -97,6 +98,13 @@ namespace CatTang
             {
                 string set4 = s == Style.Orb ? "bk_c4orb" : s == Style.Numeral || s == Style.Ticket ? null : "bk_c4needle";
                 if (set4 != null) { var f4 = FxFlipbook.Frames(set4); if (f4.Length > 0) return f4; }
+                return null;
+            }
+            if (Ch5)
+            {
+                // 5장 (보라 · 금 우주): 구슬 → bk_c5orb (보랏빛 보석 + 금 고리), 그 밖 → bk_c5shard (자홍 유리 파편) — 블렌더로 구운 3D
+                string set5 = s == Style.Orb ? "bk_c5orb" : s == Style.Numeral || s == Style.Ticket ? null : "bk_c5shard";
+                if (set5 != null) { var f5 = FxFlipbook.Frames(set5); if (f5.Length > 0) return f5; }
                 return null;
             }
             if (!Ch3) return null;
@@ -111,6 +119,7 @@ namespace CatTang
         {
             if (Ch3 && FxFlipbook.Spawn("bk_c3spark", at, Vector3.zero, size * 1.3f, 0.4f, false)) return;
             if (Ch4 && FxFlipbook.Spawn("bk_c4spark", at, Vector3.zero, size * 1.3f, 0.4f, false)) return;
+            if (Ch5) { Enemy.Fx5("c5spark", at, size * 1.2f, 0.35f); return; }
             FxBurst.Spawn(at, size, FxBurst.Kind.Spark, c);
         }
 
@@ -127,7 +136,7 @@ namespace CatTang
             Style.Needle => 2.0f, Style.Numeral => 1.6f, Style.Ticket => 1.5f, _ => 1.9f,
         };
 
-        static Color ColorOf(Style s) => Ch4 && s != Style.Numeral ? new Color(1f, 0.1f, 0.12f) : s switch
+        static Color ColorOf(Style s) => Ch4 && s != Style.Numeral ? new Color(1f, 0.1f, 0.12f) : Ch5 ? new Color(1f, 0.2f, 0.72f) : s switch
         {
             Style.Revolver => new Color(1f, 0.25f, 0.35f),
             Style.Pellet => new Color(1f, 0.3f, 0.3f),
@@ -156,8 +165,20 @@ namespace CatTang
             return glowMat;
         }
 
+        static Material numeralMat5;
         static Material SpriteMat(Style s, out Texture2D tex)
         {
+            // 5장 숫자 탄 = 깨진 시계판 수정 (Codex 그림 c5_numeral_bullet → FX/bullets/dial5, 2026-11-20 사용자: 시계 숫자 탄막 아쉬움)
+            if (s == Style.Numeral && Ch5)
+            {
+                var t5 = Resources.Load<Texture2D>("FX/bullets/dial5");
+                if (t5)
+                {
+                    tex = t5;
+                    if (!numeralMat5) numeralMat5 = new Material(Shader.Find("Sprites/Default")) { mainTexture = t5, renderQueue = 3005 };
+                    return numeralMat5;
+                }
+            }
             tex = Resources.Load<Texture2D>("FX/bullets/" + TexName(s));
             if (spriteMats.TryGetValue(s, out var m) && m) return m;
             m = new Material(Shader.Find("Sprites/Default")) { mainTexture = tex, renderQueue = 3005 };
@@ -221,7 +242,7 @@ namespace CatTang
                 var t = new GameObject("Numeral");
                 t.transform.SetParent(spr.transform, false);
                 // 시계판은 스프라이트 오른쪽 끝 쪽에 있음
-                t.transform.localPosition = new Vector3(0.24f, 0, -0.01f);
+                t.transform.localPosition = new Vector3(Ch5 ? 0.31f : 0.24f, 0, -0.01f);   // 5장 dial5: 원판이 그림 81% 자리
                 var tm = t.AddComponent<TextMesh>();
                 var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 tm.font = font;
@@ -229,7 +250,7 @@ namespace CatTang
                 t.GetComponent<MeshRenderer>().sharedMaterial = numeralMat;
                 tm.text = Mathf.Clamp(hour, 1, 12).ToString();
                 tm.fontSize = 64; tm.characterSize = 0.075f; tm.fontStyle = FontStyle.Bold;
-                tm.anchor = TextAnchor.MiddleCenter; tm.color = new Color(0.22f, 0.03f, 0.3f);
+                tm.anchor = TextAnchor.MiddleCenter; tm.color = Ch5 ? Color.white : new Color(0.22f, 0.03f, 0.3f);   // 5장: 어두운 보라 원판 위 흰 숫자
                 t.transform.localScale = new Vector3(1f / len, 1f / (len * aspect), 1) * 0.55f;
             }
 

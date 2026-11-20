@@ -13,7 +13,8 @@ namespace CatTang
     public partial class Enemy : MonoBehaviour
     {
         public enum Kind { Outlaw, Brute, Bomber, Boss, Conductor, Porter, Signal, MirrorShooter, LightMage, MirrorBlade, GlassKnight, Trickster,
-                           ClockSoldier, BellRinger, MusicDancer, TickAssassin, PendulumKnight, Repairman }   // Conductor~Signal = 2장 (EnemyCh2.cs), MirrorShooter~ = 3장 (EnemyCh3.cs), ClockSoldier~ = 4장 (EnemyCh4.cs)
+                           ClockSoldier, BellRinger, MusicDancer, TickAssassin, PendulumKnight, Repairman,
+                           ShardGunner, StarWitch, RuinGiant, RiftAssassin, RiftCaster, MirrorPhantom }   // Conductor~Signal = 2장 (EnemyCh2.cs), MirrorShooter~ = 3장 (EnemyCh3.cs), ClockSoldier~ = 4장 (EnemyCh4.cs), ShardGunner~ = 5장 (EnemyCh5.cs)
         public static readonly List<Enemy> All = new();
 
         public Kind kind = Kind.Outlaw;
@@ -107,6 +108,12 @@ namespace CatTang
                 case Kind.TickAssassin: AssassinUpdate(p, dir, dist, spd); break;
                 case Kind.PendulumKnight: PKnightUpdate(p, dir, dist, spd); break;
                 case Kind.Repairman: RepairUpdate(p, dir, dist, spd); break;
+                case Kind.ShardGunner: GunnerUpdate(p, dir, dist, spd); break;
+                case Kind.StarWitch: WitchUpdate(p, dir, dist, spd); break;
+                case Kind.RuinGiant: GiantUpdate(p, dir, dist, spd); break;
+                case Kind.RiftAssassin: RiftAssassinUpdate(p, dir, dist, spd); break;
+                case Kind.RiftCaster: CasterUpdate(p, dir, dist, spd); break;
+                case Kind.MirrorPhantom: PhantomUpdate(p, dir, dist, spd); break;   // 5장 전용 (분신 = 고양이를 축으로 비친 자리, 깨졌다 다시 맞춰지는 자리 바꾸기)
                 case Kind.Boss:
                     if (!brain) brain = GetComponent<BossBrain>();
                     if (brain) brain.Tick(p, dir, dist, spd); else BossUpdate(p, dir, dist, spd);
@@ -300,6 +307,7 @@ namespace CatTang
                 if (anim) anim.SetFloat("Speed", 0);
                 return;
             }
+            if (kind == Kind.MirrorPhantom) { PhantomFloat(moveSpeed); return; }   // 5장 거울 허상: 뼈 없는 몸을 코드로 띄우고 기울임
             if (anim)
             {
                 // 애니메이터가 걷기 · 동작을 맡음. 돌진 중엔 앞으로 살짝 숙이기만
@@ -477,6 +485,7 @@ namespace CatTang
             }
             OnDieCh3();
             OnDieCh4();
+            OnDieCh5();
             if (!noReward) RunManager.Instance?.OnEnemyKilled(this);
             Destroy(gameObject);
         }

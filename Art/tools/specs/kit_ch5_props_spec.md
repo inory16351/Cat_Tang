@@ -1,0 +1,24 @@
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch5_props.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch5_props.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece. Then look at the preview PNG and fix anything that reads badly.
+Read `Art/tools/specs/_ch5_common.md` first: it has the setting, material names, richness, coordinate and export rules you must follow. Use `Art/tools/blender_kit_ch4_props.py` as the style reference.
+
+## Goal
+Gameplay props, cover and interactive objects for chapter-5 combat rooms (flat floor). Interactive ones are shot by the player, so they need a big, simple, instantly readable silhouette from a high camera. Chapter 5 re-uses the signature objects of chapters 1-4, but TWISTED by the collapse: re-coloured violet/gold, cracked with glowing `crack_gold` seams, slightly warped (a gentle twist / lean, 5-10 deg), with 2-4 small fragments hovering just off the surface.
+
+## Pieces (footprint W x D x H in m)
+1. `WarpedKeg` (1.0 x 1.0 x 1.2) EXPLOSIVE (from ch1): a squat wooden powder keg: `wood` staves with `wood_dark` grooves, `iron_dark` hoops, slightly twisted around Z by 8 deg, a big `crack_gold` crack down the front leaking light, a `magenta` fuse wick with a `starlight` spark, a painted `gold` star mark on the front, 2-3 stave splinters floating near the top.
+2. `WarpedTrunk` (1.4 x 0.9 x 1.0) PUSHABLE / EXPLOSIVE (from ch2, a "stopped" travel trunk): a leather-and-brass steamer trunk: `violet_dark` body, `brass` corners and lock, `wood` slats, a `cloth` strap, a frozen `dial_face` luggage tag clock with `dial_mark` hands, the lid cracked open 2 cm with gold light (`crack_gold`) leaking out, one corner piece hovering off.
+3. `MirrorShard` (2.5 x 0.3 x 2.4) REFLECTOR (from ch3): a big upright angular mirror shard standing in a small rock base: front face (+Y) and back face both a flat `mirror` facet (it reflects bullets on both sides) inside a thin `gold` broken frame edge, `mirror_back` thickness edge, jagged top silhouette, base of `void_stone` rubble with `crystal` clusters; 2 small shards floating beside it. Origin bottom centre; the game rotates it around Z.
+4. `WarpedSpring` (1.0 x 1.0 x 1.5) EXPLOSIVE (from ch4): an upright coiled mainspring (flat `gold` ribbon coil 0.12 wide, 5 turns around a vertical `brass` arbor post), the coil slightly unwinding with one loose end sticking out, on a square `void_stone_dark` base plate with `crack_gold` cracks, a `gold` winding key on top at an angle, a `magenta` warning band.
+5. `CoverShardRock` (1.8 x 1.2 x 1.3) cover: a chunk of `void_stone` with `void_stone_dark` facets, a cluster of `crystal` spikes growing from one side, a `mirror` facet set in the front, `crack_gold` veins, a few pebbles hovering above.
+6. `CoverMemoryPile` (1.8 x 1.4 x 1.4) cover: a heap fusing fragments of past chapters: a broken `wood` saloon sign board, a `steel` train-station bench end, a `sand` sandstone block and a `brass` gear, all held together by `void_stone` with `crack_gold` seams.
+7. `CoverBrokenColumn` (1.4 x 1.4 x 2.4) cover: a `marble` column drum stack, the top drum sheared off and hovering 0.3 m above at an angle, `gold` capital fragments, `violet` fluting insets, `crack_gold` cracks.
+8. `RiftCrack` (1.6 x 0.3 x 2.0, origin at its CENTRE, not the bottom) - the 3D look of the room gimmick "crack in the air": a vertical, lightning-shaped jagged rift floating in the air: a flat jagged slab (0.08 thick) of `night_sky` (the void seen through it) with 6-10 `starlight` dots on both faces, outlined by a raised jagged `crack_gold` rim 0.06 wide, with 6-8 small angular `mirror` glass shards sticking out of the rim edges like broken glass. Readable from above as a bright gold jagged line.
+9. `ShardBits` (1.2 x 1.2 x 0.12) ground bit, no collision: 6-9 small flat mirror shards (`mirror`, `mirror_back`) and violet pebbles scattered on the floor.
+10. `CrackGlow` (3.0 x 3.0 x 0.03) ground bit: a branching floor crack: thin raised (<= 0.02) `crack_gold` lightning lines from a centre with a small `night_sky` gap at the centre showing 3 tiny `starlight` dots, edges lined with `void_stone_dark`.
+11. `StarDust` (1.0 x 1.0 x 0.1) ground bit: a small pile of glittering star dust (`starlight` and `gold` tiny octahedra) with a `crystal` sprout.
+12. `FX_GlassShard` (0.25 x 0.04 x 0.12, origin at centre) - a single small angular glass shard (one `mirror` facet front, `mirror_back` back, `crack_gold` thin edge) used as a particle mesh. <= 80 tris.
+13. `FX_GlassShard2` (0.18 x 0.04 x 0.18, origin at centre) - a second, more triangular shard variant for particles. <= 80 tris.
+
+Keep each under the budgets in the common rules.

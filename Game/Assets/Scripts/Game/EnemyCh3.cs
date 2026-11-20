@@ -69,10 +69,17 @@ namespace CatTang
                     heldOrbs.Clear();
                     break;
                 case Kind.Trickster:
+                case Kind.MirrorPhantom:                                      // 5장 거울 허상: 분신이 깨지면 균열 장판 (보라)
                     if (IsClone)
                     {
-                        Fx3("Stardust", transform.position + Vector3.up, 1f);
-                        if (cloneOwner && cloneOwner.elite) MeltPuddle.Spawn(transform.position, TrickPuddleRadius, TrickPuddleLife, TrickPuddleSlow, new Color(0.95f, 0.8f, 1f));
+                        bool ph = kind == Kind.MirrorPhantom;
+                        if (ph) { Fx5("c5spark", transform.position + Vector3.up, 1.2f, 0.3f); Sfx.Play("e5_phantom_break", 0.5f, 0.06f, 3); }
+                        else Fx3("Stardust", transform.position + Vector3.up, 1f);
+                        if (cloneOwner && cloneOwner.elite)
+                        {
+                            if (ph) RiftScarZone.Spawn(transform.position, TrickPuddleRadius, TrickPuddleLife, TrickPuddleSlow);   // 5장: 깨진 금 장판
+                            else MeltPuddle.Spawn(transform.position, TrickPuddleRadius, TrickPuddleLife, TrickPuddleSlow, new Color(0.95f, 0.8f, 1f));
+                        }
                         if (cloneOwner) cloneOwner.clones.Remove(this);
                     }
                     else
@@ -395,7 +402,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Bow");                                                            // 팔을 활짝 펼쳤다 극장식 인사 → 분신이 나타남
-            Sfx.Play("e_bow", 0.6f);
+            Sfx.Play(kind == Kind.MirrorPhantom ? "e5_phantom_split" : "e_bow", 0.6f);
             nextSpecial = Time.time + TrickCloneInterval;
             clones.RemoveAll(c => !c || !c.health.Alive);
             int max = elite ? 3 : 2;

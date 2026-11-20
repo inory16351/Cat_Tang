@@ -154,7 +154,7 @@ namespace CatTang
                     cells.Add(pick);
                 }
             var rmI = RunManager.Instance;   // 2장 보스 = 전차대 지름 32m · 3장 보스 = 거울 제단 지름 40m가 들어가게, 일반 방 = 장 · 스테이지별 크기
-            var roomSize = sizeOverride ?? (boss ? (Ch2Kit.Is(ch) ? Ch2Kit.BossRoomSize : Ch3Kit.Is(ch) ? Ch3Kit.BossRoomSize : Ch4Kit.Is(ch) ? Ch4Kit.BossRoomSize : new Vector2(34, 30)) : RoomSizeFor(ch != null ? ch.Id : 1, rmI ? rmI.stageIndex : 0));
+            var roomSize = sizeOverride ?? (boss ? (Ch2Kit.Is(ch) ? Ch2Kit.BossRoomSize : Ch3Kit.Is(ch) ? Ch3Kit.BossRoomSize : Ch4Kit.Is(ch) ? Ch4Kit.BossRoomSize : Ch5Kit.Is(ch) ? Ch5Kit.BossRoomSize : new Vector2(34, 30)) : RoomSizeFor(ch != null ? ch.Id : 1, rmI ? rmI.stageIndex : 0));
             var cellSize = boss ? CellSize : roomSize + new Vector2(Corridor, Corridor);   // 방 칸 간격 = 방 + 복도 10m (방 크기가 장 · 스테이지마다 다름)
             var floor = Mat(boss ? Color.Lerp(ch.Floor, new Color(0.3f, 0.25f, 0.45f), 0.45f) : ch.Floor, 0);
             var wall = Mat(ch.Wall, 4);
@@ -277,10 +277,10 @@ namespace CatTang
                 foreach (var n in Ch2Kit.Landmarks())
                     if (Kit.Has(ch, n)) { var lb = Kit.LocalBounds(Kit.Prefab(ch, n)); pool.Add((n, lb.size.x, lb.size.z)); }
             }
-            else if (Ch4Kit.Is(ch))
+            else if (Ch4Kit.Is(ch) || Ch5Kit.Is(ch))
             {
-                // 4장: 장소별 지형지물 (모델이 있는 것만)
-                foreach (var n in Ch4Kit.Landmarks())
+                // 4장 · 5장: 장소별 지형지물 (모델이 있는 것만)
+                foreach (var n in Ch5Kit.Is(ch) ? Ch5Kit.Landmarks() : Ch4Kit.Landmarks())
                     if (Kit.Has(ch, n)) { var lb = Kit.LocalBounds(Kit.Prefab(ch, n)); pool.Add((n, lb.size.x, lb.size.z)); }
             }
             else if (Ch3Kit.Is(ch))
@@ -364,6 +364,7 @@ namespace CatTang
             { new(34, 29), new(36, 30), new(38, 32), new(40, 33) },
             { new(36, 30), new(38, 32), new(40, 33), new(42, 35) },
             { new(38, 32), new(40, 33), new(42, 35), new(44, 37) },
+            { new(40, 33), new(42, 35), new(44, 37), new(46, 39) },   // 5장 (md '방 크기 규칙')
         };
 
         public static Vector2 RoomSizeFor(int chapter, int stage) =>
@@ -479,6 +480,7 @@ namespace CatTang
             if (Ch2Kit.Is(ch)) { Ch2Kit.Props(ch, info, hw, hd, rnd, boss); return true; }
             if (Ch3Kit.Is(ch)) { Ch3Kit.Props(ch, info, hw, hd, rnd, boss); return true; }
             if (Ch4Kit.Is(ch)) { Ch4Kit.Props(ch, info, hw, hd, rnd, boss); return true; }
+            if (Ch5Kit.Is(ch)) { Ch5Kit.Props(ch, info, hw, hd, rnd, boss); return true; }
             if (!Kit.Has(ch, "Keg")) return false;
             var spots = new List<Vector3>();
             for (float x = -hw + 3f; x <= hw - 3f; x += 3f)

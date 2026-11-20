@@ -1,0 +1,1767 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1f63d-9aaf-7562-a9ba-4682931e5819
+--------
+user
+# Chapter 5 stylized VFX shape meshes (Codex task)
+
+Write a NEW script `Art/tools/blender_fx5_shapes.py` (Blender 5.3, background) and run it:
+`"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_fx5_shapes.py`
+Short Korean header comment at the top (what it makes, how to run). Print `EXPORTED <name> <tris>` per mesh and `DONE` at the end.
+
+Why: the game recreates the "5 nodes stylized VFX" technique in a Unity shader (`CatTang/StylizedVfx`): a scrolling noise/voronoi pattern on simple meshes, stepped colour ramp, alpha threshold driven by an age value (dissolve), fresnel rim. The meshes only need clean shape + good UVs; ALL the look comes from the shader. So: no materials needed (one default material is fine), smooth shading, sensible poly counts (200-2000 tris), and UVs laid out exactly as described because the shader scrolls the noise along U and dissolves along V.
+
+## Coordinates / export
+Blender Z-up; export each mesh to its own FBX `Game/Assets/Resources/FX/Meshes5/fx5_<name>.fbx` (create the folder) with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Origin at the effect centre on the ground (Z 0) unless noted. Unit size (radius 1 m) — the game scales them.
+
+## UV rule (important)
+- U (0..1) runs ALONG the main direction of motion / around the shape (around the ring, along the slash arc, around the tornado), so scrolling U makes the pattern flow.
+- V (0..1) runs ACROSS the shape: 0 = inner edge / bottom / leading edge, 1 = outer edge / top / trailing edge.
+- U may exceed 1 for long shapes (e.g. 0..3 around a tornado that wraps 3 times) so the noise repeats instead of stretching.
+
+## Meshes
+1. `dome` — hemisphere radius 1 (open bottom), 32 x 12 segments. U around (0..2), V from rim (0) to top (1). Normals outward.
+2. `ring` — flat annulus on the ground, inner radius 0.55, outer radius 1.0, 64 segments around, 2 rings across. U around (0..3), V inner (0) → outer (1). Faces up.
+3. `ring_tall` — a short open cylinder band (shock wall): radius 1, height 0.35, slightly flared outward at the top (top radius 1.12), 64 segments. U around (0..3), V bottom (0) → top (1).
+4. `swirl` — a spinjitzu-style tornado: 3 ribbon strands, each a twisted band that spirals upward 1.5 turns from radius 0.35 at the bottom (Z 0) to radius 1.0 at the top (Z 2.2), band width 0.45 m, leaning slightly into the spiral direction, 120 segments along each strand, double-sided geometry is NOT needed (the shader renders both sides). U along the strand (0..3), V across the band.
+5. `slash_arc` — a horizontal crescent blade trail for a giant scythe sweep: lies flat (in the XY plane at Z 1.0 height above origin? NO: put it at Z 0, the game positions it), sweeping 200 degrees counter-clockwise from -100 deg to +100 deg around the origin, inner radius 0.45, outer radius 1.0, and the band TAPERS: full width in the middle, both ends pinched to a point (crescent). 96 segments along, 4 across. U along the arc (0 = start/back of the swing, 1 = end/front), V inner (0) → outer (1). Faces up (+Z).
+6. `spiral_ball` — a sphere radius 0.7 wrapped by 2 thick spiral bands (like the cyan ball in the reference: a ball made of swirling stripes): build it as a UV sphere 48x24 whose U = longitude*2 + latitude*1.5 (so stripes spiral when the shader thresholds a stripe pattern), V = latitude 0..1.
+7. `spike_burst` — 10 thin cone spikes radiating outward horizontally from the centre (length 1.0, base radius 0.06), slightly random tilt up/down (seeded), each spike U along its length (0 = base, 1 = tip), V around.
+
+Render ONE preview PNG of all meshes in a row (Workbench, flat colours, show the UV pattern by using a checker texture or by colouring faces by U) to `Art/tools/specs/blender_fx5_shapes_preview.png` and look at it; fix anything broken.
+
+codex
+요청한 UV 방향과 메시 규격에 맞춰 새 Blender 스크립트를 작성하고 실행하겠습니다. FBX 7종을 내보낸 뒤 한 줄 프리뷰를 확인하겠습니다.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location; rg --files -g AGENTS.md -g '*blender*' -g '*fx5*' -g '*StylizedVfx*' -g '"'!Library'"' -g '"'!Temp'"'" in C:\Project\Cat_Tang
+ exited 1 in 1051ms:
+
+Path               
+----               
+C:\Project\Cat_Tang
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:15
++ Get-Location; rg --files -g AGENTS.md -g '*blender*' -g '*fx5*' -g '* ...
++               ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -Force -Name; Get-ChildItem -Path Art -Filter AGENTS.md -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName; Get-ChildItem -Path Game/Assets/Resources/FX -Filter AGENTS.md -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName; Get-ChildItem Art/tools -Force -ErrorAction SilentlyContinue | Select-Object Name; Test-Path 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'; git status --short" in C:\Project\Cat_Tang
+ succeeded in 479ms:
+.git
+.tripo
+Art
+docs
+Game
+.gitignore
+.mcp.json
+HANDOFF.md
+
+ M Art/tools/blender_bake_fx.py
+ M Art/tools/gen_audio.py
+ M Game/Assets/Art/Characters/Ch1/Ch1_Bomber.controller
+ M Game/Assets/Art/Characters/Ch1/Ch1_Bomber_Plus.controller
+ M Game/Assets/Art/Characters/Ch1/Ch1_Boss.controller
+ M Game/Assets/Art/Characters/Ch1/Ch1_Brute.controller
+ M Game/Assets/Art/Characters/Ch1/Ch1_Brute_Plus.controller
+ M Game/Assets/Art/Characters/Ch1/Ch1_MidBoss.controller
+ M Game/Assets/Art/Characters/Ch1/Ch1_Outlaw.controller
+ M Game/Assets/Art/Characters/Ch1/Ch1_Outlaw_Plus.controller
+ M Game/Assets/Art/Characters/Ch2/Ch2_Boss.controller
+ M Game/Assets/Art/Characters/Ch2/Ch2_Conductor.controller
+ M Game/Assets/Art/Characters/Ch2/Ch2_Conductor_Plus.controller
+ M Game/Assets/Art/Characters/Ch2/Ch2_MidBoss.controller
+ M Game/Assets/Art/Characters/Ch2/Ch2_Signal.controller
+ M Game/Assets/Art/Characters/Ch2/Ch2_Signal_Plus.controller
+ M Game/Assets/Art/Characters/Ch3/Ch3_Blade.controller
+ M Game/Assets/Art/Characters/Ch3/Ch3_Knight.controller
+ M Game/Assets/Art/Characters/Ch3/Ch3_Mage.controller
+ M Game/Assets/Art/Characters/Ch3/Ch3_Shooter.controller
+ M Game/Assets/Art/Characters/Ch3/Ch3_Trickster.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Assassin.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Assassin_Plus.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Dancer.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Dancer_Plus.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Knight.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Knight_Plus.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Repairman.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Repairman_Plus.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Ringer.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Ringer_Plus.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Soldier.controller
+ M Game/Assets/Art/Characters/Ch4/Ch4_Soldier_Plus.controller
+ M Game/Assets/Data/Tables/Chapter.csv
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/EnemyMotions.cs
+ M Game/Assets/Editor/ModelPalette.cs
+ M Game/Assets/Resources/Kit/Ch1/Corridor_S3.prefab
+ M Game/Assets/Resources/Kit/Ch2/Corridor_S3.prefab
+ M Game/Assets/Resources/Kit/Ch3/Corridor_S3.prefab
+ M Game/Assets/Resources/Kit/Ch4/Corridor_S3.prefab
+ M Game/Assets/Scripts/Game/Enemy.cs
+ M Game/Assets/Scripts/Game/EnemyCh3.cs
+ M Game/Assets/Scripts/Game/EnemyFactory.cs
+ M Game/Assets/Scripts/Game/EnemyProjectile.cs
+ M Game/Assets/Scripts/Game/Kit.cs
+ M Game/Assets/Scripts/Game/LaserFx.cs
+ M Game/Assets/Scripts/Game/MirrorShard.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M Game/Assets/Scripts/Game/Telegraph.cs
+ M HANDOFF.md
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+ M docs/tools/fx_sheet_cut.py
+?? .tripo/
+?? Art/audio_src/gemini/bgm_boss_5.mp3
+?? Art/audio_src/gemini/bgm_midboss_5.mp3
+?? Art/audio_src/gemini/bgm_stage_5.mp3
+?? Art/audio_src/sfx/e5_giant_dash.ogg
+?? Art/audio_src/sfx/e5_giant_dash.ogg.json
+?? Art/audio_src/sfx/e5_giant_dash.wav
+?? Art/audio_src/sfx/e5_giant_dash.wav.json
+?? Art/audio_src/sfx/e5_giant_slam_1.ogg
+?? Art/audio_src/sfx/e5_giant_slam_1.ogg.json
+?? Art/audio_src/sfx/e5_giant_slam_2.ogg
+?? Art/audio_src/sfx/e5_giant_slam_2.ogg.json
+?? Art/audio_src/sfx/e5_giant_slam_v1.wav
+?? Art/audio_src/sfx/e5_giant_slam_v1.wav.json
+?? Art/audio_src/sfx/e5_giant_slam_v2.wav
+?? Art/audio_src/sfx/e5_giant_slam_v2.wav.json
+?? Art/audio_src/sfx/e5_phantom_break_1.ogg
+?? Art/audio_src/sfx/e5_phantom_break_1.ogg.json
+?? Art/audio_src/sfx/e5_phantom_break_2.ogg
+?? Art/audio_src/sfx/e5_phantom_break_2.ogg.json
+?? Art/audio_src/sfx/e5_phantom_break_v1.wav
+?? Art/audio_src/sfx/e5_phantom_break_v1.wav.json
+?? Art/audio_src/sfx/e5_phantom_break_v2.wav
+?? Art/audio_src/sfx/e5_phantom_break_v2.wav.json
+?? Art/audio_src/sfx/e5_phantom_split.ogg
+?? Art/audio_src/sfx/e5_phantom_split.ogg.json
+?? Art/audio_src/sfx/e5_phantom_split.wav
+?? Art/audio_src/sfx/e5_phantom_split.wav.json
+?? Art/audio_src/sfx/e5_rift_dive.ogg
+?? Art/audio_src/sfx/e5_rift_dive.ogg.json
+?? Art/audio_src/sfx/e5_rift_dive.wav
+?? Art/audio_src/sfx/e5_rift_dive.wav.json
+?? Art/audio_src/sfx/e5_rift_emerge.ogg
+?? Art/audio_src/sfx/e5_rift_emerge.ogg.json
+?? Art/audio_src/sfx/e5_rift_emerge.wav
+?? Art/audio_src/sfx/e5_rift_emerge.wav.json
+?? Art/audio_src/sfx/e5_rift_open_1.ogg
+?? Art/audio_src/sfx/e5_rift_open_1.ogg.json
+?? Art/audio_src/sfx/e5_rift_open_2.ogg
+?? Art/audio_src/sfx/e5_rift_open_2.ogg.json
+?? Art/audio_src/sfx/e5_rift_open_v1.wav
+?? Art/audio_src/sfx/e5_rift_open_v1.wav.json
+?? Art/audio_src/sfx/e5_rift_open_v2.wav
+?? Art/audio_src/sfx/e5_rift_open_v2.wav.json
+?? Art/audio_src/sfx/e5_rift_shatter_1.ogg
+?? Art/audio_src/sfx/e5_rift_shatter_1.ogg.json
+?? Art/audio_src/sfx/e5_rift_shatter_2.ogg
+?? Art/audio_src/sfx/e5_rift_shatter_2.ogg.json
+?? Art/audio_src/sfx/e5_rift_shatter_v1.wav
+?? Art/audio_src/sfx/e5_rift_shatter_v1.wav.json
+?? Art/audio_src/sfx/e5_rift_shatter_v2.wav
+?? Art/audio_src/sfx/e5_rift_shatter_v2.wav.json
+?? Art/audio_src/sfx/e5_shard_shot_1.ogg
+?? Art/audio_src/sfx/e5_shard_shot_1.ogg.json
+?? Art/audio_src/sfx/e5_shard_shot_2.ogg
+?? Art/audio_src/sfx/e5_shard_shot_2.ogg.json
+?? Art/audio_src/sfx/e5_shard_shot_v1.wav
+?? Art/audio_src/sfx/e5_shard_shot_v1.wav.json
+?? Art/audio_src/sfx/e5_shard_shot_v2.wav
+?? Art/audio_src/sfx/e5_shard_shot_v2.wav.json
+?? Art/audio_src/sfx/e5_shard_split_1.ogg
+?? Art/audio_src/sfx/e5_shard_split_1.ogg.json
+?? Art/audio_src/sfx/e5_shard_split_2.ogg
+?? Art/audio_src/sfx/e5_shard_split_2.ogg.json
+?? Art/audio_src/sfx/e5_shard_split_v1.wav
+?? Art/audio_src/sfx/e5_shard_split_v1.wav.json
+?? Art/audio_src/sfx/e5_shard_split_v2.wav
+?? Art/audio_src/sfx/e5_shard_split_v2.wav.json
+?? Art/audio_src/sfx/e5_slash_1.ogg
+?? Art/audio_src/sfx/e5_slash_1.ogg.json
+?? Art/audio_src/sfx/e5_slash_2.ogg
+?? Art/audio_src/sfx/e5_slash_2.ogg.json
+?? Art/audio_src/sfx/e5_slash_v1.wav
+?? Art/audio_src/sfx/e5_slash_v1.wav.json
+?? Art/audio_src/sfx/e5_slash_v2.wav
+?? Art/audio_src/sfx/e5_slash_v2.wav.json
+?? Art/audio_src/sfx/e5_star_burst.ogg
+?? Art/audio_src/sfx/e5_star_burst.ogg.json
+?? Art/audio_src/sfx/e5_star_burst.wav
+?? Art/audio_src/sfx/e5_star_burst.wav.json
+?? Art/audio_src/sfx/e5_star_line.ogg
+?? Art/audio_src/sfx/e5_star_line.ogg.json
+?? Art/audio_src/sfx/e5_star_line.wav
+?? Art/audio_src/sfx/e5_star_line.wav.json
+?? Art/audio_src/sfx/e5_star_place_1.ogg
+?? Art/audio_src/sfx/e5_star_place_1.ogg.json
+?? Art/audio_src/sfx/e5_star_place_2.ogg
+?? Art/audio_src/sfx/e5_star_place_2.ogg.json
+?? Art/audio_src/sfx/e5_star_place_v1.wav
+?? Art/audio_src/sfx/e5_star_place_v1.wav.json
+?? Art/audio_src/sfx/e5_star_place_v2.wav
+?? Art/audio_src/sfx/e5_star_place_v2.wav.json
+?? Art/audio_src/sfx/e5_void_land.ogg
+?? Art/audio_src/sfx/e5_void_land.ogg.json
+?? Art/audio_src/sfx/e5_void_land.wav
+?? Art/audio_src/sfx/e5_void_land.wav.json
+?? Art/audio_src/sfx/e5_void_lob.ogg
+?? Art/audio_src/sfx/e5_void_lob.ogg.json
+?? Art/audio_src/sfx/e5_void_lob.wav
+?? Art/audio_src/sfx/e5_void_lob.wav.json
+?? Art/env_src/ch5/
+?? Art/tools/blender_kit_ch5_floor.py
+?? Art/tools/blender_kit_ch5_gates.py
+?? Art/tools/blender_kit_ch5_landmarks.py
+?? Art/tools/blender_kit_ch5_phantom.py
+?? Art/tools/blender_kit_ch5_plus.py
+?? Art/tools/blender_kit_ch5_props.py
+?? Art/tools/blender_kit_ch5_walls.py
+?? Art/tools/blender_kit_ch5_weapons.py
+?? Art/tools/ch5_textures.py
+?? Art/tools/gemini_bgm.py
+?? Art/tools/ground_texture_ch5.py
+?? Art/tools/specs/_ch5_common.md
+?? Art/tools/specs/blender_kit_ch5_floor.log
+?? Art/tools/specs/blender_kit_ch5_floor_build.log
+?? Art/tools/specs/blender_kit_ch5_floor_fbx_audit.log
+?? Art/tools/specs/blender_kit_ch5_floor_fbx_audit_stderr.log
+?? Art/tools/specs/blender_kit_ch5_floor_preview.png
+?? Art/tools/specs/blender_kit_ch5_floor_run.log
+?? Art/tools/specs/blender_kit_ch5_floor_stderr.log
+?? Art/tools/specs/blender_kit_ch5_floor_validation.json
+?? Art/tools/specs/blender_kit_ch5_floor_validation.log
+?? Art/tools/specs/blender_kit_ch5_gates_preview.png
+?? Art/tools/specs/blender_kit_ch5_landmarks_preview.png
+?? Art/tools/specs/blender_kit_ch5_phantom_preview.png
+?? Art/tools/specs/blender_kit_ch5_plus_preview.png
+?? Art/tools/specs/blender_kit_ch5_props_preview.png
+?? Art/tools/specs/blender_kit_ch5_walls_preview.png
+?? Art/tools/specs/blender_kit_ch5_weapons_preview.png
+?? Art/tools/specs/ch5_enemies_lineup.png
+?? Art/tools/specs/fx5_shapes.log
+?? Art/tools/specs/fx5_shapes_spec.md
+?? Art/tools/specs/fx_ch5_bake.log
+?? Art/tools/specs/fx_ch5_bake_preview.png
+?? Art/tools/specs/fx_ch5_bake_spec.md
+?? Art/tools/specs/ground_ch5_v2.log
+?? Art/tools/specs/ground_ch5_v2_prompt.txt
+?? Art/tools/specs/kit_ch5_floor.log
+?? Art/tools/specs/kit_ch5_floor_spec.md
+?? Art/tools/specs/kit_ch5_gates.log
+?? Art/tools/specs/kit_ch5_gates_spec.md
+?? Art/tools/specs/kit_ch5_landmarks.log
+?? Art/tools/specs/kit_ch5_landmarks_spec.md
+?? Art/tools/specs/kit_ch5_phantom.log
+?? Art/tools/specs/kit_ch5_phantom_fix.log
+?? Art/tools/specs/kit_ch5_phantom_fix.md
+?? Art/tools/specs/kit_ch5_phantom_spec.md
+?? Art/tools/specs/kit_ch5_plus.log
+?? Art/tools/specs/kit_ch5_plus_spec.md
+?? Art/tools/specs/kit_ch5_props.log
+?? Art/tools/specs/kit_ch5_props_spec.md
+?? Art/tools/specs/kit_ch5_walls.log
+?? Art/tools/specs/kit_ch5_walls_spec.md
+?? Art/tools/specs/kit_ch5_weapons.log
+?? Art/tools/specs/kit_ch5_weapons_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? Art/tripo_input/ch5/
+?? Game/Assets/Art/Characters/Ch5.meta
+?? Game/Assets/Art/Characters/Ch5/
+?? Game/Assets/Art/Env/Ch5.meta
+?? Game/Assets/Art/Env/Ch5/
+?? Game/Assets/Art/Shaders/CatTangMirrorCat.shader
+?? Game/Assets/Art/Shaders/CatTangMirrorCat.shader.meta
+?? Game/Assets/Art/Shaders/CatTangRiftFloor.shader
+?? Game/Assets/Art/Shaders/CatTangRiftFloor.shader.meta
+?? Game/Assets/Editor/EnemyModelBuilderCh5.cs
+?? Game/Assets/Editor/EnemyModelBuilderCh5.cs.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_giant_dash.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_giant_dash.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_giant_slam_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_giant_slam_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_giant_slam_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_giant_slam_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_phantom_break_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_phantom_break_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_phantom_break_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_phantom_break_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_phantom_split.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_phantom_split.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_dive.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_dive.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_emerge.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_emerge.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_open_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_open_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_open_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_open_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_shatter_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_shatter_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_shatter_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_rift_shatter_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_shot_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_shot_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_shot_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_shot_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_split_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_split_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_split_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_shard_split_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_slash_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_slash_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_slash_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_slash_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_star_burst.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_star_burst.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_star_line.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_star_line.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_star_place_1.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_star_place_1.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_star_place_2.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_star_place_2.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_void_land.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_void_land.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e5_void_lob.ogg
+?? Game/Assets/Resources/Audio/Sfx/e5_void_lob.ogg.meta
+?? Game/Assets/Resources/Audio/bgm_boss_5.ogg
+?? Game/Assets/Resources/Audio/bgm_boss_5.ogg.meta
+?? Game/Assets/Resources/Audio/bgm_midboss_5.ogg
+?? Game/Assets/Resources/Audio/bgm_midboss_5.ogg.meta
+?? Game/Assets/Resources/Audio/bgm_stage_5.ogg
+?? Game/Assets/Resources/Audio/bgm_stage_5.ogg.meta
+?? Game/Assets/Resources/Enemies/Ch5_Assassin.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Assassin.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Assassin_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Assassin_Plus.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Boss.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Boss.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Caster.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Caster.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Caster_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Caster_Plus.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Giant.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Giant.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Giant_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Giant_Plus.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Gunner.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Gunner.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Gunner_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Gunner_Plus.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_MidBoss.prefab
+?? Game/Assets/Resources/Enemies/Ch5_MidBoss.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Phantom.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Phantom.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Phantom_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Phantom_Plus.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Witch.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Witch.prefab.meta
+?? Game/Assets/Resources/Enemies/Ch5_Witch_Plus.prefab
+?? Game/Assets/Resources/Enemies/Ch5_Witch_Plus.prefab.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_0.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_1.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_10.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_11.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_12.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_13.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_14.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_15.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_2.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_3.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_4.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_5.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_6.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_7.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_8.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5orb_9.png
+?? Game/Assets/Resources/FX/anim/bk_c5orb_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_0.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_1.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_10.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_11.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_12.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_13.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_14.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_15.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_2.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_3.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_4.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_5.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_6.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_7.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_8.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5rift_9.png
+?? Game/Assets/Resources/FX/anim/bk_c5rift_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_0.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_1.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_10.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_11.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_12.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_13.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_14.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_15.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_2.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_3.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_4.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_5.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_6.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_7.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_8.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5shard_9.png
+?? Game/Assets/Resources/FX/anim/bk_c5shard_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_0.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_1.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_10.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_11.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_12.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_13.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_14.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_15.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_2.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_3.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_4.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_5.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_6.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_7.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_8.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5spark_9.png
+?? Game/Assets/Resources/FX/anim/bk_c5spark_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_c5strip_0.png
+?? Game/Assets/Resources/FX/anim/bk_c5strip_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_0.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_1.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_2.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_3.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_4.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_5.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_6.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_7.png
+?? Game/Assets/Resources/FX/anim/cx_c5riftshatter_7.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_0.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_1.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_2.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_3.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_4.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_5.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_6.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_7.png
+?? Game/Assets/Resources/FX/anim/cx_c5shardhit_7.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_0.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_1.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_2.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_3.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_4.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_5.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_6.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_7.png
+?? Game/Assets/Resources/FX/anim/cx_c5starburst_7.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_0.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_1.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_2.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_3.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_4.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_5.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_6.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_7.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidburst_7.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_0.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_0.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_1.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_1.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_2.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_2.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_3.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_3.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_4.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_4.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_5.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_5.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_6.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_6.png.meta
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_7.png
+?? Game/Assets/Resources/FX/anim/cx_c5voidslash_7.png.meta
+?? Game/Assets/Resources/Kit/Ch5.meta
+?? Game/Assets/Resources/Kit/Ch5/
+?? Game/Assets/Scripts/Game/Ch5Kit.cs
+?? Game/Assets/Scripts/Game/Ch5Kit.cs.meta
+?? Game/Assets/Scripts/Game/EnemyCh5.cs
+?? Game/Assets/Scripts/Game/EnemyCh5.cs.meta
+?? Game/Assets/Scripts/Game/MirrorCatSkin.cs
+?? Game/Assets/Scripts/Game/MirrorCatSkin.cs.meta
+?? docs/.obsidian/
+?? "docs/1159_5\354\236\245_\352\270\260\355\232\215\354\204\234_20261119_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? docs/images/ch5/
+?? docs/images/fx_src/c5_riftshatter.png
+?? docs/images/fx_src/c5_shardhit.png
+?? docs/images/fx_src/c5_starburst.png
+?? docs/images/fx_src/c5_voidburst.png
+?? docs/images/fx_src/c5_voidslash.png
+?? docs/images/fx_src/prompts/c5_fx_sheets.log
+?? docs/images/fx_src/prompts/c5_fx_sheets.txt
+?? docs/tools/build_ch5_ppt.js
+?? docs/tools/node_modules/
+?? docs/tools/package-lock.json
+?? docs/tools/package.json
+Name                            
+----                            
+specs                           
+__pycache__                     
+blender_bake_fx.py              
+blender_fx.py                   
+blender_fx_scrap3d.py           
+blender_fx_soundwave3d.py       
+blender_kit_ch1_gates.py        
+blender_kit_ch2_arena.py        
+blender_kit_ch2_gates.py        
+blender_kit_ch2_landmarks.py    
+blender_kit_ch2_passengers.py   
+blender_kit_ch2_props.py        
+blender_kit_ch2_station.py      
+blender_kit_ch2_train.py        
+blender_kit_ch3_bosses.py       
+blender_kit_ch3_bossprops.py    
+blender_kit_ch3_gates.py        
+blender_kit_ch3_landmarks.py    
+blender_kit_ch3_props.py        
+blender_kit_ch3_walls.py        
+blender_kit_ch4_gates.py        
+blender_kit_ch4_knight_plus.py  
+blender_kit_ch4_landmarks.py    
+blender_kit_ch4_merchant.py     
+blender_kit_ch4_props.py        
+blender_kit_ch4_temple.py       
+blender_kit_ch4_temple2.py      
+blender_kit_ch4_walls.py        
+blender_kit_ch4_weapons.py      
+blender_kit_ch5_floor.py        
+blender_kit_ch5_gates.py        
+blender_kit_ch5_landmarks.py    
+blender_kit_ch5_phantom.py      
+blender_kit_ch5_plus.py         
+blender_kit_ch5_props.py        
+blender_kit_ch5_walls.py        
+blender_kit_ch5_weapons.py      
+blender_kit_facades.py          
+blender_kit_ground.py           
+blender_kit_heart.py            
+blender_kit_landmarks.py        
+blender_kit_props.py            
+blender_kit_sandbomb.py         
+blender_kit_simple.py           
+blender_kit_village_bridge.py   
+blender_kit_village_buildings.py
+blender_kit_village_dream.py    
+blender_kit_village_island.py   
+blender_kit_village_mystic.py   
+blender_kit_village_props.py    
+blender_kit_woodgate.py         
+blender_kit_xpgem.py            
+ch5_textures.py                 
+denoise.py                      
+fx_soundwave_key.py             
+gemini_bgm.py                   
+gen_audio.py                    
+ground_texture.py               
+ground_texture_ch2.py           
+ground_texture_ch3.py           
+ground_texture_ch4.py           
+ground_texture_ch5.py           
+ground_texture_village.py       
+keep_main.py                    
+make_test_bullet.py             
+memclock_v2.py                  
+memshatter.py                   
+render_turntable.py             
+sheet_cut.py                    
+tripo_cli_import.py             
+tripo_import.py                 
+True
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Item C:/AGENTS.md,C:/Project/AGENTS.md,C:/Project/Cat_Tang/AGENTS.md,Art/AGENTS.md,Art/tools/AGENTS.md,Game/AGENTS.md,Game/Assets/AGENTS.md,Game/Assets/Resources/AGENTS.md,Game/Assets/Resources/FX/AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName; Get-Content -LiteralPath $_.FullName }; Get-Content Art/tools/blender_fx_soundwave3d.py -TotalCount 100; Get-Content Art/tools/blender_kit_ch5_weapons.py -Tail 100; Get-Content Art/tools/specs/fx5_shapes_spec.md -TotalCount 160; Get-Content Art/tools/specs/fx5_shapes.log -Tail 25' in C:\Project\Cat_Tang
+ succeeded in 221ms:
+# 4??醫낆?湲??뚰뙆 怨좊━??3D 議곌컖 (2026-11-19 ?ъ슜?? ?뚮룞 ?좊━???먮룄 ?대?吏??釉붾젋?붾줈 ?댄럺???쒕?濡?
+#   "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_fx_soundwave3d.py
+# 寃곌낵: Game/Assets/Resources/Kit/Ch4/FX_SoundSeg.fbx ???뚰뙆 怨좊━ ??議곌컖 (Unity SoundRing???섎젅瑜??곕씪 36媛쒕? ?섏뼱?볦쓬)
+#   - ?ш린 1 x 1: 釉붾젋??X = ?섎젅 諛⑺뼢(-0.5 ~ 0.5), Y = 怨좊━ ?좊? 媛濡쒖?瑜대뒗 諛⑺뼢(-0.5 ?덉そ ~ +0.5 諛붽묑), Z = ?믪씠
+#   - ?⑤㈃: ??媛?대뜲蹂대떎 議곌툑 諛붽묑(臾쇨껐???섏븘媛??履????믪씠 0.22濡??잛? 臾쇰쭏猷? ???앹? 諛붾떏(0.02)?쇰줈 ?대젮?됱쓬 ???꾩뿉??蹂대㈃ ?? ?놁뿉??蹂대㈃ ?잛? ?뚮룞
+#   - ?섎젅 諛⑺뼢 ???앹씠 ?댁쭩 ?꾨옒濡???議곌컖?쇰━ ?댁뼱吏???먮━媛 ?딄꺼 蹂댁씠吏 ?딄쾶)
+#   - UV: U = ?섎젅 0 ~ 1/3 (?뚰뙆 ??洹몃┝??臾쇨껐 ?섎굹), V = 0 ?덉そ ~ 1 諛붽묑 (洹몃┝ ?꾨옒 = ?덉そ, ??= 諛붽묑)
+import bpy, bmesh, math, os
+
+OUT = r"C:/Project/Cat_Tang/Game/Assets/Resources/Kit/Ch4"
+NU, NV = 10, 12
+
+
+def height(v):
+    """v: 0 ?덉そ ~ 1 諛붽묑. 諛붽묑履쎌쑝濡?移섏슦移?臾쇰쭏猷?(?욎쑝濡?諛?ㅺ????뚮룞)"""
+    crest = 0.58
+    if v < crest:
+        t = v / crest
+        return 0.02 + 0.2 * (math.sin(t * math.pi / 2) ** 2)
+    t = (v - crest) / (1 - crest)
+    return 0.02 + 0.2 * (math.cos(t * math.pi / 2) ** 1.5)
+
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bm = bmesh.new()
+uvl = bm.loops.layers.uv.new("UVMap")
+grid = []
+for i in range(NU + 1):
+    u = i / NU
+    x = u - 0.5
+    sag = 0.035 * (2 * abs(x)) ** 2          # ?섎젅 ???앹쓣 ?댁쭩 ?대┝
+    row = []
+    for j in range(NV + 1):
+        v = j / NV
+        row.append(bm.verts.new((x, v - 0.5, max(0.0, height(v) - sag))))
+    grid.append(row)
+# 諛붾떏 硫댁쓣 ?곕줈 ?먯? ?딆쓬 (?꾩뿉?쒕쭔 蹂대뒗 ??: ?꾨옒?먯꽌 蹂댁씠硫????섎땲 ??硫대쭔
+for i in range(NU):
+    for j in range(NV):
+        f = bm.faces.new((grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]))
+        for loop, (ii, jj) in zip(f.loops, ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))):
+            loop[uvl].uv = (ii / NU / 3.0, jj / NV)   # ?뚰뙆 ??洹몃┝??臾쇨껐 ?섎굹 = 洹몃┝ ??쓽 1/3 (Codex 洹몃┝? 臾쇨껐 3媛?
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+# ?꾨? 蹂닿쾶 (?몃? +Z)
+for f in bm.faces:
+    if f.normal.z < 0:
+        f.normal_flip()
+me = bpy.data.meshes.new("FX_SoundSeg")
+bm.to_mesh(me); bm.free()
+for p in me.polygons:
+    p.use_smooth = True
+ob = bpy.data.objects.new("FX_SoundSeg", me)
+bpy.context.scene.collection.objects.link(ob)
+ob.select_set(True)
+bpy.context.view_layer.objects.active = ob
+os.makedirs(OUT, exist_ok=True)
+bpy.ops.export_scene.fbx(filepath=os.path.join(OUT, "FX_SoundSeg.fbx"), use_selection=True, axis_forward='-Z', axis_up='Y',
+                         apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'},
+                         use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False)
+print("EXPORTED FX_SoundSeg", len(me.polygons))
+print("DONE")
+    scene.render.film_transparent = False
+    scene.view_settings.view_transform = 'Standard'
+    shade = scene.display.shading
+    shade.light, shade.color_type = 'FLAT','MATERIAL'
+    shade.show_shadows, shade.show_cavity = False,True
+    shade.cavity_type = 'SCREEN'
+    shade.curvature_ridge_factor, shade.curvature_valley_factor = 1.2,1.1
+    shade.show_specular_highlight = False
+    shade.background_type = 'WORLD'
+    scene.world = bpy.data.worlds.new('Indigo review backdrop')
+    scene.world.color = (.035,.04,.065)
+    helpers = []
+    positions = []
+    try:
+        for role,mat in MATS.items(): mat.diffuse_color = (*PALETTE[role],1)
+        # Seen from +Y, screen-right is -X. Allocate the FULL lateral silhouette
+        # of the boss scythe before placing the next weapon. All origins Z=0.
+        cursor = 0
+        for obj in objects:
+            lo,hi = bounds(obj)
+            width = max(hi.x-lo.x,.62)
+            origin_screen_x = cursor+width/2+(hi.x+lo.x)/2
+            positions.append(origin_screen_x)
+            cursor += width+.30
+        total = cursor-.30
+        positions = [x-total/2 for x in positions]
+        for obj,x in zip(objects,positions): obj.location = (-x,0,0)
+        cam = bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
+        scene.collection.objects.link(cam)
+        helpers.append(cam)
+        scene.camera = cam
+        target = Vector((0,0,.88))
+        cam.location = target+Vector((0,16,3.3))
+        cam.rotation_euler = (target-cam.location).to_track_quat('-Z','Y').to_euler()
+        cam.data.type, cam.data.ortho_scale = 'ORTHO',max(total+.7,7.05)
+        toward_camera = (cam.location-target).normalized()
+
+        def caption(body, x, z, size=.08, role='starlight'):
+            data = bpy.data.curves.new('Preview text','FONT')
+            data.body, data.size, data.align_x = body,size,'CENTER'
+            data.materials.append(MATS[role])
+            obj = bpy.data.objects.new('PREVIEW ONLY caption',data)
+            scene.collection.objects.link(obj)
+            helpers.append(obj)
+            obj.location = (-x,.40,z)
+            obj.rotation_euler = cam.rotation_euler
+
+        # Preview red gets its own non-exported material, not a game role.
+        red = bpy.data.materials.new('PREVIEW ONLY origin red')
+        red.diffuse_color = (1,.035,.045,1)
+        for obj,x,spec in zip(objects,positions,SPECS):
+            for size in ((.105,.018,.016),(.016,.018,.105)):
+                cross = box('PREVIEW ONLY grip origin',Vector((-x,0,0))+toward_camera*.40,
+                            size,'magenta',bevel=False)
+                cross.data.materials.clear()
+                cross.data.materials.append(red)
+                helpers.append(cross)
+            title = {'ShardRifle':'SHARD\nRIFLE','StarStaff':'STAR\nSTAFF',
+                     'RuinMaul':'RUIN\nMAUL','RiftBlade':'RIFT\nBLADE',
+                     'RiftCenser':'RIFT\nCENSER','TimeScythe':'TIME\nSCYTHE',
+                     'MirrorPistol':'MIRROR\nPISTOL'}[obj.name]
+            caption(title,x,-.76,.083)
+            caption(f'{spec[3]-spec[2]:.2f} m  /  {triangles(obj):,} tri',x,-.98,.049,'gold')
+        caption('C H A P T E R   V   /   S H A T T E R E D   T I M E',0,2.71,.125)
+        caption('HAND-HELD ARMOURY   /   TRUE SCALE   /   +Z WORKING END',0,2.51,.061,'gold')
+        caption('+  RED CROSSES = GRIP ORIGINS   /   COMMON HAND HEIGHT',0,-1.17,.061,'magenta')
+        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
+        print(f'PREVIEW {PREVIEW}',flush=True)
+    finally:
+        scene.camera = None
+        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
+        for obj in objects: obj.location = (0,0,0)
+        for mat in MATS.values(): mat.diffuse_color = (.5,.5,.5,1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
+    scene = bpy.context.scene
+    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC',1
+    materials()
+    OUTPUT.mkdir(parents=True,exist_ok=True)
+    objects = []
+    for i,(name,build,lo,hi,budget) in enumerate(SPECS):
+        PARTS = []
+        random.seed(55081+i*7919)
+        build()
+        objects.append(finish(name,lo,hi,budget))
+    assert len(scene.objects)==7 and all(o.type=='MESH' for o in scene.objects)
+    preview(objects)
+    assert len(scene.objects)==7 and all(o.type=='MESH' for o in scene.objects)
+    assert all(o.location.length<1e-7 for o in objects)
+    print('DONE',flush=True)
+
+
+if __name__ == '__main__':
+    main()
+# Chapter 5 stylized VFX shape meshes (Codex task)
+
+Write a NEW script `Art/tools/blender_fx5_shapes.py` (Blender 5.3, background) and run it:
+`"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_fx5_shapes.py`
+Short Korean header comment at the top (what it makes, how to run). Print `EXPORTED <name> <tris>` per mesh and `DONE` at the end.
+
+Why: the game recreates the "5 nodes stylized VFX" technique in a Unity shader (`CatTang/StylizedVfx`): a scrolling noise/voronoi pattern on simple meshes, stepped colour ramp, alpha threshold driven by an age value (dissolve), fresnel rim. The meshes only need clean shape + good UVs; ALL the look comes from the shader. So: no materials needed (one default material is fine), smooth shading, sensible poly counts (200-2000 tris), and UVs laid out exactly as described because the shader scrolls the noise along U and dissolves along V.
+
+## Coordinates / export
+Blender Z-up; export each mesh to its own FBX `Game/Assets/Resources/FX/Meshes5/fx5_<name>.fbx` (create the folder) with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Origin at the effect centre on the ground (Z 0) unless noted. Unit size (radius 1 m) ??the game scales them.
+
+## UV rule (important)
+- U (0..1) runs ALONG the main direction of motion / around the shape (around the ring, along the slash arc, around the tornado), so scrolling U makes the pattern flow.
+- V (0..1) runs ACROSS the shape: 0 = inner edge / bottom / leading edge, 1 = outer edge / top / trailing edge.
+- U may exceed 1 for long shapes (e.g. 0..3 around a tornado that wraps 3 times) so the noise repeats instead of stretching.
+
+## Meshes
+1. `dome` ??hemisphere radius 1 (open bottom), 32 x 12 segments. U around (0..2), V from rim (0) to top (1). Normals outward.
+2. `ring` ??flat annulus on the ground, inner radius 0.55, outer radius 1.0, 64 segments around, 2 rings across. U around (0..3), V inner (0) ??outer (1). Faces up.
+3. `ring_tall` ??a short open cylinder band (shock wall): radius 1, height 0.35, slightly flared outward at the top (top radius 1.12), 64 segments. U around (0..3), V bottom (0) ??top (1).
+4. `swirl` ??a spinjitzu-style tornado: 3 ribbon strands, each a twisted band that spirals upward 1.5 turns from radius 0.35 at the bottom (Z 0) to radius 1.0 at the top (Z 2.2), band width 0.45 m, leaning slightly into the spiral direction, 120 segments along each strand, double-sided geometry is NOT needed (the shader renders both sides). U along the strand (0..3), V across the band.
+5. `slash_arc` ??a horizontal crescent blade trail for a giant scythe sweep: lies flat (in the XY plane at Z 1.0 height above origin? NO: put it at Z 0, the game positions it), sweeping 200 degrees counter-clockwise from -100 deg to +100 deg around the origin, inner radius 0.45, outer radius 1.0, and the band TAPERS: full width in the middle, both ends pinched to a point (crescent). 96 segments along, 4 across. U along the arc (0 = start/back of the swing, 1 = end/front), V inner (0) ??outer (1). Faces up (+Z).
+6. `spiral_ball` ??a sphere radius 0.7 wrapped by 2 thick spiral bands (like the cyan ball in the reference: a ball made of swirling stripes): build it as a UV sphere 48x24 whose U = longitude*2 + latitude*1.5 (so stripes spiral when the shader thresholds a stripe pattern), V = latitude 0..1.
+7. `spike_burst` ??10 thin cone spikes radiating outward horizontally from the centre (length 1.0, base radius 0.06), slightly random tilt up/down (seeded), each spike U along its length (0 = base, 1 = tip), V around.
+
+Render ONE preview PNG of all meshes in a row (Workbench, flat colours, show the UV pattern by using a checker texture or by colouring faces by U) to `Art/tools/specs/blender_fx5_shapes_preview.png` and look at it; fix anything broken.
+ch5_textures.py                 
+denoise.py                      
+fx_soundwave_key.py             
+gemini_bgm.py                   
+gen_audio.py                    
+ground_texture.py               
+ground_texture_ch2.py           
+ground_texture_ch3.py           
+ground_texture_ch4.py           
+ground_texture_ch5.py           
+ground_texture_village.py       
+keep_main.py                    
+make_test_bullet.py             
+memclock_v2.py                  
+memshatter.py                   
+render_turntable.py             
+sheet_cut.py                    
+tripo_cli_import.py             
+tripo_import.py                 
+True
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Item C:/AGENTS.md,C:/Project/AGENTS.md,C:/Project/Cat_Tang/AGENTS.md,Art/AGENTS.md,Art/tools/AGENTS.md,Game/AGENTS.md,Game/Assets/AGENTS.md,Game/Assets/Resources/AGENTS.md,Game/Assets/Resources/FX/AGENTS.md -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName; Get-Content -LiteralPath $_.FullName }; Get-Content Art/tools/blender_fx_soundwave3d.py -TotalCount 100; Get-Content Art/tools/blender_kit_ch5_weapons.py -Tail 100; Get-Content Art/tools/specs/fx5_shapes_spec.md -TotalCount 160; Get-Content Art/tools/specs/fx5_shapes.log -Tail 25' in C:\Project\Cat_Tang
+
+codex
+원형 UV 이음새는 면별 UV로 연결하고, 돔·구의 극점과 초승달 양 끝은 퇴화 면 없이 만들겠습니다. 지정한 48×24 구는 2,208 tris가 되므로, 대략적인 2,000 tris 권장치보다 명시된 분할 수를 우선하겠습니다.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_fx5_shapes.py
+diff --git a/Art/tools/blender_fx5_shapes.py b/Art/tools/blender_fx5_shapes.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..176c2b4fe137e631512bacd51f3aa27072f81d8d
+--- /dev/null
++++ b/Art/tools/blender_fx5_shapes.py
+@@ -0,0 +1,347 @@
++# 5장 셰이더용 VFX 메시 7종과 UV 확인용 한 줄 프리뷰를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_fx5_shapes.py
++"""Geometry only; UV0 drives CatTang/StylizedVfx. Preview colours never export."""
++
++import colorsys
++import math
++from pathlib import Path
++import random
++
++import bpy
++from mathutils import Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Resources/FX/Meshes5'
++PREVIEW = ROOT / 'Art/tools/specs/blender_fx5_shapes_preview.png'
++TAU = math.tau
++
++
++class Surface:
++    def __init__(self):
++        self.vertices = []
++        self.faces = []
++        self.uvs = []
++
++    def vertex(self, xyz):
++        self.vertices.append(tuple(xyz))
++        return len(self.vertices) - 1
++
++    def face(self, vertices, uvs, reverse=False):
++        self.faces.append(tuple(reversed(vertices)) if reverse else tuple(vertices))
++        self.uvs.append(tuple(reversed(uvs)) if reverse else tuple(uvs))
++
++    def finish(self, name):
++        mesh = bpy.data.meshes.new('fx5_' + name)
++        mesh.from_pydata(self.vertices, [], self.faces)
++        mesh.update()
++        uv = mesh.uv_layers.new(name='UVMap')
++        for polygon, coords in zip(mesh.polygons, self.uvs):
++            polygon.use_smooth = True
++            for loop, coord in zip(polygon.loop_indices, coords):
++                uv.data[loop].uv = coord
++        obj = bpy.data.objects.new(mesh.name, mesh)
++        bpy.context.scene.collection.objects.link(obj)
++        return obj
++
++
++def dome():
++    s = Surface()
++    around, across = 32, 12
++    rings = []
++    for j in range(across):
++        latitude = math.pi * .5 * j / across
++        rings.append([s.vertex((math.cos(latitude) * math.cos(TAU * i / around),
++                                math.cos(latitude) * math.sin(TAU * i / around),
++                                math.sin(latitude))) for i in range(around)])
++    top = s.vertex((0, 0, 1))
++    for j in range(across - 1):
++        for i in range(around):
++            k = (i + 1) % around
++            s.face((rings[j][i], rings[j][k], rings[j+1][k], rings[j+1][i]),
++                   ((2*i/around, j/across), (2*(i+1)/around, j/across),
++                    (2*(i+1)/around, (j+1)/across), (2*i/around, (j+1)/across)))
++    for i in range(around):
++        s.face((rings[-1][i], rings[-1][(i+1) % around], top),
++               ((2*i/around, 11/12), (2*(i+1)/around, 11/12),
++                (2*(i+.5)/around, 1)))
++    return s.finish('dome')
++
++
++def circular_band(name, tall=False):
++    s = Surface()
++    around, across = 64, 2
++    rings = []
++    for j in range(across + 1):
++        v = j / across
++        radius, z = (1 + .12*v, .35*v) if tall else (.55 + .45*v, 0)
++        rings.append([s.vertex((radius*math.cos(TAU*i/around),
++                                radius*math.sin(TAU*i/around), z))
++                      for i in range(around)])
++    for j in range(across):
++        for i in range(around):
++            k = (i + 1) % around
++            s.face((rings[j][i], rings[j][k], rings[j+1][k], rings[j+1][i]),
++                   ((3*i/around, j/across), (3*(i+1)/around, j/across),
++                    (3*(i+1)/around, (j+1)/across), (3*i/around, (j+1)/across)),
++                   reverse=not tall)
++    return s.finish(name)
++
++
++def swirl():
++    s = Surface()
++    segments, width = 120, .45
++    # Constant-width upright ribbons lean forward into the CCW spiral.
++    # Their lower/upper edges, rather than their centrelines, bound Z=0..2.2.
++    lean = .18
++    edge_z = width * .5 / math.sqrt(1 + lean*lean)
++    for strand in range(3):
++        rows = []
++        for i in range(segments + 1):
++            t = i / segments
++            theta = TAU * (1.5*t + strand/3)
++            radius = .35 + .65*t
++            centre = Vector((radius*math.cos(theta), radius*math.sin(theta),
++                             edge_z + (2.2 - 2*edge_z)*t))
++            across = Vector((-lean*math.sin(theta), lean*math.cos(theta), 1)).normalized()
++            rows.append([s.vertex(centre + across*width*(v-.5)) for v in (0, 1)])
++        for i in range(segments):
++            s.face((rows[i][0], rows[i+1][0], rows[i+1][1], rows[i][1]),
++                   ((3*i/segments, 0), (3*(i+1)/segments, 0),
++                    (3*(i+1)/segments, 1), (3*i/segments, 1)))
++    return s.finish('swirl')
++
++
++def slash_arc():
++    s = Surface()
++    along, across = 96, 4
++    # Keep the outer envelope at radius 1; inner edge meets it at both tips.
++    start_angle, end_angle = math.radians(-100), math.radians(100)
++    start = s.vertex((math.cos(start_angle), math.sin(start_angle), 0))
++    rows = {}
++    for i in range(1, along):
++        t = i / along
++        theta = start_angle + (end_angle-start_angle)*t
++        inner = 1 - .55*math.sin(math.pi*t)
++        rows[i] = [s.vertex(((inner+(1-inner)*j/across)*math.cos(theta),
++                              (inner+(1-inner)*j/across)*math.sin(theta), 0))
++                   for j in range(across+1)]
++    end = s.vertex((math.cos(end_angle), math.sin(end_angle), 0))
++    for j in range(across):
++        # A single shared vertex at each tip; per-corner UV retains V coverage.
++        s.face((start, rows[1][j], rows[1][j+1]),
++               ((0, (j+.5)/across), (1/along, j/across), (1/along, (j+1)/across)), True)
++        s.face((rows[along-1][j], end, rows[along-1][j+1]),
++               (((along-1)/along, j/across), (1, (j+.5)/across),
++                ((along-1)/along, (j+1)/across)), True)
++    for i in range(1, along-1):
++        for j in range(across):
++            s.face((rows[i][j], rows[i+1][j], rows[i+1][j+1], rows[i][j+1]),
++                   ((i/along, j/across), ((i+1)/along, j/across),
++                    ((i+1)/along, (j+1)/across), (i/along, (j+1)/across)), True)
++    return s.finish('slash_arc')
++
++
++def spiral_ball():
++    s = Surface()
++    around, latitudes, radius = 48, 24, .7
++    bottom = s.vertex((0, 0, 0))
++    rings = {}
++    for j in range(1, latitudes):
++        latitude = -math.pi*.5 + math.pi*j/latitudes
++        rings[j] = [s.vertex((radius*math.cos(latitude)*math.cos(TAU*i/around),
++                              radius*math.cos(latitude)*math.sin(TAU*i/around),
++                              radius + radius*math.sin(latitude))) for i in range(around)]
++    top = s.vertex((0, 0, 2*radius))
++
++    def uv(longitude, latitude):
++        return (2*longitude + 1.5*latitude, latitude)
++
++    for i in range(around):
++        k = (i+1) % around
++        s.face((bottom, rings[1][k], rings[1][i]),
++               (uv((i+.5)/around, 0), uv((i+1)/around, 1/latitudes), uv(i/around, 1/latitudes)))
++        for j in range(1, latitudes-1):
++            s.face((rings[j][i], rings[j][k], rings[j+1][k], rings[j+1][i]),
++                   (uv(i/around, j/latitudes), uv((i+1)/around, j/latitudes),
++                    uv((i+1)/around, (j+1)/latitudes), uv(i/around, (j+1)/latitudes)))
++        s.face((rings[latitudes-1][i], rings[latitudes-1][k], top),
++               (uv(i/around, (latitudes-1)/latitudes), uv((i+1)/around, (latitudes-1)/latitudes),
++                uv((i+.5)/around, 1)))
++    # Explicit 48x24 resolution is 2,208 tris, slightly above the general budget.
++    return s.finish('spiral_ball')
++
++
++def spike_burst():
++    s = Surface()
++    rng = random.Random(55005)
++    sides = 12
++    for spike in range(10):
++        theta = TAU*spike/10
++        tilt = math.radians(rng.uniform(-8, 8))
++        direction = Vector((math.cos(theta)*math.cos(tilt), math.sin(theta)*math.cos(tilt), math.sin(tilt)))
++        sideways = Vector((-math.sin(theta), math.cos(theta), 0))
++        upright = direction.cross(sideways).normalized()
++        base = [s.vertex(.06*(sideways*math.cos(TAU*j/sides) + upright*math.sin(TAU*j/sides)))
++                for j in range(sides)]
++        tip, centre = s.vertex(direction), s.vertex((0, 0, 0))
++        for j in range(sides):
++            k = (j+1) % sides
++            s.face((base[j], base[k], tip), ((0, j/sides), (0, (j+1)/sides), (1, (j+.5)/sides)))
++            # Cap also has U=0 throughout, so length dissolve remains consistent.
++            s.face((base[k], base[j], centre), ((0, (j+1)/sides), (0, j/sides), (0, (j+.5)/sides)))
++    obj = s.finish('spike_burst')
++    obj.data.set_sharp_from_angle(angle=math.radians(60))
++    return obj
++
++
++EXPECTED = {'dome': 736, 'ring': 256, 'ring_tall': 256, 'swirl': 720,
++            'slash_arc': 760, 'spiral_ball': 2208, 'spike_burst': 240}
++
++
++def validate(obj):
++    mesh = obj.data
++    name = obj.name.removeprefix('fx5_')
++    mesh.calc_loop_triangles()
++    assert len(mesh.loop_triangles) == EXPECTED[name], name
++    assert all(p.area > 1e-10 and p.use_smooth for p in mesh.polygons), name
++    assert all(math.isfinite(c) for v in mesh.vertices for c in v.co), name
++    assert obj.location.length == 0 and tuple(obj.scale) == (1, 1, 1), name
++    assert len(mesh.uv_layers) == 1
++    uv = [tuple(item.uv) for item in mesh.uv_layers.active.data]
++    assert all(math.isfinite(c) for coord in uv for c in coord), name
++    assert abs(min(c[1] for c in uv)) < 1e-6 and abs(max(c[1] for c in uv)-1) < 1e-6, name
++    if name in ('ring', 'slash_arc'):
++        assert all(p.normal.z > .999 for p in mesh.polygons), name
++        assert all(abs(v.co.z) < 1e-7 for v in mesh.vertices), name
++    if name in ('dome', 'ring_tall', 'swirl'):
++        assert all(p.normal.dot(Vector((p.center.x, p.center.y, 0))) > 0 for p in mesh.polygons), name
++    if name == 'spiral_ball':
++        assert all(p.normal.dot(p.center-Vector((0, 0, .7))) > 0 for p in mesh.polygons)
++    return len(mesh.loop_triangles)
++
++
++def export(obj):
++    tris = validate(obj)
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    bpy.ops.export_scene.fbx(
++        filepath=str(OUTPUT / (obj.name + '.fbx')), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False)
++    print(f'EXPORTED {obj.name} {tris}', flush=True)
++
++
++def preview(objects):
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 2800, 760
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.view_settings.view_transform = 'Standard'
++    scene.render.film_transparent = False
++    scene.world = bpy.data.worlds.new('Preview background')
++    scene.world.color = (.026, .033, .05)
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.background_type = 'WORLD'
++    shade.show_shadows = False
++    shade.show_cavity = False
++    shade.show_specular_highlight = False
++    shade.show_backface_culling = False
++    # Face colours sample UV0: hue repeats along U, brightness marks V.
++    # A temporary subdivided copy reveals the length gradient on cone triangles.
++    palette = []
++    for u in range(12):
++        for v in range(4):
++            mat = bpy.data.materials.new(f'PREVIEW_U{u}_V{v}')
++            mat.diffuse_color = (*colorsys.hsv_to_rgb(u/12, .72, .42+.18*v), 1)
++            palette.append(mat)
++    text_mat = bpy.data.materials.new('Preview lettering')
++    text_mat.diffuse_color = (.79, .87, .95, 1)
++    helpers = []
++    spacing = 2.65
++    camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
++    scene.collection.objects.link(camera)
++    helpers.append(camera)
++    target = Vector((0, 0, .85))
++    camera.location = target + Vector((0, -18, 23))
++    camera.rotation_euler = (target-camera.location).to_track_quat('-Z', 'Y').to_euler()
++    camera.data.type = 'ORTHO'
++    camera.data.ortho_scale = 18.9
++    scene.camera = camera
++    screen_up = camera.rotation_euler.to_quaternion() @ Vector((0, 1, 0))
++
++    def caption(body, position, size):
++        data = bpy.data.curves.new('Preview caption', 'FONT')
++        data.body, data.align_x, data.size = body, 'CENTER', size
++        data.materials.append(text_mat)
++        obj = bpy.data.objects.new('Preview caption', data)
++        scene.collection.objects.link(obj)
++        helpers.append(obj)
++        obj.location = position
++        obj.rotation_euler = camera.rotation_euler
++
++    try:
++        for index, source in enumerate(objects):
++            source.hide_render = True
++            obj = bpy.data.objects.new('Preview ' + source.name, source.data.copy())
++            scene.collection.objects.link(obj)
++            helpers.append(obj)
++            obj.location.x = (index-3)*spacing
++            # Subdivision is preview-only; interpolated UVs colour big triangles.
++            bpy.ops.object.select_all(action='DESELECT')
++            obj.select_set(True)
++            bpy.context.view_layer.objects.active = obj
++            modifier = obj.modifiers.new('Preview UV sampling', 'SUBSURF')
++            modifier.subdivision_type, modifier.levels = 'SIMPLE', 2
++            bpy.ops.object.modifier_apply(modifier=modifier.name)
++            for mat in palette:
++                obj.data.materials.append(mat)
++            layer = obj.data.uv_layers.active.data
++            for face in obj.data.polygons:
++                u = sum(layer[i].uv.x for i in face.loop_indices) / len(face.loop_indices)
++                v = sum(layer[i].uv.y for i in face.loop_indices) / len(face.loop_indices)
++                face.material_index = (math.floor(u*12) % 12)*4 + min(3, max(0, int(v*4)))
++            at = Vector((obj.location.x, 0, 0))
++            name = source.name.removeprefix('fx5_')
++            caption(name, at-screen_up*1.02, .18)
++            caption(f'{EXPECTED[name]:,} tris', at-screen_up*1.28, .12)
++        caption('CHAPTER 5  /  STYLIZED VFX SHAPES  /  UV0', screen_up*3.05, .22)
++        caption('U = repeating hue / flow     |     V = dark to light / dissolve', screen_up*2.74, .14)
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            data = obj.data
++            bpy.data.objects.remove(obj, do_unlink=True)
++            if isinstance(data, bpy.types.Mesh):
++                bpy.data.meshes.remove(data)
++        for source in objects:
++            source.hide_render = False
++        for mat in palette + [text_mat]:
++            bpy.data.materials.remove(mat, do_unlink=True)
++
++
++def main():
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = [dome(), circular_band('ring'), circular_band('ring_tall', True),
++               swirl(), slash_arc(), spiral_ball(), spike_burst()]
++    for obj in objects:
++        export(obj)
++    preview(objects)
++    assert len(scene.objects) == 7
++    assert all(obj.location.length == 0 and len(obj.data.materials) == 0 for obj in objects)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_fx5_shapes.py" in C:\Project\Cat_Tang
+ succeeded in 3794ms:
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_dome.fbx'
+export finished in 0.0078 sec.
+EXPORTED fx5_dome 736
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_ring.fbx'
+export finished in 0.0025 sec.
+EXPORTED fx5_ring 256
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_ring_tall.fbx'
+export finished in 0.0024 sec.
+EXPORTED fx5_ring_tall 256
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_swirl.fbx'
+export finished in 0.0033 sec.
+EXPORTED fx5_swirl 720
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_slash_arc.fbx'
+export finished in 0.0031 sec.
+EXPORTED fx5_slash_arc 760
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_spiral_ball.fbx'
+export finished in 0.0038 sec.
+EXPORTED fx5_spiral_ball 2208
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_spike_burst.fbx'
+export finished in 0.0038 sec.
+EXPORTED fx5_spike_burst 240
+00:03.328  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_fx5_shapes_preview.png'
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+FBX 7종 생성과 메시 검증이 통과했습니다. 프리뷰에서 형태와 UV 흐름도 확인했으며, 위쪽 제목이 조금 잘려 배치를 수정하겠습니다. 이어서 FBX를 다시 불러와 삼각형 수와 UV 보존 여부를 확인하겠습니다.
+
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_fx5_shapes.py
+diff --git a/Art/tools/blender_fx5_shapes.py b/Art/tools/blender_fx5_shapes.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..566c00712fcfb1ce9730e81071ae106aeae9649f
+--- /dev/null
++++ b/Art/tools/blender_fx5_shapes.py
+@@ -0,0 +1,347 @@
++# 5장 셰이더용 VFX 메시 7종과 UV 확인용 한 줄 프리뷰를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_fx5_shapes.py
++"""Geometry only; UV0 drives CatTang/StylizedVfx. Preview colours never export."""
++
++import colorsys
++import math
++from pathlib import Path
++import random
++
++import bpy
++from mathutils import Vector
++
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Resources/FX/Meshes5'
++PREVIEW = ROOT / 'Art/tools/specs/blender_fx5_shapes_preview.png'
++TAU = math.tau
++
++
++class Surface:
++    def __init__(self):
++        self.vertices = []
++        self.faces = []
++        self.uvs = []
++
++    def vertex(self, xyz):
++        self.vertices.append(tuple(xyz))
++        return len(self.vertices) - 1
++
++    def face(self, vertices, uvs, reverse=False):
++        self.faces.append(tuple(reversed(vertices)) if reverse else tuple(vertices))
++        self.uvs.append(tuple(reversed(uvs)) if reverse else tuple(uvs))
++
++    def finish(self, name):
++        mesh = bpy.data.meshes.new('fx5_' + name)
++        mesh.from_pydata(self.vertices, [], self.faces)
++        mesh.update()
++        uv = mesh.uv_layers.new(name='UVMap')
++        for polygon, coords in zip(mesh.polygons, self.uvs):
++            polygon.use_smooth = True
++            for loop, coord in zip(polygon.loop_indices, coords):
++                uv.data[loop].uv = coord
++        obj = bpy.data.objects.new(mesh.name, mesh)
++        bpy.context.scene.collection.objects.link(obj)
++        return obj
++
++
++def dome():
++    s = Surface()
++    around, across = 32, 12
++    rings = []
++    for j in range(across):
++        latitude = math.pi * .5 * j / across
++        rings.append([s.vertex((math.cos(latitude) * math.cos(TAU * i / around),
++                                math.cos(latitude) * math.sin(TAU * i / around),
++                                math.sin(latitude))) for i in range(around)])
++    top = s.vertex((0, 0, 1))
++    for j in range(across - 1):
++        for i in range(around):
++            k = (i + 1) % around
++            s.face((rings[j][i], rings[j][k], rings[j+1][k], rings[j+1][i]),
++                   ((2*i/around, j/across), (2*(i+1)/around, j/across),
++                    (2*(i+1)/around, (j+1)/across), (2*i/around, (j+1)/across)))
++    for i in range(around):
++        s.face((rings[-1][i], rings[-1][(i+1) % around], top),
++               ((2*i/around, 11/12), (2*(i+1)/around, 11/12),
++                (2*(i+.5)/around, 1)))
++    return s.finish('dome')
++
++
++def circular_band(name, tall=False):
++    s = Surface()
++    around, across = 64, 2
++    rings = []
++    for j in range(across + 1):
++        v = j / across
++        radius, z = (1 + .12*v, .35*v) if tall else (.55 + .45*v, 0)
++        rings.append([s.vertex((radius*math.cos(TAU*i/around),
++                                radius*math.sin(TAU*i/around), z))
++                      for i in range(around)])
++    for j in range(across):
++        for i in range(around):
++            k = (i + 1) % around
++            s.face((rings[j][i], rings[j][k], rings[j+1][k], rings[j+1][i]),
++                   ((3*i/around, j/across), (3*(i+1)/around, j/across),
++                    (3*(i+1)/around, (j+1)/across), (3*i/around, (j+1)/across)),
++                   reverse=not tall)
++    return s.finish(name)
++
++
++def swirl():
++    s = Surface()
++    segments, width = 120, .45
++    # Constant-width upright ribbons lean forward into the CCW spiral.
++    # Their lower/upper edges, rather than their centrelines, bound Z=0..2.2.
++    lean = .18
++    edge_z = width * .5 / math.sqrt(1 + lean*lean)
++    for strand in range(3):
++        rows = []
++        for i in range(segments + 1):
++            t = i / segments
++            theta = TAU * (1.5*t + strand/3)
++            radius = .35 + .65*t
++            centre = Vector((radius*math.cos(theta), radius*math.sin(theta),
++                             edge_z + (2.2 - 2*edge_z)*t))
++            across = Vector((-lean*math.sin(theta), lean*math.cos(theta), 1)).normalized()
++            rows.append([s.vertex(centre + across*width*(v-.5)) for v in (0, 1)])
++        for i in range(segments):
++            s.face((rows[i][0], rows[i+1][0], rows[i+1][1], rows[i][1]),
++                   ((3*i/segments, 0), (3*(i+1)/segments, 0),
++                    (3*(i+1)/segments, 1), (3*i/segments, 1)))
++    return s.finish('swirl')
++
++
++def slash_arc():
++    s = Surface()
++    along, across = 96, 4
++    # Keep the outer envelope at radius 1; inner edge meets it at both tips.
++    start_angle, end_angle = math.radians(-100), math.radians(100)
++    start = s.vertex((math.cos(start_angle), math.sin(start_angle), 0))
++    rows = {}
++    for i in range(1, along):
++        t = i / along
++        theta = start_angle + (end_angle-start_angle)*t
++        inner = 1 - .55*math.sin(math.pi*t)
++        rows[i] = [s.vertex(((inner+(1-inner)*j/across)*math.cos(theta),
++                              (inner+(1-inner)*j/across)*math.sin(theta), 0))
++                   for j in range(across+1)]
++    end = s.vertex((math.cos(end_angle), math.sin(end_angle), 0))
++    for j in range(across):
++        # A single shared vertex at each tip; per-corner UV retains V coverage.
++        s.face((start, rows[1][j], rows[1][j+1]),
++               ((0, (j+.5)/across), (1/along, j/across), (1/along, (j+1)/across)), True)
++        s.face((rows[along-1][j], end, rows[along-1][j+1]),
++               (((along-1)/along, j/across), (1, (j+.5)/across),
++                ((along-1)/along, (j+1)/across)), True)
++    for i in range(1, along-1):
++        for j in range(across):
++            s.face((rows[i][j], rows[i+1][j], rows[i+1][j+1], rows[i][j+1]),
++                   ((i/along, j/across), ((i+1)/along, j/across),
++                    ((i+1)/along, (j+1)/across), (i/along, (j+1)/across)), True)
++    return s.finish('slash_arc')
++
++
++def spiral_ball():
++    s = Surface()
++    around, latitudes, radius = 48, 24, .7
++    bottom = s.vertex((0, 0, 0))
++    rings = {}
++    for j in range(1, latitudes):
++        latitude = -math.pi*.5 + math.pi*j/latitudes
++        rings[j] = [s.vertex((radius*math.cos(latitude)*math.cos(TAU*i/around),
++                              radius*math.cos(latitude)*math.sin(TAU*i/around),
++                              radius + radius*math.sin(latitude))) for i in range(around)]
++    top = s.vertex((0, 0, 2*radius))
++
++    def uv(longitude, latitude):
++        return (2*longitude + 1.5*latitude, latitude)
++
++    for i in range(around):
++        k = (i+1) % around
++        s.face((bottom, rings[1][k], rings[1][i]),
++               (uv((i+.5)/around, 0), uv((i+1)/around, 1/latitudes), uv(i/around, 1/latitudes)))
++        for j in range(1, latitudes-1):
++            s.face((rings[j][i], rings[j][k], rings[j+1][k], rings[j+1][i]),
++                   (uv(i/around, j/latitudes), uv((i+1)/around, j/latitudes),
++                    uv((i+1)/around, (j+1)/latitudes), uv(i/around, (j+1)/latitudes)))
++        s.face((rings[latitudes-1][i], rings[latitudes-1][k], top),
++               (uv(i/around, (latitudes-1)/latitudes), uv((i+1)/around, (latitudes-1)/latitudes),
++                uv((i+.5)/around, 1)))
++    # Explicit 48x24 resolution is 2,208 tris, slightly above the general budget.
++    return s.finish('spiral_ball')
++
++
++def spike_burst():
++    s = Surface()
++    rng = random.Random(55005)
++    sides = 12
++    for spike in range(10):
++        theta = TAU*spike/10
++        tilt = math.radians(rng.uniform(-8, 8))
++        direction = Vector((math.cos(theta)*math.cos(tilt), math.sin(theta)*math.cos(tilt), math.sin(tilt)))
++        sideways = Vector((-math.sin(theta), math.cos(theta), 0))
++        upright = direction.cross(sideways).normalized()
++        base = [s.vertex(.06*(sideways*math.cos(TAU*j/sides) + upright*math.sin(TAU*j/sides)))
++                for j in range(sides)]
++        tip, centre = s.vertex(direction), s.vertex((0, 0, 0))
++        for j in range(sides):
++            k = (j+1) % sides
++            s.face((base[j], base[k], tip), ((0, j/sides), (0, (j+1)/sides), (1, (j+.5)/sides)))
++            # Cap also has U=0 throughout, so length dissolve remains consistent.
++            s.face((base[k], base[j], centre), ((0, (j+1)/sides), (0, j/sides), (0, (j+.5)/sides)))
++    obj = s.finish('spike_burst')
++    obj.data.set_sharp_from_angle(angle=math.radians(60))
++    return obj
++
++
++EXPECTED = {'dome': 736, 'ring': 256, 'ring_tall': 256, 'swirl': 720,
++            'slash_arc': 760, 'spiral_ball': 2208, 'spike_burst': 240}
++
++
++def validate(obj):
++    mesh = obj.data
++    name = obj.name.removeprefix('fx5_')
++    mesh.calc_loop_triangles()
++    assert len(mesh.loop_triangles) == EXPECTED[name], name
++    assert all(p.area > 1e-10 and p.use_smooth for p in mesh.polygons), name
++    assert all(math.isfinite(c) for v in mesh.vertices for c in v.co), name
++    assert obj.location.length == 0 and tuple(obj.scale) == (1, 1, 1), name
++    assert len(mesh.uv_layers) == 1
++    uv = [tuple(item.uv) for item in mesh.uv_layers.active.data]
++    assert all(math.isfinite(c) for coord in uv for c in coord), name
++    assert abs(min(c[1] for c in uv)) < 1e-6 and abs(max(c[1] for c in uv)-1) < 1e-6, name
++    if name in ('ring', 'slash_arc'):
++        assert all(p.normal.z > .999 for p in mesh.polygons), name
++        assert all(abs(v.co.z) < 1e-7 for v in mesh.vertices), name
++    if name in ('dome', 'ring_tall', 'swirl'):
++        assert all(p.normal.dot(Vector((p.center.x, p.center.y, 0))) > 0 for p in mesh.polygons), name
++    if name == 'spiral_ball':
++        assert all(p.normal.dot(p.center-Vector((0, 0, .7))) > 0 for p in mesh.polygons)
++    return len(mesh.loop_triangles)
++
++
++def export(obj):
++    tris = validate(obj)
++    bpy.ops.object.select_all(action='DESELECT')
++    obj.select_set(True)
++    bpy.context.view_layer.objects.active = obj
++    bpy.ops.export_scene.fbx(
++        filepath=str(OUTPUT / (obj.name + '.fbx')), use_selection=True,
++        axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True,
++        mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False)
++    print(f'EXPORTED {obj.name} {tris}', flush=True)
++
++
++def preview(objects):
++    scene = bpy.context.scene
++    scene.render.engine = 'BLENDER_WORKBENCH'
++    scene.render.resolution_x, scene.render.resolution_y = 2800, 760
++    scene.render.resolution_percentage = 100
++    scene.render.image_settings.file_format = 'PNG'
++    scene.render.filepath = str(PREVIEW)
++    scene.view_settings.view_transform = 'Standard'
++    scene.render.film_transparent = False
++    scene.world = bpy.data.worlds.new('Preview background')
++    scene.world.color = (.026, .033, .05)
++    shade = scene.display.shading
++    shade.light, shade.color_type = 'FLAT', 'MATERIAL'
++    shade.background_type = 'WORLD'
++    shade.show_shadows = False
++    shade.show_cavity = False
++    shade.show_specular_highlight = False
++    shade.show_backface_culling = False
++    # Face colours sample UV0: hue repeats along U, brightness marks V.
++    # A temporary subdivided copy reveals the length gradient on cone triangles.
++    palette = []
++    for u in range(12):
++        for v in range(4):
++            mat = bpy.data.materials.new(f'PREVIEW_U{u}_V{v}')
++            mat.diffuse_color = (*colorsys.hsv_to_rgb(u/12, .72, .42+.18*v), 1)
++            palette.append(mat)
++    text_mat = bpy.data.materials.new('Preview lettering')
++    text_mat.diffuse_color = (.79, .87, .95, 1)
++    helpers = []
++    spacing = 2.65
++    camera = bpy.data.objects.new('Preview camera', bpy.data.cameras.new('Preview camera'))
++    scene.collection.objects.link(camera)
++    helpers.append(camera)
++    target = Vector((0, 0, .85))
++    camera.location = target + Vector((0, -18, 23))
++    camera.rotation_euler = (target-camera.location).to_track_quat('-Z', 'Y').to_euler()
++    camera.data.type = 'ORTHO'
++    camera.data.ortho_scale = 18.9
++    scene.camera = camera
++    screen_up = camera.rotation_euler.to_quaternion() @ Vector((0, 1, 0))
++
++    def caption(body, position, size):
++        data = bpy.data.curves.new('Preview caption', 'FONT')
++        data.body, data.align_x, data.size = body, 'CENTER', size
++        data.materials.append(text_mat)
++        obj = bpy.data.objects.new('Preview caption', data)
++        scene.collection.objects.link(obj)
++        helpers.append(obj)
++        obj.location = position
++        obj.rotation_euler = camera.rotation_euler
++
++    try:
++        for index, source in enumerate(objects):
++            source.hide_render = True
++            obj = bpy.data.objects.new('Preview ' + source.name, source.data.copy())
++            scene.collection.objects.link(obj)
++            helpers.append(obj)
++            obj.location.x = (index-3)*spacing
++            # Subdivision is preview-only; interpolated UVs colour big triangles.
++            bpy.ops.object.select_all(action='DESELECT')
++            obj.select_set(True)
++            bpy.context.view_layer.objects.active = obj
++            modifier = obj.modifiers.new('Preview UV sampling', 'SUBSURF')
++            modifier.subdivision_type, modifier.levels = 'SIMPLE', 2
++            bpy.ops.object.modifier_apply(modifier=modifier.name)
++            for mat in palette:
++                obj.data.materials.append(mat)
++            layer = obj.data.uv_layers.active.data
++            for face in obj.data.polygons:
++                u = sum(layer[i].uv.x for i in face.loop_indices) / len(face.loop_indices)
++                v = sum(layer[i].uv.y for i in face.loop_indices) / len(face.loop_indices)
++                face.material_index = (math.floor(u*12) % 12)*4 + min(3, max(0, int(v*4)))
++            at = Vector((obj.location.x, 0, 0))
++            name = source.name.removeprefix('fx5_')
++            caption(name, at-screen_up*1.02, .18)
++            caption(f'{EXPECTED[name]:,} tris', at-screen_up*1.28, .12)
++        caption('CHAPTER 5  /  STYLIZED VFX SHAPES  /  UV0', screen_up*2.82, .22)
++        caption('U = repeating hue / flow     |     V = dark to light / dissolve', screen_up*2.51, .14)
++        PREVIEW.parent.mkdir(parents=True, exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size > 1024
++    finally:
++        scene.camera = None
++        for obj in helpers:
++            data = obj.data
++            bpy.data.objects.remove(obj, do_unlink=True)
++            if isinstance(data, bpy.types.Mesh):
++                bpy.data.meshes.remove(data)
++        for source in objects:
++            source.hide_render = False
++        for mat in palette + [text_mat]:
++            bpy.data.materials.remove(mat, do_unlink=True)
++
++
++def main():
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    scene = bpy.context.scene
++    scene.unit_settings.system, scene.unit_settings.scale_length = 'METRIC', 1
++    OUTPUT.mkdir(parents=True, exist_ok=True)
++    objects = [dome(), circular_band('ring'), circular_band('ring_tall', True),
++               swirl(), slash_arc(), spiral_ball(), spike_burst()]
++    for obj in objects:
++        export(obj)
++    preview(objects)
++    assert len(scene.objects) == 7
++    assert all(obj.location.length == 0 and len(obj.data.materials) == 0 for obj in objects)
++    print('DONE', flush=True)
++
++
++if __name__ == '__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_fx5_shapes.py" in C:\Project\Cat_Tang
+ succeeded in 2975ms:
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_dome.fbx'
+export finished in 0.0035 sec.
+EXPORTED fx5_dome 736
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_ring.fbx'
+export finished in 0.0028 sec.
+EXPORTED fx5_ring 256
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_ring_tall.fbx'
+export finished in 0.0029 sec.
+EXPORTED fx5_ring_tall 256
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_swirl.fbx'
+export finished in 0.0030 sec.
+EXPORTED fx5_swirl 720
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_slash_arc.fbx'
+export finished in 0.0029 sec.
+EXPORTED fx5_slash_arc 760
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_spiral_ball.fbx'
+export finished in 0.0037 sec.
+EXPORTED fx5_spiral_ball 2208
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Resources\\FX\\Meshes5\\fx5_spike_burst.fbx'
+export finished in 0.0027 sec.
+EXPORTED fx5_spike_burst 240
+00:02.656  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_fx5_shapes_preview.png'
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$fx5Audit = @'"'
+import bpy, importlib.util
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('fx5', Path('Art/tools/blender_fx5_shapes.py').resolve())
+fx5 = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(fx5)
+bpy.ops.wm.read_factory_settings(use_empty=True)
+originals = [fx5.dome(), fx5.circular_band('ring'), fx5.circular_band('ring_tall', True), fx5.swirl(), fx5.slash_arc(), fx5.spiral_ball(), fx5.spike_burst()]
+for original in originals:
+    bpy.ops.import_scene.fbx(filepath=str(fx5.OUTPUT / (original.name + '.fbx')))
+    imported = bpy.context.selected_objects
+    assert len(imported) == 1 and imported[0].type == 'MESH'
+    obj = imported[0]
+    mesh = obj.data
+    mesh.calc_loop_triangles()
+    name = original.name.removeprefix('fx5_')
+    assert len(mesh.loop_triangles) == fx5.EXPECTED[name]
+    assert len(mesh.uv_layers) == 1
+    a = sorted(tuple(round(c, 5) for c in item.uv) for item in original.data.uv_layers.active.data)
+    b = sorted(tuple(round(c, 5) for c in item.uv) for item in mesh.uv_layers.active.data)
+    assert a == b, (name, 'UV changed')
+    world = [obj.matrix_world @ v.co for v in mesh.vertices]
+    for axis in range(3):
+        assert abs(min(v[axis] for v in world) - min(v.co[axis] for v in original.data.vertices)) < 1e-5, (name, 'minimum bound')
+        assert abs(max(v[axis] for v in world) - max(v.co[axis] for v in original.data.vertices)) < 1e-5, (name, 'maximum bound')
+    assert obj.matrix_world.translation.length < 1e-6
+    assert all(p.use_smooth and p.area > 1e-10 for p in mesh.polygons)
+    print('AUDIT_OK', name, len(mesh.loop_triangles), 'UV0, bounds, origin, smoothing')
+    bpy.data.objects.remove(obj, do_unlink=True)
+print('FBX_ROUNDTRIP_OK 7')
+'@
+& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-exit-code 1 --python-expr "'$fx5Audit' in C:\Project\Cat_Tang
+ succeeded in 1756ms:
+FBX version: 7400
+AUDIT_OK dome 736 UV0, bounds, origin, smoothing
+FBX version: 7400
+AUDIT_OK ring 256 UV0, bounds, origin, smoothing
+FBX version: 7400
+AUDIT_OK ring_tall 256 UV0, bounds, origin, smoothing
+FBX version: 7400
+AUDIT_OK swirl 720 UV0, bounds, origin, smoothing
+FBX version: 7400
+AUDIT_OK slash_arc 760 UV0, bounds, origin, smoothing
+FBX version: 7400
+AUDIT_OK spiral_ball 2208 UV0, bounds, origin, smoothing
+FBX version: 7400
+AUDIT_OK spike_burst 240 UV0, bounds, origin, smoothing
+FBX_ROUNDTRIP_OK 7
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+완료했습니다. Blender 5.3 실행 및 FBX 7종 재수입 검증을 통과했고, 프리뷰도 확인했습니다.
+
+- [새 스크립트](C:/Project/Cat_Tang/Art/tools/blender_fx5_shapes.py)
+- [FBX 출력 폴더](C:/Project/Cat_Tang/Game/Assets/Resources/FX/Meshes5)
+- [UV 프리뷰](C:/Project/Cat_Tang/Art/tools/specs/blender_fx5_shapes_preview.png)
+
+UV, 원점, 크기, 스무딩이 보존됩니다. `spiral_ball`은 지정한 48×24 분할을 유지하여 2,208 tris입니다.
+tokens used
+44,948
+완료했습니다. Blender 5.3 실행 및 FBX 7종 재수입 검증을 통과했고, 프리뷰도 확인했습니다.
+
+- [새 스크립트](C:/Project/Cat_Tang/Art/tools/blender_fx5_shapes.py)
+- [FBX 출력 폴더](C:/Project/Cat_Tang/Game/Assets/Resources/FX/Meshes5)
+- [UV 프리뷰](C:/Project/Cat_Tang/Art/tools/specs/blender_fx5_shapes_preview.png)
+
+UV, 원점, 크기, 스무딩이 보존됩니다. `spiral_ball`은 지정한 48×24 분할을 유지하여 2,208 tris입니다.

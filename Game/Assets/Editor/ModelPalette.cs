@@ -173,6 +173,43 @@ namespace CatTang.EditorTools
             { "lamp_warm", new Color(1f, 0.84f, 0.6f) },
         };
 
+        // 5장 (무너지는 시간의 끝, 2026-11-19): 보라 · 금 우주 — 깊은 남보라 허공 + 금빛 균열 + 흰 별빛 + 은청 거울, 적 포인트는 자홍.
+        // 앞 장 흔적(서부 나무 · 기차 철 · 사막 모래 · 시계 문자판)도 보랏빛으로 물들임. 명세 Art/tools/specs/_ch5_common.md
+        public static readonly Dictionary<string, Color> Ch5 = new()
+        {
+            // 2026-11-20 사용자: 가시성 — 적(보라 · 라일락 · 금)이 묻히지 않게 벽 · 소품 · 바닥 조각의 돌 · 대리석은 차가운 청회색(슬레이트)으로, 보라는 포인트만
+            { "void_stone", new Color(0.42f, 0.48f, 0.6f) },
+            { "void_stone_dark", new Color(0.2f, 0.24f, 0.34f) },
+            { "marble", new Color(0.84f, 0.89f, 0.96f) },
+            { "marble_dark", new Color(0.55f, 0.62f, 0.74f) },
+            { "violet", new Color(0.46f, 0.38f, 0.7f) },
+            { "violet_dark", new Color(0.24f, 0.2f, 0.42f) },
+            { "indigo", new Color(0.11f, 0.14f, 0.27f) },
+            { "night_sky", new Color(0.04f, 0.05f, 0.13f) },
+            { "starlight", Color.white },
+            { "crack_gold", new Color(1f, 0.84f, 0.38f) },             // 빌더가 빛나는 단색으로 바꿈 (Ch5GlowMats)
+            { "gold", new Color(1f, 0.8f, 0.36f) },
+            { "gold_dark", new Color(0.8f, 0.58f, 0.26f) },
+            { "mirror", new Color(0.84f, 0.9f, 1f) },                  // 빛나는 단색
+            { "mirror_back", new Color(0.52f, 0.5f, 0.7f) },
+            { "crystal", new Color(0.76f, 0.58f, 1f) },
+            { "magenta", new Color(1f, 0.22f, 0.72f) },                // 빛나는 단색
+            { "wood", new Color(0.6f, 0.44f, 0.52f) },
+            { "wood_dark", new Color(0.38f, 0.26f, 0.36f) },
+            { "iron", new Color(0.34f, 0.31f, 0.46f) },
+            { "iron_dark", new Color(0.18f, 0.15f, 0.28f) },
+            { "steel", new Color(0.7f, 0.7f, 0.86f) },
+            { "brass", new Color(0.92f, 0.74f, 0.42f) },
+            { "dial_face", new Color(0.97f, 0.94f, 0.86f) },
+            { "dial_mark", new Color(0.2f, 0.15f, 0.32f) },
+            { "sand", new Color(0.88f, 0.76f, 0.84f) },
+            { "red_lacquer", new Color(0.74f, 0.2f, 0.4f) },
+            { "cloth", new Color(0.62f, 0.32f, 0.58f) },
+            { "lamp_warm", new Color(1f, 0.8f, 0.5f) },
+            { "porcelain", new Color(0.97f, 0.95f, 1f) },
+            { "velvet", new Color(0.52f, 0.14f, 0.38f) },
+        };
+
         // 4장 상인 오르골 인형 (블렌더 + Codex, 원화 Art/tripo_input/merchant/ch4_musicdoll.png): 느와르 장에서 혼자 따뜻한 색 — 상아 자기 · 금 · 포도주 벨벳 · 짙은 나무
         public static readonly Dictionary<string, Color> Ch4Merchant = new()
         {

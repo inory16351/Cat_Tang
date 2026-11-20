@@ -1,0 +1,28 @@
+Use your image generation tool to create FIVE images and save them exactly at these paths (create folders if needed). Do not edit any other file. After saving, print the five paths and their pixel sizes.
+
+Game: Cat_Tang, chapter 5 "the collapsing end of time" — a cosmic purple-and-gold void full of broken mirror fragments and glowing gold cracks.
+Style reference: the attached concept images (deep indigo void, gold crack lines, white starlight, broken mirror shards). Match them: cel-shaded, flat colours, crisp black ink outlines, bold readable game VFX (like Brawl Stars / Hades effects), NOT realistic, NOT soft blurry glow.
+Palette for ENEMY attacks: hot magenta #FF2FB4 and magenta-pink #FF6FD0 with white-hot cores, deep violet #3A1A6A shading, small gold #FFC64A accents.
+
+COMMON LAYOUT for every sheet:
+- Size 2048 x 256 px: a horizontal strip of 8 square frames (256 x 256 each), played left to right as an animation.
+- Background: pure flat GREEN #00FF00 everywhere that is not the effect (it will be keyed out). Never use green inside the effect.
+- Each frame's effect is centred in its own square and never crosses into the neighbouring frame; leave a ~8% green margin.
+- No text, no letters, no numbers, no frame lines or borders between frames.
+
+1) `docs/images/fx_src/c5_riftshatter.png` — a crack in the air that tears open and shatters.
+   Frames 1-3: a jagged vertical crack line appears in the middle and grows (white-hot core, magenta edge, black ink), small side branches spread like broken glass.
+   Frames 4-5: the crack bulges and glows brightest, lens-shaped opening showing deep violet void with tiny white stars inside.
+   Frames 6-8: it SHATTERS — triangular mirror-glass shards (pale lavender faces, white highlight edge, black ink) burst outward in all directions with a magenta shock ring, fading and shrinking in the last frame.
+
+2) `docs/images/fx_src/c5_shardhit.png` — a crystal glass bullet hitting a wall and splitting in three.
+   Frame 1: bright white-magenta flash star. Frames 2-4: three sharp crystal splinters fly out in a fan (up-left, right, down-left), small glass chips and a thin magenta ring. Frames 5-8: chips spin and fade out.
+
+3) `docs/images/fx_src/c5_starburst.png` — a pinned star of a witch's constellation exploding.
+   Frames 1-2: a 4-point white star with a magenta halo twinkles larger. Frames 3-5: it bursts into a ring of 8 tiny stars and a magenta-pink shock ring with gold sparkles. Frames 6-8: the tiny stars drift outward and blink out.
+
+4) `docs/images/fx_src/c5_voidburst.png` — a dark void orb landing on the floor (seen from a top-down 3/4 camera).
+   Frames 1-2: dark violet orb with magenta rim squashes down. Frames 3-5: it splashes into a flat violet-magenta blob ring with glass cracks spreading on the ground and gold sparks. Frames 6-8: the ring thins and fades, cracks fade last.
+
+5) `docs/images/fx_src/c5_voidslash.png` — a rift assassin's blade slash arc (horizontal crescent, sweep from left to right).
+   Frames 1-2: a thin crescent begins on the left. Frames 3-4: full bold crescent arc, white-hot leading edge, magenta body, violet trailing edge with broken-glass jagged notches, black ink outline. Frames 5-8: the arc breaks into small glass fragments along its curve and fades from the tail.

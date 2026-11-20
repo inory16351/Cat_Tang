@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5_void_land.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5_void_land",
+    "original_idea": "11:59 game SFX: e5_void_land",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, dark void orb landing, muffled magical impact thump with a short glassy crack, void energy, glass, stone, close, dry.",
+    "sound_fields": {
+      "source": "dark void orb landing",
+      "action": "muffled magical impact thump with a short glassy crack",
+      "material": "void energy, glass, stone",
+      "space": "close, dry"
+    },
+    "bpm": null,
+    "seconds": 0.7,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5_void_land.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-19T21:30:09",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": -0.91,
+    "ceiling_gain_db": -0.09
+  },
+  "created": "2026-11-19T21:30:09",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.7,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+0.00 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.17,
+  "file": "e5_void_land.ogg"
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5b_stop.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5b_stop",
+    "original_idea": "11:59 game SFX: e5b_stop",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, time freezing in a field, deep descending whoomp with glassy crystallizing crackle and a stopped-clock tick, glass, ice, clockwork, airy reverb.",
+    "sound_fields": {
+      "source": "time freezing in a field",
+      "action": "deep descending whoomp with glassy crystallizing crackle and a stopped-clock tick",
+      "material": "glass, ice, clockwork",
+      "space": "airy reverb"
+    },
+    "bpm": null,
+    "seconds": 1.5,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5b_stop.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-20T08:57:27",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -3.82,
+    "raw_peak_dbfs": -3.82,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-20T08:57:27",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 1.5,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+2.96 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1024,
+  "file": "e5b_stop.ogg"
+}

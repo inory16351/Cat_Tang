@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5b_reap_dash_v1.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5b_reap_dash",
+    "original_idea": "11:59 game SFX: e5b_reap_dash",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, ghostly reaper dashing forward with a giant scythe, violent fast ghostly swoosh with a reversed whisper and a heavy blade cut at the end, steel, wind, spectral, close, short reverb.",
+    "sound_fields": {
+      "source": "ghostly reaper dashing forward with a giant scythe",
+      "action": "violent fast ghostly swoosh with a reversed whisper and a heavy blade cut at the end",
+      "material": "steel, wind, spectral",
+      "space": "close, short reverb"
+    },
+    "bpm": null,
+    "seconds": 1.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 2,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5b_reap_dash_v1.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-20T08:57:25",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-20T08:57:25",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.708,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (-0.01 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1317,
+  "file": "e5b_reap_dash_1.ogg"
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "C:\\Project\\Cat_Tang\\Art\\audio_src\\sfx\\e5b_time_cut.wav",
+  "source": {
+    "kind": "generate",
+    "title": "e5b_time_cut",
+    "original_idea": "11:59 game SFX: e5b_time_cut",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, clock time being cut away, sharp glassy clock tick that shatters and rewinds quickly, warped, glass, brass clockwork, close, slight reverb.",
+    "sound_fields": {
+      "source": "clock time being cut away",
+      "action": "sharp glassy clock tick that shatters and rewinds quickly, warped",
+      "material": "glass, brass clockwork",
+      "space": "close, slight reverb"
+    },
+    "bpm": null,
+    "seconds": 0.9,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "e5b_time_cut.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-20T08:57:25",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -7.24,
+    "raw_peak_dbfs": -7.24,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-20T08:57:25",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.86,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+8.37 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0909,
+  "file": "e5b_time_cut.ogg"
+}

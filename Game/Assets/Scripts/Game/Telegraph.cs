@@ -24,7 +24,8 @@ namespace CatTang
 
         static readonly Color DangerPink = new(1f, 0.14f, 0.36f);        // 진홍 분홍
         static readonly Color DangerRed = new(1f, 0.06f, 0.08f);         // 4장 느와르: 흑백 위 새빨강 (2026-11-19 사용자)
-        public static Color Danger => EnemyProjectile.Ch4 ? DangerRed : DangerPink;
+        static readonly Color DangerMagenta = new(1f, 0.16f, 0.72f);    // 5장: 보라 · 금 우주 위 자홍 (2026-11-19 md 챕터 5 '적 공격 궤적은 자홍 · 마젠타')
+        public static Color Danger => EnemyProjectile.Ch4 ? DangerRed : EnemyProjectile.Ch5 ? DangerMagenta : DangerPink;
         public static readonly Color Aim = new(0.82f, 0.38f, 1f);      // 보라
         static readonly Color Shadow = new(0.06f, 0.02f, 0.08f, 0.34f);
         static readonly Color Ink = new(0.05f, 0.01f, 0.07f, 0.9f);

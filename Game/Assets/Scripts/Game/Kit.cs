@@ -78,7 +78,7 @@ namespace CatTang
             // 스테이지 1(황무지 절벽길)은 절벽 바위 모듈, 그 뒤(마을)는 건물 정면 모듈. module을 주면 그것 (술집 실내 = PlankWall)
             var rm = RunManager.Instance;
             bool cliff = rm && rm.stageIndex == 0 && !rm.IsMidBossRoom && Has(ch, "Cliff");
-            if (module == null && !cliff && wallCube && (Has(ch, Facades[0]) || Ch2Kit.Is(ch) || Ch3Kit.Is(ch) || Ch4Kit.Is(ch))) return BuildingRow(ch, wallCube, inward, hideCube);
+            if (module == null && !cliff && wallCube && (Has(ch, Facades[0]) || Ch2Kit.Is(ch) || Ch3Kit.Is(ch) || Ch4Kit.Is(ch) || Ch5Kit.Is(ch))) return BuildingRow(ch, wallCube, inward, hideCube);
             var prefab = Prefab(ch, module ?? (cliff ? "Cliff" : "Wall"));
             if (!prefab || !wallCube) return false;
             var t = wallCube.transform;
@@ -128,9 +128,9 @@ namespace CatTang
             var t = wallCube.transform;
             // 정면 세트: 1장 = 서부 건물 8종, 2장 = 장소별 역 건물 (Ch2Kit.Facades)
             var names = Facades; var widths = FacadeW;
-            bool ch2 = Ch2Kit.Is(ch), ch3 = Ch3Kit.Is(ch), ch4 = Ch4Kit.Is(ch);
+            bool ch2 = Ch2Kit.Is(ch), ch3 = Ch3Kit.Is(ch), ch5 = Ch5Kit.Is(ch), ch4 = Ch4Kit.Is(ch) || ch5;   // 5장은 4장과 같은 벽면 규칙 (블렌더 키트 · 앞면 1.4m까지)
             if (ch3) (names, widths) = Ch3Kit.Facades();
-            if (ch4) (names, widths) = Ch4Kit.Facades();
+            if (ch4) (names, widths) = ch5 ? Ch5Kit.Facades() : Ch4Kit.Facades();
             if (ch2)
             {
                 (names, widths) = Ch2Kit.Facades();
@@ -154,7 +154,7 @@ namespace CatTang
             var rnd = new System.Random(Mathf.RoundToInt(t.position.x * 17.3f + t.position.z * 5.1f) ^ 0x5bd1);
             float R(float lo, float hi) => lo + (float)rnd.NextDouble() * (hi - lo);
             // 남쪽 벽(카메라 쪽, 정면이 북쪽을 봄)은 플레이어를 가리지 않게 낮춤
-            float hMul = inward.z > 0.5f ? (ch2 ? 0.55f : ch3 ? Ch3Kit.SouthWallMul() : ch4 ? Ch4Kit.SouthWallMul() : 0.72f) : 1f;      // 2장 역 건물은 키가 커서(6~7m) 더 낮춤
+            float hMul = inward.z > 0.5f ? (ch2 ? 0.55f : ch3 ? Ch3Kit.SouthWallMul() : ch5 ? Ch5Kit.SouthWallMul() : ch4 ? Ch4Kit.SouthWallMul() : 0.72f) : 1f;      // 2장 역 건물은 키가 커서(6~7m) 더 낮춤
             float x = -len / 2;
             int last = -1;
             bool first = true;
@@ -296,7 +296,8 @@ namespace CatTang
             int n = Mathf.RoundToInt(size.x * size.y / 14f);
             var bits = GroundBits; var weights = GroundWeight;
             if (Ch3Kit.Is(ch)) { bits = Ch3Kit.GroundBits; weights = Ch3Kit.GroundWeights(); }
-            if (Ch4Kit.Is(ch)) { bits = Ch4Kit.GroundBits; weights = Ch4Kit.GroundWeights(); }   // 4장: 톱니 · 나사 · 바닥 철창   // 3장: 조약돌 · 수정 조각 · 물결
+            if (Ch4Kit.Is(ch)) { bits = Ch4Kit.GroundBits; weights = Ch4Kit.GroundWeights(); }
+            if (Ch5Kit.Is(ch)) { bits = Ch5Kit.GroundBits; weights = Ch5Kit.GroundWeights(); }   // 5장: 유리 파편 · 별가루 · 금빛 균열   // 4장: 톱니 · 나사 · 바닥 철창   // 3장: 조약돌 · 수정 조각 · 물결
             float total = 0; foreach (var w in weights) total += w;
             var holder = new GameObject("GroundBits").transform;
             holder.SetParent(root, false);

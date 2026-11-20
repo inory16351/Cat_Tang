@@ -1,0 +1,8 @@
+Revise `Art/tools/blender_kit_ch5_phantom.py` (edit only that script; same objects, names, origins, export path and preview path as `Art/tools/specs/kit_ch5_phantom_spec.md`). Re-run it with Blender headless until it prints DONE, then check the preview.
+The attached image is the approved concept of the Mirror Phantom (rightmost figure of the chapter-5 lineup). The current model reads like a round diving helmet / astronaut. Make it match the concept:
+- HOOD: a tall POINTED hood like a monk / wizard cowl — wide at the shoulders, rising to a point that bends slightly back, with a raised `gold` trim band around the face opening and a gold diamond clasp under the chin. The hood outer is `mirror` / `mirror_back` angular facets (not a smooth sphere), with a few `violet_dark` inner panels; `crack_gold` crack seams.
+- FACE: inside a deep `indigo` shadow, a flat angular DIAMOND / shield-shaped `mirror` mask (facets), two `magenta` diamond eyes, one crack line.
+- BODY: a layered capelet over the shoulders (gold-edged panels) and a long robe of vertical angular mirror plates that splits at the bottom into 5-7 long pointed shard tails of different lengths (the longest reaching down to Z 0.35); small gold star / diamond emblem on the chest.
+- HANDS: keep the two detached floating mitten hands with gold cuffs, but make them white gloves (`marble`) with a gold cuff, open palms facing up/out slightly like the concept.
+- A thin `gold` broken halo ring tilted around the hood (part of `Orbit` is fine, or add to Body) and the existing orbit shards.
+Keep the same budget (< 6000 tris), materials only from `_ch5_common.md`.

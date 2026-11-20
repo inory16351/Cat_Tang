@@ -11,6 +11,8 @@ namespace CatTang
         public float maxHp = 100;
         public float hp;
         public bool invulnerable;
+        /// <summary>체력이 이 아래로 안 내려감 (5장 보스: 체력 0 = 3페이즈 '마지막 1분' 버티기로 넘어가며 죽지 않음)</summary>
+        public float minHp;
         public bool isPlayer;
         public bool dashing;                          // 플레이어 대시 중 (저스트 회피 판정)
         public event Action<Health> OnDeath;
@@ -106,6 +108,7 @@ namespace CatTang
             if (Time.time < defDownUntil) dmg *= 1f + defDown;
             if (MarkStacks > 0) dmg *= 1f + markAmp * MarkStacks;
             hp -= dmg;
+            if (minHp > 0 && hp < minHp) hp = minHp;
             if (fromDelayed) lastDamageWasDelayed = Time.time;
             flashUntil = Time.time + 0.08f;
             if (isPlayer) { hurtUntil = Time.unscaledTime + HurtBlinkTime; Sfx.Play("player_hurt", 0.85f, 0.05f, 1); }

@@ -1,0 +1,492 @@
+[
+  {
+    "name": "FD_Saloon",
+    "triangles": 4642,
+    "dimensions_m": [
+      3.0,
+      1.4576,
+      2.704
+    ],
+    "materials": [
+      "brass",
+      "crack_gold",
+      "crystal",
+      "gold",
+      "marble_dark",
+      "mirror",
+      "starlight",
+      "void_stone",
+      "void_stone_dark",
+      "wood",
+      "wood_dark"
+    ],
+    "visible_material_fraction": 0.3597,
+    "visible_areas": {
+      "marble_dark": 1.1717,
+      "void_stone": 2.8128,
+      "void_stone_dark": 0.0826,
+      "crack_gold": 0.301,
+      "mirror": 0.0629,
+      "wood_dark": 4.6125,
+      "brass": 0.3359,
+      "wood": 2.9864,
+      "gold": 0.3725,
+      "starlight": 0.0461,
+      "crystal": 0.0378
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      1e-07,
+      -0.0,
+      -4e-07
+    ],
+    "volume_m3": 1.3784,
+    "fbx_sha256": "8227e940cac8e2d6c940f9f1ee0ae560f09e02f86f3baf5b17abe729dfefa8d6"
+  },
+  {
+    "name": "FD_Rail",
+    "triangles": 3366,
+    "dimensions_m": [
+      3.0,
+      1.4656,
+      1.6849
+    ],
+    "materials": [
+      "brass",
+      "crack_gold",
+      "iron_dark",
+      "lamp_warm",
+      "marble_dark",
+      "mirror",
+      "steel",
+      "void_stone",
+      "void_stone_dark",
+      "wood_dark"
+    ],
+    "visible_material_fraction": 0.2409,
+    "visible_areas": {
+      "marble_dark": 1.0603,
+      "void_stone": 2.6339,
+      "void_stone_dark": 0.2538,
+      "crack_gold": 0.2654,
+      "mirror": 0.0381,
+      "wood_dark": 1.8131,
+      "iron_dark": 2.322,
+      "brass": 0.4588,
+      "steel": 2.0366,
+      "lamp_warm": 0.0499
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      1e-07,
+      0.0,
+      -0.0
+    ],
+    "volume_m3": 1.0592,
+    "fbx_sha256": "ecf719f9bf5ceb0a8123ad856eb999452ad9113d69a2cd28ba9b4254f05e46c8"
+  },
+  {
+    "name": "FD_StationClock",
+    "triangles": 4610,
+    "dimensions_m": [
+      2.5296,
+      1.0946,
+      3.0
+    ],
+    "materials": [
+      "brass",
+      "crack_gold",
+      "dial_face",
+      "dial_mark",
+      "gold",
+      "gold_dark",
+      "iron_dark",
+      "marble",
+      "marble_dark",
+      "mirror",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.3131,
+    "visible_areas": {
+      "marble_dark": 1.0144,
+      "void_stone": 2.129,
+      "void_stone_dark": 0.6636,
+      "crack_gold": 0.4115,
+      "marble": 0.3254,
+      "mirror": 0.0493,
+      "dial_face": 3.7254,
+      "brass": 1.7257,
+      "gold": 0.6232,
+      "dial_mark": 0.512,
+      "iron_dark": 0.6261,
+      "gold_dark": 0.0927
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      -2e-07,
+      -0.0,
+      7e-07
+    ],
+    "volume_m3": 0.8765,
+    "fbx_sha256": "8197f102ff84393cd99935a4278221e3d285068e228fa7b54ae4412f565385b2"
+  },
+  {
+    "name": "FD_Gears",
+    "triangles": 4900,
+    "dimensions_m": [
+      3.0,
+      1.9835,
+      1.6615
+    ],
+    "materials": [
+      "brass",
+      "crack_gold",
+      "crystal",
+      "gold",
+      "gold_dark",
+      "iron_dark",
+      "marble",
+      "marble_dark",
+      "mirror",
+      "steel",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.2594,
+    "visible_areas": {
+      "marble_dark": 2.0918,
+      "void_stone": 3.7273,
+      "void_stone_dark": 0.4877,
+      "crack_gold": 0.4403,
+      "marble": 0.7263,
+      "mirror": 0.0506,
+      "brass": 1.3736,
+      "gold": 2.0619,
+      "gold_dark": 3.1274,
+      "steel": 0.1747,
+      "iron_dark": 0.07,
+      "crystal": 0.0352
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      1e-07,
+      0.0,
+      -4e-07
+    ],
+    "volume_m3": 1.4329,
+    "fbx_sha256": "ab0b91c5ddccdc482cd86077a3e2a7a24e9fa28c98ab7f16d28927c0f2333edd"
+  },
+  {
+    "name": "FD_MirrorFrame",
+    "triangles": 4900,
+    "dimensions_m": [
+      2.4574,
+      1.4653,
+      2.7
+    ],
+    "materials": [
+      "brass",
+      "crack_gold",
+      "crystal",
+      "gold",
+      "gold_dark",
+      "marble",
+      "marble_dark",
+      "mirror",
+      "mirror_back",
+      "sand",
+      "starlight",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.2208,
+    "visible_areas": {
+      "marble_dark": 1.2265,
+      "void_stone": 2.5989,
+      "void_stone_dark": 0.3099,
+      "crack_gold": 0.5617,
+      "marble": 0.3528,
+      "mirror": 1.8181,
+      "gold_dark": 1.4589,
+      "gold": 1.3463,
+      "brass": 0.841,
+      "starlight": 0.1061,
+      "crystal": 0.1194,
+      "mirror_back": 0.3739,
+      "sand": 0.6552
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      -0.0,
+      0.0,
+      2e-07
+    ],
+    "volume_m3": 0.8554,
+    "fbx_sha256": "b325978cad2164c8f8a1a1e154e1916f3077671b72b53af356001038f58dc14e"
+  },
+  {
+    "name": "FD_DesertPillar",
+    "triangles": 4822,
+    "dimensions_m": [
+      2.8,
+      1.4784,
+      2.6594
+    ],
+    "materials": [
+      "crack_gold",
+      "crystal",
+      "gold_dark",
+      "marble",
+      "marble_dark",
+      "mirror",
+      "sand",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.3367,
+    "visible_areas": {
+      "marble_dark": 1.426,
+      "void_stone": 4.8269,
+      "void_stone_dark": 0.7376,
+      "crack_gold": 0.4311,
+      "marble": 0.493,
+      "mirror": 0.1945,
+      "sand": 4.5874,
+      "gold_dark": 1.2655,
+      "crystal": 0.3735
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      1e-07,
+      -1e-07,
+      0.0
+    ],
+    "volume_m3": 2.279,
+    "fbx_sha256": "15199c1f0781912e7b30a2853da4f4b1229e69f16aed35144b2e2e50a5eb3426"
+  },
+  {
+    "name": "FD_Bell",
+    "triangles": 4900,
+    "dimensions_m": [
+      2.8,
+      1.4643,
+      2.6356
+    ],
+    "materials": [
+      "brass",
+      "crack_gold",
+      "gold",
+      "gold_dark",
+      "iron_dark",
+      "marble",
+      "marble_dark",
+      "mirror",
+      "void_stone",
+      "void_stone_dark",
+      "wood_dark"
+    ],
+    "visible_material_fraction": 0.2628,
+    "visible_areas": {
+      "marble_dark": 1.2695,
+      "void_stone": 2.9222,
+      "void_stone_dark": 0.4612,
+      "crack_gold": 0.5107,
+      "marble": 0.4955,
+      "mirror": 0.0563,
+      "brass": 1.7731,
+      "gold": 1.81,
+      "gold_dark": 0.05,
+      "iron_dark": 0.3332,
+      "wood_dark": 1.4393
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      1e-07,
+      -1e-07,
+      1e-07
+    ],
+    "volume_m3": 1.2281,
+    "fbx_sha256": "8f250964a4b52b2dd5313346e86226780d11723c222e9137b962ae48b6b6d58f"
+  },
+  {
+    "name": "FD_Island",
+    "triangles": 4900,
+    "dimensions_m": [
+      3.0,
+      2.0909,
+      1.2608
+    ],
+    "materials": [
+      "crack_gold",
+      "gold",
+      "gold_dark",
+      "marble",
+      "marble_dark",
+      "mirror",
+      "starlight",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.4619,
+    "visible_areas": {
+      "marble_dark": 2.6593,
+      "void_stone": 5.1466,
+      "void_stone_dark": 1.2445,
+      "crack_gold": 0.4355,
+      "mirror": 0.0655,
+      "marble": 1.2211,
+      "gold_dark": 0.192,
+      "gold": 0.0854,
+      "starlight": 0.0925
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      1e-07,
+      -0.0,
+      -0.0
+    ],
+    "volume_m3": 1.826,
+    "fbx_sha256": "53ce2b7be351a18444d9de0a49d3a9ac9f93aa006a91f4587c818233b78de2f0"
+  },
+  {
+    "name": "BA_DialRing",
+    "triangles": 11898,
+    "dimensions_m": [
+      41.9975,
+      41.9938,
+      0.9341
+    ],
+    "materials": [
+      "crack_gold",
+      "dial_mark",
+      "gold",
+      "gold_dark",
+      "marble",
+      "marble_dark",
+      "starlight",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.4987,
+    "visible_areas": {
+      "void_stone_dark": 2046.863,
+      "marble_dark": 321.8277,
+      "marble": 860.4775,
+      "void_stone": 743.1382,
+      "gold": 64.4962,
+      "gold_dark": 24.5515,
+      "crack_gold": 16.2048,
+      "dial_mark": 23.9738,
+      "starlight": 2.9221
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "ground datum at disc centre",
+    "volume_centroid": [
+      -0.0555223,
+      -0.0563562,
+      -0.0455042
+    ],
+    "volume_m3": 48.4156,
+    "fbx_sha256": "d58efbb4c3325d946214e792aa58b315fc7211a0a0688dac59b2708574b3a280"
+  },
+  {
+    "name": "BA_HandSpire",
+    "triangles": 4662,
+    "dimensions_m": [
+      5.2085,
+      1.7209,
+      8.0027
+    ],
+    "materials": [
+      "crack_gold",
+      "gold",
+      "gold_dark",
+      "iron_dark",
+      "marble_dark",
+      "steel",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.2953,
+    "visible_areas": {
+      "void_stone_dark": 2.5253,
+      "gold_dark": 5.6076,
+      "gold": 2.9228,
+      "crack_gold": 0.4479,
+      "steel": 0.2984,
+      "marble_dark": 1.2732,
+      "void_stone": 3.6779,
+      "iron_dark": 2.2396
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "ground entry point",
+    "volume_centroid": [
+      1.6474882,
+      -0.191826,
+      3.2565105
+    ],
+    "volume_m3": 2.796,
+    "fbx_sha256": "e4bd24be2d243ea3bc092feab64ad48756f41312c49b1e6513f164bb88d40213"
+  },
+  {
+    "name": "BA_FloatingNumeral",
+    "triangles": 2950,
+    "dimensions_m": [
+      2.5,
+      1.4308,
+      0.9931
+    ],
+    "materials": [
+      "crack_gold",
+      "crystal",
+      "gold",
+      "gold_dark",
+      "marble",
+      "marble_dark",
+      "mirror",
+      "void_stone",
+      "void_stone_dark"
+    ],
+    "visible_material_fraction": 0.3425,
+    "visible_areas": {
+      "marble_dark": 0.9048,
+      "void_stone": 2.5783,
+      "void_stone_dark": 0.0867,
+      "crack_gold": 0.3056,
+      "mirror": 0.1137,
+      "marble": 2.9139,
+      "gold": 1.2656,
+      "gold_dark": 0.2834,
+      "crystal": 0.0563
+    },
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "origin_rule": "volume-weighted centre of mass",
+    "volume_centroid": [
+      -0.0,
+      -0.0,
+      -2e-07
+    ],
+    "volume_m3": 0.9477,
+    "fbx_sha256": "6757ee7715697e488d67cb794b882126c0a5830a7830e828b9af12d69d889d54"
+  }
+]

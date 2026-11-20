@@ -15,6 +15,18 @@ namespace CatTang
         public static bool On => EnemyProjectile.Ch4;
 
         static Material stripMat;
+        static Material stripMat5;
+        /// <summary>5장 자홍 리본 꼬리 (블렌더 bk_c5strip). 없으면 4장 띠</summary>
+        public static Material StripMat5()
+        {
+            if (stripMat5) return stripMat5;
+            var tex = Resources.Load<Texture2D>("FX/anim/bk_c5strip_0");
+            if (!tex) return StripMat();
+            var sh = Shader.Find("CatTang/Sprite") ?? Shader.Find("Sprites/Default");
+            stripMat5 = new Material(sh) { mainTexture = tex, renderQueue = 3003 };
+            return stripMat5;
+        }
+
         public static Material StripMat()
         {
             if (stripMat) return stripMat;
@@ -32,10 +44,13 @@ namespace CatTang
         }
 
         /// <summary>길이 방향 색 (머리 → 꼬리): 머리 흰빛 그대로, 꼬리로 갈수록 붉고 옅어짐 — 끝은 리본 꼬리 모양이 남을 만큼만 옅게</summary>
-        public static Gradient TailGradient()
+        public static Gradient TailGradient() => TailGradient(new Color(0.85f, 0.25f, 0.28f));
+
+        /// <summary>흰 심지 → tail 색 꼬리 (5장 거울 고양이 = 자홍)</summary>
+        public static Gradient TailGradient(Color tail)
         {
             var g = new Gradient();
-            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(1f, 0.55f, 0.55f), 0.6f), new GradientColorKey(new Color(0.85f, 0.25f, 0.28f), 1f) },
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.Lerp(Color.white, tail, 0.6f), 0.6f), new GradientColorKey(tail, 1f) },
                       new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.9f, 0.6f), new GradientAlphaKey(0.55f, 1f) });
             return g;
         }
@@ -120,10 +135,17 @@ namespace CatTang
         bool wasOn;
         public const float TrailTime = 0.22f, RetractTime = 0.16f;
 
-        public static EyeTrail Attach(Enemy e)
+        Color? tint;
+        float eyeY = -1f, eyeFwd = -1f, eyeGap = -1f;
+
+        public static EyeTrail Attach(Enemy e) => Attach(e, null);
+
+        /// <summary>tint = 꼬리 색 (없으면 4장 빨강). 눈 자리를 알면 y · fwd · gap(몸 기준 m)으로 직접 (2등신 고양이처럼 머리가 큰 몸)</summary>
+        public static EyeTrail Attach(Enemy e, Color? tint, float y = -1f, float fwd = -1f, float gap = -1f)
         {
             if (!e || e.GetComponent<EyeTrail>()) return null;
             var t = e.gameObject.AddComponent<EyeTrail>();
+            t.tint = tint; t.eyeY = y; t.eyeFwd = fwd; t.eyeGap = gap;
             t.Build(e);
             return t;
         }
@@ -139,6 +161,9 @@ namespace CatTang
                 h = b.max.y - transform.position.y; r = Mathf.Max(b.extents.x, b.extents.z);
             }
             float y = Mathf.Max(0.8f, h * 0.84f), fwd = Mathf.Clamp(r * 0.35f, 0.15f, 0.6f), gap = Mathf.Clamp(h * 0.06f, 0.07f, 0.25f);
+            if (eyeY > 0) y = eyeY;
+            if (eyeFwd > 0) fwd = eyeFwd;
+            if (eyeGap > 0) gap = eyeGap;
             trails = new TrailRenderer[2]; eyes = new Transform[2];
             for (int i = 0; i < 2; i++)
             {
@@ -146,7 +171,7 @@ namespace CatTang
                 go.transform.SetParent(transform, false);
                 go.transform.localPosition = new Vector3(i == 0 ? -gap : gap, y, fwd);
                 var tr = go.AddComponent<TrailRenderer>();
-                tr.sharedMaterial = LaserFx.StripMat();
+                tr.sharedMaterial = tint.HasValue ? LaserFx.StripMat5() : LaserFx.StripMat();
                 tr.textureMode = LineTextureMode.Stretch;
                 tr.time = 0.001f;
                 tr.minVertexDistance = 0.08f;
@@ -155,7 +180,7 @@ namespace CatTang
                 tr.numCapVertices = 2;
                 tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 tr.receiveShadows = false;
-                tr.colorGradient = LaserFx.TailGradient();
+                tr.colorGradient = tint.HasValue ? LaserFx.TailGradient(tint.Value) : LaserFx.TailGradient();
                 tr.emitting = true;                     // 끄지 않음: 끄면 다음 점에서 폭이 0으로 뚝 끊김 (Unity 동작) → 대신 time을 줄여 꼬리가 눈으로 빨려 들어감
                 trails[i] = tr; eyes[i] = go.transform; prevEye[i] = go.transform.position;
             }

@@ -1,0 +1,2376 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1f39c-9405-7a71-85eb-ef0a08f8e333
+--------
+user
+You are writing ONE Blender 5.x Python script: `Art/tools/blender_kit_ch5_landmarks.py` (create this file; do not edit any other file).
+It runs headless: `"C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch5_landmarks.py`
+After writing it, RUN it once with that command and fix errors until it exports every piece. Then look at the preview PNG and fix anything that reads badly.
+Read `Art/tools/specs/_ch5_common.md` first (setting, palette, material names, richness rules, coordinates, export settings). Use `Art/tools/blender_kit_ch4_landmarks.py` as the style reference (helpers, bevel, export).
+
+## Goal
+LANDMARKS for chapter-5 combat rooms (the collapsing time prison). The game places 1-3 of these big set pieces per room near corners or inside the room so the room is not a plain rectangle; players walk around them and they block bullets. Seen from a top-down camera ~55 deg, so the TOP and the silhouette must read; they are BIG solid blockers (the footprint must be mostly filled at the base so nothing walks through; floating fragments ABOVE the base are welcome).
+Each piece: ONE joined mesh named exactly as listed, origin at the BOTTOM CENTRE, +Y front, exported to `Game/Assets/Art/Characters/Ch5/Kit_<Name>.fbx`. 6-8 role materials each, rich carving, `crack_gold` cracks, up to ~8000 triangles each.
+
+## Pieces (footprint W (X) x D (Y) x H (Z), metres)
+1. `LM_MirrorMonolith` (3.0 x 2.4 x 4.6) - a huge cracked obelisk of mirror: a tapering four-sided `mirror` slab in a `gold` edge frame on a stepped `marble` / `marble_dark` plinth (3.0 x 2.4 x 0.6); a big impact crack in the front with radial `crack_gold` ridges; its tip broken off and hovering 0.5 m above, rotated; 6 shards orbiting at different heights (joined); `violet` runes (raised star marks) on the plinth.
+2. `LM_SaloonFragment` (4.6 x 3.0 x 3.6) - a memory of chapter 1: the crooked front corner of a western saloon (`wood` plank walls, `wood_dark` posts, a swinging double door half, a `cloth` faded sign board with a raised star) sunk diagonally into a mound of `void_stone` rock; the roof edge broken with planks floating above; `crack_gold` cracks run through the wood; a `lamp_warm` lantern hanging crooked.
+3. `LM_TrainFragment` (5.4 x 2.6 x 3.0) - a memory of chapter 2: the front half of an old locomotive / passenger car sliced off at a clean diagonal plane, half sunk into the floor at a tilt: `iron_dark` body, `red_lacquer` stripe, `steel` wheels half-buried, `brass` lamp, round windows of `mirror`; the cut face shows a glowing `crack_gold` cross-section edge; two rail segments (`steel`) floating bent above.
+4. `LM_ClockHeart` (4.4 x 4.4 x 4.0) - a memory of chapter 4: a giant broken clock core on a round `violet_dark` dais (diameter 4.4, 0.5 high, `gold` rim with tick marks): a tilted half dial (`dial_face`, `dial_mark` numerals, `gold` bezel) rising out of it, two big gears (`gold`, `brass`) — one lying, one standing and cracked in half with the halves drifting apart — and a pendulum bob (`gold_dark`) hovering, `starlight` bits in the cracks.
+5. `LM_Hourglass` (2.8 x 2.8 x 4.4) - a giant hourglass, cracked: `gold` top and bottom plates with `violet` inlays and `gold_dark` turned posts (4), two `crystal` glass bulbs (faceted, low-poly, slightly translucent-looking colour), violet `sand` piled in the lower bulb and a frozen stream in the neck, a crack across the upper bulb with 3 glass shards hovering out, `marble` base slab.
+6. `LM_DesertShard` (4.0 x 3.0 x 3.4) - a memory of chapter 3: a leaning sandstone arch fragment (`sand`, with `void_stone` core where broken) with a huge `mirror` shard stuck through it, `crystal` clusters at the foot, a small sand dune (`sand`) mound, floating sand chunks above.
+
+Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE`.
+Preview: all pieces in a row at their real sizes, 1800x1000, Workbench flat MATERIAL colours (distinct viewport colour per material name), camera ~55 deg from above-front, to `Art/tools/specs/blender_kit_ch5_landmarks_preview.png`.
+
+codex
+I’ll read the chapter 5 spec and chapter 4 reference, build the six landmarks, then run Blender and inspect the preview.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/specs/_ch5_common.md' in C:\Project\Cat_Tang
+ succeeded in 355ms:
+## Common rules (chapter 5 "The Collapsing End of Time" = the time prison, final chapter)
+Setting: a dreamlike, COLLAPSING space at the end of time (top-down cel-shaded roguelite, camera ~55 deg looking down, objects read at small size).
+The whole map is a warped, shattered space: a deep indigo-violet starry VOID, the ground and walls cracked like a broken MIRROR, with GOLD light leaking out of every crack and white starlight. Fragments of the previous chapters float and lie around, twisted and re-coloured violet/gold: a Wild-West town (wooden saloon planks, powder kegs), a train station (iron rails, luggage trunks, station clocks), a mirror desert (mirror shards, sandstone, crystal), a clock tower (gears, pendulums, dials). Motif: "COLLAPSE" ??things are breaking apart, pieces hover slightly detached with gaps, gold cracks run through everything. Mood: grand, eerie, final, beautiful.
+Stages fall from the outside to the centre: S1 shattered mirror threshold ??S2 jumbled memory corridor (mixed fragments of chapters 1-4) ??S3 drifting debris islands ??S4 collapsing clock heart. Boss arena = centre of the time prison.
+Colours (the game recolors by material name): VIOLET + GOLD COSMOS ??deep navy-violet void, purple/lilac stone, bright gold cracks and trims, white starlight, silver-blue mirror. Enemy accents are MAGENTA. Warm only for the merchant. Give every piece clearly separated dark and light parts.
+Signature accent: GOLD CRACKS (inset seams / lightning-shaped grooves filled with `crack_gold`), MIRROR SHARDS (flat angular facets in `mirror`), floating DETACHED CHUNKS (a piece broken off and hovering 0.1-0.4 m away from where it belongs ??joined into the same mesh object), star dust. Chunky silhouettes, slightly hand-made irregularity (seeded random per piece, `random.seed(<fixed>)`). BEVEL modifier (0.02-0.05, 2 segments, angle limit, clamp overlap) on hard parts.
+
+### Richness (the user wants high-end, not flat single-color objects)
+- Every piece uses AT LEAST 4 role materials (walls / landmarks 6-8); no single material covers more than ~55% of the visible surface. Break big surfaces into bands, panels, insets and trims.
+- Carve: stacked moldings, recessed panels, inlaid star / constellation patterns, relief clock dials, gold crack seams, faceted shard clusters, chamfered edges everywhere.
+- No detail thinner than ~0.04 m, no micro noise. Budgets: props up to ~5000 tris, walls / landmarks / merchant up to ~8000.
+
+### Materials - ALL GREY, named by ROLE
+Every material is a flat Principled BSDF with base color (0.5, 0.5, 0.5), NO textures. The game recolors by material NAME, so use exactly these names (pick what you need, do not invent others):
+`void_stone` (violet-grey stone), `void_stone_dark`, `marble` (pale lilac-white), `marble_dark`, `violet`, `violet_dark`, `indigo` (deep navy-violet), `night_sky` (starry void backdrop panels), `starlight` (small glowing star bits), `crack_gold` (glowing gold crack fill), `gold`, `gold_dark`, `mirror` (silver-blue mirror face), `mirror_back`, `crystal` (violet crystal), `magenta` (enemy accent / gem), `wood`, `wood_dark` (ch1 western remnants), `iron`, `iron_dark`, `steel` (ch2 station remnants), `brass`, `dial_face`, `dial_mark` (ch4 clock remnants), `sand` (ch3 desert remnants), `red_lacquer`, `cloth` (banners, rags), `lamp_warm`, `porcelain`, `velvet`.
+
+### Coordinates / export
+Blender Z-up, +Y is the FRONT (the face the player sees / the room-facing side), origin at the bottom center of each piece (unless the piece says otherwise).
+Each piece = ONE joined mesh object named exactly as listed (unless the piece says it has several objects), exported to its own FBX `Game/Assets/Art/Characters/Ch5/Kit_<Name>.fbx` with
+`axis_forward='-Z', axis_up='Y', apply_scale_options='FBX_SCALE_UNITS', bake_space_transform=True, object_types={'MESH'}, use_mesh_modifiers=True, mesh_smooth_type='FACE', add_leaf_bones=False, bake_anim=False`.
+Recalc normals outward. Clear the scene between pieces (or export selected only). No cameras/lights. Print `EXPORTED <Name> <tris> <dims>` per piece and `DONE` at the end. Create the folder `Game/Assets/Art/Characters/Ch5/` if missing.
+Use `Art/tools/blender_kit_ch4_props.py` as a reference for setup / bevel / export style. Short Korean header comment at the top of the script (what it makes, how to run).
+Finally render ONE preview PNG of all pieces laid out in a grid (Workbench engine, flat MATERIAL color with a distinct viewport color per material name so pieces are readable ??use violet/gold/silver-ish preview colours close to the game palette, camera ~55 deg from above-front, 1800x1000) to `Art/tools/specs/<script name without .py>_preview.png`. The preview is only for review; it must not change the exported FBX files.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content Art/tools/blender_kit_ch4_landmarks.py' in C:\Project\Cat_Tang
+ succeeded in 363ms:
+# ?쒓퀎???꾪닾諛⑹쓽 ????꾪룓臾?5醫낃낵 寃?좎슜 誘몃━蹂닿린瑜?留뚮벊?덈떎.
+# ?ㅽ뻾: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch4_landmarks.py
+"""Standalone, deterministic Blender 5.x landmark kit. Metres; +Y front.
+
+Only the five FBXs and the review PNG are written. Export shaders stay grey;
+the review palette is applied only AFTER export and restored after rendering.
+The cabinet needs ten roles to honour its explicit component material list.
+"""
+import math
+import random
+from pathlib import Path
+
+import bmesh
+import bpy
+from mathutils import Euler, Matrix, Vector
+
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4'
+PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_landmarks_preview.png'
+TAU = math.tau
+FRONT = (math.pi / 2, 0, 0)
+MATS, PARTS = {}, []
+# Desaturated review swatches: silver/black contrast, with red accents only.
+PALETTE = {
+    'steel': (.42, .49, .56), 'iron': (.23, .26, .30),
+    'iron_dark': (.012, .018, .026), 'silver': (.80, .86, .91),
+    'brass': (.58, .60, .62), 'brass_dark': (.27, .29, .32),
+    'gold': (.82, .81, .75), 'copper': (.30, .28, .27),
+    'red_lacquer': (.72, .025, .045), 'wood': (.22, .21, .20),
+    'wood_dark': (.035, .03, .028), 'stone': (.49, .51, .54),
+    'stone_dark': (.20, .22, .25), 'dial_face': (.91, .92, .90),
+    'dial_mark': (.025, .03, .038), 'glass': (.24, .34, .39),
+    'starlight': (.91, .96, 1.0), 'ribbon_red': (.82, .035, .06),
+    'velvet': (.135, .12, .15),
+}
+
+
+def materials():
+    for role in PALETTE:
+        mat = bpy.data.materials.new(role)
+        mat.use_nodes = True
+        mat.diffuse_color = (.5, .5, .5, 1)
+        bsdf = mat.node_tree.nodes.get('Principled BSDF')
+        bsdf.inputs['Base Color'].default_value = (.5, .5, .5, 1)
+        bsdf.inputs['Metallic'].default_value = 0
+        bsdf.inputs['Roughness'].default_value = .8
+        MATS[role] = mat
+
+
+def mesh(label, verts, faces, role, bevel=False):
+    data = bpy.data.meshes.new(label)
+    data.from_pydata(verts, [], faces)
+    data.update()
+    obj = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(obj)
+    data.materials.append(MATS[role])
+    if bevel:
+        mod = obj.modifiers.new('Worn 3cm chamfer', 'BEVEL')
+        mod.width, mod.segments = .03, 2
+        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(70)
+        mod.use_clamp_overlap = True
+    PARTS.append(obj)
+    return obj
+
+
+def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
+    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
+    return obj
+
+
+def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
+    x, y, z = (s / 2 for s in size)
+    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
+         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
+    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
+    return place(mesh(label, v, f, role, bevel), loc, rot)
+
+
+def cylinder(label, loc, radius, depth, role, n=24, rot=(0,0,0), bevel=False):
+    v = [(radius*math.cos(TAU*j/n), radius*math.sin(TAU*j/n), z)
+         for z in (-depth/2, depth/2) for j in range(n)]
+    f = [tuple(reversed(range(n))), tuple(range(n,2*n))]
+    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
+    return place(mesh(label,v,f,role,bevel),loc,rot)
+
+
+def lathe(label, profile, role, n=32, loc=(0,0,0), rot=(0,0,0), bevel=False):
+    v = [(r*math.cos(TAU*j/n),r*math.sin(TAU*j/n),z)
+         for r,z in profile for j in range(n)]
+    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
+          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
+    return place(mesh(label,v,f,role,bevel),loc,rot)
+
+
+def ring(label, radius, width, z, height, role, n=32, loc=(0,0,0), rot=(0,0,0)):
+    return lathe(label,[(radius-width,z),(radius,z),(radius,z+height),
+                        (radius-width,z+height)],role,n,loc,rot)
+
+
+def gear(label, root, tip, hole, depth, teeth, role, loc=(0,0,0), rot=(0,0,0)):
+    """Closed annulus with broad square teeth; spokes are separate closed solids."""
+    contour=[]
+    half=tip*math.sin(math.pi/teeth)*.44
+    for j in range(teeth):
+        a=TAU*j/teeth
+        for r,t in ((root,-half),(tip,-half),(tip,half),(root,half)):
+            contour.append((r*math.cos(a)-t*math.sin(a),r*math.sin(a)+t*math.cos(a)))
+    n=len(contour)
+    inner=[(hole*math.cos(math.atan2(y,x)),hole*math.sin(math.atan2(y,x))) for x,y in contour]
+    v=[(x,y,z) for z,curve in ((-depth/2,contour),(depth/2,contour),
+                              (depth/2,inner),(-depth/2,inner)) for x,y in curve]
+    f=[(k*n+j,k*n+(j+1)%n,((k+1)%4)*n+(j+1)%n,((k+1)%4)*n+j)
+       for k in range(4) for j in range(n)]
+    return place(mesh(label,v,f,role),loc,rot)
+
+
+def tube(label, points, radius, role, n=6):
+    v=[]
+    for i,p in enumerate(points):
+        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
+        ref=Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
+        u=ref.cross(t).normalized(); w=t.cross(u)
+        v += [tuple(Vector(p)+radius*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w)) for j in range(n)]
+    f=[tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
+    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
+          for i in range(len(points)-1) for j in range(n)]
+    return mesh(label,v,f,role)
+
+
+def ribbon(label, points, height, thickness, role):
+    v=[]
+    for i,p in enumerate(points):
+        t=(Vector(points[min(i+1,len(points)-1)])-Vector(points[max(0,i-1)])).normalized()
+        side=Vector((-t.y,t.x,0)).normalized()
+        for s,z in ((-1,-1),(1,-1),(1,1),(-1,1)):
+            v.append(tuple(Vector(p)+side*s*thickness/2+Vector((0,0,z*height/2))))
+    f=[(3,2,1,0),tuple(range(len(v)-4,len(v)))]
+    f += [(4*i+j,4*i+(j+1)%4,4*(i+1)+(j+1)%4,4*(i+1)+j)
+          for i in range(len(points)-1) for j in range(4)]
+    return mesh(label,v,f,role)
+
+
+def beam(label, a, b, width, depth, role, bevel=True):
+    delta=Vector(b)-Vector(a)
+    obj=box(label,(0,0,0),(width,depth,delta.length),role,bevel=bevel)
+    obj.data.transform(Matrix.Translation((Vector(a)+Vector(b))/2) @ delta.to_track_quat('Z','Y').to_matrix().to_4x4())
+    return obj
+
+
+def extrude_front(label, outline, y_back, y_front, role, bevel=False):
+    """Extrude an X/Z polygon into a closed slab."""
+    n=len(outline)
+    v=[(x,y,z) for y in (y_back,y_front) for x,z in outline]
+    f=[tuple(reversed(range(n))),tuple(range(n,2*n))]
+    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
+    return mesh(label,v,f,role,bevel)
+
+
+def rivet(loc, role='silver', radius=.055, rot=(0,0,0)):
+    return cylinder('Broad octagonal rivet',loc,radius,.05,role,n=8,rot=rot)
+
+
+def spoked_gear(radius, z, role, teeth=24, loc=(0,0,0), rot=(0,0,0), spoke_role='iron'):
+    start=len(PARTS)
+    gear('Cast square gear teeth',radius*.89,radius,radius*.67,.25,teeth,role,loc=(0,0,z))
+    ring('Raised gear cheek',radius*.88,.10,z+.125,.045,'silver' if role=='steel' else 'brass_dark',n=40)
+    for j in range(6):
+        a=TAU*j/6
+        box('Six thick cast spokes',(.47*radius*math.cos(a),.47*radius*math.sin(a),z),
+            (.93*radius,.17,.22),spoke_role,rot=(0,0,a),bevel=False)
+        rivet((.77*radius*math.cos(a),.77*radius*math.sin(a),z+.19),radius=.045)
+    cylinder('Stepped gear hub',(0,0,z),.26*radius,.37,role,n=20,bevel=True)
+    cylinder('Silver axle cap',(0,0,z+.23),.17*radius,.10,'silver',n=12,bevel=True)
+    cylinder('Hexagonal axle recess',(0,0,z+.29),.075*radius,.035,spoke_role,n=6)
+    for obj in PARTS[start:]: place(obj,loc,rot)
+
+
+def roman(text, loc, height=.30, stroke=.05, angle=0):
+    """Actual I/V/X numerals made of raised solid bars, never font objects."""
+    start=len(PARTS)
+    pitch=height*.42
+    for k,symbol in enumerate(text):
+        x=(k-(len(text)-1)/2)*pitch
+        if symbol=='I':
+            box('Raised Roman I',(x,0,0),(stroke,.055,height),'dial_mark',bevel=False)
+        else:
+            for s in (-1,1):
+                tilt=s*(.37 if symbol=='V' else .43)
+                offset=s*height*.095 if symbol=='V' else 0
+                box('Raised Roman '+symbol,(x+offset,0,0),(stroke,.055,height),
+                    'dial_mark',rot=(0,tilt,0),bevel=False)
+    for obj in PARTS[start:]: place(obj,loc,(0,angle,0))
+
+
+def clockwork():
+    # The full 5 x 4 x .8 foundation is a real solid, not a collision proxy.
+    box('Unbroken movement foundation',(0,0,.4),(5,4,.8),'iron_dark')
+    box('Lower machined steel course',(0,0,.13),(4.94,3.94,.18),'steel')
+    box('Movement top plate',(0,0,.78),(4.84,3.84,.10),'brass_dark')
+    for y in (-1.91,1.91):
+        for x in (-1.65,0,1.65):
+            box('Inset foundation armor panel',(x,y,.46),(1.44,.10,.40),'steel')
+            box('Dark recessed panel centre',(x,y*1.025,.46),(1.16,.035,.20),'iron_dark',bevel=False)
+            for dx in (-.62,.62): rivet((x+dx,y*1.028,.46),'red_lacquer',.06,FRONT)
+    for x in (-2.43,2.43):
+        for y in (-1.25,0,1.25):
+            box('Side armor panels',(x,y,.45),(.08,1.14,.43),'steel')
+            rivet((x,y,.83),'silver',.065)
+    for x in (-2.15,2.15):
+        for y in (-1.62,1.62): rivet((x,y,.88),'red_lacquer',.085)
+    # Both wheels share the tilted gear plane, with centres one pitch sum apart.
+    tilt=(math.radians(20),0,0)
+    centre=Vector((-.70,.05,1.67))
+    spoked_gear(1.595,0,'brass',26,centre,tilt,'iron_dark')
+    offset=Euler(tilt).to_matrix() @ Vector((2.12,.19,0))
+    spoked_gear(.70,0,'steel',12,centre+offset,tilt,'iron_dark')
+    for x,y,h in ((-.70,.05,1.5),(1.42,.24,1.52)):
+        cylinder('Solid iron bearing pedestal',(x,y,(h+.8)/2),.29,h-.8,'iron',n=16)
+    # Visible spring on the opposite/front side of the machinery.
+    drum=(1.27,1.04,0)
+    cylinder('Mainspring drum body',(drum[0],drum[1],1.18),.68,.69,'brass_dark',n=32,bevel=True)
+    for z in (.88,1.47): ring('Drum rolled steel rim',.71,.10,z,.10,'steel',n=32,loc=drum)
+    pts=[]
+    for j in range(109):
+        t=j/108; a=t*TAU*3.4; r=.12+.46*t
+        pts.append((drum[0]+r*math.cos(a),drum[1]+r*math.sin(a),1.62))
+    ribbon('Open coiled flat mainspring',pts,.19,.05,'steel')
+    cylinder('Spring arbor',(drum[0],drum[1],1.71),.10,.22,'silver',n=12)
+    # Broad, forked escapement silhouette rises above the tilted wheel.
+    cylinder('Escapement bearing',(-.3,-1.12,1.46),.24,1.30,'brass_dark',n=16)
+    anchor=[(-1.31,2.34),(-1.15,2.62),(-.49,2.88),(-.37,3.20),
+            (-.19,3.20),(-.08,2.88),(.65,2.65),(.87,2.33),
+            (.65,2.25),(.48,2.48),(-.28,2.68),(-1.04,2.43),(-1.10,2.25)]
+    extrude_front('Silver escapement anchor',anchor,-1.18,-.98,'silver',True)
+    cylinder('Anchor dark pivot',(-.28,-.94,2.76),.15,.10,'iron_dark',n=16,rot=FRONT)
+    for x,z in ((-1.16,2.34),(.72,2.35),(-.28,2.76)):
+        rivet((x,-.87,z),'red_lacquer',.07,FRONT)
+
+
+def pendulum_case():
+    # All ten roles below are explicitly requested for this particular piece.
+    box('Wide solid stone plinth',(0,0,.13),(3.6,2.6,.26),'stone_dark')
+    box('Stone plinth upper step',(0,0,.365),(3.34,2.35,.27),'stone_dark')
+    box('Gold plinth fillet',(0,0,.51),(3.12,2.18,.065),'gold')
+    box('Solid timber cabinet',(0,-.02,2.16),(2.68,1.93,3.26),'wood_dark')
+    for z,size,role in ((.63,(2.98,2.12,.17),'wood'),(.76,(2.88,2.04,.09),'gold'),
+                        (2.76,(2.89,2.10,.13),'wood'),(2.85,(2.95,2.14,.065),'gold'),
+                        (3.83,(3.08,2.18,.17),'wood'),(3.94,(3.22,2.27,.08),'gold')):
+        box('Stacked cabinet cornice',(0,0,z),size,role)
+    # Deeply framed side panels give the visible top and side real carving.
+    for x in (-1.36,1.36):
+        for z,h in ((1.65,1.63),(3.32,.70)):
+            box('Carved side raised panel',(x,-.02,z),(.085,1.62,h),'wood')
+            box('Recessed side field',(x*1.035,-.02,z),(.045,1.29,h-.25),'wood_dark')
+            for y in (-.53,.49): box('Side fluted panel ribs',(x*1.06,y,z),(.045,.065,h-.34),'gold',bevel=False)
+    for x in (-1.19,1.19):
+        box('Carved pilaster',(x,1.01,1.73),(.24,.19,1.91),'wood')
+        for dx in (-.065,.065): box('Pilaster flutes',(x+dx,1.12,1.73),(.04,.04,1.55),'wood_dark',bevel=False)
+        for z in (.88,2.59): box('Pilaster capital',(x,1.06,z),(.35,.25,.13),'gold')
+    box('Window velvet reveal',(0,.993,1.74),(1.94,.075,1.75),'velvet')
+    # A relief window: the neutral opaque export shader must not hide the bob.
+    # Glazing is recessed behind its mechanical relief; velvet borders remain.
+    box('Smoked glass window',(0,1.045,1.75),(1.67,.045,1.56),'glass',bevel=False)
+    for x in (-.93,.93): box('Window gold side molding',(x,1.12,1.76),(.10,.12,1.90),'gold')
+    for z in (.85,2.67): box('Window gold transom',(0,1.12,z),(1.96,.12,.10),'gold')
+    cylinder('Steel pendulum rod',(0,1.16,1.95),.055,1.38,'steel',n=10)
+    cylinder('Brass pendulum disc',(0,1.19,1.24),.48,.14,'brass',n=32,rot=FRONT,bevel=True)
+    ring('Pendulum concentric engraving',.38,.055,-.02,.04,'gold',n=32,loc=(0,1.29,1.24),rot=FRONT)
+    cylinder('Pendulum pivot boss',(0,1.31,1.24),.10,.065,'steel',n=12,rot=FRONT)
+    for x in (-.76,.76):
+        beam('Glass corner glints',(x,1.08,2.36),(x-.12,1.08,2.51),.045,.04,'gold',False)
+    # Large readable dial on the cabinet head, all geometry facing +Y.
+    cylinder('Clock gold bezel',(0,1.04,3.34),.64,.16,'gold',n=40,rot=FRONT,bevel=True)
+    cylinder('Pale relief dial',(0,1.145,3.34),.57,.055,'dial_face',n=40,rot=FRONT)
+    for j,txt in enumerate(('XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI')):
+        a=TAU*j/12
+        roman(txt,(.447*math.sin(a),1.19,3.34+.447*math.cos(a)),.135,.04,a)
+    for a,length in ((-.85,.29),(1.05,.40)):
+        box('Steel clock hand',(math.sin(a)*length/2,1.25,3.34+math.cos(a)*length/2),
+            (.055,.05,length),'steel',rot=(0,a,0),bevel=False)
+    rivet((0,1.30,3.34),'gold',.075,FRONT)
+    # A shallow broken FRONT crest, rather than a full-depth gabled roof.
+    # Its missing centre exposes the carved horizontal crown from above.
+    box('Dark flat crown deck',(0,-.11,4.005),(2.93,1.88,.07),'wood_dark')
+    for x in (-.76,.76):
+        box('Crown inset carved field',(x,-.16,4.055),(1.19,1.44,.055),'wood')
+        box('Crown recessed panel',(x,-.16,4.087),(.96,1.17,.025),'wood_dark',bevel=False)
+        for y in (-.70,.37): box('Crown panel gold binding',(x,y,4.11),(1.02,.055,.045),'gold',bevel=False)
+    outline=[(-1.43,3.99),(-1.43,4.09),(-.65,4.38),(-.39,4.33),
+             (-.42,4.13),(-.23,4.19),(-.16,4.04),(.26,4.07),
+             (.35,4.25),(.52,4.20),(.72,4.36),(1.43,4.09),(1.43,3.99)]
+    extrude_front('Broken timber pediment',outline,.83,1.02,'wood',True)
+    for s in (-1,1):
+        beam('Broken pediment gold raking molding',(s*.46,1.055,4.30),(s*1.39,1.055,4.045),.07,.07,'gold')
+    beam('Bent finial stem',(-.32,.91,4.10),(-.20,.91,4.38),.11,.12,'gold')
+    cylinder('Cracked finial lower facet',(-.20,.91,4.47),.18,.12,'gold',n=8)
+    cylinder('Shifted finial crown',(-.16,.93,4.565),.13,.07,'gold',n=8)
+    box('Black finial fracture',(-.18,1.092,4.495),(.25,.045,.045),'wood_dark',rot=(0,.15,0),bevel=False)
+    for x in (-.93,.93):
+        for z in (.85,2.67): rivet((x,1.21,z),'gold',.05,FRONT)
+
+
+def gear_stack():
+    # Octagon fills 83% of the square footprint and remains solid up to .75 m.
+    cylinder('Solid octagonal iron floor mount',(0,0,.275),2.2,.55,'iron_dark',n=8,bevel=True)
+    cylinder('Octagonal stepped mount shoulder',(0,0,.62),2.07,.19,'iron',n=8,bevel=True)
+    cylinder('Continuous dark gear backing',(0,0,.78),1.90,.28,'iron_dark',n=40)
+    for j in range(8):
+        a=TAU*j/8
+        rivet((2.02*math.cos(a),2.02*math.sin(a),.59),'silver',.085)
+    cylinder('Shared vertical iron axle',(0,0,1.55),.34,1.70,'iron',n=20,bevel=True)
+    for radius,z,role,teeth,phase in ((2.04,.97,'brass',28,0),(1.60,1.57,'steel',22,.13),
+                                      (1.16,2.17,'brass_dark',16,.26)):
+        # Recessed solid web below each set of spokes closes the blocker body.
+        cylinder('Recessed dark solid wheel web',(0,0,z-.08),radius*.72,.15,'iron_dark',n=32)
+        spoked_gear(radius,z,role,teeth,rot=(0,0,phase),spoke_role='iron')
+    cylinder('Top silver axle crown',(0,0,2.49),.28,.22,'silver',n=16,bevel=True)
+    cylinder('Crown recessed hex',(0,0,2.59),.13,.02,'iron_dark',n=6)
+    for x,y,r,lean in ((-1.38,1.32,.48,.83),(.08,1.82,.35,1.02),(1.39,.90,.40,.92)):
+        start=len(PARTS)
+        gear('Loose copper cog',r*.81,r,r*.38,.14,12,'copper')
+        for j in range(4):
+            a=TAU*j/4
+            box('Loose cog spoke',(.48*r*math.cos(a),.48*r*math.sin(a),0),(.85*r,.10,.12),
+                'copper',rot=(0,0,a),bevel=False)
+        cylinder('Loose silver cog hub',(0,0,.09),r*.20,.08,'silver',n=12)
+        for obj in PARTS[start:]: place(obj,(x,y,.61+r*.4),(lean,.20,.3))
+
+
+def bell_frame():
+    box('Full solid footing slab',(0,0,.17),(4.2,3,.34),'stone')
+    box('Upper stone footing step',(0,0,.385),(4.00,2.8,.13),'stone')
+    # Filled side buttresses join the low bell footprint; no open walk-throughs.
+    for x in (-1.60,1.60):
+        box('Stone side buttress',(x,0,.73),(.77,2.42,.60),'stone')
+        box('Solid timber sill',(x,0,1.13),(.65,2.25,.30),'wood_dark')
+        for s in (-1,1):
+            a=(x,s*1.05,.65); b=(x,s*.10,3.55)
+            beam('Heavy A-frame timber',a,b,.35,.40,'wood_dark')
+            for t in (.12,.60,.91):
+                p=Vector(a).lerp(Vector(b),t)
+                box('Iron timber binding',p,(.42,.47,.14),'iron')
+                rivet((p.x,p.y+.26,p.z),'brass',.06,FRONT)
+        box('A-frame collar beam',(x,0,2.47),(.42,1.02,.22),'wood_dark')
+        box('Front iron foot shoe',(x,1.13,.96),(.75,.12,.51),'iron')
+        for dx in (-.23,.23): rivet((x+dx,1.22,.96),'brass',.065,FRONT)
+    box('Heavy overhead crossbeam',(0,0,3.65),(4.02,.71,.49),'wood_dark')
+    for x in (-1.87,1.87):
+        box('Broad brass beam end cap',(x,0,3.65),(.24,.77,.55),'brass')
+        rivet((x,.42,3.65),'iron_dark',.10,FRONT)
+    for x in (-1.1,1.1):
+        beam('Iron diagonal knee brace',(x,0,3.39),(x*1.42,0,2.76),.14,.35,'iron')
+    box('Brass top crown rail',(0,0,3.965),(3.92,.55,.07),'brass')
+    cylinder('Iron hanging stem',(0,0,3.22),.14,.52,'iron_dark',n=16)
+    box('Bell suspension yoke',(0,0,3.33),(1.15,.43,.21),'iron')
+    lathe('Hollow cast copper bell',[(1.0,.53),(1.0,.69),(.87,.88),(.66,1.40),
+          (.53,2.31),(.45,2.67),(.29,2.86),(.14,2.93),(.11,2.82),
+          (.34,2.61),(.42,2.27),(.55,1.39),(.76,.86),(.88,.65),(.88,.53)],
+          'copper',n=40)
+    ring('Heavy brass mouth lip',1.025,.14,.50,.16,'brass',n=40)
+    ring('Bell shoulder ring',.51,.055,2.57,.10,'brass',n=32)
+    ring('Dark engraved bell tick band',.762,.045,1.08,.19,'dial_mark',n=40)
+    for z in (1.05,1.28): ring('Band edge molding',.78,.045,z,.045,'brass',n=40)
+    for j in range(20):
+        a=TAU*j/20
+        box('Bell band raised tick',(.783*math.cos(a),.783*math.sin(a),1.19),(.065,.065,.14),
+            'brass',rot=(0,0,a),bevel=False)
+    tube('Visible swung clapper',[(0,0,2.63),(0,.51,1.13),(0,.85,.68)],.075,'iron_dark',8)
+    cylinder('Clapper weight',(0,.86,.66),.18,.24,'iron_dark',n=16,bevel=True)
+    tube('Red rope tied round clapper',[(.15,.89,.76),(.15,1.04,.76),(-.14,1.06,.70),
+         (-.16,.88,.66),(.14,.88,.67),(.15,1.06,.62),(.30,1.23,.58),(.49,1.27,.52)],.047,'ribbon_red',6)
+    for s in (-1,1):
+        tube('Two short red knot tails',[(.12,1.08,.65),(.12+s*.16,1.16,.53),
+             (.12+s*.22,1.22,.47)],.045,'ribbon_red',6)
+
+
+def dial_fragment():
+    # A true 5 m radius outer edge: chord 5.2 m, embedded broken circular slab.
+    half=math.asin(2.6/5)
+    arc=[(5*math.sin(-half+2*half*j/32),-1.6+5*math.cos(-half+2*half*j/32)) for j in range(33)]
+    outline=arc+[(2.33,2.30),(2.46,1.95),(2.13,1.54),(2.27,.97),(1.89,.40),
+                 (.94,.25),(.32,.47),(-.46,.23),(-1.57,.38),(-2.09,.81),
+                 (-2.35,1.16),(-2.18,1.62),(-2.47,2.03)]
+    extrude_front('Exposed six decimetre stone core',outline,-.47,.13,'stone_dark')
+    # Inset facing reveals a dark core along both shattered edges.
+    facing=[(x*.967,.30+(z-.30)*.975) for x,z in outline]
+    extrude_front('Broken pale clock facing',facing,.13,.205,'dial_face')
+    extrude_front('Rear broken clock facing',facing,-.51,-.47,'dial_face')
+    # Two stacked arcuate moldings, separately modeled around the real circle.
+    for radius,width,y0,y1 in ((5,.12,.14,.31),(4.81,.055,.205,.28)):
+        top=[(radius*math.sin(-half+2*half*j/32),-1.6+radius*math.cos(-half+2*half*j/32)) for j in range(33)]
+        inside=[((radius-width)*math.sin(-half+2*half*j/32),-1.6+(radius-width)*math.cos(-half+2*half*j/32)) for j in reversed(range(33))]
+        extrude_front('Curved gold rim molding',top+inside,y0,y1,'gold')
+    for a,text in ((-.43,'XI'),(-.15,'XII'),(.15,'I'),(.43,'II')):
+        roman(text,(4.29*math.sin(a),.26,-1.6+4.29*math.cos(a)),.55,.085,a)
+    for j in range(25):
+        a=-half+.035+(2*half-.07)*j/24
+        box('Giant dial minute tick',(4.64*math.sin(a),.26,-1.6+4.64*math.cos(a)),
+            (.05,.055,.16 if j%5==0 else .09),'dial_mark',rot=(0,a,0),bevel=False)
+    # Real filled rubble mound; details are broad chunks rather than gravel.
+    n=16
+    verts=[(2.6*math.cos(TAU*j/n),1.2*math.sin(TAU*j/n),0) for j in range(n)]
+    verts += [(2.35*math.cos(TAU*j/n),1.03*math.sin(TAU*j/n),.32+random.random()*.18) for j in range(n)]
+    verts.append((0,0,.65))
+    faces=[tuple(reversed(range(n)))]
+    faces += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
+    faces += [(n+j,n+(j+1)%n,2*n) for j in range(n)]
+    mesh('Continuous filled rubble berm',verts,faces,'stone_dark')
+    for j in range(16):
+        a=TAU*j/16
+        x=2.05*math.cos(a); y=.77*math.sin(a)
+        size=random.uniform(.30,.60)
+        obj=box('Large broken masonry chunk',(x,y,.35+size*.25),(size,size*.80,size*.65),
+                'stone',rot=(random.uniform(-.2,.2),random.uniform(-.25,.25),random.uniform(-.7,.7)))
+        # Clamp bottoms; the filled berm joins the stones into a solid footprint.
+        for v in obj.data.vertices: v.co.z=max(.04,v.co.z)
+    for z in (1.10,1.85,2.28):
+        tube('Bent exposed rebar',[(2.05,-.04,z),(2.36,-.05,z-.13),(2.48,.02,z-.06)],.055,'iron',6)
+    tube('Deep visible dial fracture',[(-.64,.241,3.22),(-.46,.241,2.82),(-.58,.241,2.44),
+         (-.27,.241,1.91),(-.40,.241,1.43)],.032,'stone_dark',4)
+    tube('Forked fracture',[(-.58,.241,2.44),(-1.02,.241,2.26),(-1.20,.241,1.94)],.027,'stone_dark',4)
+    for x,z in ((-.48,2.76),(-.51,2.40),(-.31,1.94),(-1.04,2.21)):
+        extrude_front('Star shard in fracture',[(x-.045,z),(x,z+.10),(x+.045,z),(x,z-.10)],.25,.30,'starlight')
+    # Broad arrow-shaped minute-hand fragment leaning backwards onto the slab.
+    hand=[(-.59,.46),(-.17,.40),(.82,2.39),(.99,2.32),(1.10,2.93),
+          (.60,2.60),(.77,2.55),(-.12,.77)]
+    obj=extrude_front('Huge broken steel minute hand',hand,.47,.63,'steel',True)
+    for v in obj.data.vertices: v.co.y-=.11*(v.co.z-.4)
+    beam('Minute hand inset iron spine',(-.30,.66,.74),(.80,.42,2.56),.07,.045,'iron',False)
+    cylinder('Broken minute hand pivot',(-.34,.68,.65),.23,.11,'steel',n=20,rot=FRONT,bevel=True)
+    cylinder('Hand pivot central hole',(-.34,.75,.65),.09,.04,'iron',n=12,rot=FRONT)
+
+
+SPECS=[
+    ('LM_Clockwork',(5.0,4.0,3.2),clockwork,7),
+    ('LM_PendulumCase',(3.6,2.6,4.6),pendulum_case,10),
+    ('LM_GearStack',(4.4,4.4,2.6),gear_stack,7),
+    ('LM_BellFrame',(4.2,3.0,4.0),bell_frame,8),
+    ('LM_DialFragment',(5.2,2.4,3.4),dial_fragment,8),
+]
+
+
+def triangles(obj):
+    obj.data.calc_loop_triangles()
+    return len(obj.data.loop_triangles)
+
+
+def bounds(obj):
+    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3))) for fn in (min,max)]
+
+
+def finish(name,dims,material_count):
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in PARTS:
+        obj.select_set(True); bpy.context.view_layer.objects.active=obj
+        for mod in list(obj.modifiers): bpy.ops.object.modifier_apply(modifier=mod.name)
+        obj.select_set(False)
+    for obj in PARTS: obj.select_set(True)
+    bpy.context.view_layer.objects.active=PARTS[0]
+    bpy.ops.object.join()
+    obj=bpy.context.object; obj.name=name; obj.data.name=name+'_Mesh'
+    # Silhouette-preserving material-aware reduction only if applied bevels
+    # put the assembled mesh over budget. Never decimate a low-budget piece.
+    if triangles(obj)>8000:
+        mod=obj.modifiers.new('Preserve role boundaries under 8000 triangles','DECIMATE')
+        mod.ratio=7880/triangles(obj); mod.delimit={'MATERIAL'}
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    assert triangles(obj)<=8000,(name,triangles(obj))
+    low,high=bounds(obj); span=high-low; centre=(low+high)/2
+    # Fit specified outer bounds; the modeled features already use metres.
+    # The movement foundation itself remains the exact requested 5 x 4 x .8.
+    if name=='LM_Clockwork':
+        assert all(abs(span[i]-dims[i])<1e-4 for i in range(3)),(name,span)
+    else:
+        for v in obj.data.vertices:
+            v.co.x=(v.co.x-centre.x)*dims[0]/span.x
+            v.co.y=(v.co.y-centre.y)*dims[1]/span.y
+            v.co.z=(v.co.z-low.z)*dims[2]/span.z
+    bm=bmesh.new(); bm.from_mesh(obj.data)
+    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name
+    bm.to_mesh(obj.data); bm.free()
+    for p in obj.data.polygons: p.use_smooth=False
+    obj.data.update(); bpy.context.view_layer.update()
+    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
+    assert len(used)==material_count,(name,used)
+    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
+    low,high=bounds(obj)
+    assert abs(low.z)<1e-5 and abs(high.z-dims[2])<1e-4,(name,low,high)
+    assert abs(low.x+high.x)<1e-4 and abs(low.y+high.y)<1e-4
+    assert all(abs(obj.dimensions[i]-dims[i])<1e-4 for i in range(3))
+    assert obj.location.length<1e-8 and tuple(obj.scale)==(1,1,1)
+    for mat in obj.data.materials:
+        assert mat.name in PALETTE
+        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
+        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
+    obj['chapter']='Inside the Clockwork'; obj['front']='+Y'
+    obj['triangle_count']=triangles(obj); obj['solid_combat_blocker']=True
+    obj['origin']='Bottom centre'; obj['dimensions_m']=list(dims)
+    path=OUTPUT/f'Kit_{name}.fbx'
+    bpy.ops.export_scene.fbx(filepath=str(path),use_selection=True,
+        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
+        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
+        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
+    assert path.is_file() and path.stat().st_size>1024
+    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
+    return obj
+
+
+def preview(objects):
+    scene=bpy.context.scene
+    scene.render.engine='BLENDER_WORKBENCH'
+    scene.render.resolution_x,scene.render.resolution_y=1800,1000
+    scene.render.resolution_percentage=100
+    scene.render.image_settings.file_format='PNG'; scene.render.filepath=str(PREVIEW)
+    scene.render.film_transparent=False
+    scene.view_settings.view_transform='Standard'
+    shade=scene.display.shading
+    shade.light='FLAT'; shade.color_type='MATERIAL'
+    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
+    shade.curvature_ridge_factor=1.45; shade.curvature_valley_factor=1.20
+    shade.cavity_ridge_factor=1.3; shade.cavity_valley_factor=1.1
+    shade.show_specular_highlight=False; shade.show_object_outline=True
+    shade.background_type='WORLD'
+    if scene.world is None: scene.world=bpy.data.worlds.new('Review background')
+    scene.world.color=(.035,.042,.055)
+    helpers=[]
+    az=math.radians(18); el=math.radians(55)
+    near=Vector((math.sin(az),math.cos(az),0))
+    right=Vector((-math.cos(az),math.sin(az),0))
+    camera=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
+    scene.collection.objects.link(camera); helpers.append(camera); scene.camera=camera
+    camera.location=near*35*math.cos(el)+Vector((0,0,35*math.sin(el)))
+    camera.rotation_euler=(-camera.location).to_track_quat('-Z','Y').to_euler()
+    camera.data.type='ORTHO'; inv=camera.rotation_euler.to_matrix().transposed()
+
+    def points(obj):
+        return [inv @ (obj.matrix_world @ v.co) for v in obj.data.vertices]
+
+    def label(body,x,y,size,role='silver',align='CENTER'):
+        data=bpy.data.curves.new('Review caption','FONT')
+        data.body=body; data.size=size; data.align_x=align
+        data.materials.append(MATS[role])
+        obj=bpy.data.objects.new('Review caption',data)
+        scene.collection.objects.link(obj); helpers.append(obj)
+        obj.rotation_euler=camera.rotation_euler
+        obj.location=camera.rotation_euler.to_matrix() @ Vector((x,y,5))
+        return obj
+
+    try:
+        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
+        # Pack the real projected silhouettes with a generous .85 m gap.
+        cursor=0
+        for obj in objects:
+            bpy.context.view_layer.update()
+            pp=points(obj); lo=min(p.x for p in pp); hi=max(p.x for p in pp)
+            obj.location=right*(cursor-lo)
+            cursor+=hi-lo+.85
+        bpy.context.view_layer.update()
+        cloud=[p for obj in objects for p in points(obj)]
+        x0=min(p.x for p in cloud); x1=max(p.x for p in cloud)
+        y0=min(p.y for p in cloud); y1=max(p.y for p in cloud)
+        baseline=y0-.56
+        for obj,(_,dims,_,_) in zip(objects,SPECS):
+            pp=points(obj); x=(min(p.x for p in pp)+max(p.x for p in pp))/2
+            label(obj.name,x,baseline,.245)
+            label(f'{dims[0]:.1f} x {dims[1]:.1f} x {dims[2]:.1f} m',x,baseline-.37,.19,'brass')
+            label(f'{triangles(obj):,} tris',x,baseline-.67,.16,'steel')
+        mid=(x0+x1)/2
+        label('IV  /  INSIDE THE CLOCKWORK',mid,y1+2.02,.48)
+        label('COMBAT LANDMARKS   /   SOLID COVER   /   REAL SCALE',mid,y1+1.38,.205,'brass')
+        label('1 : 1 METRES     /     +Y FRONT     /     55 DEG ELEVATION',mid,baseline-1.53,.17,'steel')
+        bpy.context.view_layer.update()
+        cloud += [inv @ (o.matrix_world @ Vector(c)) for o in helpers if o.type=='FONT' for c in o.bound_box]
+        x0=min(p.x for p in cloud); x1=max(p.x for p in cloud)
+        y0=min(p.y for p in cloud); y1=max(p.y for p in cloud)
+        camera.location+=camera.rotation_euler.to_matrix() @ Vector(((x0+x1)/2,(y0+y1)/2,0))
+        camera.data.ortho_scale=max(x1-x0,(y1-y0)*1.8)*1.075
+        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
+        bpy.ops.render.render(write_still=True)
+        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
+        print(f'PREVIEW {PREVIEW}',flush=True)
+    finally:
+        scene.camera=None
+        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
+        for obj in objects: obj.location=(0,0,0)
+        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
+
+
+def main():
+    global PARTS
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
+    scene=bpy.context.scene
+    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
+    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
+    objects=[]
+    for i,(name,dims,build,count) in enumerate(SPECS):
+        PARTS=[]; random.seed(44051+i*7919)
+        build(); objects.append(finish(name,dims,count))
+    assert len(scene.objects)==5 and all(o.type=='MESH' for o in scene.objects)
+    preview(objects)
+    assert len(scene.objects)==5 and all(o.type=='MESH' for o in scene.objects)
+    print('DONE',flush=True)
+
+
+if __name__=='__main__':
+    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g AGENTS.md -g '*ch5*' -g '*landmark*' Art .agents .codex" in C:\Project\Cat_Tang
+ exited 1 in 1757ms:
+rg : 'rg' 용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다. 이름이 정확한지 확인하고 경로가 포함된 경우 경로가 올바른지 검증한 다음 다시 시도하십시오.
+위치 줄:2 문자:1
++ rg --files -g AGENTS.md -g '*ch5*' -g '*landmark*' Art .agents .codex
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Path . -Filter AGENTS.md -Recurse -Force | Select-Object -ExpandProperty FullName' in C:\Project\Cat_Tang
+ succeeded in 1376ms:
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git status --short; Get-ChildItem Art/tools -Filter '*ch5*'; Test-Path 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe'" in C:\Project\Cat_Tang
+ succeeded in 255ms:
+ M "docs/Cat_Tang_\353\240\210\353\262\250_\353\224\224\354\236\220\354\235\270.md"
+?? .tripo/
+?? Art/tools/specs/_ch5_common.md
+?? Art/tools/specs/kit_ch5_gates.log
+?? Art/tools/specs/kit_ch5_gates_spec.md
+?? Art/tools/specs/kit_ch5_landmarks.log
+?? Art/tools/specs/kit_ch5_landmarks_spec.md
+?? Art/tools/specs/kit_ch5_phantom.log
+?? Art/tools/specs/kit_ch5_phantom_spec.md
+?? Art/tools/specs/kit_ch5_props.log
+?? Art/tools/specs/kit_ch5_props_spec.md
+?? Art/tools/specs/kit_ch5_walls.log
+?? Art/tools/specs/kit_ch5_walls_spec.md
+?? Art/tools/specs/kit_ch5_weapons.log
+?? Art/tools/specs/kit_ch5_weapons_spec.md
+?? Art/tripo_input/ch2/.tripo/
+?? docs/.obsidian/
+?? "docs/1159_5\354\236\245_\352\270\260\355\232\215\354\204\234_20261119_\354\240\225\354\212\271\354\232\264_Ver01.pptx"
+?? docs/images/ch5/
+?? docs/tools/build_ch5_ppt.js
+?? docs/tools/node_modules/
+?? docs/tools/package-lock.json
+?? docs/tools/package.json
+True
+
+codex
+I’m keeping the base of each piece solid and concentrating the broken and floating geometry above it. I’ll use seven or eight material roles per landmark, with grey export shaders and separate preview colours.
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch5_landmarks.py
+diff --git a/Art/tools/blender_kit_ch5_landmarks.py b/Art/tools/blender_kit_ch5_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..e5749e4b8e130bdba9afdf3201266b8567439bc7
+--- /dev/null
++++ b/Art/tools/blender_kit_ch5_landmarks.py
+@@ -0,0 +1,735 @@
++# 붕괴하는 시간 감옥의 대형 엄폐물 6종과 검수용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch5_landmarks.py
++"""Deterministic Blender 5.x kit; metres, Z up, +Y front, bottom-centre origins.
++
++All components are closed solids, including detached debris. Each export is one
++mesh with seven or eight grey role materials. Review swatches are applied only
++after all exports. Broad, continuous foundations make these combat blockers.
++"""
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch5'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch5_landmarks_preview.png'
++TAU = math.tau
++FRONT = (math.pi / 2, 0, 0)
++MATS, PARTS = {}, []
++PALETTE = {
++    'mirror': (.56, .79, .92), 'mirror_back': (.16, .28, .43),
++    'marble': (.79, .74, .89), 'marble_dark': (.25, .20, .36),
++    'gold': (.94, .61, .16), 'gold_dark': (.43, .27, .10),
++    'crack_gold': (1.0, .85, .32), 'violet': (.52, .22, .79),
++    'violet_dark': (.17, .075, .29), 'starlight': (.92, .96, 1.0),
++    'wood': (.44, .30, .38), 'wood_dark': (.16, .09, .18),
++    'cloth': (.59, .43, .66), 'void_stone': (.28, .23, .43),
++    'lamp_warm': (1.0, .66, .27), 'iron_dark': (.065, .075, .15),
++    'red_lacquer': (.54, .10, .25), 'steel': (.39, .48, .63),
++    'brass': (.66, .44, .20), 'dial_face': (.85, .81, .90),
++    'dial_mark': (.12, .075, .22), 'crystal': (.54, .58, .88),
++    'sand': (.62, .43, .57),
++}
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        bsdf = mat.node_tree.nodes['Principled BSDF']
++        bsdf.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        bsdf.inputs['Metallic'].default_value = 0
++        bsdf.inputs['Roughness'].default_value = .8
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Soft 3cm carved edges', 'BEVEL')
++        mod.width, mod.segments = .03, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(60)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def group(start, loc=(0, 0, 0), rot=(0, 0, 0)):
++    for obj in PARTS[start:]:
++        place(obj, loc, rot)
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
++         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
++    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role, n=20, rot=(0,0,0), bevel=False):
++    v = [(radius*math.cos(TAU*j/n),radius*math.sin(TAU*j/n),z)
++         for z in (-depth/2,depth/2) for j in range(n)]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return place(mesh(label,v,f,role,bevel),loc,rot)
++
++
++def lathe(label, profile, role, n=20, loc=(0,0,0), rot=(0,0,0)):
++    # Closed cross-section revolved without duplicate vertices at the poles.
++    # Use a small positive bore radius in profiles, or cylinder for solid caps.
++    v = [(r*math.cos(TAU*j/n),r*math.sin(TAU*j/n),z)
++         for r,z in profile for j in range(n)]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
++          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
++    return place(mesh(label,v,f,role),loc,rot)
++
++
++def ring(label, r, w, z, h, role, n=32, loc=(0,0,0), rot=(0,0,0)):
++    return lathe(label,[(r-w,z),(r,z),(r,z+h),(r-w,z+h)],role,n,loc,rot)
++
++
++def slab(label, outline, back, front, role, bevel=False):
++    n = len(outline)
++    v = [(x,y,z) for y in (back,front) for x,z in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return mesh(label,v,f,role,bevel)
++
++
++def beam(label, a, b, width, depth, role, bevel=False):
++    d = Vector(b)-Vector(a)
++    obj = box(label,(0,0,0),(width,depth,d.length),role,bevel=bevel)
++    obj.data.transform(Matrix.Translation((Vector(a)+Vector(b))/2) @
++                       d.to_track_quat('Z','Y').to_matrix().to_4x4())
++    return obj
++
++
++def tube(label, points, r, role, n=6):
++    v = []
++    for i,p in enumerate(points):
++        t = (Vector(points[min(i+1,len(points)-1)])-
++             Vector(points[max(0,i-1)])).normalized()
++        ref = Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
++        u = ref.cross(t).normalized(); w = t.cross(u)
++        v += [tuple(Vector(p)+r*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w))
++              for j in range(n)]
++    f = [tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
++    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
++          for i in range(len(points)-1) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def star(loc, r, role, points=4, rot=(0,0,0)):
++    shape = []
++    for j in range(points*2):
++        a = TAU*j/(points*2)
++        radius = r if j%2==0 else r*.29
++        shape.append((radius*math.sin(a),radius*math.cos(a)))
++    return place(slab('Raised cosmic star',shape,-.025,.025,role),loc,rot)
++
++
++def shard(loc, width, height, role='mirror', rot=(0,0,0), thickness=.12):
++    start = len(PARTS)
++    outline = [(-width*.44,-height*.35),(width*.18,-height*.5),
++               (width*.52,height*.12),(-width*.08,height*.5)]
++    slab('Angular shard dark thickness',outline,-thickness,0,'mirror_back' if role=='mirror' else role)
++    slab('Broad shard face',[(x*.91,z*.94) for x,z in outline],0,.025,role)
++    beam('Shard light-catching edge',(-width*.40,.035,-height*.30),
++         (-width*.08,.035,height*.45),.045,.045,'gold' if role=='mirror' else 'marble')
++    group(start,loc,rot)
++
++
++def mound(label, rx, ry, h, role, loc=(0,0,0), n=14):
++    v = [(rx*math.cos(TAU*j/n),ry*math.sin(TAU*j/n),0) for j in range(n)]
++    v += [(rx*.83*math.cos(TAU*j/n),ry*.83*math.sin(TAU*j/n),h*.48)
++          for j in range(n)]
++    v += [(rx*.40*math.cos(TAU*j/n+.13),ry*.40*math.sin(TAU*j/n+.13),
++           h*(.87+random.random()*.13)) for j in range(n)]
++    v.append((0,0,h))
++    f = [tuple(reversed(range(n)))]
++    f += [(k*n+j,k*n+(j+1)%n,(k+1)*n+(j+1)%n,(k+1)*n+j)
++          for k in range(2) for j in range(n)]
++    f += [(2*n+j,2*n+(j+1)%n,3*n) for j in range(n)]
++    return place(mesh(label,v,f,role),loc)
++
++
++def roman(text, loc, height=.25, angle=0):
++    start = len(PARTS)
++    for k,symbol in enumerate(text):
++        x = (k-(len(text)-1)/2)*height*.43
++        if symbol=='I':
++            box('Raised Roman I',(x,0,0),(.05,.06,height),'dial_mark',bevel=False)
++        else:
++            for s in (-1,1):
++                box('Raised Roman '+symbol,(x+s*height*(.09 if symbol=='V' else 0),0,0),
++                    (.05,.06,height),'dial_mark',rot=(0,s*.40,0),bevel=False)
++    group(start,loc,(0,angle,0))
++
++
++def mirror_monolith():
++    box('Full marble footing',(0,0,.12),(3,2.4,.24),'marble_dark')
++    box('Pale plinth course',(0,0,.32),(2.85,2.25,.20),'marble')
++    box('Gold plinth fillet',(0,0,.435),(2.73,2.13,.07),'gold')
++    box('Upper carved marble step',(0,0,.535),(2.62,2.02,.13),'marble_dark')
++    for y in (-1.14,1.14):
++        for x in (-.99,0,.99):
++            box('Recessed violet plinth panel',(x,y,.32),(.73,.04,.13),'violet',bevel=False)
++            star((x,y+(.03 if y>0 else -.03),.32),.12,'violet')
++    for x in (-1.19,1.19):
++        star((x,.43,.614),.19,'violet',rot=(math.pi/2,0,0))
++    # Tapered four-sided prism with an irregular broken top contour.
++    outline = [(-.91,.60),(.91,.60),(.55,3.29),(.21,3.40),(-.08,3.24),(-.54,3.39)]
++    body = slab('Four sided broken mirror monolith',outline,-.51,.51,'mirror',True)
++    for v in body.data.vertices:
++        v.co.y *= 1-.35*(v.co.z-.6)/2.8
++    for s in (-1,1):
++        for t in (-1,1):
++            beam('Heavy tapered gold corner frame',(s*.91,t*.51,.64),
++                 (s*.55,t*.335,3.32),.105,.105,'gold',True)
++    box('Lower gold mirror socket',(0,0,.72),(1.93,1.12,.20),'gold')
++    slab('Oblique mirror fracture facet',[(-.79,.9),(-.07,1.96),(-.42,2.95),(-.59,2.91)],
++         .435,.464,'mirror_back')
++    # Front cracks follow the taper in depth; no ridges hidden behind the face.
++    def front_crack(points,r=.034):
++        tube('Impact gold fracture',[(x,.543-.06375*(z-.6),z) for x,z in points],r,'crack_gold')
++    centre=(-.12,1.98)
++    for chain in [
++        [centre,(-.26,2.33),(-.16,2.62),(-.32,2.90),(-.25,3.32)],
++        [centre,(.18,2.21),(.24,2.49),(.57,2.67)],
++        [centre,(.25,1.82),(.49,1.91),(.74,1.65)],
++        [centre,(-.38,1.69),(-.29,1.30),(-.52,1.04),(-.48,.81)],
++        [centre,(-.51,2.05),(-.70,2.30)],
++        [centre,(.10,1.60),(.03,1.31),(.31,1.10)],
++    ]:
++        front_crack(chain)
++    star((-.12,.49,1.98),.20,'crack_gold',points=5)
++    # Broken tip has a real half-metre air gap and an asymmetric rotated crown.
++    start=len(PARTS)
++    slab('Hovering mirror tip',[(-.51,0),(.51,.06),(.03,.67)],-.31,.31,'mirror',True)
++    for a,b in [((-.51,.34,0),(.03,.03,.67)),((.51,.34,.06),(.03,.03,.67))]:
++        beam('Broken tip golden edge',a,b,.075,.075,'gold',True)
++    beam('Tip exposed golden break',(-.50,.34,0),(.5,.34,.06),.07,.07,'crack_gold')
++    group(start,(.12,-.08,3.91),(.07,-.19,.20))
++    for i,(x,y,z,w,h) in enumerate([(-1.12,.18,1.30,.34,.65),(1.15,.14,1.90,.43,.82),
++          (-.93,-.55,2.65,.35,.69),(.83,-.38,3.40,.31,.57),
++          (-.95,.42,3.64,.26,.51),(1.10,.39,.94,.38,.49)]):
++        shard((x,y,z),w,h,rot=(.11*(i-2),.2*(-1)**i,.25*(i-2)))
++    for x,z in ((-.62,2.6),(.61,1.48),(.35,3.2)):
++        star((x,.58-.064*(z-.6),z),.065,'starlight')
++
++
++def saloon_fragment():
++    mound('Continuous solid void rock intrusion',2.3,1.5,.86,'void_stone',n=16)
++    for x,y,z,s in [(-1.9,.5,.42,.7),(1.72,.62,.38,.8),(.4,1.10,.31,.7),(-.9,-1,.4,.65)]:
++        box('Large violet memory strata',(x,y,z),(s,.55,.35),'violet',rot=(.08,.16,.3))
++    start=len(PARTS)
++    box('Buried saloon solid wall backing',(-.10,-.22,1.11),(3.54,1.40,1.24),'wood_dark')
++    # Two genuinely intersecting wall planes form a crooked front corner.
++    for j in range(9):
++        x=-1.69+j*.39
++        top=2.53+random.uniform(-.06,.10)
++        box('Vertical western facade plank',(x,.45,(top+.56)/2),(.36,.16,top-.56),'wood')
++        if j%2==0:
++            beam('Broad carved plank grain',(x-.08,.546,1.1),(x-.06,.546,2.36),.043,.035,'wood_dark')
++    for j in range(6):
++        y=-1.0+j*.29
++        box('Return wall plank',(-1.91,y,1.50),(.16,.26,1.92),'wood')
++    for x in (-1.97,1.77):
++        box('Heavy crooked corner post',(x,.47,1.58),(.25,.28,2.24),'wood_dark')
++        for z in (.71,2.46):
++            box('Post golden collar',(x,.48,z),(.30,.34,.10),'gold')
++    for z in (.8,2.5):
++        box('Thick facade beam',(-.1,.57,z),(3.88,.22,.15),'wood_dark')
++    # Dark recess and swung batwing halves read above the solid intrusion.
++    box('Deep door recess',(.13,.56,1.53),(1.46,.09,1.51),'wood_dark',bevel=False)
++    for s in (-1,1):
++        ds=len(PARTS)
++        shape=[(-.33,-.51),(.33,-.51),(.33,.43),(.13,.56),(-.11,.51),(-.33,.36)]
++        slab('Saloon swinging batwing door',shape,-.07,.07,'wood',True)
++        for x in (-.23,0,.23):
++            box('Door carved vertical ribs',(x,.09,-.05),(.045,.05,.73),'wood_dark',bevel=False)
++        for z in (-.35,.23):
++            box('Door inset cross rail',(0,.12,z),(.61,.07,.08),'gold')
++        group(ds,(.13+s*.36,.76,1.48),(0,0,s*.34))
++    # Broken roof deck: broad planks make the top legible at the game camera.
++    for j in range(9):
++        x=-1.8+j*.43
++        length=1.63-random.random()*.32
++        box('Shattered roof plank',(x,-.27,2.62),(.39,length,.14),'wood',rot=(.04,.025*(j-4),0))
++    box('Broken front cornice',(-.19,.65,2.68),(3.97,.25,.19),'wood_dark')
++    shape=[(-1.28,2.67),(-1.36,3.00),(-1.16,3.18),(-.54,3.18),(-.36,3.29),
++           (.36,3.29),(.54,3.18),(1.16,3.18),(1.36,3.00),(1.28,2.67)]
++    slab('Faded western cloth sign',shape,.66,.80,'cloth',True)
++    for z in (2.74,3.14):
++        box('Sign carved border',(0,.84,z),(2.30,.08,.065),'gold')
++    star((0,.89,2.96),.245,'gold',points=5)
++    for x in (-.77,.77):
++        box('Sign broad relief dash',(x,.865,2.96),(.47,.055,.06),'wood_dark',bevel=False)
++    for x,z in [(-1.5,2.30),(.96,1.27)]:
++        tube('Gold splitting wooden facade',[(x,.58,z+.23),(x+.13,.58,z),
++             (x+.02,.58,z-.22),(x+.19,.58,z-.43)],.035,'crack_gold')
++    tube('Gold broken roof seam',[(-1.12,-.75,2.73),(-.8,-.49,2.74),
++         (-.96,-.17,2.74),(-.54,.19,2.74)],.034,'crack_gold')
++    for j in range(3):
++        box('Floating roof splinter',(-1.16+j*.88,-.28,3.20+j*.10),(.34,.94,.12),
++            'wood',rot=(.22,-.17+j*.12,.16-j*.20))
++        box('Floating plank golden fracture',(-1.16+j*.88,.15,3.24+j*.10),(.32,.07,.07),
++            'crack_gold',rot=(0,0,.16-j*.2))
++    # Lantern includes an angular glowing body, cage and crooked suspension.
++    ls=len(PARTS)
++    cylinder('Lantern bottom',(0,0,-.32),.22,.11,'gold',n=6)
++    cylinder('Lantern light body',(0,0,0),.17,.52,'lamp_warm',n=6)
++    for j in range(4):
++        a=TAU*j/4
++        beam('Lantern cage',( .19*math.cos(a),.19*math.sin(a),-.28),
++             (.19*math.cos(a),.19*math.sin(a),.28),.055,.055,'wood_dark')
++    lathe('Lantern pitched cap',[(.06,.44),(.26,.28),(.26,.22),(.06,.26)],'gold',n=8)
++    ring('Lantern hanging loop',.13,.045,-.035,.07,'gold',n=12,loc=(0,0,.48),rot=FRONT)
++    group(ls,(1.98,.88,1.98),(.13,.22,-.12))
++    tube('Crooked lantern hanger',[(1.74,.58,2.72),(2.02,.83,2.69),(1.99,.9,2.5)],.045,'wood_dark')
++    group(start,(0,0,.02),(.035,-.095,.085))
++
++
++def train_fragment():
++    mound('Continuous burial undercarriage',2.70,1.30,.56,'void_stone',n=16)
++    start=len(PARTS)
++    box('Solid locomotive chassis',(0,0,.66),(4.90,1.92,.47),'iron_dark')
++    for y in (-1.0,1.0):
++        box('Red chassis stripe',(0,y,.79),(4.85,.12,.20),'red_lacquer')
++        box('Steel running board',(0,y,.58),(4.99,.22,.10),'steel')
++    for x in (-1.73,-.43,1.12):
++        for y in (-.99,.99):
++            cylinder('Partly buried locomotive wheel',(x,y,.55),.52,.17,'steel',n=20,rot=FRONT,bevel=True)
++            cylinder('Recessed dark wheel web',(x,y*1.10,.55),.39,.07,'iron_dark',n=20,rot=FRONT)
++            ring('Broad steel wheel tyre',.48,.085,-.03,.07,'steel',n=20,loc=(x,y*1.13,.55),rot=FRONT)
++            cylinder('Brass wheel hub',(x,y*1.18,.55),.13,.08,'brass',n=12,rot=FRONT)
++            for j in range(6):
++                a=TAU*j/6
++                beam('Broad wheel spoke',(x+.12*math.sin(a),y*1.15,.55+.12*math.cos(a)),
++                     (x+.38*math.sin(a),y*1.15,.55+.38*math.cos(a)),.065,.065,'steel')
++    cylinder('Old locomotive boiler',(-.94,0,1.38),.72,2.69,'iron_dark',n=20,rot=(0,math.pi/2,0))
++    for x in (-2.22,-1.35,-.48,.35):
++        ring('Boiler brass hoop',.744,.06,-.05,.10,'brass',n=20,loc=(x,0,1.38),rot=(0,math.pi/2,0))
++    cylinder('Smokebox front steel plate',(-2.31,0,1.38),.65,.13,'steel',n=20,rot=(0,math.pi/2,0),bevel=True)
++    cylinder('Front lamp brass casing',(-2.41,.04,1.63),.26,.21,'brass',n=16,rot=(0,math.pi/2,0))
++    cylinder('Front lamp mirror lens',(-2.53,.04,1.63),.19,.055,'mirror',n=12,rot=(0,math.pi/2,0))
++    lathe('Flared locomotive smokestack',[(.13,1.8),(.22,1.8),(.22,2.36),(.34,2.61),
++          (.34,2.72),(.14,2.72)],'iron_dark',n=12,loc=(-1.52,0,0))
++    ring('Stack brass lip',.35,.075,2.61,.11,'brass',n=16,loc=(-1.52,0,0))
++    cylinder('Steam dome',(-.45,0,2.08),.26,.43,'brass',n=12,bevel=True)
++    for y in (-.70,.70):
++        box('Boiler red flank stripe',(-.94,y,1.32),(2.48,.08,.23),'red_lacquer')
++    # The cab is an actual clipped prism. All rear-edge details follow x=2.2+.28*y.
++    def cut_prism(label, x0, y0, y1, z0, z1, role):
++        poly=[(x0,y0),(2.20+.28*y0,y0),(2.20+.28*y1,y1),(x0,y1)]
++        verts=[(x,y,z) for z in (z0,z1) for x,y in poly]
++        faces=[(3,2,1,0),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++        return mesh(label,verts,faces,role,True)
++    cut_prism('Diagonal sliced solid cab',.31,-.92,.92,.77,2.27,'iron_dark')
++    cut_prism('Red passenger cab belt',.29,-.96,.96,1.00,1.28,'red_lacquer')
++    cut_prism('Steel broken cab roof',.15,-1.02,1.02,2.28,2.44,'steel')
++    for y in (-.95,.95):
++        for x in (.79,1.61):
++            cylinder('Round brass window bezel',(x,y,1.81),.305,.10,'brass',n=20,rot=FRONT)
++            cylinder('Round mirror passenger window',(x,y*1.06,1.81),.237,.035,'mirror',n=20,rot=FRONT)
++            beam('Window pale glint',(x-.12,y*1.09,1.72),(x+.06,y*1.09,1.94),.045,.04,'steel')
++        for z in (.90,2.16):
++            box('Cab rolled edge molding',(1.13,y*1.07,z),(1.65,.065,.075),'brass')
++    # Exposed cross-section is inset into its gold fracture perimeter.
++    def cp(y,z,off=.015): return (2.20+.28*y+off,y,z)
++    for ya,yb in [(-.89,.89)]:
++        for z in (.81,2.25):
++            beam('Glowing clean diagonal cut edge',cp(ya,z),cp(yb,z),.09,.09,'crack_gold')
++    for y in (-.9,.9):
++        beam('Vertical cut face gold edge',cp(y,.8),cp(y,2.26),.085,.085,'crack_gold')
++    for y in (-.53,0,.53):
++        beam('Exposed cross-section structure',cp(y,.9,.04),cp(y,2.16,.04),.085,.085,'steel')
++    beam('Sectioned inner deck',cp(-.83,1.30,.04),cp(.83,1.30,.04),.08,.08,'brass')
++    tube('Gold crack along locomotive flank',[(-2.0,.77,1.38),(-1.65,.79,1.45),
++         (-1.43,.76,1.28),(-1.1,.78,1.39)],.035,'crack_gold')
++    # Shallow pilot grille, deliberately too broad to read as thin wires.
++    for j in range(7):
++        y=-.84+j*.28
++        beam('Locomotive pilot slat',(-2.54,y,.47),(-2.28,y,.87),.09,.09,'steel')
++    group(start,(0,0,.035),(.035,-.055,0))
++    for i in range(2):
++        y=-.52+i*1.08
++        pts=[(-1.2,y,2.85),(-.48,y+.08,2.87),(.12,y-.04,2.72),(.85,y+.14,2.94)]
++        tube('Floating bent rail head',pts,.085,'steel',n=4)
++        tube('Floating bent rail foot',[(x,yy,z-.17) for x,yy,z in pts],.11,'steel',n=4)
++        for a,b in zip(pts[:-1],pts[1:]):
++            beam('Rail vertical web',(a[0],a[1],a[2]-.09),(b[0],b[1],b[2]-.09),.065,.17,'iron_dark')
++
++
++def gear_sector(label,r,depth,role,a0,a1,loc=(0,0,0),rot=(0,0,0)):
++    # Half an annular gear, closed across both radial fracture faces.
++    outer=[]; steps=9
++    for j in range(steps):
++        for t,rr in ((0,r*.86),(.18,r*.86),(.18,r),(.82,r),(.82,r*.86)):
++            a=a0+(a1-a0)*(j+t)/steps
++            outer.append((rr*math.cos(a),rr*math.sin(a)))
++    outer.append((r*.86*math.cos(a1),r*.86*math.sin(a1)))
++    inner=[(r*.61*math.cos(a1-(a1-a0)*j/36),r*.61*math.sin(a1-(a1-a0)*j/36)) for j in range(37)]
++    # slab uses X/Z; gear sectors therefore start directly in the front plane.
++    obj=slab(label,outer+inner,-depth/2,depth/2,role)
++    return place(obj,loc,rot)
++
++
++def clock_heart():
++    cylinder('Solid violet circular dais',(0,0,.23),2.2,.46,'violet_dark',n=48,bevel=True)
++    ring('Dais lower golden rim',2.20,.12,.05,.10,'gold',n=48)
++    ring('Dais upper golden rim',2.18,.10,.42,.09,'gold',n=48)
++    ring('Dais inset celestial circle',1.93,.055,.468,.045,'brass',n=48)
++    for j in range(32):
++        a=TAU*j/32
++        box('Dais raised clock tick',(2.04*math.cos(a),2.04*math.sin(a),.51),
++            (.15 if j%4==0 else .09,.06,.045),'gold',rot=(0,0,a),bevel=False)
++    mound('Collapsed movement core',1.45,1.17,1.18,'gold_dark',loc=(-.15,-.12,.45))
++    # A genuine half dial, jagged along its severed diameter, tilted backward.
++    start=len(PARTS)
++    r=1.72
++    arc=[(r*math.cos(math.pi-j*math.pi/32),r*math.sin(math.pi-j*math.pi/32)) for j in range(33)]
++    lower=[(1.45,-.12),(.98,.09),(.61,-.14),(.19,.11),(-.22,-.12),(-.60,.08),(-1.19,-.16)]
++    slab('Broken half dial dark core',arc+lower,-.25,.09,'gold_dark')
++    slab('Pale half dial face',[(x*.968,z*.965) for x,z in arc+lower],.09,.16,'dial_face')
++    outer=[(r*math.cos(a),r*math.sin(a)) for a in [math.pi-j*math.pi/32 for j in range(33)]]
++    inner=[((r-.13)*math.cos(a),(r-.13)*math.sin(a)) for a in [j*math.pi/32 for j in range(33)]]
++    slab('Half dial gold bezel',outer+inner,.16,.27,'gold')
++    for j,text in enumerate(('IX','X','XI','XII','I','II','III')):
++        a=-math.pi/2+j*math.pi/6
++        roman(text,(1.30*math.sin(a),.21,1.30*math.cos(a)),.25,a)
++    for j in range(25):
++        a=-math.pi/2+j*math.pi/24
++        box('Half dial minute engraving',(1.49*math.sin(a),.20,1.49*math.cos(a)),
++            (.045,.055,.14 if j%4==0 else .075),'dial_mark',rot=(0,a,0),bevel=False)
++    tube('Cracked porcelain gold seam',[(-.41,.205,1.65),(-.25,.205,1.31),(-.39,.205,1.03),
++         (-.10,.205,.68),(-.26,.205,.28)],.035,'crack_gold')
++    for x,z in ((-.27,1.31),(-.11,.68)):
++        star((x,.25,z),.095,'starlight')
++    beam('Broken clock hand',(0,.30,.03),(.68,.30,1.00),.11,.09,'gold')
++    cylinder('Dial pivot',(0,.34,.03),.18,.12,'brass',n=16,rot=FRONT)
++    group(start,(-.48,-.55,2.08),(.25,-.10,-.045))
++    # Lying gear with broad spokes, contrasting dark hub, and a bright axle.
++    gs=len(PARTS)
++    for a0,a1 in ((-math.pi/2,math.pi/2),(math.pi/2,3*math.pi/2)):
++        gear_sector('Lying cast gear',1.02,.23,'gold',a0,a1)
++    for j in range(6):
++        a=TAU*j/6
++        beam('Lying gear broad spoke',(.12*math.cos(a),0,.12*math.sin(a)),
++             (.75*math.cos(a),0,.75*math.sin(a)),.13,.16,'brass')
++    cylinder('Lying gear hub',(0,0,0),.25,.30,'gold_dark',n=16,rot=FRONT)
++    group(gs,(-.92,.85,.74),(math.pi/2,.08,.17))
++    # Standing gear halves have open air between the torn radial edges.
++    for s in (-1,1):
++        hs=len(PARTS)
++        a0,a1=(-math.pi/2,math.pi/2) if s>0 else (math.pi/2,3*math.pi/2)
++        gear_sector('Drifting broken standing gear',1.08,.23,'brass',a0,a1)
++        for a in [a0+(a1-a0)*t for t in (.16,.5,.84)]:
++            beam('Standing gear cast spoke',(.12*math.cos(a),0,.12*math.sin(a)),
++                 (.78*math.cos(a),0,.78*math.sin(a)),.13,.18,'gold')
++        halfhub=[(.25*math.cos(a0+(a1-a0)*j/12),.25*math.sin(a0+(a1-a0)*j/12)) for j in range(13)]
++        slab('Split axle hub',halfhub,-.18,.18,'gold_dark')
++        for sign in (-1,1):
++            tube('Gold torn gear end',[(.02,.15,sign*.66),(.07,.15,sign*.78),(.02,.15,sign*.94)],.035,'crack_gold')
++        group(hs,(.70+s*.14,.42,1.89+(s+1)*.055),(.02,s*.07,0))
++    for x,z in ((.70,.97),(.72,2.75),(.71,1.95)):
++        star((x,.64,z),.11,'starlight')
++    # A detached bob floats beside its broken rod, proud of the base.
++    cylinder('Hovering pendulum bob',(1.43,1.08,1.06),.45,.18,'gold_dark',n=24,rot=FRONT,bevel=True)
++    ring('Bob concentric gold inlay',.34,.065,-.04,.08,'gold',n=24,loc=(1.43,1.20,1.06),rot=FRONT)
++    star((1.43,1.27,1.06),.19,'gold')
++    beam('Broken pendulum upper stem',(1.43,1.08,1.76),(1.43,1.08,2.34),.075,.075,'gold_dark')
++    star((1.43,1.08,1.58),.085,'starlight')
++    tube('Dais gold fault',[(-1.6,.4,.53),(-1.17,.2,.54),(-.81,.4,.54),(-.33,.2,.54)],.035,'crack_gold')
++
++
++def glass_section(label,profile,a0,a1,n=12):
++    # Thick closed low-poly shell section. Missing front panes expose the sand
++    # under the required opaque grey export shader; their remaining triangular
++    # glass corners preserve the outline rather than hiding the hourglass core.
++    cross=profile+[(max(.045,r-.055),z) for r,z in reversed(profile)]
++    m=len(cross)
++    v=[(r*math.cos(a0+(a1-a0)*j/n),r*math.sin(a0+(a1-a0)*j/n),z)
++       for j in range(n+1) for r,z in cross]
++    f=[tuple(reversed(range(m))),tuple(range(n*m,(n+1)*m))]
++    f += [(j*m+k,(j+1)*m+k,(j+1)*m+(k+1)%m,j*m+(k+1)%m)
++          for j in range(n) for k in range(m)]
++    return mesh(label,v,f,'crystal')
++
++
++def hourglass():
++    box('Solid square marble foundation',(0,0,.13),(2.8,2.8,.26),'marble')
++    box('Violet plinth inset',(0,0,.28),(2.59,2.59,.10),'violet')
++    for z,h in ((.43,.22),(4.10,.22)):
++        cylinder('Massive gold hourglass plate',(0,0,z),1.35,h,'gold',n=32,bevel=True)
++        ring('Plate violet inlay',1.20,.19,z+h/2,.045,'violet',n=32)
++        ring('Plate golden outer molding',1.36,.08,z-h/2,.07,'gold_dark',n=32)
++    cylinder('Top inset medallion',(0,0,4.245),.84,.08,'violet',n=16)
++    star((0,0,4.30),.58,'gold',points=8,rot=(math.pi/2,0,0))
++    # Four turned columns, with collars, capitals and broad fluted shafts.
++    for x in (-.88,.88):
++        for y in (-.88,.88):
++            profile=[(.10,.53),(.19,.53),(.19,.69),(.12,.80),(.115,1.04),
++                     (.16,1.15),(.12,1.30),(.105,3.26),(.16,3.43),(.12,3.55),
++                     (.19,3.76),(.19,3.97),(.10,3.97)]
++            lathe('Turned gold dark hourglass post',profile,'gold_dark',n=12,loc=(x,y,0))
++            for z in (.68,1.16,3.43,3.86):
++                ring('Column golden collar',.19,.065,z,.085,'gold',n=12,loc=(x,y,0))
++            beam('Column violet flute',(x,y+.112,1.45),(x,y+.112,3.10),.045,.045,'violet')
++    lower=[(.70,.64),(.88,.89),(.84,1.19),(.62,1.58),(.26,1.94),(.11,2.17)]
++    upper=[(.11,2.23),(.26,2.46),(.61,2.85),(.84,3.23),(.88,3.56),(.70,3.87)]
++    # Front viewing fracture spans 100 degrees around +Y. Shells remain closed.
++    for label,profile in [('Lower faceted glass bulb',lower),('Upper cracked glass bulb',upper)]:
++        glass_section(label,profile,math.radians(140),math.radians(400),n=13)
++        for a in (math.radians(40),math.radians(140)):
++            tube('Broad crystal window boundary',[(r*math.cos(a),r*math.sin(a),z) for r,z in profile],.045,'crystal')
++    # Sand is violet by chapter palette; the sand role remains distinct in game.
++    mound('Violet sand pile inside lower bulb',.69,.68,.78,'sand',loc=(0,0,.68),n=16)
++    cylinder('Sand at base of bulb',(0,0,.72),.64,.11,'sand',n=16)
++    tube('Frozen violet sand stream',[(0,.08,2.72),(.025,.08,2.38),(-.02,.08,2.12),
++         (.02,.08,1.86),(0,.08,1.47)],.059,'sand',n=8)
++    # Retained triangular front panes frame the open, shattered viewing facet.
++    slab('Lower bulb retained glass facet',[(-.56,.85),(-.18,.67),(-.72,1.14)],.48,.54,'crystal')
++    slab('Upper bulb fractured front pane',[(-.66,3.45),(-.06,3.80),(-.20,3.01)],.43,.49,'crystal')
++    slab('Upper bulb opposite glass facet',[(.58,3.61),(.77,3.22),(.35,2.79)],.39,.45,'crystal')
++    tube('Upper bulb golden fracture',[(-.72,.48,3.46),(-.36,.58,3.33),(-.20,.53,3.08),
++         (.07,.51,3.18),(.31,.48,3.02),(.69,.44,3.14)],.034,'crack_gold')
++    for i,(x,y,z) in enumerate([(-.31,.96,3.48),(.33,1.10,3.38),(.64,.90,2.92)]):
++        shard((x,y,z),.27,.40,'crystal',rot=(.2,-.25+i*.25,.15-i*.21),thickness=.065)
++    for a in (0,math.pi/2,math.pi,3*math.pi/2):
++        star((1.12*math.cos(a),1.12*math.sin(a),.57),.14,'violet',rot=(math.pi/2,0,a))
++    tube('Cracked marble base',[(-1.25,.9,.275),(-.96,.65,.275),(-1.08,.36,.275),(-.74,.06,.275)],.032,'crack_gold')
++
++
++def desert_shard():
++    mound('Full solid sand and void foundation',2.0,1.5,.67,'sand',n=16)
++    mound('Exposed dark intrusion',1.55,.95,.74,'void_stone',loc=(.08,-.19,.02),n=12)
++    # A thick, tilted arch with an intact left pier and a broken right springer.
++    start=len(PARTS)
++    slab('Left sandstone arch pier',[(-1.72,.35),(-.81,.35),(-.84,1.44),(-1.62,1.48)],-.46,.38,'sand',True)
++    for j in range(7):
++        a0=math.radians(12+j*24); a1=a0+math.radians(23.1)
++        out=[(-.23+1.48*math.cos(a0+(a1-a0)*k/3),1.27+1.48*math.sin(a0+(a1-a0)*k/3)) for k in range(4)]
++        inn=[(-.23+.82*math.cos(a1-(a1-a0)*k/3),1.27+.82*math.sin(a1-(a1-a0)*k/3)) for k in range(4)]
++        slab('Carved sandstone arch voussoir',out+inn,-.46,.38,'sand',True)
++        if j in (0,3):
++            beam('Arch inlaid gold radial seam',(*(-.23+.85*math.cos(a0),),.405,1.27+.85*math.sin(a0)),
++                 (-.23+1.44*math.cos(a0),.405,1.27+1.44*math.sin(a0)),.05,.05,'crack_gold')
++    slab('Right broken arch stump',[(.67,.44),(1.44,.46),(1.39,1.11),(1.19,1.20),(.98,1.07),(.72,1.24)],
++         -.46,.38,'sand',True)
++    slab('Exposed void stone broken springer',[(.68,1.33),(1.18,1.51),(1.19,1.20),(.98,1.07),(.72,1.24)],
++         -.48,.40,'void_stone')
++    for z in (.72,1.12):
++        box('Pier recessed carved band',(-1.28,.405,z),(.73,.055,.065),'violet_dark',bevel=False)
++    tube('Sandstone golden split',[(-1.53,.43,1.47),(-1.27,.43,1.75),(-1.38,.43,2.02),
++         (-1.10,.43,2.27),(-.98,.43,2.49)],.036,'crack_gold')
++    group(start,(-.03,-.25,.05),(.14,-.11,-.035))
++    # Large mirror blade has a substantial dark core and a broad gold border.
++    blade=[(-.37,.44),(.31,.57),(1.40,3.42),(.72,3.09)]
++    slab('Impaled mirror blade gold edge',blade,-.08,.13,'gold',True)
++    cx=sum(x for x,z in blade)/4; cz=sum(z for x,z in blade)/4
++    inner=[(cx+(x-cx)*.87,cz+(z-cz)*.94) for x,z in blade]
++    slab('Huge embedded mirror face',inner,.13,.18,'mirror')
++    slab('Mirror blade dark back',inner,-.14,-.08,'void_stone')
++    beam('Broad mirror glint',(.33,.205,1.53),(1.06,.205,3.04),.06,.045,'crystal')
++    tube('Blade gold fault',[(.47,.225,2.0),(.72,.225,2.12),(.65,.225,2.33),(.88,.225,2.51)],.032,'crack_gold')
++    mound('Small foreground sand dune',1.12,.74,.52,'sand',loc=(.03,.66,.16),n=14)
++    for x,y,z,s in [(-1.40,.69,.42,.64),(-1.03,1.02,.35,.48),(-1.65,.18,.39,.40),
++                       (1.36,.77,.34,.51),(1.63,.27,.36,.37)]:
++        # Closed, pointed hexagonal crystal prism, deliberately chunky.
++        profile=[(.02,0),(s*.27,0),(s*.31,s*.59),(.035,s*1.5),(.02,s*1.45)]
++        lathe('Foot crystal cluster',profile,'crystal',n=6,loc=(x,y,z),rot=(.1,-.25,x*.12))
++    for i,(x,y,z) in enumerate([(-1.35,-.36,2.92),(-.64,-.54,3.12),(.0,-.46,2.96)]):
++        box('Floating sandstone arch chunk',(x,y,z),(.42,.50,.30),'sand',rot=(.16,.3,i*.36))
++        box('Floating core exposure',(x,y+.26,z),(.32,.045,.16),'void_stone',rot=(0,.3,i*.36))
++    for x,y in [(-.66,.96),(.63,.89)]:
++        star((x,y,.51),.16,'gold',rot=(math.pi/2,0,0))
++
++
++SPECS = [
++    ('LM_MirrorMonolith',(3.0,2.4,4.6),mirror_monolith,8),
++    ('LM_SaloonFragment',(4.6,3.0,3.6),saloon_fragment,8),
++    ('LM_TrainFragment',(5.4,2.6,3.0),train_fragment,7),
++    ('LM_ClockHeart',(4.4,4.4,4.0),clock_heart,8),
++    ('LM_Hourglass',(2.8,2.8,4.4),hourglass,7),
++    ('LM_DesertShard',(4.0,3.0,3.4),desert_shard,7),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++            for fn in (min,max)]
++
++
++def finish(name,dims,count):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True); bpy.context.view_layer.objects.active=obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS: obj.select_set(True)
++    bpy.context.view_layer.objects.active=PARTS[0]
++    bpy.ops.object.join()
++    obj=bpy.context.object; obj.name=name; obj.data.name=name+'_Mesh'
++    if triangles(obj)>8000:
++        mod=obj.modifiers.new('Retain role boundaries within 8000 triangles','DECIMATE')
++        mod.ratio=7850/triangles(obj); mod.delimit={'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    assert triangles(obj)<=8000,(name,triangles(obj))
++    low,high=bounds(obj); span=high-low; centre=(low+high)/2
++    # Fit exact specified outer extents, baking the modest corrections into data.
++    for v in obj.data.vertices:
++        v.co.x=(v.co.x-centre.x)*dims[0]/span.x
++        v.co.y=(v.co.y-centre.y)*dims[1]/span.y
++        v.co.z=(v.co.z-low.z)*dims[2]/span.z
++    bm=bmesh.new(); bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name
++    bm.to_mesh(obj.data); bm.free()
++    for face in obj.data.polygons: face.use_smooth=False
++    obj.data.update(); bpy.context.view_layer.update()
++    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used)==count and 6<=count<=8,(name,used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    low,high=bounds(obj)
++    assert abs(low.z)<1e-5 and abs(high.z-dims[2])<1e-4,(name,low,high)
++    assert abs(low.x+high.x)<1e-4 and abs(low.y+high.y)<1e-4
++    assert all(abs(obj.dimensions[i]-dims[i])<1e-4 for i in range(3))
++    assert obj.location.length<1e-8 and tuple(obj.scale)==(1,1,1)
++    for mat in obj.data.materials:
++        assert mat.name in PALETTE
++        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
++    obj['chapter']='The Collapsing End of Time'; obj['front']='+Y'
++    obj['triangle_count']=triangles(obj); obj['solid_combat_blocker']=True
++    obj['origin']='Bottom centre'; obj['dimensions_m']=list(dims)
++    path=OUTPUT/f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(filepath=str(path),use_selection=True,
++        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
++        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
++    assert path.is_file() and path.stat().st_size>1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    scene=bpy.context.scene
++    scene.render.engine='BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y=1800,1000
++    scene.render.resolution_percentage=100
++    scene.render.image_settings.file_format='PNG'; scene.render.filepath=str(PREVIEW)
++    scene.render.film_transparent=False
++    scene.view_settings.view_transform='Standard'
++    shade=scene.display.shading
++    shade.light='FLAT'; shade.color_type='MATERIAL'
++    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
++    shade.curvature_ridge_factor=1.45; shade.curvature_valley_factor=1.25
++    shade.cavity_ridge_factor=1.3; shade.cavity_valley_factor=1.15
++    shade.show_specular_highlight=False; shade.show_object_outline=True
++    shade.background_type='WORLD'
++    if scene.world is None: scene.world=bpy.data.worlds.new('Review background')
++    scene.world.color=(.023,.016,.045)
++    helpers=[]
++    az=math.radians(16); el=math.radians(55)
++    near=Vector((math.sin(az),math.cos(az),0))
++    right=Vector((-math.cos(az),math.sin(az),0))
++    camera=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++    scene.collection.objects.link(camera); helpers.append(camera); scene.camera=camera
++    camera.location=near*40*math.cos(el)+Vector((0,0,40*math.sin(el)))
++    camera.rotation_euler=(-camera.location).to_track_quat('-Z','Y').to_euler()
++    camera.data.type='ORTHO'; inv=camera.rotation_euler.to_matrix().transposed()
++
++    def points(obj):
++        return [inv @ (obj.matrix_world @ v.co) for v in obj.data.vertices]
++
++    def label(body,x,y,size,role='marble'):
++        data=bpy.data.curves.new('Review caption','FONT')
++        data.body=body; data.size=size; data.align_x='CENTER'
++        data.materials.append(MATS[role])
++        obj=bpy.data.objects.new('Review caption',data)
++        scene.collection.objects.link(obj); helpers.append(obj)
++        obj.rotation_euler=camera.rotation_euler
++        obj.location=camera.rotation_euler.to_matrix() @ Vector((x,y,8))
++
++    try:
++        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
++        # Pack the projected widths, retaining real scale and a generous air gap.
++        cursor=0
++        for obj in objects:
++            bpy.context.view_layer.update()
++            pp=points(obj); lo=min(p.x for p in pp); hi=max(p.x for p in pp)
++            obj.location=right*(cursor-lo)
++            cursor+=hi-lo+.78
++        bpy.context.view_layer.update()
++        cloud=[p for obj in objects for p in points(obj)]
++        x0=min(p.x for p in cloud); x1=max(p.x for p in cloud)
++        y0=min(p.y for p in cloud); y1=max(p.y for p in cloud)
++        baseline=y0-.57
++        for obj,(_,dims,_,_) in zip(objects,SPECS):
++            pp=points(obj); x=(min(p.x for p in pp)+max(p.x for p in pp))/2
++            label(obj.name,x,baseline,.235)
++            label(f'{dims[0]:.1f} x {dims[1]:.1f} x {dims[2]:.1f} m',x,baseline-.36,.19,'gold')
++            label(f'{triangles(obj):,} tris',x,baseline-.66,.17,'mirror')
++        mid=(x0+x1)/2
++        label('V  /  THE COLLAPSING END OF TIME',mid,y1+1.65,.49)
++        label('COMBAT LANDMARKS     /     FRACTURED MEMORIES     /     SOLID COVER',mid,y1+1.02,.21,'gold')
++        label('1 : 1 METRES     /     +Y FRONT     /     55 DEG ELEVATION',mid,baseline-1.36,.18,'mirror')
++        bpy.context.view_layer.update()
++        cloud += [inv @ (o.matrix_world @ Vector(c)) for o in helpers if o.type=='FONT' for c in o.bound_box]
++        x0=min(p.x for p in cloud); x1=max(p.x for p in cloud)
++        y0=min(p.y for p in cloud); y1=max(p.y for p in cloud)
++        camera.location+=camera.rotation_euler.to_matrix() @ Vector(((x0+x1)/2,(y0+y1)/2,0))
++        camera.data.ortho_scale=max(x1-x0,(y1-y0)*1.8)*1.065
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
++        print(f'PREVIEW {PREVIEW}',flush=True)
++    finally:
++        scene.camera=None
++        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
++        for obj in objects: obj.location=(0,0,0)
++        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
++    scene=bpy.context.scene
++    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
++    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
++    objects=[]
++    for i,(name,dims,build,count) in enumerate(SPECS):
++        PARTS=[]; random.seed(55071+i*7919)
++        build(); objects.append(finish(name,dims,count))
++    assert len(scene.objects)==6 and all(o.type=='MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects)==6 and all(o.type=='MESH' for o in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__=='__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch5_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 3834ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch5_landmarks.py:42: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_MirrorMonolith.fbx'
+export finished in 0.0084 sec.
+EXPORTED LM_MirrorMonolith 2332 (3.0, 2.4, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_SaloonFragment.fbx'
+export finished in 0.0089 sec.
+EXPORTED LM_SaloonFragment 6490 (4.6, 3.0, 3.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_TrainFragment.fbx'
+export finished in 0.0100 sec.
+EXPORTED LM_TrainFragment 7666 (5.4, 2.6, 3.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_ClockHeart.fbx'
+export finished in 0.0071 sec.
+EXPORTED LM_ClockHeart 5874 (4.4, 4.4, 4.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_Hourglass.fbx'
+export finished in 0.0075 sec.
+EXPORTED LM_Hourglass 6474 (2.8, 2.8, 4.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_DesertShard.fbx'
+export finished in 0.0055 sec.
+EXPORTED LM_DesertShard 2874 (4.0, 3.0, 3.4)
+00:03.343  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch5_landmarks_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch5_landmarks_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+codex
+All six pieces exported successfully, and each is under 8,000 triangles. In the preview, the hourglass’s top plate hides too much of its upper bulb. I’ll open up that plate and add more dark stone relief to the desert arch, then render again.
+apply patch
+patch: completed
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch5_landmarks.py
+diff --git a/Art/tools/blender_kit_ch5_landmarks.py b/Art/tools/blender_kit_ch5_landmarks.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..1489dfa382e65f8f3d72fcceb840efde6893df4f
+--- /dev/null
++++ b/Art/tools/blender_kit_ch5_landmarks.py
+@@ -0,0 +1,753 @@
++# 붕괴하는 시간 감옥의 대형 엄폐물 6종과 검수용 미리보기를 만듭니다.
++# 실행: "C:/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup -P Art/tools/blender_kit_ch5_landmarks.py
++"""Deterministic Blender 5.x kit; metres, Z up, +Y front, bottom-centre origins.
++
++All components are closed solids, including detached debris. Each export is one
++mesh with seven or eight grey role materials. Review swatches are applied only
++after all exports. Broad, continuous foundations make these combat blockers.
++"""
++import math
++import random
++from pathlib import Path
++
++import bmesh
++import bpy
++from mathutils import Euler, Matrix, Vector
++
++ROOT = Path(__file__).resolve().parents[2]
++OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch5'
++PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch5_landmarks_preview.png'
++TAU = math.tau
++FRONT = (math.pi / 2, 0, 0)
++MATS, PARTS = {}, []
++PALETTE = {
++    'mirror': (.56, .79, .92), 'mirror_back': (.16, .28, .43),
++    'marble': (.79, .74, .89), 'marble_dark': (.25, .20, .36),
++    'gold': (.94, .61, .16), 'gold_dark': (.43, .27, .10),
++    'crack_gold': (1.0, .85, .32), 'violet': (.52, .22, .79),
++    'violet_dark': (.17, .075, .29), 'starlight': (.92, .96, 1.0),
++    'wood': (.44, .30, .38), 'wood_dark': (.16, .09, .18),
++    'cloth': (.59, .43, .66), 'void_stone': (.28, .23, .43),
++    'lamp_warm': (1.0, .66, .27), 'iron_dark': (.065, .075, .15),
++    'red_lacquer': (.54, .10, .25), 'steel': (.39, .48, .63),
++    'brass': (.66, .44, .20), 'dial_face': (.85, .81, .90),
++    'dial_mark': (.12, .075, .22), 'crystal': (.54, .58, .88),
++    'sand': (.62, .43, .57),
++}
++
++
++def materials():
++    for role in PALETTE:
++        mat = bpy.data.materials.new(role)
++        mat.use_nodes = True
++        mat.diffuse_color = (.5, .5, .5, 1)
++        bsdf = mat.node_tree.nodes['Principled BSDF']
++        bsdf.inputs['Base Color'].default_value = (.5, .5, .5, 1)
++        bsdf.inputs['Metallic'].default_value = 0
++        bsdf.inputs['Roughness'].default_value = .8
++        MATS[role] = mat
++
++
++def mesh(label, verts, faces, role, bevel=False):
++    data = bpy.data.meshes.new(label)
++    data.from_pydata(verts, [], faces)
++    data.update()
++    obj = bpy.data.objects.new(label, data)
++    bpy.context.collection.objects.link(obj)
++    data.materials.append(MATS[role])
++    if bevel:
++        mod = obj.modifiers.new('Soft 3cm carved edges', 'BEVEL')
++        mod.width, mod.segments = .03, 2
++        mod.limit_method, mod.angle_limit = 'ANGLE', math.radians(60)
++        mod.use_clamp_overlap = True
++    PARTS.append(obj)
++    return obj
++
++
++def place(obj, loc=(0, 0, 0), rot=(0, 0, 0)):
++    obj.data.transform(Matrix.Translation(Vector(loc)) @ Euler(rot).to_matrix().to_4x4())
++    return obj
++
++
++def group(start, loc=(0, 0, 0), rot=(0, 0, 0)):
++    for obj in PARTS[start:]:
++        place(obj, loc, rot)
++
++
++def box(label, loc, size, role, rot=(0, 0, 0), bevel=True):
++    x, y, z = (s / 2 for s in size)
++    v = [(-x,-y,-z),(x,-y,-z),(x,y,-z),(-x,y,-z),
++         (-x,-y,z),(x,-y,z),(x,y,z),(-x,y,z)]
++    f = [(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++    return place(mesh(label, v, f, role, bevel), loc, rot)
++
++
++def cylinder(label, loc, radius, depth, role, n=20, rot=(0,0,0), bevel=False):
++    v = [(radius*math.cos(TAU*j/n),radius*math.sin(TAU*j/n),z)
++         for z in (-depth/2,depth/2) for j in range(n)]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return place(mesh(label,v,f,role,bevel),loc,rot)
++
++
++def lathe(label, profile, role, n=20, loc=(0,0,0), rot=(0,0,0)):
++    # Closed cross-section revolved without duplicate vertices at the poles.
++    # Use a small positive bore radius in profiles, or cylinder for solid caps.
++    v = [(r*math.cos(TAU*j/n),r*math.sin(TAU*j/n),z)
++         for r,z in profile for j in range(n)]
++    f = [(k*n+j,k*n+(j+1)%n,((k+1)%len(profile))*n+(j+1)%n,
++          ((k+1)%len(profile))*n+j) for k in range(len(profile)) for j in range(n)]
++    return place(mesh(label,v,f,role),loc,rot)
++
++
++def ring(label, r, w, z, h, role, n=32, loc=(0,0,0), rot=(0,0,0)):
++    return lathe(label,[(r-w,z),(r,z),(r,z+h),(r-w,z+h)],role,n,loc,rot)
++
++
++def slab(label, outline, back, front, role, bevel=False):
++    n = len(outline)
++    v = [(x,y,z) for y in (back,front) for x,z in outline]
++    f = [tuple(reversed(range(n))),tuple(range(n,2*n))]
++    f += [(j,(j+1)%n,(j+1)%n+n,j+n) for j in range(n)]
++    return mesh(label,v,f,role,bevel)
++
++
++def beam(label, a, b, width, depth, role, bevel=False):
++    d = Vector(b)-Vector(a)
++    obj = box(label,(0,0,0),(width,depth,d.length),role,bevel=bevel)
++    obj.data.transform(Matrix.Translation((Vector(a)+Vector(b))/2) @
++                       d.to_track_quat('Z','Y').to_matrix().to_4x4())
++    return obj
++
++
++def tube(label, points, r, role, n=6):
++    v = []
++    for i,p in enumerate(points):
++        t = (Vector(points[min(i+1,len(points)-1)])-
++             Vector(points[max(0,i-1)])).normalized()
++        ref = Vector((0,1,0)) if abs(t.y)<.9 else Vector((1,0,0))
++        u = ref.cross(t).normalized(); w = t.cross(u)
++        v += [tuple(Vector(p)+r*(math.cos(TAU*j/n)*u+math.sin(TAU*j/n)*w))
++              for j in range(n)]
++    f = [tuple(reversed(range(n))),tuple(range((len(points)-1)*n,len(points)*n))]
++    f += [(i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j)
++          for i in range(len(points)-1) for j in range(n)]
++    return mesh(label,v,f,role)
++
++
++def star(loc, r, role, points=4, rot=(0,0,0)):
++    shape = []
++    for j in range(points*2):
++        a = TAU*j/(points*2)
++        radius = r if j%2==0 else r*.29
++        shape.append((radius*math.sin(a),radius*math.cos(a)))
++    return place(slab('Raised cosmic star',shape,-.025,.025,role),loc,rot)
++
++
++def shard(loc, width, height, role='mirror', rot=(0,0,0), thickness=.12):
++    start = len(PARTS)
++    outline = [(-width*.44,-height*.35),(width*.18,-height*.5),
++               (width*.52,height*.12),(-width*.08,height*.5)]
++    slab('Angular shard dark thickness',outline,-thickness,0,'mirror_back' if role=='mirror' else role)
++    slab('Broad shard face',[(x*.91,z*.94) for x,z in outline],0,.025,role)
++    beam('Shard light-catching edge',(-width*.40,.035,-height*.30),
++         (-width*.08,.035,height*.45),.045,.045,'gold' if role=='mirror' else 'marble')
++    group(start,loc,rot)
++
++
++def mound(label, rx, ry, h, role, loc=(0,0,0), n=14):
++    v = [(rx*math.cos(TAU*j/n),ry*math.sin(TAU*j/n),0) for j in range(n)]
++    v += [(rx*.83*math.cos(TAU*j/n),ry*.83*math.sin(TAU*j/n),h*.48)
++          for j in range(n)]
++    v += [(rx*.40*math.cos(TAU*j/n+.13),ry*.40*math.sin(TAU*j/n+.13),
++           h*(.87+random.random()*.13)) for j in range(n)]
++    v.append((0,0,h))
++    f = [tuple(reversed(range(n)))]
++    f += [(k*n+j,k*n+(j+1)%n,(k+1)*n+(j+1)%n,(k+1)*n+j)
++          for k in range(2) for j in range(n)]
++    f += [(2*n+j,2*n+(j+1)%n,3*n) for j in range(n)]
++    return place(mesh(label,v,f,role),loc)
++
++
++def roman(text, loc, height=.25, angle=0):
++    start = len(PARTS)
++    for k,symbol in enumerate(text):
++        x = (k-(len(text)-1)/2)*height*.43
++        if symbol=='I':
++            box('Raised Roman I',(x,0,0),(.05,.06,height),'dial_mark',bevel=False)
++        else:
++            for s in (-1,1):
++                box('Raised Roman '+symbol,(x+s*height*(.09 if symbol=='V' else 0),0,0),
++                    (.05,.06,height),'dial_mark',rot=(0,s*.40,0),bevel=False)
++    group(start,loc,(0,angle,0))
++
++
++def mirror_monolith():
++    box('Full marble footing',(0,0,.12),(3,2.4,.24),'marble_dark')
++    box('Pale plinth course',(0,0,.32),(2.85,2.25,.20),'marble')
++    box('Gold plinth fillet',(0,0,.435),(2.73,2.13,.07),'gold')
++    box('Upper carved marble step',(0,0,.535),(2.62,2.02,.13),'marble_dark')
++    for y in (-1.14,1.14):
++        for x in (-.99,0,.99):
++            box('Recessed violet plinth panel',(x,y,.32),(.73,.04,.13),'violet',bevel=False)
++            star((x,y+(.03 if y>0 else -.03),.32),.12,'violet')
++    for x in (-1.19,1.19):
++        star((x,.43,.614),.19,'violet',rot=(math.pi/2,0,0))
++    # Tapered four-sided prism with an irregular broken top contour.
++    outline = [(-.91,.60),(.91,.60),(.55,3.29),(.21,3.40),(-.08,3.24),(-.54,3.39)]
++    body = slab('Four sided broken mirror monolith',outline,-.51,.51,'mirror',True)
++    for v in body.data.vertices:
++        v.co.y *= 1-.35*(v.co.z-.6)/2.8
++    for s in (-1,1):
++        for t in (-1,1):
++            beam('Heavy tapered gold corner frame',(s*.91,t*.51,.64),
++                 (s*.55,t*.335,3.32),.105,.105,'gold',True)
++    box('Lower gold mirror socket',(0,0,.72),(1.93,1.12,.20),'gold')
++    slab('Oblique mirror fracture facet',[(-.79,.9),(-.07,1.96),(-.42,2.95),(-.59,2.91)],
++         .435,.464,'mirror_back')
++    # Front cracks follow the taper in depth; no ridges hidden behind the face.
++    def front_crack(points,r=.034):
++        tube('Impact gold fracture',[(x,.543-.06375*(z-.6),z) for x,z in points],r,'crack_gold')
++    centre=(-.12,1.98)
++    for chain in [
++        [centre,(-.26,2.33),(-.16,2.62),(-.32,2.90),(-.25,3.32)],
++        [centre,(.18,2.21),(.24,2.49),(.57,2.67)],
++        [centre,(.25,1.82),(.49,1.91),(.74,1.65)],
++        [centre,(-.38,1.69),(-.29,1.30),(-.52,1.04),(-.48,.81)],
++        [centre,(-.51,2.05),(-.70,2.30)],
++        [centre,(.10,1.60),(.03,1.31),(.31,1.10)],
++    ]:
++        front_crack(chain)
++    star((-.12,.49,1.98),.20,'crack_gold',points=5)
++    # Broken tip has a real half-metre air gap and an asymmetric rotated crown.
++    start=len(PARTS)
++    slab('Hovering mirror tip',[(-.51,0),(.51,.06),(.03,.67)],-.31,.31,'mirror',True)
++    for a,b in [((-.51,.34,0),(.03,.03,.67)),((.51,.34,.06),(.03,.03,.67))]:
++        beam('Broken tip golden edge',a,b,.075,.075,'gold',True)
++    beam('Tip exposed golden break',(-.50,.34,0),(.5,.34,.06),.07,.07,'crack_gold')
++    group(start,(.12,-.08,3.91),(.07,-.19,.20))
++    for i,(x,y,z,w,h) in enumerate([(-1.12,.18,1.30,.34,.65),(1.15,.14,1.90,.43,.82),
++          (-.93,-.55,2.65,.35,.69),(.83,-.38,3.40,.31,.57),
++          (-.95,.42,3.64,.26,.51),(1.10,.39,.94,.38,.49)]):
++        shard((x,y,z),w,h,rot=(.11*(i-2),.2*(-1)**i,.25*(i-2)))
++    for x,z in ((-.62,2.6),(.61,1.48),(.35,3.2)):
++        star((x,.58-.064*(z-.6),z),.065,'starlight')
++
++
++def saloon_fragment():
++    mound('Continuous solid void rock intrusion',2.3,1.5,.86,'void_stone',n=16)
++    for x,y,z,s in [(-1.9,.5,.42,.7),(1.72,.62,.38,.8),(.4,1.10,.31,.7),(-.9,-1,.4,.65)]:
++        box('Large violet memory strata',(x,y,z),(s,.55,.35),'violet',rot=(.08,.16,.3))
++    start=len(PARTS)
++    box('Buried saloon solid wall backing',(-.10,-.22,1.11),(3.54,1.40,1.24),'wood_dark')
++    # Two genuinely intersecting wall planes form a crooked front corner.
++    for j in range(9):
++        x=-1.69+j*.39
++        top=2.53+random.uniform(-.06,.10)
++        box('Vertical western facade plank',(x,.45,(top+.56)/2),(.36,.16,top-.56),'wood')
++        if j%2==0:
++            beam('Broad carved plank grain',(x-.08,.546,1.1),(x-.06,.546,2.36),.043,.035,'wood_dark')
++    for j in range(6):
++        y=-1.0+j*.29
++        box('Return wall plank',(-1.91,y,1.50),(.16,.26,1.92),'wood')
++    for x in (-1.97,1.77):
++        box('Heavy crooked corner post',(x,.47,1.58),(.25,.28,2.24),'wood_dark')
++        for z in (.71,2.46):
++            box('Post golden collar',(x,.48,z),(.30,.34,.10),'gold')
++    for z in (.8,2.5):
++        box('Thick facade beam',(-.1,.57,z),(3.88,.22,.15),'wood_dark')
++    # Dark recess and swung batwing halves read above the solid intrusion.
++    box('Deep door recess',(.13,.56,1.53),(1.46,.09,1.51),'wood_dark',bevel=False)
++    for s in (-1,1):
++        ds=len(PARTS)
++        shape=[(-.33,-.51),(.33,-.51),(.33,.43),(.13,.56),(-.11,.51),(-.33,.36)]
++        slab('Saloon swinging batwing door',shape,-.07,.07,'wood',True)
++        for x in (-.23,0,.23):
++            box('Door carved vertical ribs',(x,.09,-.05),(.045,.05,.73),'wood_dark',bevel=False)
++        for z in (-.35,.23):
++            box('Door inset cross rail',(0,.12,z),(.61,.07,.08),'gold')
++        group(ds,(.13+s*.36,.76,1.48),(0,0,s*.34))
++    # Broken roof deck: broad planks make the top legible at the game camera.
++    for j in range(9):
++        x=-1.8+j*.43
++        length=1.63-random.random()*.32
++        box('Shattered roof plank',(x,-.27,2.62),(.39,length,.14),'wood',rot=(.04,.025*(j-4),0))
++    box('Broken front cornice',(-.19,.65,2.68),(3.97,.25,.19),'wood_dark')
++    shape=[(-1.28,2.67),(-1.36,3.00),(-1.16,3.18),(-.54,3.18),(-.36,3.29),
++           (.36,3.29),(.54,3.18),(1.16,3.18),(1.36,3.00),(1.28,2.67)]
++    slab('Faded western cloth sign',shape,.66,.80,'cloth',True)
++    for z in (2.74,3.14):
++        box('Sign carved border',(0,.84,z),(2.30,.08,.065),'gold')
++    star((0,.89,2.96),.245,'gold',points=5)
++    for x in (-.77,.77):
++        box('Sign broad relief dash',(x,.865,2.96),(.47,.055,.06),'wood_dark',bevel=False)
++    for x,z in [(-1.5,2.30),(.96,1.27)]:
++        tube('Gold splitting wooden facade',[(x,.58,z+.23),(x+.13,.58,z),
++             (x+.02,.58,z-.22),(x+.19,.58,z-.43)],.035,'crack_gold')
++    tube('Gold broken roof seam',[(-1.12,-.75,2.73),(-.8,-.49,2.74),
++         (-.96,-.17,2.74),(-.54,.19,2.74)],.034,'crack_gold')
++    for j in range(3):
++        box('Floating roof splinter',(-1.16+j*.88,-.28,3.20+j*.10),(.34,.94,.12),
++            'wood',rot=(.22,-.17+j*.12,.16-j*.20))
++        box('Floating plank golden fracture',(-1.16+j*.88,.15,3.24+j*.10),(.32,.07,.07),
++            'crack_gold',rot=(0,0,.16-j*.2))
++    # Lantern includes an angular glowing body, cage and crooked suspension.
++    ls=len(PARTS)
++    cylinder('Lantern bottom',(0,0,-.32),.22,.11,'gold',n=6)
++    cylinder('Lantern light body',(0,0,0),.17,.52,'lamp_warm',n=6)
++    for j in range(4):
++        a=TAU*j/4
++        beam('Lantern cage',( .19*math.cos(a),.19*math.sin(a),-.28),
++             (.19*math.cos(a),.19*math.sin(a),.28),.055,.055,'wood_dark')
++    lathe('Lantern pitched cap',[(.06,.44),(.26,.28),(.26,.22),(.06,.26)],'gold',n=8)
++    ring('Lantern hanging loop',.13,.045,-.035,.07,'gold',n=12,loc=(0,0,.48),rot=FRONT)
++    group(ls,(1.98,.88,1.98),(.13,.22,-.12))
++    tube('Crooked lantern hanger',[(1.74,.58,2.72),(2.02,.83,2.69),(1.99,.9,2.5)],.045,'wood_dark')
++    group(start,(0,0,.02),(.035,-.095,.085))
++
++
++def train_fragment():
++    mound('Continuous burial undercarriage',2.70,1.30,.56,'void_stone',n=16)
++    start=len(PARTS)
++    box('Solid locomotive chassis',(0,0,.66),(4.90,1.92,.47),'iron_dark')
++    for y in (-1.0,1.0):
++        box('Red chassis stripe',(0,y,.79),(4.85,.12,.20),'red_lacquer')
++        box('Steel running board',(0,y,.58),(4.99,.22,.10),'steel')
++    for x in (-1.73,-.43,1.12):
++        for y in (-.99,.99):
++            cylinder('Partly buried locomotive wheel',(x,y,.55),.52,.17,'steel',n=20,rot=FRONT,bevel=True)
++            cylinder('Recessed dark wheel web',(x,y*1.10,.55),.39,.07,'iron_dark',n=20,rot=FRONT)
++            ring('Broad steel wheel tyre',.48,.085,-.03,.07,'steel',n=20,loc=(x,y*1.13,.55),rot=FRONT)
++            cylinder('Brass wheel hub',(x,y*1.18,.55),.13,.08,'brass',n=12,rot=FRONT)
++            for j in range(6):
++                a=TAU*j/6
++                beam('Broad wheel spoke',(x+.12*math.sin(a),y*1.15,.55+.12*math.cos(a)),
++                     (x+.38*math.sin(a),y*1.15,.55+.38*math.cos(a)),.065,.065,'steel')
++    cylinder('Old locomotive boiler',(-.94,0,1.38),.72,2.69,'iron_dark',n=20,rot=(0,math.pi/2,0))
++    for x in (-2.22,-1.35,-.48,.35):
++        ring('Boiler brass hoop',.744,.06,-.05,.10,'brass',n=20,loc=(x,0,1.38),rot=(0,math.pi/2,0))
++    cylinder('Smokebox front steel plate',(-2.31,0,1.38),.65,.13,'steel',n=20,rot=(0,math.pi/2,0),bevel=True)
++    cylinder('Front lamp brass casing',(-2.41,.04,1.63),.26,.21,'brass',n=16,rot=(0,math.pi/2,0))
++    cylinder('Front lamp mirror lens',(-2.53,.04,1.63),.19,.055,'mirror',n=12,rot=(0,math.pi/2,0))
++    lathe('Flared locomotive smokestack',[(.13,1.8),(.22,1.8),(.22,2.36),(.34,2.61),
++          (.34,2.72),(.14,2.72)],'iron_dark',n=12,loc=(-1.52,0,0))
++    ring('Stack brass lip',.35,.075,2.61,.11,'brass',n=16,loc=(-1.52,0,0))
++    cylinder('Steam dome',(-.45,0,2.08),.26,.43,'brass',n=12,bevel=True)
++    for y in (-.70,.70):
++        box('Boiler red flank stripe',(-.94,y,1.32),(2.48,.08,.23),'red_lacquer')
++    # The cab is an actual clipped prism. All rear-edge details follow x=2.2+.28*y.
++    def cut_prism(label, x0, y0, y1, z0, z1, role):
++        poly=[(x0,y0),(2.20+.28*y0,y0),(2.20+.28*y1,y1),(x0,y1)]
++        verts=[(x,y,z) for z in (z0,z1) for x,y in poly]
++        faces=[(3,2,1,0),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)]
++        return mesh(label,verts,faces,role,True)
++    cut_prism('Diagonal sliced solid cab',.31,-.92,.92,.77,2.27,'iron_dark')
++    cut_prism('Red passenger cab belt',.29,-.96,.96,1.00,1.28,'red_lacquer')
++    cut_prism('Steel broken cab roof',.15,-1.02,1.02,2.28,2.44,'steel')
++    for y in (-.95,.95):
++        for x in (.79,1.61):
++            cylinder('Round brass window bezel',(x,y,1.81),.305,.10,'brass',n=20,rot=FRONT)
++            cylinder('Round mirror passenger window',(x,y*1.06,1.81),.237,.035,'mirror',n=20,rot=FRONT)
++            beam('Window pale glint',(x-.12,y*1.09,1.72),(x+.06,y*1.09,1.94),.045,.04,'steel')
++        for z in (.90,2.16):
++            box('Cab rolled edge molding',(1.13,y*1.07,z),(1.65,.065,.075),'brass')
++    # Exposed cross-section is inset into its gold fracture perimeter.
++    def cp(y,z,off=.015): return (2.20+.28*y+off,y,z)
++    for ya,yb in [(-.89,.89)]:
++        for z in (.81,2.25):
++            beam('Glowing clean diagonal cut edge',cp(ya,z),cp(yb,z),.09,.09,'crack_gold')
++    for y in (-.9,.9):
++        beam('Vertical cut face gold edge',cp(y,.8),cp(y,2.26),.085,.085,'crack_gold')
++    for y in (-.53,0,.53):
++        beam('Exposed cross-section structure',cp(y,.9,.04),cp(y,2.16,.04),.085,.085,'steel')
++    beam('Sectioned inner deck',cp(-.83,1.30,.04),cp(.83,1.30,.04),.08,.08,'brass')
++    tube('Gold crack along locomotive flank',[(-2.0,.77,1.38),(-1.65,.79,1.45),
++         (-1.43,.76,1.28),(-1.1,.78,1.39)],.035,'crack_gold')
++    # Shallow pilot grille, deliberately too broad to read as thin wires.
++    for j in range(7):
++        y=-.84+j*.28
++        beam('Locomotive pilot slat',(-2.54,y,.47),(-2.28,y,.87),.09,.09,'steel')
++    group(start,(0,0,.035),(.035,-.055,0))
++    for i in range(2):
++        y=-.52+i*1.08
++        pts=[(-1.2,y,2.85),(-.48,y+.08,2.87),(.12,y-.04,2.72),(.85,y+.14,2.94)]
++        tube('Floating bent rail head',pts,.085,'steel',n=4)
++        tube('Floating bent rail foot',[(x,yy,z-.17) for x,yy,z in pts],.11,'steel',n=4)
++        for a,b in zip(pts[:-1],pts[1:]):
++            beam('Rail vertical web',(a[0],a[1],a[2]-.09),(b[0],b[1],b[2]-.09),.065,.17,'iron_dark')
++
++
++def gear_sector(label,r,depth,role,a0,a1,loc=(0,0,0),rot=(0,0,0)):
++    # Half an annular gear, closed across both radial fracture faces.
++    outer=[]; steps=9
++    for j in range(steps):
++        for t,rr in ((0,r*.86),(.18,r*.86),(.18,r),(.82,r),(.82,r*.86)):
++            a=a0+(a1-a0)*(j+t)/steps
++            outer.append((rr*math.cos(a),rr*math.sin(a)))
++    outer.append((r*.86*math.cos(a1),r*.86*math.sin(a1)))
++    inner=[(r*.61*math.cos(a1-(a1-a0)*j/36),r*.61*math.sin(a1-(a1-a0)*j/36)) for j in range(37)]
++    # slab uses X/Z; gear sectors therefore start directly in the front plane.
++    obj=slab(label,outer+inner,-depth/2,depth/2,role)
++    return place(obj,loc,rot)
++
++
++def clock_heart():
++    cylinder('Solid violet circular dais',(0,0,.23),2.2,.46,'violet_dark',n=48,bevel=True)
++    ring('Dais lower golden rim',2.20,.12,.05,.10,'gold',n=48)
++    ring('Dais upper golden rim',2.18,.10,.42,.09,'gold',n=48)
++    ring('Dais inset celestial circle',1.93,.055,.468,.045,'brass',n=48)
++    for j in range(32):
++        a=TAU*j/32
++        box('Dais raised clock tick',(2.04*math.cos(a),2.04*math.sin(a),.51),
++            (.15 if j%4==0 else .09,.06,.045),'gold',rot=(0,0,a),bevel=False)
++    mound('Collapsed movement core',1.45,1.17,1.18,'gold_dark',loc=(-.15,-.12,.45))
++    # A genuine half dial, jagged along its severed diameter, tilted backward.
++    start=len(PARTS)
++    r=1.72
++    arc=[(r*math.cos(math.pi-j*math.pi/32),r*math.sin(math.pi-j*math.pi/32)) for j in range(33)]
++    lower=[(1.45,-.12),(.98,.09),(.61,-.14),(.19,.11),(-.22,-.12),(-.60,.08),(-1.19,-.16)]
++    slab('Broken half dial dark core',arc+lower,-.25,.09,'gold_dark')
++    slab('Pale half dial face',[(x*.968,z*.965) for x,z in arc+lower],.09,.16,'dial_face')
++    outer=[(r*math.cos(a),r*math.sin(a)) for a in [math.pi-j*math.pi/32 for j in range(33)]]
++    inner=[((r-.13)*math.cos(a),(r-.13)*math.sin(a)) for a in [j*math.pi/32 for j in range(33)]]
++    slab('Half dial gold bezel',outer+inner,.16,.27,'gold')
++    for j,text in enumerate(('IX','X','XI','XII','I','II','III')):
++        a=-math.pi/2+j*math.pi/6
++        roman(text,(1.30*math.sin(a),.21,1.30*math.cos(a)),.25,a)
++    for j in range(25):
++        a=-math.pi/2+j*math.pi/24
++        box('Half dial minute engraving',(1.49*math.sin(a),.20,1.49*math.cos(a)),
++            (.045,.055,.14 if j%4==0 else .075),'dial_mark',rot=(0,a,0),bevel=False)
++    tube('Cracked porcelain gold seam',[(-.41,.205,1.65),(-.25,.205,1.31),(-.39,.205,1.03),
++         (-.10,.205,.68),(-.26,.205,.28)],.035,'crack_gold')
++    for x,z in ((-.27,1.31),(-.11,.68)):
++        star((x,.25,z),.095,'starlight')
++    beam('Broken clock hand',(0,.30,.03),(.68,.30,1.00),.11,.09,'gold')
++    cylinder('Dial pivot',(0,.34,.03),.18,.12,'brass',n=16,rot=FRONT)
++    group(start,(-.48,-.55,2.08),(.25,-.10,-.045))
++    # Lying gear with broad spokes, contrasting dark hub, and a bright axle.
++    gs=len(PARTS)
++    for a0,a1 in ((-math.pi/2,math.pi/2),(math.pi/2,3*math.pi/2)):
++        gear_sector('Lying cast gear',1.02,.23,'gold',a0,a1)
++    for j in range(6):
++        a=TAU*j/6
++        beam('Lying gear broad spoke',(.12*math.cos(a),0,.12*math.sin(a)),
++             (.75*math.cos(a),0,.75*math.sin(a)),.13,.16,'brass')
++    cylinder('Lying gear hub',(0,0,0),.25,.30,'gold_dark',n=16,rot=FRONT)
++    group(gs,(-.92,.85,.74),(math.pi/2,.08,.17))
++    # Standing gear halves have open air between the torn radial edges.
++    for s in (-1,1):
++        hs=len(PARTS)
++        a0,a1=(-math.pi/2,math.pi/2) if s>0 else (math.pi/2,3*math.pi/2)
++        gear_sector('Drifting broken standing gear',1.08,.23,'brass',a0,a1)
++        for a in [a0+(a1-a0)*t for t in (.16,.5,.84)]:
++            beam('Standing gear cast spoke',(.12*math.cos(a),0,.12*math.sin(a)),
++                 (.78*math.cos(a),0,.78*math.sin(a)),.13,.18,'gold')
++        halfhub=[(.25*math.cos(a0+(a1-a0)*j/12),.25*math.sin(a0+(a1-a0)*j/12)) for j in range(13)]
++        slab('Split axle hub',halfhub,-.18,.18,'gold_dark')
++        for sign in (-1,1):
++            tube('Gold torn gear end',[(.02,.15,sign*.66),(.07,.15,sign*.78),(.02,.15,sign*.94)],.035,'crack_gold')
++        group(hs,(.70+s*.14,.42,1.89+(s+1)*.055),(.02,s*.07,0))
++    for x,z in ((.70,.97),(.72,2.75),(.71,1.95)):
++        star((x,.64,z),.11,'starlight')
++    # A detached bob floats beside its broken rod, proud of the base.
++    cylinder('Hovering pendulum bob',(1.43,1.08,1.06),.45,.18,'gold_dark',n=24,rot=FRONT,bevel=True)
++    ring('Bob concentric gold inlay',.34,.065,-.04,.08,'gold',n=24,loc=(1.43,1.20,1.06),rot=FRONT)
++    star((1.43,1.27,1.06),.19,'gold')
++    beam('Broken pendulum upper stem',(1.43,1.08,1.76),(1.43,1.08,2.34),.075,.075,'gold_dark')
++    star((1.43,1.08,1.58),.085,'starlight')
++    tube('Dais gold fault',[(-1.6,.4,.53),(-1.17,.2,.54),(-.81,.4,.54),(-.33,.2,.54)],.035,'crack_gold')
++
++
++def glass_section(label,profile,a0,a1,n=12):
++    # Thick closed low-poly shell section. Missing front panes expose the sand
++    # under the required opaque grey export shader; their remaining triangular
++    # glass corners preserve the outline rather than hiding the hourglass core.
++    cross=profile+[(max(.045,r-.055),z) for r,z in reversed(profile)]
++    m=len(cross)
++    v=[(r*math.cos(a0+(a1-a0)*j/n),r*math.sin(a0+(a1-a0)*j/n),z)
++       for j in range(n+1) for r,z in cross]
++    f=[tuple(reversed(range(m))),tuple(range(n*m,(n+1)*m))]
++    f += [(j*m+k,(j+1)*m+k,(j+1)*m+(k+1)%m,j*m+(k+1)%m)
++          for j in range(n) for k in range(m)]
++    return mesh(label,v,f,'crystal')
++
++
++def hourglass():
++    box('Solid square marble foundation',(0,0,.13),(2.8,2.8,.26),'marble')
++    box('Violet plinth inset',(0,0,.28),(2.59,2.59,.10),'violet')
++    for z,h in ((.43,.22),(4.10,.22)):
++        if z<1:
++            cylinder('Massive gold hourglass bottom plate',(0,0,z),1.35,h,'gold',n=32,bevel=True)
++        else:
++            # An oculus in the carved top plate exposes the upper glass bulb
++            # at 55 degrees; a solid disk would hide its whole upper silhouette.
++            ring('Gold hourglass top plate with oculus',1.35,.29,z-h/2,h,'gold',n=32)
++        ring('Plate violet inlay',1.29,.13,z+h/2,.045,'violet',n=32)
++        ring('Plate golden outer molding',1.36,.08,z-h/2,.07,'gold_dark',n=32)
++    cylinder('Top inset medallion',(0,0,4.245),.33,.08,'violet',n=16)
++    star((0,0,4.30),.29,'gold',points=8,rot=(math.pi/2,0,0))
++    for a in (0,math.pi/2,math.pi,3*math.pi/2):
++        beam('Top plate carved radial bridge',(.30*math.cos(a),.30*math.sin(a),4.15),
++             (1.12*math.cos(a),1.12*math.sin(a),4.15),.10,.08,'gold')
++    # Four turned columns, with collars, capitals and broad fluted shafts.
++    for x in (-.88,.88):
++        for y in (-.88,.88):
++            profile=[(.10,.53),(.19,.53),(.19,.69),(.12,.80),(.115,1.04),
++                     (.16,1.15),(.12,1.30),(.105,3.26),(.16,3.43),(.12,3.55),
++                     (.19,3.76),(.19,3.97),(.10,3.97)]
++            lathe('Turned gold dark hourglass post',profile,'gold_dark',n=12,loc=(x,y,0))
++            for z in (.68,1.16,3.43,3.86):
++                ring('Column golden collar',.19,.065,z,.085,'gold',n=12,loc=(x,y,0))
++            beam('Column violet flute',(x,y+.112,1.45),(x,y+.112,3.10),.045,.045,'violet')
++    lower=[(.70,.64),(.88,.89),(.84,1.19),(.62,1.58),(.26,1.94),(.11,2.17)]
++    upper=[(.11,2.23),(.26,2.46),(.61,2.85),(.84,3.23),(.88,3.56),(.70,3.87)]
++    # Front viewing fracture spans 100 degrees around +Y. Shells remain closed.
++    for label,profile in [('Lower faceted glass bulb',lower),('Upper cracked glass bulb',upper)]:
++        glass_section(label,profile,math.radians(140),math.radians(400),n=13)
++        for a in (math.radians(40),math.radians(140)):
++            tube('Broad crystal window boundary',[(r*math.cos(a),r*math.sin(a),z) for r,z in profile],.045,'crystal')
++    # Sand is violet by chapter palette; the sand role remains distinct in game.
++    mound('Violet sand pile inside lower bulb',.69,.68,.78,'sand',loc=(0,0,.68),n=16)
++    cylinder('Sand at base of bulb',(0,0,.72),.64,.11,'sand',n=16)
++    tube('Frozen violet sand stream',[(0,.08,2.72),(.025,.08,2.38),(-.02,.08,2.12),
++         (.02,.08,1.86),(0,.08,1.47)],.059,'sand',n=8)
++    # Retained triangular front panes frame the open, shattered viewing facet.
++    slab('Lower bulb retained glass facet',[(-.56,.85),(-.18,.67),(-.72,1.14)],.48,.54,'crystal')
++    slab('Upper bulb fractured front pane',[(-.70,3.48),(-.10,3.80),(-.15,2.40)],.43,.49,'crystal')
++    slab('Upper bulb opposite glass facet',[(.58,3.61),(.77,3.22),(.12,2.39)],.39,.45,'crystal')
++    tube('Upper bulb golden fracture',[(-.72,.48,3.46),(-.36,.58,3.33),(-.20,.53,3.08),
++         (.07,.51,3.18),(.31,.48,3.02),(.69,.44,3.14)],.034,'crack_gold')
++    for i,(x,y,z) in enumerate([(-.31,.96,3.48),(.33,1.10,3.38),(.64,.90,2.92)]):
++        shard((x,y,z),.27,.40,'crystal',rot=(.2,-.25+i*.25,.15-i*.21),thickness=.065)
++    for a in (0,math.pi/2,math.pi,3*math.pi/2):
++        star((1.12*math.cos(a),1.12*math.sin(a),.57),.14,'violet',rot=(math.pi/2,0,a))
++    tube('Cracked marble base',[(-1.25,.9,.275),(-.96,.65,.275),(-1.08,.36,.275),(-.74,.06,.275)],.032,'crack_gold')
++
++
++def desert_shard():
++    mound('Full solid sand and void foundation',2.0,1.5,.67,'sand',n=16)
++    mound('Exposed dark intrusion',1.55,.95,.74,'void_stone',loc=(.08,-.19,.02),n=12)
++    # A thick, tilted arch with an intact left pier and a broken right springer.
++    start=len(PARTS)
++    slab('Left sandstone arch pier',[(-1.72,.35),(-.81,.35),(-.84,1.44),(-1.62,1.48)],-.46,.38,'sand',True)
++    for j in range(7):
++        a0=math.radians(12+j*24); a1=a0+math.radians(23.1)
++        out=[(-.23+1.48*math.cos(a0+(a1-a0)*k/3),1.27+1.48*math.sin(a0+(a1-a0)*k/3)) for k in range(4)]
++        inn=[(-.23+.82*math.cos(a1-(a1-a0)*k/3),1.27+.82*math.sin(a1-(a1-a0)*k/3)) for k in range(4)]
++        slab('Carved sandstone arch voussoir',out+inn,-.46,.38,'sand',True)
++        # Dark inset relief follows the arch, breaking the broad sandstone face
++        # into a carved outer molding, recessed field and gold radial accents.
++        inset_out=[(-.23+1.32*math.cos(a0+.05+(a1-a0-.10)*k/3),
++                    1.27+1.32*math.sin(a0+.05+(a1-a0-.10)*k/3)) for k in range(4)]
++        inset_in=[(-.23+.97*math.cos(a1-.05-(a1-a0-.10)*k/3),
++                   1.27+.97*math.sin(a1-.05-(a1-a0-.10)*k/3)) for k in range(4)]
++        slab('Arch dark recessed voussoir field',inset_out+inset_in,.383,.412,'violet_dark')
++        if j in (0,3):
++            beam('Arch inlaid gold radial seam',(-.23+.85*math.cos(a0),.435,1.27+.85*math.sin(a0)),
++                 (-.23+1.44*math.cos(a0),.405,1.27+1.44*math.sin(a0)),.05,.05,'crack_gold')
++    slab('Right broken arch stump',[(.67,.44),(1.44,.46),(1.39,1.11),(1.19,1.20),(.98,1.07),(.72,1.24)],
++         -.46,.38,'sand',True)
++    slab('Exposed void stone broken springer',[(.68,1.33),(1.18,1.51),(1.19,1.20),(.98,1.07),(.72,1.24)],
++         -.48,.40,'void_stone')
++    for z in (.72,1.12):
++        box('Pier recessed carved band',(-1.28,.405,z),(.73,.055,.065),'violet_dark',bevel=False)
++    box('Pier inset void stone relief',(-1.28,.414,.94),(.51,.055,.24),'void_stone')
++    tube('Sandstone golden split',[(-1.53,.43,1.47),(-1.27,.43,1.75),(-1.38,.43,2.02),
++         (-1.10,.43,2.27),(-.98,.43,2.49)],.036,'crack_gold')
++    group(start,(-.03,-.25,.05),(.14,-.11,-.035))
++    # Large mirror blade has a substantial dark core and a broad gold border.
++    blade=[(-.37,.44),(.31,.57),(1.40,3.42),(.72,3.09)]
++    slab('Impaled mirror blade gold edge',blade,-.08,.13,'gold',True)
++    cx=sum(x for x,z in blade)/4; cz=sum(z for x,z in blade)/4
++    inner=[(cx+(x-cx)*.87,cz+(z-cz)*.94) for x,z in blade]
++    slab('Huge embedded mirror face',inner,.13,.18,'mirror')
++    slab('Mirror blade dark back',inner,-.14,-.08,'void_stone')
++    beam('Broad mirror glint',(.33,.205,1.53),(1.06,.205,3.04),.06,.045,'crystal')
++    tube('Blade gold fault',[(.47,.225,2.0),(.72,.225,2.12),(.65,.225,2.33),(.88,.225,2.51)],.032,'crack_gold')
++    mound('Small foreground sand dune',1.02,.62,.45,'sand',loc=(.03,.76,.16),n=14)
++    for x,y,s in [(-1.50,-.49,.61),(1.44,-.28,.63),(-.86,.38,.58),(.67,-.80,.74)]:
++        box('Exposed void strata in sand',(x,y,.39),(s,.63,.43),'void_stone',rot=(.10,.18,x*.22))
++    for x,y,z,s in [(-1.40,.69,.42,.64),(-1.03,1.02,.35,.48),(-1.65,.18,.39,.40),
++                       (1.36,.77,.34,.51),(1.63,.27,.36,.37)]:
++        # Closed, pointed hexagonal crystal prism, deliberately chunky.
++        profile=[(.02,0),(s*.27,0),(s*.31,s*.59),(.035,s*1.5),(.02,s*1.45)]
++        lathe('Foot crystal cluster',profile,'crystal',n=6,loc=(x,y,z),rot=(.1,-.25,x*.12))
++    for i,(x,y,z) in enumerate([(-1.35,-.36,2.92),(-.64,-.54,3.12),(.0,-.46,2.96)]):
++        box('Floating sandstone arch chunk',(x,y,z),(.42,.50,.30),'sand',rot=(.16,.3,i*.36))
++        box('Floating core exposure',(x,y+.26,z),(.32,.045,.16),'void_stone',rot=(0,.3,i*.36))
++    for x,y in [(-.66,.96),(.63,.89)]:
++        star((x,y,.51),.16,'gold',rot=(math.pi/2,0,0))
++
++
++SPECS = [
++    ('LM_MirrorMonolith',(3.0,2.4,4.6),mirror_monolith,8),
++    ('LM_SaloonFragment',(4.6,3.0,3.6),saloon_fragment,8),
++    ('LM_TrainFragment',(5.4,2.6,3.0),train_fragment,7),
++    ('LM_ClockHeart',(4.4,4.4,4.0),clock_heart,8),
++    ('LM_Hourglass',(2.8,2.8,4.4),hourglass,7),
++    ('LM_DesertShard',(4.0,3.0,3.4),desert_shard,7),
++]
++
++
++def triangles(obj):
++    obj.data.calc_loop_triangles()
++    return len(obj.data.loop_triangles)
++
++
++def bounds(obj):
++    return [Vector(tuple(fn(v.co[i] for v in obj.data.vertices) for i in range(3)))
++            for fn in (min,max)]
++
++
++def finish(name,dims,count):
++    bpy.ops.object.select_all(action='DESELECT')
++    for obj in PARTS:
++        obj.select_set(True); bpy.context.view_layer.objects.active=obj
++        for mod in list(obj.modifiers):
++            bpy.ops.object.modifier_apply(modifier=mod.name)
++        obj.select_set(False)
++    for obj in PARTS: obj.select_set(True)
++    bpy.context.view_layer.objects.active=PARTS[0]
++    bpy.ops.object.join()
++    obj=bpy.context.object; obj.name=name; obj.data.name=name+'_Mesh'
++    if triangles(obj)>8000:
++        mod=obj.modifiers.new('Retain role boundaries within 8000 triangles','DECIMATE')
++        mod.ratio=7850/triangles(obj); mod.delimit={'MATERIAL'}
++        bpy.ops.object.modifier_apply(modifier=mod.name)
++    assert triangles(obj)<=8000,(name,triangles(obj))
++    low,high=bounds(obj); span=high-low; centre=(low+high)/2
++    # Fit exact specified outer extents, baking the modest corrections into data.
++    for v in obj.data.vertices:
++        v.co.x=(v.co.x-centre.x)*dims[0]/span.x
++        v.co.y=(v.co.y-centre.y)*dims[1]/span.y
++        v.co.z=(v.co.z-low.z)*dims[2]/span.z
++    bm=bmesh.new(); bm.from_mesh(obj.data)
++    bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
++    assert not any(e.is_boundary or not e.is_manifold for e in bm.edges),name
++    bm.to_mesh(obj.data); bm.free()
++    for face in obj.data.polygons: face.use_smooth=False
++    obj.data.update(); bpy.context.view_layer.update()
++    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
++    assert len(used)==count and 6<=count<=8,(name,used)
++    assert all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
++    low,high=bounds(obj)
++    assert abs(low.z)<1e-5 and abs(high.z-dims[2])<1e-4,(name,low,high)
++    assert abs(low.x+high.x)<1e-4 and abs(low.y+high.y)<1e-4
++    assert all(abs(obj.dimensions[i]-dims[i])<1e-4 for i in range(3))
++    assert obj.location.length<1e-8 and tuple(obj.scale)==(1,1,1)
++    for mat in obj.data.materials:
++        assert mat.name in PALETTE
++        assert tuple(mat.diffuse_color)==(.5,.5,.5,1)
++        assert tuple(mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value)==(.5,.5,.5,1)
++    obj['chapter']='The Collapsing End of Time'; obj['front']='+Y'
++    obj['triangle_count']=triangles(obj); obj['solid_combat_blocker']=True
++    obj['origin']='Bottom centre'; obj['dimensions_m']=list(dims)
++    path=OUTPUT/f'Kit_{name}.fbx'
++    bpy.ops.export_scene.fbx(filepath=str(path),use_selection=True,
++        axis_forward='-Z',axis_up='Y',apply_scale_options='FBX_SCALE_UNITS',
++        bake_space_transform=True,object_types={'MESH'},use_mesh_modifiers=True,
++        mesh_smooth_type='FACE',add_leaf_bones=False,bake_anim=False,use_custom_props=True)
++    assert path.is_file() and path.stat().st_size>1024
++    print(f'EXPORTED {name} {triangles(obj)} {tuple(round(d,4) for d in obj.dimensions)}',flush=True)
++    return obj
++
++
++def preview(objects):
++    scene=bpy.context.scene
++    scene.render.engine='BLENDER_WORKBENCH'
++    scene.render.resolution_x,scene.render.resolution_y=1800,1000
++    scene.render.resolution_percentage=100
++    scene.render.image_settings.file_format='PNG'; scene.render.filepath=str(PREVIEW)
++    scene.render.film_transparent=False
++    scene.view_settings.view_transform='Standard'
++    shade=scene.display.shading
++    shade.light='FLAT'; shade.color_type='MATERIAL'
++    shade.show_shadows=False; shade.show_cavity=True; shade.cavity_type='BOTH'
++    shade.curvature_ridge_factor=1.45; shade.curvature_valley_factor=1.25
++    shade.cavity_ridge_factor=1.3; shade.cavity_valley_factor=1.15
++    shade.show_specular_highlight=False; shade.show_object_outline=True
++    shade.background_type='WORLD'
++    if scene.world is None: scene.world=bpy.data.worlds.new('Review background')
++    scene.world.color=(.023,.016,.045)
++    helpers=[]
++    az=math.radians(16); el=math.radians(55)
++    near=Vector((math.sin(az),math.cos(az),0))
++    right=Vector((-math.cos(az),math.sin(az),0))
++    camera=bpy.data.objects.new('Review camera',bpy.data.cameras.new('Review camera'))
++    scene.collection.objects.link(camera); helpers.append(camera); scene.camera=camera
++    camera.location=near*40*math.cos(el)+Vector((0,0,40*math.sin(el)))
++    camera.rotation_euler=(-camera.location).to_track_quat('-Z','Y').to_euler()
++    camera.data.type='ORTHO'; inv=camera.rotation_euler.to_matrix().transposed()
++
++    def points(obj):
++        return [inv @ (obj.matrix_world @ v.co) for v in obj.data.vertices]
++
++    def label(body,x,y,size,role='marble'):
++        data=bpy.data.curves.new('Review caption','FONT')
++        data.body=body; data.size=size; data.align_x='CENTER'
++        data.materials.append(MATS[role])
++        obj=bpy.data.objects.new('Review caption',data)
++        scene.collection.objects.link(obj); helpers.append(obj)
++        obj.rotation_euler=camera.rotation_euler
++        obj.location=camera.rotation_euler.to_matrix() @ Vector((x,y,8))
++
++    try:
++        for role,mat in MATS.items(): mat.diffuse_color=(*PALETTE[role],1)
++        # Pack the projected widths, retaining real scale and a generous air gap.
++        cursor=0
++        for obj in objects:
++            bpy.context.view_layer.update()
++            pp=points(obj); lo=min(p.x for p in pp); hi=max(p.x for p in pp)
++            obj.location=right*(cursor-lo)
++            cursor+=hi-lo+.78
++        bpy.context.view_layer.update()
++        cloud=[p for obj in objects for p in points(obj)]
++        x0=min(p.x for p in cloud); x1=max(p.x for p in cloud)
++        y0=min(p.y for p in cloud); y1=max(p.y for p in cloud)
++        baseline=y0-.57
++        for obj,(_,dims,_,_) in zip(objects,SPECS):
++            pp=points(obj); x=(min(p.x for p in pp)+max(p.x for p in pp))/2
++            label(obj.name,x,baseline,.235)
++            label(f'{dims[0]:.1f} x {dims[1]:.1f} x {dims[2]:.1f} m',x,baseline-.36,.19,'gold')
++            label(f'{triangles(obj):,} tris',x,baseline-.66,.17,'mirror')
++        mid=(x0+x1)/2
++        label('V  /  THE COLLAPSING END OF TIME',mid,y1+1.65,.49)
++        label('COMBAT LANDMARKS     /     FRACTURED MEMORIES     /     SOLID COVER',mid,y1+1.02,.21,'gold')
++        label('1 : 1 METRES     /     +Y FRONT     /     55 DEG ELEVATION',mid,baseline-1.36,.18,'mirror')
++        bpy.context.view_layer.update()
++        cloud += [inv @ (o.matrix_world @ Vector(c)) for o in helpers if o.type=='FONT' for c in o.bound_box]
++        x0=min(p.x for p in cloud); x1=max(p.x for p in cloud)
++        y0=min(p.y for p in cloud); y1=max(p.y for p in cloud)
++        camera.location+=camera.rotation_euler.to_matrix() @ Vector(((x0+x1)/2,(y0+y1)/2,0))
++        camera.data.ortho_scale=max(x1-x0,(y1-y0)*1.8)*1.065
++        PREVIEW.parent.mkdir(parents=True,exist_ok=True)
++        bpy.ops.render.render(write_still=True)
++        assert PREVIEW.is_file() and PREVIEW.stat().st_size>1024
++        print(f'PREVIEW {PREVIEW}',flush=True)
++    finally:
++        scene.camera=None
++        for obj in helpers: bpy.data.objects.remove(obj,do_unlink=True)
++        for obj in objects: obj.location=(0,0,0)
++        for mat in MATS.values(): mat.diffuse_color=(.5,.5,.5,1)
++
++
++def main():
++    global PARTS
++    bpy.ops.wm.read_factory_settings(use_empty=True)
++    for mat in list(bpy.data.materials): bpy.data.materials.remove(mat)
++    scene=bpy.context.scene
++    scene.unit_settings.system='METRIC'; scene.unit_settings.scale_length=1
++    materials(); OUTPUT.mkdir(parents=True,exist_ok=True)
++    objects=[]
++    for i,(name,dims,build,count) in enumerate(SPECS):
++        PARTS=[]; random.seed(55071+i*7919)
++        build(); objects.append(finish(name,dims,count))
++    assert len(scene.objects)==6 and all(o.type=='MESH' for o in scene.objects)
++    preview(objects)
++    assert len(scene.objects)==6 and all(o.type=='MESH' for o in scene.objects)
++    print('DONE',flush=True)
++
++
++if __name__=='__main__':
++    main()
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup -P Art/tools/blender_kit_ch5_landmarks.py" in C:\Project\Cat_Tang
+ succeeded in 4282ms:
+C:\Project\Cat_Tang\Art\tools\blender_kit_ch5_landmarks.py:42: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_MirrorMonolith.fbx'
+export finished in 0.0067 sec.
+EXPORTED LM_MirrorMonolith 2332 (3.0, 2.4, 4.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_SaloonFragment.fbx'
+export finished in 0.0136 sec.
+EXPORTED LM_SaloonFragment 6490 (4.6, 3.0, 3.6)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_TrainFragment.fbx'
+export finished in 0.0084 sec.
+EXPORTED LM_TrainFragment 7666 (5.4, 2.6, 3.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_ClockHeart.fbx'
+export finished in 0.0076 sec.
+EXPORTED LM_ClockHeart 5874 (4.4, 4.4, 4.0)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_Hourglass.fbx'
+export finished in 0.0102 sec.
+EXPORTED LM_Hourglass 6398 (2.8, 2.8, 4.4)
+
+FBX export starting... 'C:\\Project\\Cat_Tang\\Game\\Assets\\Art\\Characters\\Ch5\\Kit_LM_DesertShard.fbx'
+export finished in 0.0093 sec.
+EXPORTED LM_DesertShard 3610 (4.0, 3.0, 3.4)
+00:03.750  render           | Saved: 'C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch5_landmarks_preview.png'
+PREVIEW C:\Project\Cat_Tang\Art\tools\specs\blender_kit_ch5_landmarks_preview.png
+DONE
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$validationCode = @'"'
+import bpy, math
+from pathlib import Path
+from mathutils import Vector
+root=Path('C:/Project/Cat_Tang')
+specs=[('LM_MirrorMonolith',(3,2.4,4.6),8),('LM_SaloonFragment',(4.6,3,3.6),8),('LM_TrainFragment',(5.4,2.6,3),7),('LM_ClockHeart',(4.4,4.4,4),8),('LM_Hourglass',(2.8,2.8,4.4),7),('LM_DesertShard',(4,3,3.4),7)]
+for name,dims,count in specs:
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=str(root/'Game/Assets/Art/Characters/Ch5'/('Kit_'+name+'.fbx')))
+    obs=list(bpy.context.scene.objects)
+    assert len(obs)==1 and obs[0].type=='MESH' and obs[0].name==name,(name,obs)
+    obj=obs[0]; obj.data.calc_loop_triangles()
+    assert len(obj.data.loop_triangles)<=8000
+    used={obj.data.materials[p.material_index].name for p in obj.data.polygons}
+    assert len(used)==count,(name,used)
+    for mat in obj.data.materials:
+        assert all(abs(c-.5)<1e-5 for c in mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value[:3]),mat.name
+    vertices=[obj.matrix_world @ v.co for v in obj.data.vertices]
+    low=Vector([min(v[i] for v in vertices) for i in range(3)])
+    high=Vector([max(v[i] for v in vertices) for i in range(3)])
+    assert all(abs((high-low)[i]-dims[i])<1e-4 for i in range(3)),(name,high-low)
+    assert abs(low.z)<1e-4 and abs(low.x+high.x)<1e-4 and abs(low.y+high.y)<1e-4,(name,low,high)
+    assert obj.location.length<1e-6,(name,obj.location)
+    print('VERIFIED',name,len(obj.data.loop_triangles),'triangles',count,'grey roles; dimensions and origin OK',flush=True)
+print('ALL SIX FBX ROUNDTRIPS VERIFIED',flush=True)
+'@
+& 'C:/Program Files/Blender Foundation/Blender 5.3/blender.exe' -b --factory-startup --python-expr "'$validationCode' in C:\Project\Cat_Tang
+ succeeded in 2304ms:
+FBX version: 7400
+VERIFIED LM_MirrorMonolith 2332 triangles 8 grey roles; dimensions and origin OK
+FBX version: 7400
+VERIFIED LM_SaloonFragment 6490 triangles 8 grey roles; dimensions and origin OK
+FBX version: 7400
+VERIFIED LM_TrainFragment 7666 triangles 7 grey roles; dimensions and origin OK
+FBX version: 7400
+VERIFIED LM_ClockHeart 5874 triangles 8 grey roles; dimensions and origin OK
+FBX version: 7400
+VERIFIED LM_Hourglass 6398 triangles 7 grey roles; dimensions and origin OK
+FBX version: 7400
+VERIFIED LM_DesertShard 3610 triangles 7 grey roles; dimensions and origin OK
+ALL SIX FBX ROUNDTRIPS VERIFIED
+Blender 5.3.0 (hash 02f0899d78e3 built 2026-11-10 01:33:43)
+
+Blender quit
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short -- Art/tools/blender_kit_ch5_landmarks.py Art/tools/specs/blender_kit_ch5_landmarks_preview.png Game/Assets/Art/Characters/Ch5; Get-ChildItem Game/Assets/Art/Characters/Ch5/Kit_LM_*.fbx | Select-Object Name,Length' in C:\Project\Cat_Tang
+ succeeded in 281ms:
+?? Art/tools/blender_kit_ch5_landmarks.py
+?? Art/tools/specs/blender_kit_ch5_landmarks_preview.png
+?? Game/Assets/Art/Characters/Ch5/
+
+Name                      Length
+----                      ------
+Kit_LM_ClockHeart.fbx     105084
+Kit_LM_DesertShard.fbx     89068
+Kit_LM_Hourglass.fbx       91164
+Kit_LM_MirrorMonolith.fbx  59340
+Kit_LM_SaloonFragment.fbx 143228
+Kit_LM_TrainFragment.fbx  147516
+
+
+
+codex
+Created [blender_kit_ch5_landmarks.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch5_landmarks.py) and ran it successfully.
+
+All six FBXs exported and passed re-import checks for names, dimensions, bottom-centre origins, grey materials, and the 8,000-triangle limit.
+
+Inspected the [preview PNG](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch5_landmarks_preview.png), improved hourglass visibility and desert detailing, then reran successfully through `DONE`.
+tokens used
+53,234
+Created [blender_kit_ch5_landmarks.py](/C:/Project/Cat_Tang/Art/tools/blender_kit_ch5_landmarks.py) and ran it successfully.
+
+All six FBXs exported and passed re-import checks for names, dimensions, bottom-centre origins, grey materials, and the 8,000-triangle limit.
+
+Inspected the [preview PNG](/C:/Project/Cat_Tang/Art/tools/specs/blender_kit_ch5_landmarks_preview.png), improved hourglass visibility and desert detailing, then reran successfully through `DONE`.

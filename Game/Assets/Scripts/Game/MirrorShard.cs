@@ -36,11 +36,11 @@ namespace CatTang
         }
 
         /// <summary>방 하나에 거울 조각 3개 (보스 · 중간 보스 방 제외는 부르는 쪽이 판단)</summary>
-        public static void SpawnSet(ChapterDef ch, RoomBuilder.RoomInfo info, System.Random rnd)
+        public static void SpawnSet(ChapterDef ch, RoomBuilder.RoomInfo info, System.Random rnd, int count = (int)PerRoom)   // 5장은 방마다 2개
         {
             float hw = info.size.x / 2 - 3f, hd = info.size.y / 2 - 3f;
             var area = new Rect(info.center.x - hw, info.center.z - hd, hw * 2, hd * 2);
-            for (int i = 0; i < PerRoom; i++)
+            for (int i = 0; i < count; i++)
             {
                 Vector3 p = info.center;
                 for (int tries = 0; tries < 20; tries++)

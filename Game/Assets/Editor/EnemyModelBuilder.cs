@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace CatTang.EditorTools
 {
-    public static class EnemyModelBuilder
+    public static partial class EnemyModelBuilder
     {
         const string Ch1Src = "Assets/Art/Characters/Ch1/";
         static string SrcDir = Ch1Src;                       // 지금 빌드하는 챕터의 원본 폴더 (2장 빌드 중엔 Ch2)
@@ -140,6 +140,13 @@ namespace CatTang.EditorTools
             { "Ch4_Assassin", ("ch4m_assassinstab", 0.9f, null, 0, false) },
             { "Ch4_Knight", ("ch4m_knightswingr", 1.2f, null, 0, false) },
             { "Ch4_Repairman", ("ch4m_repairtoss", 0.65f, null, 0, false) },
+            // 5장 (2026-11-19 사용자: 앞 장 모션 재활용 말고 다른 느낌으로) → 전용 클립 (EnemyMotions.Ch5, 글리치 · 둥실). 보스는 아직 행동이 없어 기본 공격만
+            { "Ch5_Gunner", ("ch5m_gunnershot", 0.85f, null, 0, false) },
+            { "Ch5_Witch", ("ch5m_witchcast", 0.95f, "ch5m_witchlink", 0.65f, false) },
+            { "Ch5_Giant", ("ch5m_giantslam", 1.45f, "ch5m_giantdash", 1.5f, false) },
+            { "Ch5_Assassin", ("ch5m_assassinslash", 0.9f, null, 0, false) },
+            { "Ch5_Caster", ("ch5m_casterlob", 0.55f, "ch5m_casteropen", 0.6f, false) },
+            { "Ch5_Boss", ("ch5m_bossreap", 1.4f, null, 0, false) },
             // 2장: 전용 클립 (Ch2Motion — 근육 커브로 만든 코드 클립, 짐꾼은 PorterRig)
             { "Ch2_Conductor", ("ch2m_conductorflick", 0.9f, null, 0, false) },
             { "Ch2_Conductor_Plus", ("ch2m_conductorflick", 0.8f, null, 0, false) },
@@ -174,6 +181,12 @@ namespace CatTang.EditorTools
             { "Ch4_Assassin", new[] { ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
             { "Ch4_Knight", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
             { "Ch4_Repairman", new[] { ("Wind", "ch4m_repairwind", 0.95f, false), ("Toss", "ch4m_repairtoss", 0.65f, false) } },
+            { "Ch5_Gunner", new[] { ("Shot", "ch5m_gunnershot", 0.85f, false) } },
+            { "Ch5_Witch", new[] { ("Cast", "ch5m_witchcast", 0.95f, false), ("Link", "ch5m_witchlink", 0.65f, false) } },
+            { "Ch5_Giant", new[] { ("Slam", "ch5m_giantslam", 1.45f, false), ("Dash", "ch5m_giantdash", 1.5f, false) } },
+            { "Ch5_Assassin", new[] { ("Dive", "ch5m_assassindive", 0.45f, false), ("Emerge", "ch5m_assassinemerge", 1.4f, false), ("Slash", "ch5m_assassinslash", 0.9f, false), ("Breath", "ch5m_assassinbreath", 1.0f, false) } },
+            { "Ch5_Caster", new[] { ("Open", "ch5m_casteropen", 0.6f, false), ("Lob", "ch5m_casterlob", 0.55f, false) } },
+            { "Ch5_Boss", new[] { ("ReapWind", "ch5m_bossreapwind", 1.1f, false), ("ReapDash", "ch5m_bossreapdash", 1.05f, false), ("Reap", "ch5m_bossreap", 1.4f, false), ("Cast", "ch5m_bosscast", 1.1f, false), ("Spear", "ch5m_bossspear", 1.2f, false) } },
         };
         // 달리기 대신 쓸 전용 걷기 (없으면 고양이 run)
         static readonly Dictionary<string, string> Walks = new()
@@ -183,6 +196,12 @@ namespace CatTang.EditorTools
             { "Ch4_Assassin", "ch4m_assassinrun" },
             { "Ch4_Knight", "ch4m_knightwalk" },
             { "Ch4_Repairman", "ch4m_repairscurry" },
+            { "Ch5_Gunner", "ch5m_gunnerwalk" },
+            { "Ch5_Witch", "ch5m_witchwalk" },
+            { "Ch5_Giant", "ch5m_giantwalk" },
+            { "Ch5_Assassin", "ch5m_assassinrun" },
+            { "Ch5_Caster", "ch5m_casterwalk" },
+            { "Ch5_Boss", "ch5m_bosswalk" },
         };
 
         // 고양이 idle 대신 쓸 전용 idle (무기 든 팔을 고정)
@@ -193,10 +212,16 @@ namespace CatTang.EditorTools
             { "Ch4_Assassin", "ch4m_assassinidle" },
             { "Ch4_Knight", "ch4m_knightidle" },
             { "Ch4_Repairman", "ch4m_repairidle" },
+            { "Ch5_Gunner", "ch5m_gunneridle" },
+            { "Ch5_Witch", "ch5m_witchidle" },
+            { "Ch5_Giant", "ch5m_giantidle" },
+            { "Ch5_Assassin", "ch5m_assassinidle" },
+            { "Ch5_Caster", "ch5m_casteridle" },
+            { "Ch5_Boss", "ch5m_bossidle" },
         };
 
         /// <summary>4장 강화형(Ch4_*_Plus)은 기본 적의 무기 · 손잡이 각도 · 스킬 모션 · idle · 걸음을 그대로 씀</summary>
-        static string Base4(string n) => n != null && n.StartsWith("Ch4_") && n.EndsWith("_Plus") ? n.Substring(0, n.Length - 5) : n;
+        static string Base4(string n) => n != null && (n.StartsWith("Ch4_") || n.StartsWith("Ch5_")) && n.EndsWith("_Plus") ? n.Substring(0, n.Length - 5) : n;   // 5장 강화형도 같은 규칙 (2026-11-19)
 
         [MenuItem("CatTang/적 전용 모션 다시 만들기 (클립 + 컨트롤러)")]
         public static void RebuildMotions()
@@ -212,13 +237,13 @@ namespace CatTang.EditorTools
                 {
                     string n = kv.Key;
                     if (PorterRig.IsPorter(n)) continue;                       // 짐꾼은 PorterRig 전용 (원본 FBX에서 클립을 굽기 때문에 따로)
-                    SrcDir = n.StartsWith("Ch2_") ? Ch2Src : n.StartsWith("Ch3_") ? Ch3Src : n.StartsWith("Ch4_") ? Ch4Src : Ch1Src;
+                    SrcDir = n.StartsWith("Ch2_") ? Ch2Src : n.StartsWith("Ch3_") ? Ch3Src : n.StartsWith("Ch4_") ? Ch4Src : n.StartsWith("Ch5_") ? Ch5Src : Ch1Src;
                     string cp = SrcDir + n + ".controller";
                     if (!AssetDatabase.LoadAssetAtPath<AnimatorController>(cp)) continue;   // 프리팹이 아직 없는 적
                     MakeController(n, kv.Value);                                // 같은 자산을 비우고 다시 채움 → 프리팹 참조 그대로
                     touched.Add(cp);
                     // 4장 강화형 컨트롤러 (기본과 같은 상태)
-                    if (n.StartsWith("Ch4_") && AssetDatabase.LoadAssetAtPath<AnimatorController>(SrcDir + n + "_Plus.controller")) { MakeController(n + "_Plus", kv.Value); touched.Add(SrcDir + n + "_Plus.controller"); }
+                    if ((n.StartsWith("Ch4_") || n.StartsWith("Ch5_")) && AssetDatabase.LoadAssetAtPath<AnimatorController>(SrcDir + n + "_Plus.controller")) { MakeController(n + "_Plus", kv.Value); touched.Add(SrcDir + n + "_Plus.controller"); }
                 }
             }
             finally { SrcDir = Ch1Src; }
@@ -494,7 +519,7 @@ namespace CatTang.EditorTools
             var sets = new (string src, string dir, Dictionary<string, Color> pal)[]
             {
                 (Ch1Src, KitDir, ModelPalette.Ch1), (Ch2Src, Kit2Dir, ModelPalette.Ch2), (Ch3Src, Kit3Dir, ModelPalette.Ch3),
-                (Ch4Src, Kit4Dir, ModelPalette.Ch4),
+                (Ch4Src, Kit4Dir, ModelPalette.Ch4), (Ch5Src, Kit5Dir, ModelPalette.Ch5),
             };
             int made = 0;
             try
@@ -689,6 +714,7 @@ namespace CatTang.EditorTools
             { "Ch4_Knight/PendulumScythe", new Vector3(32.7f, 113.7f, 302.6f) },
             { "Ch4_Knight/PendulumScythePlus", new Vector3(32.7f, 113.7f, 302.6f) },   // 같은 손잡이 규칙(원점 = 손잡이, 긴 축 +Z)이라 같은 각도
             { "Ch4_Repairman/Wrench", new Vector3(37.7f, 142.9f, 344.6f) },
+            // 5장: 4장 각도를 빌렸더니 보스 낫이 가로로 몸을 관통 · 마녀 지팡이가 거꾸로 매달림 (2026-11-19 사용자 지적) → EnemyModelBuilderCh5.Aim5가 idle 자세에서 방향을 잡음
         };
         static readonly string[] WeaponNames4 = { "Rifle", "Bell", "Hammer", "NeedleDagger", "PendulumScythe", "Wrench", "Greatsword", "Rapier", "PendulumScythePlus" };
         const float WeaponDesignHeight = 2.2f;   // 무기 크기를 정한 기준 키 (명세: 2등신 인형 약 2.2m)
@@ -780,9 +806,11 @@ namespace CatTang.EditorTools
             {
                 var anim = root.GetComponentInChildren<Animator>();
                 if (!anim || !anim.avatar || !anim.avatar.isHuman) { Debug.LogWarning($"[EnemyModelBuilder] {prefabPath} 휴머노이드 아님 — 무기 안 붙임"); return; }
+                string who = Base4(System.IO.Path.GetFileNameWithoutExtension(prefabPath));
+                var restore = who.StartsWith("Ch5_") ? SampleIdle5(anim) : null;      // 5장: idle 자세의 손에서 방향을 잡음 (끝나면 뼈 원래대로)
                 foreach (var (w, right) in ws)
                 {
-                    var wp = AssetDatabase.LoadAssetAtPath<GameObject>(Kit4Dir + "W_" + w + ".prefab");
+                    var wp = AssetDatabase.LoadAssetAtPath<GameObject>(PartsDir + "W_" + w + ".prefab");
                     var hand = anim.GetBoneTransform(right ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
                     if (!wp || !hand) continue;
                     var mid = anim.GetBoneTransform(right ? HumanBodyBones.RightMiddleProximal : HumanBodyBones.LeftMiddleProximal);
@@ -793,9 +821,11 @@ namespace CatTang.EditorTools
                     var up = Quaternion.AngleAxis(25f, root.transform.right) * root.transform.up;     // 위로 세우되 앞으로 살짝
                     go.transform.SetPositionAndRotation(grip, Quaternion.LookRotation((fwd - Vector3.Dot(fwd, up) * up).normalized, up));
                     go.transform.localScale = Vector3.one * (height / WeaponDesignHeight);
+                    if (restore != null && Aim5(root.transform, w, right, out var aim)) go.transform.rotation = aim;
                     go.transform.SetParent(hand, true);
-                    if (WeaponGrip4.TryGetValue(Base4(System.IO.Path.GetFileNameWithoutExtension(prefabPath)) + "/" + w, out var ge)) go.transform.localRotation = Quaternion.Euler(ge);
+                    if (restore == null && WeaponGrip4.TryGetValue(who + "/" + w, out var ge)) go.transform.localRotation = Quaternion.Euler(ge);
                 }
+                if (restore != null) foreach (var (t, lp, lr) in restore) if (t) { t.localPosition = lp; t.localRotation = lr; }   // 뼈를 묶음 자세로 (무기는 손 자식이라 함께 돌아감)
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
@@ -824,7 +854,7 @@ namespace CatTang.EditorTools
                 if (!anim || !anim.avatar || !anim.avatar.isHuman) return;
                 foreach (var (p, b, off) in ps)
                 {
-                    var pp = AssetDatabase.LoadAssetAtPath<GameObject>(Kit4Dir + "KP_" + p + ".prefab");
+                    var pp = AssetDatabase.LoadAssetAtPath<GameObject>(PartsDir + PartPrefix + p + ".prefab");
                     var bone = anim.GetBoneTransform(b);
                     if (!pp || !bone) { Debug.LogWarning($"[EnemyModelBuilder] 장비 {p} 없음 — 건너뜀"); continue; }
                     var go = (GameObject)PrefabUtility.InstantiatePrefab(pp);
@@ -1256,6 +1286,7 @@ namespace CatTang.EditorTools
             // 3장 키트: 거울면 · 수정 속 · 빛가루는 빛나는 단색
             if (name.StartsWith("Kit_") && SrcDir == Ch3Src) GlowMats(inst);
             if (name.StartsWith("Kit_V_") && SrcDir == VillageSrc) VillageGlowMats(inst);
+            if (name.StartsWith("Kit_") && SrcDir == Ch5Src) Ch5GlowMats(inst);   // 5장: 금 균열 · 별빛 · 거울 · 자홍은 빛나는 단색
 
             // 폭발물: 주황 ↔ 노랑 맥동 바깥 테두리 (2026-11-17 사용자: 몬스터처럼 테두리로 터진다는 걸 알려 줌)
             if (Explosives.Contains(name)) root.AddComponent<CatTang.DangerEdge>();
@@ -1283,7 +1314,7 @@ namespace CatTang.EditorTools
                 foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)))
                     if (o is AnimationClip c && !c.name.StartsWith("__preview") && c.name.ToLower().Contains(key) && c.isHumanMotion) return c;
             // 에디터에서 만든 .anim (MakeJumpClip 등)
-            foreach (var guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { SrcDir.TrimEnd('/'), Ch1Src.TrimEnd('/') }))
+            foreach (var guid in AssetDatabase.FindAssets("t:AnimationClip", SrcDir == Ch5Src ? new[] { SrcDir.TrimEnd('/'), Ch1Src.TrimEnd('/'), Ch3Src.TrimEnd('/'), Ch4Src.TrimEnd('/') } : new[] { SrcDir.TrimEnd('/'), Ch1Src.TrimEnd('/') }))
             {
                 var p = AssetDatabase.GUIDToAssetPath(guid);
                 if (!p.EndsWith(".anim")) continue;
@@ -1592,7 +1623,7 @@ namespace CatTang.EditorTools
         }
 
         // 배경 톤을 낮추지 않는 것: 픽업 · 폭발물 (폭발물은 DangerEdge 주황 테두리가 붙음)
-        static readonly HashSet<string> Pickups = new() { "Kit_Heart", "Kit_XpGem", "Kit_SandBomb", "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart", "Kit_MemoryCrystal" };
+        static readonly HashSet<string> Pickups = new() { "Kit_Heart", "Kit_XpGem", "Kit_SandBomb", "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart", "Kit_MemoryCrystal", "Kit_WarpedKeg", "Kit_WarpedTrunk" };
         // 바닥에 깔리는 납작한 조각 (전차대 · 선로 · 승강장 가장자리)
         // 원점 높이를 그대로 두는 조각 (밑이 바닥 아래로 내려가는 것): 섬 가장자리 밑면 · 제단 테두리
         static readonly HashSet<string> KeepOrigin = new() { "Kit_Cliff_Island", "Kit_Altar",
@@ -1622,7 +1653,7 @@ namespace CatTang.EditorTools
 
         static readonly HashSet<string> FlatFloor = new() { "Kit_Turntable", "Kit_Arena", "Kit_RailTrack", "Kit_PlatformEdge", "Kit_Ripple", "Kit_Pebbles3", "Kit_Altar" };
         // 쏘면 터지는 물체 (1장 화약통 · 2장 증기 밸브 · 공중에 멈춘 짐 · 광차) → 프리팹에 DangerEdge
-        static readonly HashSet<string> Explosives = new() { "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart", "Kit_MemoryCrystal" };
+        static readonly HashSet<string> Explosives = new() { "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart", "Kit_MemoryCrystal", "Kit_WarpedKeg", "Kit_WarpedTrunk" };
 
         static Material ToonFor(string name, Material src, int index)
         {
@@ -1642,17 +1673,19 @@ namespace CatTang.EditorTools
             if (!tex && ModelPalette.TryResolve(src, flat, out var pal)) flat = pal;
             m.SetColor("_BaseColor", tex ? Color.white : flat);
             // 1장 팔레트: 황혼 보라 그림자 + 금빛 테두리. 4장(느와르)은 색 없는 회색 그림자 (2026-11-19 사용자: 흑백 대비)
-            bool noir = name.StartsWith("Ch4_") || name.StartsWith("Kit_W_") || ModelPalette.Active == ModelPalette.Ch4;
-            m.SetColor("_ShadeColor", noir ? new Color(0.6f, 0.6f, 0.63f) : new Color(0.72f, 0.58f, 0.66f));
-            m.SetColor("_SecondShadeColor", noir ? new Color(0.3f, 0.3f, 0.33f) : new Color(0.45f, 0.34f, 0.46f));
+            bool noir = name.StartsWith("Ch4_") || (name.StartsWith("Kit_W_") && SrcDir == Ch4Src) || ModelPalette.Active == ModelPalette.Ch4;
+            bool cosmos = name.StartsWith("Ch5_") || SrcDir == Ch5Src;   // 5장: 보랏빛 그림자 (보라 · 금 우주)
+            m.SetColor("_ShadeColor", noir ? new Color(0.6f, 0.6f, 0.63f) : cosmos ? new Color(0.7f, 0.6f, 0.86f) : new Color(0.72f, 0.58f, 0.66f));
+            m.SetColor("_SecondShadeColor", noir ? new Color(0.3f, 0.3f, 0.33f) : cosmos ? new Color(0.4f, 0.3f, 0.58f) : new Color(0.45f, 0.34f, 0.46f));
             if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", FlatFloor.Contains(name) ? 1f : 4f);   // 2026-11-16 사용자: 외곽선 두껍게 (납작한 바닥 조각은 판자 선이 지글거려 얇게)
             if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.5f);
             // 배경 키트는 채도 · 밝기를 낮춤 (EnvTone), 캐릭터 · 하트 · 폭탄 · 화약통은 원래 색
-            bool env = name.StartsWith("Kit_") && !Pickups.Contains(name);
+            bool env = name.StartsWith("Kit_") && !Pickups.Contains(name) && !(SrcDir == Ch5Src && (name.StartsWith("Kit_W_") || name.StartsWith("Kit_EP_") || name == "Kit_Ch5_MirrorPhantom"));
             if (m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", env ? EnvTone.Saturation : 1f); m.SetFloat("_Brightness", env ? EnvTone.Brightness : 1f); }
             // 적: 배경과 갈리게 살짝 진홍 외곽선 + 붉은 가장자리 빛 (2026-11-17 사용자: 적에게 살짝 배경선)
             if ((name.StartsWith("Ch1_") || name.StartsWith("Ch2_") || name.StartsWith("Ch3_")) && !name.EndsWith("_Merchant")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }
-            if (name.StartsWith("Ch4_") && !name.EndsWith("_Merchant")) EnemyEdge(m);   // 4장 적: 느와르 원래 색 그대로 + 빨간 바깥 테두리만   // 적 배색 2안 (차가운 한 계열). 상인은 적이 아님
+            if ((name.StartsWith("Ch4_") || name.StartsWith("Ch5_")) && !name.EndsWith("_Merchant")) EnemyEdge(m);   // 5장 적도 원래 색 그대로 + 빨간 바깥 테두리
+            if (name == "Kit_Ch5_MirrorPhantom") EnemyEdge(m);   // 4장 적: 느와르 원래 색 그대로 + 빨간 바깥 테두리만   // 적 배색 2안 (차가운 한 계열). 상인은 적이 아님
             // 3장 블렌더 보스(마술사 · 고래): 적이라 빨간 바깥 테두리 (색은 이미 차가운 몬스터 색으로 뽑아 배색 치환은 안 함)
             if (name == "Kit_Ch3_Magician" || name == "Kit_Ch3_Whale") EnemyEdge(m);
             if ((name == "Kit_Heart" || name == "Kit_XpGem") && m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", 1.15f); m.SetFloat("_Brightness", 1.12f); }   // 하트 · 경험치 보석은 더 선명하게
