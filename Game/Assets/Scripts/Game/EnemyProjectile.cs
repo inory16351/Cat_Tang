@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace CatTang
 {
-    public class EnemyProjectile : MonoBehaviour
+    public class EnemyProjectile : MonoBehaviour, IPooled
     {
         public enum Style { Orb, Revolver, Pellet, Sniper, Needle, Numeral, Ticket }
 
@@ -216,12 +216,68 @@ namespace CatTang
         }
 
         /// <summary>range > 0이면 그 거리만큼 날아가면 사라짐 (산탄 사거리). hour는 숫자 탄의 시각(1~12)</summary>
+        // 풀링 (2026-11-20): 장별 외형과 스타일별 완성 탄을 보관해 자식과 꼬리를 다시 만들지 않는다.
+        static readonly string[][] poolKeys = MakeKeys();
+        static readonly string[] hours = { "", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" };
+        static string[][] MakeKeys()
+        {
+            var keys = new string[6][];
+            for (int ch = 0; ch < keys.Length; ch++)
+            {
+                keys[ch] = new string[7];
+                for (int i = 0; i < 7; i++) keys[ch][i] = "EnemyBullet_" + ch + "_" + i;
+            }
+            return keys;
+        }
+        static string Key(Style style)
+        {
+            int chapter = RunManager.Instance && RunManager.Instance.Chapter != null ? RunManager.Instance.Chapter.Id : 0;
+            return poolKeys[Mathf.Clamp(chapter, 0, 5)][(int)style];
+        }
+        TrailRenderer trail;
+        TextMesh number;
+        Vector3 spriteScale;
+        Mesh spriteMesh, haloMesh;
+        public static void Prewarm(Style style, int count, int maxCreate = int.MaxValue) => GameObjectPool.Prewarm(Key(style), factory, count, maxCreate);
+        public void OnSpawned()
+        {
+            OnHitPlayer = null; OnBounced = null;
+            pierceCover = shootable = mirrored = false; frozenUntil = homing = 0f; bounces = 0;
+            dir = Vector3.zero; speed = damage = dieAt = rangeLeft = born = 0f;
+            sprite.localPosition = Vector3.zero; sprite.localRotation = Quaternion.identity; sprite.localScale = spriteScale;
+            halo.localPosition = Vector3.zero; halo.localRotation = Quaternion.identity; halo.localScale = Vector3.one;
+            if (flip != null) sprR.sharedMaterial = flip[0];
+            trail.emitting = false; trail.Clear();
+        }
+        public void OnDespawned()
+        {
+            if (frozenUntil == float.MaxValue) Enemy.ForgetPooledProjectile(this);
+            OnHitPlayer = null; OnBounced = null;
+            trail.emitting = false; trail.Clear();
+        }
+        void OnDestroy() { if (spriteMesh) Destroy(spriteMesh); if (haloMesh) Destroy(haloMesh); }
+
         public static EnemyProjectile Spawn(Vector3 pos, Vector3 dir, float speed, float damage, float range = 0, Style style = Style.Orb, int hour = 0)
         {
             dir.y = 0;
             dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.forward;
-            var root = new GameObject("EnemyBullet_" + style);
+            var root = GameObjectPool.Get(Key(style), factory);
             root.transform.position = pos;
+            var p = root.GetComponent<EnemyProjectile>();
+            p.dir = dir; p.speed = speed; p.damage = damage;
+            p.born = Time.time; p.dieAt = Time.time + 6f;
+            p.rangeLeft = range > 0 ? range : float.MaxValue;
+            if (p.number) p.number.text = hours[Mathf.Clamp(hour, 1, 12)];
+            p.trail.Clear(); p.trail.emitting = true;
+            p.Face();
+            return p;
+        }
+
+        static readonly System.Func<string, GameObject> factory = Create;
+        static GameObject Create(string key)
+        {
+            var style = (Style)(key[key.Length - 1] - '0');
+            var root = new GameObject(key);
             var c = ColorOf(style);
             float len = LengthOf(style);
             var flip = Ch3Frames(style);
@@ -248,7 +304,7 @@ namespace CatTang
                 tm.font = font;
                 if (!numeralMat) numeralMat = new Material(font.material) { renderQueue = 3006 };    // 스프라이트(3005) 위에
                 t.GetComponent<MeshRenderer>().sharedMaterial = numeralMat;
-                tm.text = Mathf.Clamp(hour, 1, 12).ToString();
+                tm.text = hours[1];
                 tm.fontSize = 64; tm.characterSize = 0.075f; tm.fontStyle = FontStyle.Bold;
                 tm.anchor = TextAnchor.MiddleCenter; tm.color = Ch5 ? Color.white : new Color(0.22f, 0.03f, 0.3f);   // 5장: 어두운 보라 원판 위 흰 숫자
                 t.transform.localScale = new Vector3(1f / len, 1f / (len * aspect), 1) * 0.55f;
@@ -268,9 +324,6 @@ namespace CatTang
             tr.minVertexDistance = 0.05f;
 
             var p = root.AddComponent<EnemyProjectile>();
-            p.dir = dir;
-            p.speed = speed;
-            p.damage = damage;
             p.style = style;
             p.sprite = spr.transform;
             p.flip = flip;
@@ -278,11 +331,12 @@ namespace CatTang
             p.halo = halo.transform;
             p.haloSize = hs;
             p.length = len;
-            p.born = Time.time;
-            p.dieAt = Time.time + 6f;
-            p.rangeLeft = range > 0 ? range : float.MaxValue;
-            p.Face();
-            return p;
+            p.trail = tr;
+            p.spriteScale = spr.transform.localScale;
+            p.number = style == Style.Numeral ? spr.GetComponentInChildren<TextMesh>() : null;
+            p.spriteMesh = spr.GetComponent<MeshFilter>().sharedMesh;
+            p.haloMesh = halo.GetComponent<MeshFilter>().sharedMesh;
+            return root;
         }
 
         // 카메라를 보고 눕되, 화면에서 진행 방향으로 머리가 향하게
@@ -390,12 +444,13 @@ namespace CatTang
         /// <summary>사라짐: 맞으면 탄 색 불꽃, 사거리 끝이면 조용히. 꼬리는 남겨 흐려지게</summary>
         void Pop(Vector3 at, bool quiet = false)
         {
+            if (!enabled) return;
             if (!quiet) Spark(at, style == Style.Pellet ? 0.7f : style == Style.Orb ? 1.4f : 1.0f, ColorOf(style));
-            var tr = GetComponent<TrailRenderer>();
-            foreach (Transform ch in transform) Destroy(ch.gameObject);
+            sprite.gameObject.SetActive(false); halo.gameObject.SetActive(false);
             enabled = false;
-            if (tr) { tr.emitting = false; Destroy(gameObject, tr.time); }
-            else Destroy(gameObject);
+            All.Remove(this);
+            trail.emitting = false;
+            GameObjectPool.ReleaseAfter(gameObject, trail.time);
         }
     }
 }

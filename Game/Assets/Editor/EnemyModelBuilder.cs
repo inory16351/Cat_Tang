@@ -636,6 +636,8 @@ namespace CatTang.EditorTools
             ("Kit_Deco_Pew", 3.0f, 'w', "Deco_Pew"),
             ("Kit_Deco_Reliquary", 2.0f, 'h', "Deco_Reliquary"),
             ("Kit_Deco_FloorDial", 6.0f, 'w', "Deco_FloorDial"),
+            // 보스 경기장 은빛 거대 문자판 (2026-11-20, blender_kit_ch4_bossfloor.py)
+            ("Kit_Ch4_BossFloor", 40f, 'w', "BossFloor"),
         };
 
         [MenuItem("CatTang/4장 키트 만들기 (블렌더)")]
@@ -739,6 +741,8 @@ namespace CatTang.EditorTools
             { "Ch4_Knight/PendulumScythe", new Vector3(32.7f, 113.7f, 302.6f) },
             { "Ch4_Knight/PendulumScythePlus", new Vector3(32.7f, 113.7f, 302.6f) },   // 같은 손잡이 규칙(원점 = 손잡이, 긴 축 +Z)이라 같은 각도
             { "Ch4_Repairman/Wrench", new Vector3(37.7f, 142.9f, 344.6f) },
+            // 시침 대검 (2026-11-20 사용자: 남은 작업 — 쥔 각도가 위로 솟아 어색): 칼끝이 몸 앞 아래(앞 0.75 · 아래 0.65)를 향하게 쉬는 자세에서 잼
+            { "Ch4_HourHand/Greatsword", new Vector3(311.6f, 271.4f, 165.9f) },
             // 5장: 4장 각도를 빌렸더니 보스 낫이 가로로 몸을 관통 · 마녀 지팡이가 거꾸로 매달림 (2026-11-19 사용자 지적) → EnemyModelBuilderCh5.Aim5가 idle 자세에서 방향을 잡음
         };
         static readonly string[] WeaponNames4 = { "Rifle", "Bell", "Hammer", "NeedleDagger", "PendulumScythe", "Wrench", "Greatsword", "Rapier", "PendulumScythePlus" };
@@ -1676,7 +1680,7 @@ namespace CatTang.EditorTools
             return top;
         }
 
-        static readonly HashSet<string> FlatFloor = new() { "Kit_Turntable", "Kit_Arena", "Kit_RailTrack", "Kit_PlatformEdge", "Kit_Ripple", "Kit_Pebbles3", "Kit_Altar" };
+        static readonly HashSet<string> FlatFloor = new() { "Kit_Turntable", "Kit_Arena", "Kit_RailTrack", "Kit_PlatformEdge", "Kit_Ripple", "Kit_Pebbles3", "Kit_Altar", "Kit_Ch4_BossFloor" };
         // 쏘면 터지는 물체 (1장 화약통 · 2장 증기 밸브 · 공중에 멈춘 짐 · 광차) → 프리팹에 DangerEdge
         static readonly HashSet<string> Explosives = new() { "Kit_Keg", "Kit_SteamValve", "Kit_FloatLuggage", "Kit_MineCart", "Kit_MemoryCrystal", "Kit_WarpedKeg", "Kit_WarpedTrunk" };
 

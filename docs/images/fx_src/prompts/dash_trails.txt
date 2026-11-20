@@ -1,0 +1,25 @@
+Use your image generation tool to create SIX images and save them exactly at these paths (create folders if needed). Do not edit any other file. After saving, print the six paths and their pixel sizes.
+
+Game: Cat_Tang, a top-down action shooter (camera looks down at about 57 degrees). These sheets are DASH TRAIL effects: a monster charges in a straight line and the effect is left on the ground BEHIND it along its path.
+Style: cel-shaded, flat colours, 3-4 hard-edged tone bands, crisp dark ink outlines, bold readable game VFX (like Brawl Stars / Hades effects). NOT realistic, NOT soft blurry glow, NOT photographic smoke.
+
+COMMON LAYOUT for every sheet:
+- Size 2048 x 256 px: a horizontal strip of 8 square frames (256 x 256 each), played left to right as an animation.
+- MOTION DIRECTION: in every frame the monster is moving toward the RIGHT edge (off-frame). The trail therefore streams from the right side toward the LEFT, its newest/thickest part on the right, its tail thinning and breaking up to the left. Elements are swept/stretched horizontally.
+- The ground line is the lower third of the frame; trail elements hug the ground and rise only a little.
+- Background: pure flat GREEN #00FF00 everywhere that is not the effect (it will be keyed out). Never use green inside the effect.
+- Each frame's effect stays inside its own square with a ~6% green margin.
+- Frames 1-2: the trail bursts out (thickest, brightest). Frames 3-5: it streams left and billows. Frames 6-8: it breaks into pieces and fades/shrinks away (frame 8 almost empty).
+- No text, no letters, no numbers, no frame lines or borders between frames.
+
+1) `docs/images/fx_src/dash_sand.png` — chapter 1 wild-west desert clock town. A gust of churned-up SAND: low tan/ochre sand clouds (#F2D59A light, #D9A35B mid, #9C6232 shade, ink #3B2414) swept into a wedge-shaped wake, with flying sand grains and two or three small spinning BRASS clockwork gears (#E7B04A with dark ink) tumbling out of it.
+
+2) `docs/images/fx_src/dash_steam.png` — chapter 2 frozen train station. A blast of locomotive STEAM: puffy white-grey steam clouds (#FFFFFF, #D6D9E2, #9CA1B3 shade, ink #2C2A3A) rolling back in a horizontal plume, with bright orange RAIL-GRIND SPARKS (#FFD25A core, #FF7A1E) skittering along the ground line and a few black coal chips.
+
+3) `docs/images/fx_src/dash_water.png` — chapter 3 mirror lake. A WATER SPRAY wake: a curling V-shaped bow wave of pale cyan water (#E9FBFF, #9EE3F5, #4FA9D2 shade, ink #1D3B5A) splashing back with round droplets, plus small rose-pink and sky-blue GLASS GLINTS (4-point sparkles, #FFB7DE and #BFEFFF) caught in the spray.
+
+4) `docs/images/fx_src/dash_laser.png` — chapter 4 noir clockwork temple, strong black-and-white contrast with RED accent only. Parallel RED LASER SPEED LINES (white-hot core #FFFFFF, red #FF2A2A, deep blood edge #7A0710, black ink) streaking left from the right edge, with small SILVER COG TEETH and needle shards (#F2F2F2 face, #8C8C96 shade, black ink) spinning off them.
+
+5) `docs/images/fx_src/dash_rift.png` — chapter 5 collapsing end of time. A torn VOID RIFT along the path: a jagged horizontal crack in space showing deep violet void (#3A1A6A) with tiny white stars, edged with hot magenta (#FF2FB4, #FF6FD0, white-hot rim), with broken violet glass chips and a few gold (#FFC64A) sparks flying back from it.
+
+6) `docs/images/fx_src/dash_mirror.png` — chapter 5 mirror cat (a living silver mirror). A spray of MIRROR SHARDS: sharp triangular silver mirror fragments (pale #F4F7FF face, #B9C6E0 shade, white highlight edge, dark ink #22273A) streaming left like a broken reflection, with faint ghostly silver speed streaks and a couple of white 4-point glints.

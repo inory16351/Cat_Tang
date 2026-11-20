@@ -55,6 +55,13 @@ namespace CatTang
         static readonly Vector3 ScytheInner = new(0f, 1.3f, 0f), ScytheOuter = new(-1.45f, 1.95f, 0f);
         Transform scythe;
         Transform Scythe() { if (!scythe && model) foreach (var t in model.GetComponentsInChildren<Transform>(true)) if (t.name == "Weapon_TimeScythe") { scythe = t; break; } return scythe; }
+        // 대낫을 코드로 쥐는 조종기 (2026-11-20 사용자: 최종 보스 낫 휘두르기도 크게 · 가감속 · 랫키호테 칼빛 붙이는 방식)
+        WeaponSwingRig srig;
+        WeaponSwingRig SRig()
+        {
+            if (!srig && self) { srig = WeaponSwingRig.Get(self, "TimeScythe", new Color(1f, 0.18f, 0.72f), true); if (srig) { srig.streakTip = ScytheOuter; srig.streakGrip = ScytheInner; srig.streakExtend = 1.25f; } }
+            return srig;
+        }
         void ScytheFlash(float dur) { if (!FlashRibbon.Begin(Scythe(), ScytheInner, ScytheOuter, dur, StylizedFx.Magenta, 0.18f)) StylizedFx.Slash(transform.position, Effects.Flat(transform.forward), ReapRange, StylizedFx.Magenta, 1.4f); }
 
         protected override void Setup()
@@ -344,17 +351,33 @@ namespace CatTang
         {
             var d = ToPlayer();
             transform.rotation = Quaternion.LookRotation(d);
-            var t = Telegraph.Sector(transform.position, d, ReapRange, 90f, T(ReapWindup), Telegraph.Danger, transform).NoLaser();
             Sfx.Play("e5b_reap_wind", 0.5f);
-            yield return Wait(T(ReapWindup));
+            // 낫을 오른쪽 뒤로 크게 감고(몸을 젖힘) → 멈칫 → 240° 수평 호로 베고 감속. 예고 · 판정 = 칼빛이 쓸고 가는 부채꼴 (조종기가 없으면 예전 180° · ReapRange)
+            var rig = SRig();
+            float wu = T(ReapWindup), act = 0.3f, wh = 0.08f;   // (사용자: 조금 느리게)
+            Vector3 rc = d; float rHalf = 90f, rR = ReapRange;
+            if (rig)
+            {
+                var sw = new WeaponSwingRig.Swing
+                {
+                    axis = Vector3.up, from = new Vector3(0.82f, -0.04f, -0.57f), sweep = -250f,   // 낫을 눕혀 수평으로 크게 (사용자: 눕혀서 크게)
+                    wind = Mathf.Max(0.15f, wu - act - wh), windHold = wh, act = act, actPow = 2.4f, hold = 0.25f, rec = 0.6f,
+                    bodyFollow = rig.BodyOnly ? 0.75f : 0.15f, leanBack = 10f, leanFwd = 14f, lunge = 0.8f, streak = 1f,
+                };
+                if (!rig.BodyOnly) (rc, rHalf, rR) = rig.Sector(sw, d);
+                rig.Play(sw);
+            }
+            var t = Telegraph.Sector(transform.position, rc, rR, rHalf, wu, Telegraph.Danger, transform).NoLaser();
+            yield return Wait(wu);
             if (t) t.Kill();
-            ScytheFlash(0.22f);
+            if (rig) rig.Impact(transform.position + d * rR * 0.55f, 1.3f, StylizedFx.Magenta); else ScytheFlash(0.22f);
+            ReaperFx.BigSlash(transform.position, d, rR, true);   // (2026-11-20 사용자) 최종 보스 포스: 잉크 연기 · 깃털 · 불티 겹 베기
             Sfx.Play("e5b_reap_dash", 0.7f, 0.05f, 2);
             var p = P;
             if (p)
             {
                 var to = Effects.Flat(p.transform.position - transform.position);
-                if (to.magnitude <= ReapRange && Vector3.Angle(d, to) <= 90f && Landed(p)) CutTime(ReapCut);
+                if (WeaponSwingRig.InSector(p.transform.position, transform.position, rc, rHalf, rR) && Landed(p)) CutTime(ReapCut);
             }
             PropHit.Area(transform.position + d * 3f, 3f, 40f);
             yield return Wait(T(0.5f));
@@ -370,8 +393,11 @@ namespace CatTang
             var p = P; if (!p) yield break;
             var d = ToPlayer();
             float wind = T(GhostWind);
+            // 길 폭 = 낫 칼빛이 쓸고 가는 폭 (돌진하며 낫이 몸 둘레를 크게 돎 → 칼빛 반지름 × 2). 예고 · 판정 같은 값
+            var gr = SRig();
+            float gw = gr && !gr.BodyOnly ? gr.EffectRadius(1.1f) * 2f : GhostWidth;
             var from = transform.position;
-            var tele = Telegraph.Lane(from, d, GhostDash + 1f, GhostWidth, wind, Telegraph.Danger);
+            var tele = Telegraph.Lane(from, d, GhostDash + 1f, gw, wind, Telegraph.Danger);
             Sfx.Play("e5b_reap_wind", 0.7f);
             var aura = StylizedFx.Spawn("swirl", from, Quaternion.identity, new Vector3(2f, 1.5f, 2f), new Vector3(3.2f, 4.5f, 3.2f), 0.3f, StylizedFx.Void, 300f, wind, 0.1f);
             // 예고 동안 방향은 앞 75%만 따라감 (마지막 순간엔 고정 → 옆으로 피할 틈)
@@ -382,7 +408,7 @@ namespace CatTang
                 {
                     d = Vector3.Slerp(d, ToPlayer(), 3f * Time.deltaTime).normalized;
                     if (tele) tele.Kill();
-                    tele = Telegraph.Lane(transform.position, d, GhostDash + 1f, GhostWidth, wind - t, Telegraph.Danger);
+                    tele = Telegraph.Lane(transform.position, d, GhostDash + 1f, gw, wind - t, Telegraph.Danger);
                 }
                 transform.rotation = Quaternion.LookRotation(d);
                 yield return null;
@@ -398,7 +424,15 @@ namespace CatTang
             var rel = Effects.Flat(to - C); if (rel.magnitude > arenaR - 2.5f) to = C + rel.normalized * (arenaR - 2.5f);
             float len = Effects.Flat(to - from).magnitude;
             Ghostly(true);
-            ScytheFlash(T(GhostDashTime) + 0.12f);                               // 수평으로 베어 넘기는 낫 끝을 따라 섬광 리본
+            // 돌진하며 오른쪽 뒤에서 앞을 지나 왼쪽 뒤까지 280° 베어 넘김 (돌진과 같은 시간, 처음 빠르게 → 끝에서 미끄러지며 감속)
+            var rig = SRig();
+            if (rig) rig.Play(new WeaponSwingRig.Swing
+            {
+                axis = Vector3.up, from = new Vector3(0.88f, -0.04f, -0.47f), sweep = -280f,
+                wind = 0.06f, windHold = 0f, act = T(GhostDashTime), actPow = 2f, hold = 0.2f, rec = 0.5f,
+                bodyFollow = rig.BodyOnly ? 0.6f : 0.1f, leanBack = 6f, leanFwd = 18f, streak = 1.1f,
+            });
+            else ScytheFlash(T(GhostDashTime) + 0.12f);                          // 조종기가 없으면 예전 섬광 리본
             bool hit = false; float nextImg = 0;
             for (float t = 0; t < 1f; t += Time.deltaTime / T(GhostDashTime))
             {
@@ -406,7 +440,7 @@ namespace CatTang
                 transform.position = Vector3.Lerp(from, to, k);
                 if (Time.time >= nextImg && model) { nextImg = Time.time + 0.035f; Afterimage.Spawn(model, new Color(0.8f, 0.3f, 1f, 0.55f), 0.32f, false); }
                 float mv = k * len;
-                if (!hit && p && p.health.Alive && Telegraph.InLane(p.transform.position, from, d, GhostDash + 1f, GhostWidth, mv - 2f, mv + 2.5f))
+                if (!hit && p && p.health.Alive && Telegraph.InLane(p.transform.position, from, d, GhostDash + 1f, gw, mv - 2f, mv + 2.5f))
                 {
                     hit = true;
                     if (Landed(p)) { CutTime(GhostCut); p.health.Knockback(d * 9f); StylizedFx.Burst(p.transform.position + Vector3.up, 2.5f, StylizedFx.Magenta); }
@@ -414,8 +448,7 @@ namespace CatTang
                 yield return null;
             }
             transform.position = to;
-            StylizedFx.Shockwave(to, 4f, StylizedFx.Void, 0.4f);
-            CameraFollow.Shake(0.15f);
+            ReaperFx.DashEnd(to, d);                                                 // 멈춘 자리 잉크 연기 폭발 · 깃털 · 불티 (예전: Void 충격 고리 + 흔들림 0.15)
             PropHit.Area(to, 3f, 40f);
             Ghostly(false);
             yield return Wait(T(0.6f));                                              // 베어 넘긴 자세로 미끄러져 멈춘 빈틈

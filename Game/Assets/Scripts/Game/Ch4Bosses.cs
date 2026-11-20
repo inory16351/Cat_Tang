@@ -5,7 +5,9 @@
 //   점멸 묶음 = 짧은 옆걸음(1~2.5m) 3~5번 좌우 번갈아 + 엉뚱한 자리에 가짜 잔상(붉은 / 청록으로 갈라진 몸).
 //   마지막엔 고양이 바로 앞(1.8m) 자리에 아주 짧은 글리치 예고(0.3초) → 나타나자마자 X자 베기 (대시로 피할 틈은 남김).
 // - 패턴 (4장 기획서 14쪽): 진자 십자 베기(가까움) · 단두대 내려찍기(가까움) · 톱니 원반 던지기(멂) · 초침 자객 호출(거리 무관).
-//   고유 기믹(진자 운동 · 판결의 수 · 끊어진 추)은 아직 안 넣음.
+// - 고유 기믹 (기획서 11 ~ 13쪽): 진자 운동(12초 뒤 첫 발동 · 25초마다, 왼쪽 / 오른쪽 번갈아 8번, 7번째 엇박) ·
+//   판결의 수(25초 뒤 · 25초마다, 진자 운동과 8초 이상 떨어뜨림, 숫자 n · 5초 카운트다운 → 발사 시각 = n 무죄) ·
+//   끊어진 추(체력 66 / 33% 확정, 추 3개 · 자기 시각 탄에만 멈춤 · 12초)
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -69,8 +71,9 @@ namespace CatTang
         public override string DisplayName => "진자 집행관";
 
         // 전광석화 점멸
-        public const float ChainEveryMin = 2.2f, ChainEveryMax = 3.6f;   // 패턴 사이 점멸 이동 간격
-        public const float BlinkGlitch = 0.15f, BlinkGap = 0.16f;        // 사라지기 전 지직거림 · 나타난 뒤 다음 점멸까지
+        public const float ChainEveryMin = 3.0f, ChainEveryMax = 4.5f;   // 패턴 사이 점멸 이동 간격
+        public const float BlinkGlitch = 0.2f, BlinkGap = 0.32f;         // 사라지기 전 지직거림 · 나타난 뒤 다음 점멸까지 (2026-11-20 사용자: 사이 간격이 너무 빠름 → 0.16 → 0.32)
+        public const float BlinkFar = 7f;                                // (2026-11-20 사용자) 고양이가 이보다 멀 때만 전광석화로 다가옴, 가까우면 그냥 걸음
         // (2026-11-20 사용자: 많이 이동하기보다 흔들리면서 궤적을 헷갈리게 하다가 갑자기 나타나 공격) → 짧은 옆걸음 점멸 + 가짜 잔상
         public const float StepMin = 1.0f, StepMax = 2.5f, StepIn = 0.9f;    // 옆으로 튀는 거리 · 한 번에 다가오는 거리
         public const float CreepSpeed = 0.45f;                               // 평소 이속 배율 (천천히 다가오며 지직거림)
@@ -83,6 +86,16 @@ namespace CatTang
         public const float DiscSpeed = 9f, DiscDmg = 22f;
 
         float nextChain, nextJitter;
+        // 고유 기믹
+        public const float SwingFirst = 12f, SwingEvery = 25f, SwingTell = 0.6f, SwingDmg = 22f;
+        static readonly float[] SwingGaps = { 1.2f, 1.1f, 1f, 0.9f, 0.85f, 0.8f, 0.7f, 0.7f };
+        public const float VerdictFirst = 25f, VerdictEvery = 25f, VerdictCount = 5f, VerdictStun = 2f, VerdictFail = 0.25f;
+        public const float WeightTime = 12f, WeightDmg = 22f, WeightFail = 0.1f, WeightStun = 3f;
+        float nextSwing, nextVerdict;
+        bool inGimmick;
+        readonly HashSet<int> weightDone = new();
+        readonly Dictionary<Health, int> weightHour = new();
+        readonly HashSet<Health> weightStopped = new();
         Transform model;
 
         protected override void Setup()
@@ -92,13 +105,37 @@ namespace CatTang
             Add("톱니 원반 던지기", Reach.Far, Discs);
             Add("초침 자객 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2);
             nextChain = Time.time + 1.2f;
+            nextSwing = Time.time + SwingFirst;
+            nextVerdict = Time.time + VerdictFirst;
         }
 
-        void Start() { model = transform.Find("Model"); }
+        void Start() { model = transform.Find("Model"); if (P) P.OnFired += OnPlayerFired; }
+
+        // 칼빛 리본: 이 모델은 무기가 몸 메시에 붙어 있어 무기 뼈가 없음 → 오른손 뼈 기준, 칼끝 = 아래팔 → 손 방향으로 1.5m 늘인 자리 (플레이로 각도 확인 필요)
+        Transform hand; Vector3 tipLocal, gripLocal;
+        void BladeRibbon(float swing)
+        {
+            if (!hand)
+            {
+                var anim = model ? model.GetComponentInChildren<Animator>() : null;
+                if (!anim || !anim.isHuman) return;
+                hand = anim.GetBoneTransform(HumanBodyBones.RightHand);
+                var fore = anim.GetBoneTransform(HumanBodyBones.RightLowerArm);
+                if (!hand || !fore) return;
+                var along = (hand.position - fore.position).normalized;
+                tipLocal = hand.InverseTransformPoint(hand.position + along * 1.5f);
+                gripLocal = hand.InverseTransformPoint(hand.position + along * 0.35f);
+            }
+            BladeStreak.Begin(hand, tipLocal, gripLocal, swing, BladeStreak.Ch4Base);
+        }
+        protected override void OnDisable() { base.OnDisable(); if (P) P.OnFired -= OnPlayerFired; Glitch.Show(model, true); }
 
         // 평소: 천천히 다가오며 몸이 계속 지직거리고, 가끔 옆으로 툭 튐 (궤적을 헷갈리게)
         protected override void Move(PlayerController p, Vector3 dir, float dist, float spd)
         {
+            if (inGimmick) return;
+            // 가까우면(전광석화 거리 안) 지직거림 · 옆 튐 없이 그냥 걸어서 다가옴
+            if (dist <= BlinkFar) { if (dist > NearDist * 0.7f) transform.position += dir * spd * Time.deltaTime; return; }
             if (dist > NearDist * 0.7f) transform.position += dir * spd * CreepSpeed * Time.deltaTime;
             if (Time.time < nextJitter) return;
             nextJitter = Time.time + T(JitterEvery) * Random.Range(0.6f, 1.4f);
@@ -116,7 +153,12 @@ namespace CatTang
 
         protected override System.Func<IEnumerator> Forced()
         {
-            if (Time.time >= nextChain) return BlinkChain;
+            // 끊어진 추(체력 구간 확정) > 판결의 수 · 진자 운동(쿨) > 전광석화
+            foreach (int th in new[] { 66, 33 })
+                if (!weightDone.Contains(th) && hp.hp <= hp.maxHp * th / 100f) { weightDone.Add(th); return () => G(Weights()); }
+            if (Time.time >= nextVerdict) { nextVerdict = Time.time + VerdictEvery; nextSwing = Mathf.Max(nextSwing, Time.time + 8f); return () => G(Verdict()); }
+            if (Time.time >= nextSwing) { nextSwing = Time.time + SwingEvery; nextVerdict = Mathf.Max(nextVerdict, Time.time + 8f); return () => G(PendulumSwing()); }
+            if (Time.time >= nextChain && Dist() > BlinkFar) return BlinkChain;   // 멀 때만 전광석화
             return null;
         }
 
@@ -195,7 +237,7 @@ namespace CatTang
         {
             Sfx.Play("e4_scythe", 0.8f, 0.05f, 2);
             CameraFollow.Shake(0.12f);
-            FxBurst.Spawn(transform.position + Vector3.up * 1.4f + dir * 1.6f, 2.2f, FxBurst.Kind.Slash, new Color(1f, 0.3f, 0.3f));
+            BladeRibbon(0.35f);   // (2026-11-20 사용자) 4장 적처럼 무기 궤적 = 레이저 리본 (예전: 판 그림 FxBurst.Slash)
             var p = P;
             if (p && p.health.Alive)
             {
@@ -274,6 +316,143 @@ namespace CatTang
                 RunManager.Instance?.AddEnemy(e);
             }
             yield return Wait(T(0.4f));
+        }
+        // ================= 고유 기믹 =================
+        IEnumerator G(IEnumerator inner)
+        {
+            inGimmick = true;
+            float pausedAt = Time.time;
+            yield return inner;
+            float paused = Time.time - pausedAt;                                 // 기믹 동안 다른 쿨은 멈춤
+            nextSwing += paused; nextVerdict += paused; nextChain = Time.time + 1.5f;
+            hp.invulnerable = false;
+            inGimmick = false;
+        }
+
+        Vector3 RoomC => RunManager.Instance ? RunManager.Instance.RoomCenter : transform.position;
+        Vector2 RoomSize => RunManager.Instance && RunManager.Instance.CurrentRoom != null ? RunManager.Instance.CurrentRoom.size : new Vector2(28, 24);
+
+        // ① 진자 운동: 천장 진자가 방을 왼쪽 / 오른쪽으로 번갈아 8번 쓸어 냄 (간격 1.2 → 0.7초, 7번째 엇박 = 같은 쪽 두 번).
+        //    쓸 쪽 바닥 0.6초 붉게 예고 → 방 절반 피해 22. 집행관은 제자리에서 칼날로 박자를 맞춤 (공격 가능)
+        IEnumerator PendulumSwing()
+        {
+            BossFx.Toast("진자 운동 — 진자가 쓸고 가는 반대쪽으로!");
+            var c = RoomC; var size = RoomSize;
+            bool left = Random.value < 0.5f;
+            for (int i = 0; i < 8; i++)
+            {
+                if (i == 6) left = !left;                                        // 7번째 엇박: 같은 쪽 두 번
+                float sx = left ? -1f : 1f;
+                var half = c + new Vector3(sx * size.x / 4f, 0, 0);
+                Telegraph.Lane(half - new Vector3(0, 0, size.y / 2f), Vector3.forward, size.y, size.x / 2f, SwingTell, Telegraph.Danger).NoGlint();
+                Sfx.Play("e4_tick", 0.6f, 0f, 2);
+                if (self) self.Anim(left ? "SwingL" : "SwingR");
+                yield return Wait(SwingTell);
+                Sfx.Play("e4_scythe", 0.8f, 0.05f, 2);
+                CameraFollow.Shake(0.15f);
+                FxBurst.Spawn(half + Vector3.up * 1.5f, 3f, FxBurst.Kind.Slash, new Color(1f, 0.3f, 0.3f));
+                var p = P;
+                if (p && p.health.Alive && Mathf.Sign(p.transform.position.x - c.x) == sx) p.health.TakeDamage(SwingDmg);
+                left = !left;
+                yield return Wait(Mathf.Max(0.1f, SwingGaps[i] - SwingTell * 0.5f));
+            }
+        }
+
+        // ② 판결의 수: 고양이 머리 위 숫자 n(2~11) → 5초 카운트다운 → 0일 때 발사 시각 = n 이면 무죄(단두대가 집행관 쪽, 2초 기절), 아니면 유죄(고양이 자리 단두대, 최대 체력 25%)
+        IEnumerator Verdict()
+        {
+            var p = P;
+            if (!p) yield break;
+            int n = Random.Range(2, 12);
+            BossFx.Toast($"판결의 수 — 0이 될 때 발사 시각을 {n}시로 맞춰라!");
+            var tag = Label(p.transform, new Vector3(0, 3.2f, 0), n.ToString(), new Color(1f, 0.25f, 0.25f), 1.4f);
+            var count = Label(transform, new Vector3(0, 5.2f, 0), "5", Color.white, 1.2f);
+            for (int s = 5; s > 0; s--)
+            {
+                if (count) count.text = s.ToString();
+                Sfx.Play("e4_tick", 0.7f, 0f, 2);
+                yield return Wait(1f);
+            }
+            if (tag) Destroy(tag.gameObject);
+            if (count) Destroy(count.gameObject);
+            p = P;
+            if (!p) yield break;
+            bool innocent = p.rev.next == n;
+            var at = innocent ? Effects.Flat(transform.position) : Effects.Flat(p.transform.position);
+            Telegraph.Ring(at, 1.6f, 0.35f, innocent ? Telegraph.Aim : Telegraph.Danger);
+            yield return Wait(0.35f);
+            CameraFollow.Shake(0.25f);
+            Sfx.Play("e5_giant_slam", 0.9f, 0f, 2);
+            FxBurst.Spawn(at + Vector3.up, 2.4f, FxBurst.Kind.Slash, innocent ? Color.white : new Color(1f, 0.25f, 0.25f));
+            if (innocent) { BossFx.Toast("무죄 — 단두대가 집행관에게!"); hp.ApplyStun(VerdictStun); }
+            else { BossFx.Toast($"유죄 — 발사 시각 {p.rev.next}시"); if (Effects.Flat(p.transform.position - at).magnitude <= 1.6f) p.health.TakeDamage(p.health.maxHp * VerdictFail); }
+            yield return Wait(0.3f);
+        }
+
+        // ③ 끊어진 추: 추 3개(서로 다른 시각 1~12), 흔들림 반경 2m → 3초마다 +1m (최대 6m), 닿으면 22.
+        //    추는 자기 시각 탄에만 멈춤 (다른 탄은 튕김). 12초 뒤 남은 추 하나당 최대 체력 10%, 다 멈추면 집행관 3초 기절. 진행 동안 집행관은 멈추고 무적
+        IEnumerator Weights()
+        {
+            BossFx.Toast("끊어진 추 — 추의 숫자와 같은 시각 탄으로 멈춰라!");
+            hp.invulnerable = true;
+            var c = RoomC; var size = RoomSize;
+            var hours = new List<int>();
+            while (hours.Count < 3) { int h = Random.Range(1, 13); if (!hours.Contains(h)) hours.Add(h); }
+            weightHour.Clear(); weightStopped.Clear();
+            var anchors = new List<Vector3>(); var axes = new List<Vector3>(); var bodies = new List<Transform>(); var phases = new List<float>();
+            for (int i = 0; i < 3; i++)
+            {
+                var a = c + new Vector3((i - 1) * size.x * 0.28f, 0, Random.Range(-size.y * 0.15f, size.y * 0.15f));
+                var go = new GameObject("BrokenWeight_" + hours[i]);
+                go.transform.position = a;
+                Own(go);
+                Ch3Fx.Prim(PrimitiveType.Sphere, "Weight", go.transform, Vector3.up * 1.1f, Vector3.one * 1.6f, new Color(0.25f, 0.25f, 0.28f));
+                var h = Ch3Fx.Target(go, 0.9f, 2f);
+                weightHour[h] = hours[i];
+                Label(go.transform, new Vector3(0, 2.6f, 0), hours[i].ToString(), new Color(1f, 0.85f, 0.4f), 1.2f);
+                anchors.Add(a); axes.Add(Quaternion.Euler(0, Random.Range(0f, 180f), 0) * Vector3.right); bodies.Add(go.transform); phases.Add(Random.Range(0f, 6.28f));
+            }
+            float start = Time.time, end = start + WeightTime;
+            var lastTouch = new float[3];
+            while (Time.time < end && weightStopped.Count < 3)
+            {
+                float r = Mathf.Min(6f, 2f + Mathf.Floor((Time.time - start) / 3f));
+                var p = P;
+                for (int i = 0; i < 3; i++)
+                {
+                    var b = bodies[i];
+                    if (!b) continue;
+                    var h = b.GetComponent<Health>();
+                    if (weightStopped.Contains(h)) continue;
+                    b.position = anchors[i] + axes[i] * Mathf.Sin((Time.time - start) * 2.2f + phases[i]) * r;
+                    if (p && p.health.Alive && Time.time - lastTouch[i] > 0.8f && Effects.Flat(p.transform.position - b.position).magnitude < 1.3f) { lastTouch[i] = Time.time; p.health.TakeDamage(WeightDmg); }
+                }
+                yield return null;
+            }
+            int left = 3 - weightStopped.Count;
+            hp.invulnerable = false;
+            if (left == 0) { BossFx.Toast("추가 다 멈췄다 — 집행관 기절!"); hp.ApplyStun(WeightStun); }
+            else
+            {
+                CameraFollow.Shake(0.3f);
+                Sfx.Play("e4_whirl", 0.9f, 0f, 2);
+                var p = P;
+                if (p && p.health.Alive) p.health.TakeDamage(p.health.maxHp * WeightFail * left);
+            }
+            foreach (var b in bodies) if (b) Destroy(b.gameObject);
+            weightHour.Clear(); weightStopped.Clear();
+        }
+
+        void OnPlayerFired(int slot, bool awake)
+        {
+            if (weightHour.Count == 0) return;
+            foreach (var kv in weightHour)
+            {
+                var h = kv.Key;
+                if (!h || weightStopped.Contains(h) || Time.time - h.lastHitAt > 0.001f) continue;
+                if (slot == kv.Value) { weightStopped.Add(h); Sfx.Play("e4_clank", 0.8f, 0.05f, 2); FxBurst.Spawn(h.transform.position + Vector3.up, 1.4f, FxBurst.Kind.Gold, Color.white); }
+                else FxBurst.Spawn(h.transform.position + Vector3.up, 0.8f, FxBurst.Kind.Spark, Color.white);
+            }
         }
     }
 }

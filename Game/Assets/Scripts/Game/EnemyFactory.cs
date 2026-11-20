@@ -25,6 +25,7 @@ namespace CatTang
             e.kind = kind;
             if (kind != Enemy.Kind.Boss) EnemyHpBar.Attach(h, height + 0.45f);
             StatusFx.Attach(h, height);
+            DashTrail.Attach(e);                 // 돌진하면 길 뒤에 장 컨셉 꼬리 (스스로 알아챔)
             return e;
         }
 
@@ -39,6 +40,8 @@ namespace CatTang
             m.name = "Model";
             foreach (var c in m.GetComponentsInChildren<Collider>()) Object.Destroy(c);
             e.SetModel(m.transform);
+            // 발을 바닥에 맞춤 (프리팹 Mesh가 올라가 있어 뜨던 것). 시간의 주인은 원래 떠 있는 사신이라 뺌
+            if (!res.Contains("LordOfTime") && res != "Ch5_Boss") GroundFeet.Add(m);
             return true;
         }
 
@@ -368,6 +371,7 @@ namespace CatTang
             if (elite) MakeElite(e, plus);
             e.GetComponent<Health>().RefreshRenderers();
             EyeTrail.Attach(e, Enemy.Ch5Magenta);   // 빠르게 움직일 때 자홍 눈빛 꼬리 (4장과 같은 규칙)
+            if (kind == Enemy.Kind.RuinGiant) HeavyStep.Attach(e, elite ? 0.85f : 0.7f, 2f);   // 육중한 발걸음 흙먼지
             return e;
         }
 
@@ -442,6 +446,7 @@ namespace CatTang
             if (ch.Id == 2) return MidBoss2(pos, ch);
             if (ch.Id == 3) return MidBoss3(pos, ch);
             if (ch.Id == 4) return MidBoss4(pos, ch);
+            if (ch.Id == 5) return MidBoss5(pos, ch);
             var e = Root("MidBoss_BountyHunter", pos, 1080 * ch.HpMul, Enemy.Kind.Boss, 1.3f, 3.8f);
             if (!AttachModel(e, "Ch1_MidBoss"))
             {
@@ -518,9 +523,56 @@ namespace CatTang
             return e;
         }
 
+        // 5장 중간 보스: 거울 속의 고양이 · 체력 10260 · 이속 4.5 (모델 Ch5_MidBoss = 주인공 고양이 + 거울 셰이더) · 행동 Ch5MidBoss
+        static Enemy MidBoss5(Vector3 pos, ChapterDef ch)
+        {
+            var e = Root("MidBoss_MirrorCat", pos, 10260, Enemy.Kind.Boss, 0.6f, 2.4f);
+            if (!AttachModel(e, "Ch5_MidBoss")) Proto2(e, ch, new Color(0.8f, 0.86f, 0.95f), 2.2f, 0.6f);
+            e.speed = 4.5f;
+            e.chapter = ch;
+            e.chapterDmg = 1f;
+            e.GetComponent<Health>().IsBoss = true;
+            e.brain = e.gameObject.AddComponent<Ch5MidBoss>();
+            e.GetComponent<Health>().RefreshRenderers();
+            EyeTrail.Attach(e);
+            HeavyStep.Attach(e, 0.45f, 1.6f);   // 발걸음 흙먼지 (작은 몸이라 작게)
+            return e;
+        }
+
         /// <summary>4장 초침 자객 (집행관 호출용)</summary>
         public static Enemy Assassin4(Vector3 pos, ChapterDef ch) =>
             Make4("Enemy_TickAssassin", "Ch4_Assassin", pos, ch, false, 156, Enemy.Kind.TickAssassin, 0.55f, 2.6f, 0f, 0, Enemy.StabDmg);
+
+        // 4장 보스: 시침 · 분침 쌍둥이 (체력 따로 5000 · 4180, Hyper3D 모델) — 시침을 돌려주고 분침은 RunManager에 따로 넣음. 지휘 = TwinDirector (Ch4Twins.cs)
+        static Enemy Boss4(Vector3 pos, ChapterDef ch)
+        {
+            Enemy Twin(string name, string model, float hpv, float r, float h, float speed, bool hour, Vector3 at)
+            {
+                var e = Root(name, at, hpv, Enemy.Kind.Boss, r, h);
+                if (!AttachModel(e, model)) Proto2(e, ch, hour ? new Color(0.75f, 0.75f, 0.78f) : new Color(0.7f, 0.15f, 0.18f), h * 0.85f, r);
+                e.speed = speed;
+                e.chapter = ch;
+                e.chapterDmg = 1f;
+                e.GetComponent<Health>().IsBoss = true;
+                e.brain = hour ? e.gameObject.AddComponent<Ch4HourBrain>() : (BossBrain)e.gameObject.AddComponent<Ch4MinuteBrain>();
+                e.GetComponent<Health>().RefreshRenderers();
+                EyeTrail.Attach(e);
+                if (hour) HeavyStep.Attach(e, 1.0f, 2.6f);   // 시침: 육중한 발걸음 흙먼지
+                if (hour)
+                {
+                    // 시침 대검 (2026-11-20 사용자: 몸에 박혀 있음 → 낮게 비스듬히 든 하단 자세, 칼끝은 앞 오른쪽 바닥 근처). 휘두를 때 WeaponSwingRig가 칼을 직접 쥠
+                    var rig = WeaponSwingRig.Get(e, "Greatsword", BladeStreak.Ch4Base, false);
+                    if (rig) { rig.reach = 0.9f; rig.streakExtend = 1.1f; rig.SetRest(new Vector3(0.32f, -0.36f, 0.88f), Vector3.right); }
+                }
+                return e;
+            }
+            var side = Vector3.right * 4f;
+            var hourE = Twin("Boss_HourHand", "Ch4_HourHand", 5000, 1.8f, 5f, 2.4f, true, pos - side);
+            var minE = Twin("Boss_MinuteHand", "Ch4_MinuteHand", 4180, 1.0f, 4f, 4.2f, false, pos + side);
+            RunManager.Instance?.AddEnemy(minE);
+            TwinDirector.Make((Ch4TwinBrain)hourE.brain, (Ch4TwinBrain)minE.brain);
+            return hourE;
+        }
 
         // 3장 보스: 거울 고래 · 체력 7020(표) · 이속 3 (블렌더 + Codex 길이 14m, 조각 움직임 WhaleAnim)
         static Enemy Boss3(Vector3 pos, ChapterDef ch)
@@ -547,6 +599,7 @@ namespace CatTang
             e.GetComponent<Health>().IsBoss = true;
             e.brain = e.gameObject.AddComponent<Ch2Boss>();
             e.GetComponent<Health>().RefreshRenderers();
+            HeavyStep.Attach(e, 1.2f, 3f);   // 기관차 거인 발걸음 흙먼지
             return e;
         }
 
@@ -562,6 +615,10 @@ namespace CatTang
             e.brain = e.gameObject.AddComponent<Ch5Boss>();
             e.GetComponent<Health>().RefreshRenderers();
             EyeTrail.Attach(e, Enemy.Ch5Magenta, 4.9f, 0.55f, 0.32f);   // 시계 얼굴 양옆에서 자홍 눈빛 꼬리 (돌진 때)
+            HoverFloat.Attach(e);                                        // 떠다님: 둥실거림 · 이동 방향으로 기울기 (사용자: 걷지 말고 떠다니게)
+            // 대낫 (2026-11-20 사용자: "낫 두 손으로 들게 해, 사신처럼, 너무 크다"): 10m → 55%, 양손, 쉬는 자세 = 자루를 몸 앞 대각선으로 세워 날이 머리 위
+            var srig = WeaponSwingRig.Get(e, "TimeScythe", new Color(1f, 0.18f, 0.72f), false);
+            if (srig && !srig.BodyOnly) { srig.ScaleWeapon(0.55f); srig.twoHand = true; srig.handGap = 1.1f; srig.reach = 0.75f; srig.SetRest(new Vector3(-0.35f, 0.85f, 0.4f), Vector3.right); }
             return e;
         }
 
@@ -570,6 +627,7 @@ namespace CatTang
             if (ch.Id == 5) return Boss5(pos, ch);
             if (ch.Id == 2) return Boss2(pos, ch);
             if (ch.Id == 3) return Boss3(pos, ch);
+            if (ch.Id == 4) return Boss4(pos, ch);
             var body = M(Color.Lerp(new Color(0.88f, 0.78f, 0.58f), ch.Wall, 0.35f), 6f);
             var gold = M(new Color(0.95f, 0.7f, 0.25f), 5f);
             var e = Root("Boss_" + ch.BossPattern, pos, ch.BossHp, Enemy.Kind.Boss, 2.4f, 6.2f);
@@ -614,6 +672,7 @@ namespace CatTang
                     bar.GetComponent<Renderer>().enabled = !modeled;   // 모델이 칼을 들고 있으면 막대는 숨김
                 }
                 e.brain = e.gameObject.AddComponent<Ch1Boss>();
+                HeavyStep.Attach(e, 1.1f, 2.8f);   // 녹은 시계 거인 발걸음 흙먼지
             }
             e.GetComponent<Health>().RefreshRenderers();
             return e;

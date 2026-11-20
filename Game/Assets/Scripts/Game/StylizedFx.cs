@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CatTang
 {
-    public class StylizedFx : MonoBehaviour
+    public class StylizedFx : MonoBehaviour, IPooled
     {
         /// <summary>겉모습 한 벌 (색 · 무늬 · 흐름 · 띠 끝 깎기 · 테두리)</summary>
         public struct Look
@@ -47,6 +47,8 @@ namespace CatTang
         // (2026-11-20 사용자: 리본 형태 · 섬광에 가깝게) 무기가 없을 때 쓰는 초승달도 가늘고 짧게 번쩍이는 섬광 띠로
         public static readonly Look SlashStreak = Make(new Color(3.4f, 3.2f, 3.6f), new Color(2.2f, 0.35f, 1.5f), new Color(0.6f, 0.15f, 0.9f), 0, new Vector2(1.2f, 8f), new Vector2(-9f, 0), 0.44f, 0.1f).With(opacity: 0f, sweepTime: 0.25f, tailFade: 2.2f);
         public static readonly Look SlashCore = Make(new Color(3.6f, 3.6f, 3.8f), new Color(2.6f, 2.0f, 2.8f), new Color(1.4f, 0.6f, 1.8f), 0, new Vector2(1.0f, 4f), new Vector2(-12f, 0), 0.48f, 0.14f).With(opacity: 0f, sweepTime: 0.2f, tailFade: 3f);
+        /// <summary>4장 지면 폭발 빨강 (2026-11-20 사용자: 연기 말고 레퍼런스 지면 폭발 모양, 색은 빨강): 흰 심지 → 빨강 → 짙은 검붉은 테두리, 위로 흐르는 불꽃 결</summary>
+        public static readonly Look BlastRed = Make(new Color(3.2f, 2.5f, 2.3f), new Color(2.5f, 0.22f, 0.16f), new Color(0.55f, 0.03f, 0.05f), 0, new Vector2(3f, 4.5f), new Vector2(0f, -3.2f), 0.3f).With(opacity: 0.55f);
         public static readonly Look Glass = Make(new Color(2.2f, 2.3f, 2.6f), new Color(0.9f, 0.95f, 1.5f), new Color(0.45f, 0.4f, 0.8f), 1, new Vector2(8, 3), new Vector2(-0.8f, 0));
 
         static Material mat;
@@ -78,6 +80,24 @@ namespace CatTang
         /// 한 겹 띄움. size0 → size1로 커지며(빠르게 시작해 느려짐), 나이는 ageFrom → ageTo로 (처음엔 천천히, 끝에서 빠르게 = 구멍이 확 번지며 사라짐).
         /// hold = 처음 이만큼은 나이를 멈춤 (유지되는 장판 · 정지장). spin = 초당 도는 각도(Y). uDrift = 초당 무늬가 U로 더 흐르는 양
         /// </summary>
+        // 풀링 (2026-11-20): 메시와 재생 상태만 교체하고 렌더러와 재질 블록을 재사용한다.
+        MeshFilter mf;
+        static readonly System.Func<GameObject> factory = Create;
+        static GameObject Create()
+        {
+            var go = new GameObject("StylizedFx");
+            var fx = go.AddComponent<StylizedFx>();
+            fx.mf = go.AddComponent<MeshFilter>();
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            fx.rend = r; fx.mpb = new MaterialPropertyBlock();
+            return go;
+        }
+        public void OnSpawned() { follow = null; followOff = Vector3.zero; ageCurve = null; mpb.Clear(); }
+        public void OnDespawned() { follow = null; followOff = Vector3.zero; ageCurve = null; }
+
         public static StylizedFx Spawn(string mesh, Vector3 pos, Quaternion rot, Vector3 size0, Vector3 size1, float life, Look look,
                                        float spin = 0f, float hold = 0f, float ageFrom = 0.02f, float ageTo = 1f, float uDrift = 0f, Transform follow = null)
         {
@@ -85,16 +105,12 @@ namespace CatTang
             var sh = Shader.Find("CatTang/StylizedVfx");
             if (!m || !sh) return null;
             if (!mat) mat = new Material(sh) { renderQueue = 3010 };
-            var go = new GameObject("SFX_" + mesh);
+            var go = GameObjectPool.Get("StylizedFx", factory);
             go.transform.SetPositionAndRotation(pos, rot);
             go.transform.localScale = size0;
-            go.AddComponent<MeshFilter>().sharedMesh = m;
-            var r = go.AddComponent<MeshRenderer>();
-            r.sharedMaterial = mat;
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            r.receiveShadows = false;
-            var fx = go.AddComponent<StylizedFx>();
-            fx.rend = r; fx.mpb = new MaterialPropertyBlock();
+            var fx = go.GetComponent<StylizedFx>();
+            fx.mf.sharedMesh = m;
+            fx.rend.sharedMaterial = mat;
             fx.born = Time.time; fx.life = Mathf.Max(0.05f, life); fx.size0 = size0; fx.size1 = size1;
             fx.spin = spin; fx.holdUntil = Time.time + hold; fx.ageFrom = ageFrom; fx.ageTo = ageTo; fx.uDrift = uDrift;
             fx.follow = follow; if (follow) fx.followOff = pos - follow.position;
@@ -134,7 +150,7 @@ namespace CatTang
             float g = 1 - (1 - t) * (1 - t) * (1 - t);                      // 크기: 빠르게 퍼지고 느려짐
             transform.localScale = Vector3.LerpUnclamped(size0, size1, g);
             Apply(t);
-            if (t >= 1f) Destroy(gameObject);
+            if (t >= 1f) GameObjectPool.Release(gameObject);
         }
 
         // ================= 겹 프리셋 (여러 겹을 타이밍 · 색으로 겹친 완성 이펙트) =================
@@ -179,6 +195,24 @@ namespace CatTang
             Spawn("ring", at + Vector3.up * 0.04f, Quaternion.identity, Vector3.one * radius * 0.6f, Vector3.one * radius * 1.1f, 0.5f, body, 200f, hold);
         }
 
+        /// <summary>
+        /// 지면 폭발 (2026-11-20 사용자: 무거운 일격이 땅을 치는 순간 — 연기 덩이 대신 레퍼런스의 지면 폭발 모양):
+        /// ① 순간 섬광 반구(0.14초) ② 바닥에서 솟는 불꽃 왕관(ring_tall, 위로 흐르는 결, 늦게 사그라듦) ③ 바닥에 납작하게 퍼지는 가시 꽃잎(spike_burst 눌림)
+        /// ④ 바깥으로 번지는 충격 고리 2겹 ⑤ 위로 튀는 불티. size = 폭발 반지름(m)
+        /// </summary>
+        public static void GroundBlast(Vector3 at, float size, Look body)
+        {
+            at.y = 0.05f;
+            var rot = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+            Spawn("dome", at, rot, new Vector3(size * 0.25f, size * 0.18f, size * 0.25f), new Vector3(size * 0.75f, size * 0.55f, size * 0.75f), 0.14f, body.With(pattern: 1, scale: new Vector2(4, 4), opacity: 0f));
+            Spawn("ring_tall", at, rot, new Vector3(size * 0.35f, size * 0.25f, size * 0.35f), new Vector3(size * 0.85f, size * 1.15f, size * 0.85f), 0.42f, body, 40f, 0f, 0.02f, 1f);
+            Spawn("ring_tall", at, rot * Quaternion.Euler(0, 37, 0), new Vector3(size * 0.2f, size * 0.15f, size * 0.2f), new Vector3(size * 0.55f, size * 1.5f, size * 0.55f), 0.32f, body.With(scale: new Vector2(2.2f, 6f), scroll: new Vector2(0, -5f)), -60f);
+            Spawn("spike_burst", at + Vector3.up * 0.1f, rot, new Vector3(size * 0.3f, size * 0.08f, size * 0.3f), new Vector3(size * 1.15f, size * 0.22f, size * 1.15f), 0.3f, body.With(scroll: new Vector2(-4f, 0), taperV: 0f, taperU: 0f));
+            Spawn("ring", at, rot, Vector3.one * size * 0.3f, Vector3.one * size * 1.5f, 0.38f, body.With(opacity: 0f), 90f);
+            Spawn("ring", at + Vector3.up * 0.03f, rot * Quaternion.Euler(0, 50, 0), Vector3.one * size * 0.2f, Vector3.one * size * 1.1f, 0.3f, body.With(opacity: 0f, scale: new Vector2(6, 2)), -120f);
+            FxBurst.Spawn(at + Vector3.up * size * 0.3f, size * 0.9f, FxBurst.Kind.Spark, body.mid);
+        }
+
         /// <summary>가시 폭발 + 나선 구 섬광 — 깨짐 · 타격 순간</summary>
         public static void Burst(Vector3 at, float size, Look body)
         {
@@ -195,29 +229,47 @@ namespace CatTang
     /// CatTang/StylizedVfx로 그림 — U = 기록 순서(0 오래된 꼬리 → 1 지금 머리), V = 안쪽 → 끝. 머리 바로 뒤가 흰 섬광, 꼬리부터 흩어짐.
     /// 기록이 끝나면 fade초 만에 나이가 0 → 1 (번쩍하고 사라짐). 더해지는 빛(불투명도 0)이라 겹칠수록 밝음
     /// </summary>
-    public class FlashRibbon : MonoBehaviour
+    public class FlashRibbon : MonoBehaviour, IPooled
     {
         Transform weapon; Vector3 inner, outer; float recordUntil, fade, fadeStart = -1; float maxLen;
-        readonly List<Vector3> a = new(), b = new();
+        readonly List<Vector3> a = new(72), b = new(72);
+        readonly List<Vector3> vertices = new(128);
+        readonly List<Vector2> uvs = new(128);
+        readonly List<int> triangles = new(378);
         Mesh mesh; MeshRenderer mr; MaterialPropertyBlock mpb; StylizedFx.Look look;
         static Material mat;
         static readonly int AgeId = Shader.PropertyToID("_Age"), SwId = Shader.PropertyToID("_Sweep");
 
         /// <summary>weapon 기준 inner · outer 두 점을 dur초 동안 따라 그림 → fade초 섬광으로 사라짐. look = 색 (Magenta · Gold 등, 결 모양은 섬광 고정)</summary>
+        // 풀링 (2026-11-20): 리본 메시와 기록 버퍼를 보관하고 다음 기록 전에 비운다.
+        static readonly System.Func<GameObject> factory = Create;
+        static GameObject Create()
+        {
+            var go = new GameObject("FlashRibbon");
+            var f = go.AddComponent<FlashRibbon>();
+            f.mesh = new Mesh { name = "FlashRibbon" }; f.mesh.MarkDynamic();
+            go.AddComponent<MeshFilter>().sharedMesh = f.mesh;
+            f.mr = go.AddComponent<MeshRenderer>(); f.mr.sharedMaterial = mat;
+            f.mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; f.mr.receiveShadows = false;
+            f.mpb = new MaterialPropertyBlock();
+            return go;
+        }
+        public void OnSpawned()
+        {
+            weapon = null; fadeStart = -1f; recordUntil = 0f; maxLen = 0f; look = default;
+            a.Clear(); b.Clear(); vertices.Clear(); uvs.Clear(); triangles.Clear(); mesh.Clear(); mpb.Clear();
+        }
+        public void OnDespawned() { weapon = null; a.Clear(); b.Clear(); vertices.Clear(); uvs.Clear(); triangles.Clear(); mesh.Clear(); }
+
         public static FlashRibbon Begin(Transform weapon, Vector3 innerLocal, Vector3 outerLocal, float dur, StylizedFx.Look color, float fade = 0.16f)
         {
             if (!weapon) return null;
             var sh = Shader.Find("CatTang/StylizedVfx");
             if (!sh) return null;
             if (!mat) mat = new Material(sh) { renderQueue = 3012 };
-            var go = new GameObject("FlashRibbon");
-            var f = go.AddComponent<FlashRibbon>();
+            var go = GameObjectPool.Get("FlashRibbon", factory);
+            var f = go.GetComponent<FlashRibbon>();
             f.weapon = weapon; f.inner = innerLocal; f.outer = outerLocal; f.recordUntil = Time.time + dur; f.fade = fade;
-            f.mesh = new Mesh { name = "FlashRibbon" }; f.mesh.MarkDynamic();
-            go.AddComponent<MeshFilter>().sharedMesh = f.mesh;
-            f.mr = go.AddComponent<MeshRenderer>(); f.mr.sharedMaterial = mat;
-            f.mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; f.mr.receiveShadows = false;
-            f.mpb = new MaterialPropertyBlock();
             // 섬광 결: 길이 방향으로 길게 늘어진 줄무늬(가로 결 촘촘) · 머리 흰빛 넓게 · 띠 가장자리 뾰족
             f.mpb.SetColor("_ColCore", new Color(3.4f, 3.3f, 3.6f));
             f.mpb.SetColor("_ColMid", color.mid * 1.3f);
@@ -256,22 +308,27 @@ namespace CatTang
             mpb.SetFloat(AgeId, fadeStart < 0 ? 0.02f : Mathf.Lerp(0.05f, 1f, age * age));
             mpb.SetFloat(SwId, 1.0f);
             mr.SetPropertyBlock(mpb);
-            if (fadeStart >= 0 && age >= 1f) Destroy(gameObject);
+            if (fadeStart >= 0 && age >= 1f) GameObjectPool.Release(gameObject);
         }
 
         void Build()
         {
             int n = a.Count;
             if (n < 2) return;
-            var v = new Vector3[n * 2]; var uv = new Vector2[n * 2]; var tri = new int[(n - 1) * 6];
+            vertices.Clear(); uvs.Clear(); triangles.Clear();
             for (int i = 0; i < n; i++)
             {
-                v[i * 2] = a[i]; v[i * 2 + 1] = b[i];
+                vertices.Add(a[i]); vertices.Add(b[i]);
                 float u = i / (float)(n - 1);
-                uv[i * 2] = new Vector2(u, 0); uv[i * 2 + 1] = new Vector2(u, 1);
-                if (i < n - 1) { int k = i * 6, q = i * 2; tri[k] = q; tri[k + 1] = q + 1; tri[k + 2] = q + 2; tri[k + 3] = q + 1; tri[k + 4] = q + 3; tri[k + 5] = q + 2; }
+                uvs.Add(new Vector2(u, 0)); uvs.Add(new Vector2(u, 1));
+                if (i < n - 1)
+                {
+                    int q = i * 2;
+                    triangles.Add(q); triangles.Add(q + 1); triangles.Add(q + 2);
+                    triangles.Add(q + 1); triangles.Add(q + 3); triangles.Add(q + 2);
+                }
             }
-            mesh.Clear(); mesh.vertices = v; mesh.uv = uv; mesh.triangles = tri; mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            mesh.Clear(); mesh.SetVertices(vertices); mesh.SetUVs(0, uvs); mesh.SetTriangles(triangles, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
         }
 
         void OnDestroy() { if (mesh) Destroy(mesh); }

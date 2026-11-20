@@ -1,0 +1,1407 @@
+OpenAI Codex v0.169.0-alpha.11.1
+--------
+workdir: C:\Project\Cat_Tang
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1f77b-f395-7ca3-bf68-d7bfc83589de
+--------
+user
+Use your image generation tool to create SIX images and save them exactly at these paths (create folders if needed). Do not edit any other file. After saving, print the six paths and their pixel sizes.
+
+Game: Cat_Tang, a top-down action shooter (camera looks down at about 57 degrees). These sheets are DASH TRAIL effects: a monster charges in a straight line and the effect is left on the ground BEHIND it along its path.
+Style: cel-shaded, flat colours, 3-4 hard-edged tone bands, crisp dark ink outlines, bold readable game VFX (like Brawl Stars / Hades effects). NOT realistic, NOT soft blurry glow, NOT photographic smoke.
+
+COMMON LAYOUT for every sheet:
+- Size 2048 x 256 px: a horizontal strip of 8 square frames (256 x 256 each), played left to right as an animation.
+- MOTION DIRECTION: in every frame the monster is moving toward the RIGHT edge (off-frame). The trail therefore streams from the right side toward the LEFT, its newest/thickest part on the right, its tail thinning and breaking up to the left. Elements are swept/stretched horizontally.
+- The ground line is the lower third of the frame; trail elements hug the ground and rise only a little.
+- Background: pure flat GREEN #00FF00 everywhere that is not the effect (it will be keyed out). Never use green inside the effect.
+- Each frame's effect stays inside its own square with a ~6% green margin.
+- Frames 1-2: the trail bursts out (thickest, brightest). Frames 3-5: it streams left and billows. Frames 6-8: it breaks into pieces and fades/shrinks away (frame 8 almost empty).
+- No text, no letters, no numbers, no frame lines or borders between frames.
+
+1) `docs/images/fx_src/dash_sand.png` — chapter 1 wild-west desert clock town. A gust of churned-up SAND: low tan/ochre sand clouds (#F2D59A light, #D9A35B mid, #9C6232 shade, ink #3B2414) swept into a wedge-shaped wake, with flying sand grains and two or three small spinning BRASS clockwork gears (#E7B04A with dark ink) tumbling out of it.
+
+2) `docs/images/fx_src/dash_steam.png` — chapter 2 frozen train station. A blast of locomotive STEAM: puffy white-grey steam clouds (#FFFFFF, #D6D9E2, #9CA1B3 shade, ink #2C2A3A) rolling back in a horizontal plume, with bright orange RAIL-GRIND SPARKS (#FFD25A core, #FF7A1E) skittering along the ground line and a few black coal chips.
+
+3) `docs/images/fx_src/dash_water.png` — chapter 3 mirror lake. A WATER SPRAY wake: a curling V-shaped bow wave of pale cyan water (#E9FBFF, #9EE3F5, #4FA9D2 shade, ink #1D3B5A) splashing back with round droplets, plus small rose-pink and sky-blue GLASS GLINTS (4-point sparkles, #FFB7DE and #BFEFFF) caught in the spray.
+
+4) `docs/images/fx_src/dash_laser.png` — chapter 4 noir clockwork temple, strong black-and-white contrast with RED accent only. Parallel RED LASER SPEED LINES (white-hot core #FFFFFF, red #FF2A2A, deep blood edge #7A0710, black ink) streaking left from the right edge, with small SILVER COG TEETH and needle shards (#F2F2F2 face, #8C8C96 shade, black ink) spinning off them.
+
+5) `docs/images/fx_src/dash_rift.png` — chapter 5 collapsing end of time. A torn VOID RIFT along the path: a jagged horizontal crack in space showing deep violet void (#3A1A6A) with tiny white stars, edged with hot magenta (#FF2FB4, #FF6FD0, white-hot rim), with broken violet glass chips and a few gold (#FFC64A) sparks flying back from it.
+
+6) `docs/images/fx_src/dash_mirror.png` — chapter 5 mirror cat (a living silver mirror). A spray of MIRROR SHARDS: sharp triangular silver mirror fragments (pale #F4F7FF face, #B9C6E0 shade, white highlight edge, dark ink #22273A) streaming left like a broken reflection, with faint ghostly silver speed streaks and a couple of white 4-point glints.
+
+warning: Codex is ignoring 1 unrecognized configuration setting. Check for typos or deprecated settings.
+  user (C:\Users\user\.codex\config.toml): `features.rmcp_client` is ignored.
+warning: Codex is ignoring 1 unrecognized configuration setting. Check for typos or deprecated settings.
+  user (C:\Users\user\.codex\config.toml): `features.rmcp_client` is ignored.
+codex
+I’ll use the imagegen skill to create the six sprite sheets, save them at the requested paths, and check their pixel sizes.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'C:/Users/user/.codex/skills/.system/imagegen/SKILL.md'" in C:\Project\Cat_Tang
+ succeeded in 329ms:
+---
+name: "imagegen"
+description: "Generate or edit raster images when the task benefits from AI-created bitmap visuals such as photos, illustrations, textures, sprites, mockups, or transparent-background cutouts. Use when Codex should create a brand-new image, transform an existing image, or derive visual variants from references, and the output should be a bitmap asset rather than repo-native code or vector. Do not use when the task is better handled by editing existing SVG/vector/code-native assets, extending an established icon or logo system, or building the visual directly in HTML/CSS/canvas."
+---
+
+# Image Generation Skill
+
+Generates or edits images for the current project (for example website assets, game assets, UI mockups, product mockups, wireframes, logo design, photorealistic images, or infographics).
+
+## Top-level modes and rules
+
+This skill has exactly two top-level modes:
+
+- **Default built-in tool mode (preferred):** built-in `image_gen` tool for image generation, editing, and transparent-image requests. Does not require `OPENAI_API_KEY`.
+- **Fallback CLI mode:** `scripts/image_gen.py` CLI. Use when the user explicitly asks for or confirms the CLI/API/model path. Requires `OPENAI_API_KEY`.
+
+Within CLI fallback, the CLI exposes three subcommands:
+
+- `generate`
+- `edit`
+- `generate-batch`
+
+Rules:
+- Use the built-in `image_gen` tool by default for normal image generation and editing requests.
+- Do not switch to CLI fallback for ordinary quality, size, or file-path control.
+- For transparent images, ask built-in `image_gen` for a transparent background and preserve the generated alpha.
+- Never silently switch from built-in `image_gen` or CLI `gpt-image-2` to CLI `gpt-image-1.5`; ask the user first unless they explicitly requested `gpt-image-1.5`.
+- The word `batch` by itself does not mean CLI fallback. If the user asks for many assets or says to batch-generate assets without explicitly asking for CLI/API/model controls, stay on the built-in path and issue one built-in call per requested asset or variant.
+- If the built-in tool fails or is unavailable, tell the user the CLI fallback exists and that it requires `OPENAI_API_KEY`. Proceed only if the user explicitly asks for that fallback.
+- If the user explicitly asks for CLI mode, use the bundled `scripts/image_gen.py` workflow. Do not create one-off SDK runners.
+- Never modify `scripts/image_gen.py`. If something is missing, ask the user before doing anything else.
+
+Built-in save-path policy:
+- In built-in tool mode, Codex saves generated images under `$CODEX_HOME/*` by default.
+- Do not describe or rely on OS temp as the default built-in destination.
+- Do not describe or rely on a destination-path argument (if any) on the built-in `image_gen` tool. If a specific location is needed, generate first and then move or copy the selected output from `$CODEX_HOME/generated_images/...`.
+- Save-path precedence in built-in mode:
+  1. If the user names a destination, move or copy the selected output there.
+  2. If the image is meant for the current project, move or copy the final selected image into the workspace before finishing.
+  3. If the image is only for preview or brainstorming, render it inline; the underlying file can remain at the default `$CODEX_HOME/*` path.
+- Never leave a project-referenced asset only at the default `$CODEX_HOME/*` path.
+- Do not overwrite an existing asset unless the user explicitly asked for replacement; otherwise create a sibling versioned filename such as `hero-v2.png` or `item-icon-edited.png`.
+
+Shared prompt guidance for both modes lives in `references/prompting.md` and `references/sample-prompts.md`.
+
+Fallback-only docs/resources for CLI mode:
+- `references/cli.md`
+- `references/image-api.md`
+- `references/codex-network.md`
+- `scripts/image_gen.py`
+
+## When to use
+- Generate a new image (concept art, product shot, cover, website hero)
+- Generate a new image using one or more reference images for style, composition, or mood
+- Edit an existing image (inpainting, lighting or weather transformations, background replacement, object removal, compositing, transparent background)
+- Produce many assets or variants for one task
+
+## When not to use
+- Extending or matching an existing SVG/vector icon set, logo system, or illustration library inside the repo
+- Creating simple shapes, diagrams, wireframes, or icons that are better produced directly in SVG, HTML/CSS, or canvas
+- Making a small project-local asset edit when the source file already exists in an editable native format
+- Any task where the user clearly wants deterministic code-native output instead of a generated bitmap
+
+## Decision tree
+
+Think about two separate questions:
+
+1. **Intent:** is this a new image or an edit of an existing image?
+2. **Execution strategy:** is this one asset or many assets/variants?
+
+Intent:
+- If the user wants to modify an existing image while preserving parts of it, treat the request as **edit**.
+- If the user provides images only as references for style, composition, mood, or subject guidance, treat the request as **generate**.
+- If the user provides no images, treat the request as **generate**.
+
+Built-in edit semantics:
+- Built-in edit mode is for images already visible in the conversation context, such as attached images or images generated earlier in the thread.
+- If the user wants to edit a local image file with the built-in tool, first load it with built-in `view_image` tool so the image is visible in the conversation context, then proceed with the built-in edit flow.
+- Do not promise arbitrary filesystem-path editing through the built-in tool.
+- If a local file still needs direct file-path control, masks, or other explicit CLI-only parameters, use the explicit CLI fallback only when the user asks for it.
+- For edits, preserve invariants aggressively and save non-destructively by default.
+
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+- In the CLI fallback path, use the CLI `generate-batch` subcommand only when the user explicitly chose CLI mode and needs many prompts/assets.
+- For many distinct assets, do not use `n` as a substitute for separate prompts. `n` is for variants of one prompt; distinct assets need distinct built-in calls or distinct CLI `generate-batch` jobs.
+
+Assume the user wants a new image unless they clearly ask to change an existing one.
+
+## Workflow
+1. Decide the top-level mode: built-in by default, including transparent-output requests; fallback CLI only if explicitly requested or confirmed.
+2. Decide the intent: `generate` or `edit`.
+3. Decide whether the output is preview-only or meant to be consumed by the current project.
+4. Decide the execution strategy: single asset vs repeated built-in calls vs CLI `generate-batch`.
+5. Collect inputs up front: prompt(s), exact text (verbatim), constraints/avoid list, and any input images.
+6. For every input image, label its role explicitly:
+   - reference image
+   - edit target
+   - supporting insert/style/compositing input
+7. If the edit target is only on the local filesystem and you are staying on the built-in path, inspect it with `view_image` first so the image is available in conversation context.
+8. If the user asked for a photo, illustration, sprite, product image, banner, or other explicitly raster-style asset, use `image_gen` rather than substituting SVG/HTML/CSS placeholders. If the request is for an icon, logo, or UI graphic that should match existing repo-native SVG/vector/code assets, prefer editing those directly instead.
+9. Augment the prompt based on specificity:
+   - If the user's prompt is already specific and detailed, normalize it into a clear spec without adding creative requirements.
+   - If the user's prompt is generic, add tasteful augmentation only when it materially improves output quality.
+10. Use the built-in `image_gen` tool by default.
+11. For transparent-output requests, ask built-in `image_gen` for a transparent background and preserve the generated alpha channel.
+12. Inspect outputs and validate: subject, style, composition, text accuracy, and invariants/avoid items.
+13. Iterate with a single targeted change, then re-check.
+14. For preview-only work, render the image inline; the underlying file may remain at the default `$CODEX_HOME/generated_images/...` path.
+15. For project-bound work, move or copy the selected artifact into the workspace and update any consuming code or references. Never leave a project-referenced asset only at the default `$CODEX_HOME/generated_images/...` path.
+16. For batches or multi-asset requests, persist every requested deliverable final in the workspace unless the user explicitly asked to keep outputs preview-only. Discarded variants do not need to be kept unless requested.
+17. If the user explicitly chooses or confirms the CLI fallback, then use the fallback-only docs for model, quality, size, `input_fidelity`, masks, output format, output paths, and network setup.
+18. Always report the final saved path(s) for any workspace-bound asset(s), plus the final prompt or prompt set and whether the built-in tool or fallback CLI mode was used.
+
+## Transparent image requests
+
+Ask built-in `image_gen` for a genuinely transparent background and preserve its alpha.
+
+## Prompt augmentation
+
+Reformat user prompts into a structured, production-oriented spec. Make the user's goal clearer and more actionable, but do not blindly add detail.
+
+Treat this as prompt-shaping guidance, not a closed schema. Use only the lines that help, and add a short extra labeled line when it materially improves clarity.
+
+### Specificity policy
+
+Use the user's prompt specificity to decide how much augmentation is appropriate:
+
+- If the prompt is already specific and detailed, preserve that specificity and only normalize/structure it.
+- If the prompt is generic, you may add tasteful augmentation when it will materially improve the result.
+
+Allowed augmentations:
+- composition or framing hints
+- polish level or intended-use hints
+- practical layout guidance
+- reasonable scene concreteness that supports the stated request
+
+Not allowed augmentations:
+- extra characters or objects that are not implied by the request
+- brand names, slogans, palettes, or narrative beats that are not implied
+- arbitrary side-specific placement unless the surrounding layout supports it
+
+## Use-case taxonomy (exact slugs)
+
+Classify each request into one of these buckets and keep the slug consistent across prompts and references.
+
+Generate:
+- photorealistic-natural ??candid/editorial lifestyle scenes with real texture and natural lighting.
+- product-mockup ??product/packaging shots, catalog imagery, merch concepts.
+- ui-mockup ??app/web interface mockups and wireframes; specify the desired fidelity.
+- infographic-diagram ??diagrams/infographics with structured layout and text.
+- scientific-educational ??classroom explainers, scientific diagrams, and learning visuals with required labels and accuracy constraints.
+- ads-marketing ??campaign concepts and ad creatives with audience, brand position, scene, and exact tagline/copy.
+- productivity-visual ??slide, chart, workflow, and data-heavy business visuals.
+- logo-brand ??logo/mark exploration, vector-friendly.
+- illustration-story ??comics, children?셲 book art, narrative scenes.
+- stylized-concept ??style-driven concept art, 3D/stylized renders.
+- historical-scene ??period-accurate/world-knowledge scenes.
+
+Edit:
+- text-localization ??translate/replace in-image text, preserve layout.
+- identity-preserve ??try-on, person-in-scene; lock face/body/pose.
+- precise-object-edit ??remove/replace a specific element (including interior swaps).
+- lighting-weather ??time-of-day/season/atmosphere changes only.
+- background-extraction ??transparent background / clean cutout. Ask built-in `image_gen` for actual transparency.
+- style-transfer ??apply reference style while changing subject/scene.
+- compositing ??multi-image insert/merge with matched lighting/perspective.
+- sketch-to-render ??drawing/line art to photoreal render.
+
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+
+Notes:
+- `Asset type` and `Input images` are prompt scaffolding, not dedicated CLI flags.
+- `Scene/backdrop` refers to the visual setting. It is not the same as the fallback CLI `background` parameter, which controls output transparency behavior.
+- Fallback-only execution notes such as `Quality:`, `Input fidelity:`, masks, output format, and output paths belong in the CLI path only. Do not treat them as built-in `image_gen` tool arguments.
+
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+
+## Examples
+
+### Generation example (hero image)
+```text
+Use case: product-mockup
+Asset type: landing page hero
+Primary request: a minimal hero image of a ceramic coffee mug
+Style/medium: clean product photography
+Composition/framing: wide composition with usable negative space for page copy if needed
+Lighting/mood: soft studio lighting
+Constraints: no logos, no text, no watermark
+```
+
+### Edit example (invariants)
+```text
+Use case: precise-object-edit
+Asset type: product photo background replacement
+Primary request: replace only the background with a warm sunset gradient
+Constraints: change only the background; keep the product and its edges unchanged; no text; no watermark
+```
+
+## Prompting best practices
+- Structure prompt as scene/backdrop -> subject -> details -> constraints.
+- Include intended use (ad, UI mock, infographic) to set the mode and polish level.
+- Use camera/composition language for photorealism.
+- Only use SVG/vector stand-ins when the user explicitly asked for vector output or a non-image placeholder.
+- Quote exact text and specify typography + placement.
+- For tricky words, spell them letter-by-letter and require verbatim rendering.
+- For multi-image inputs, reference images by index and describe how they should be used.
+- For edits, repeat invariants every iteration to reduce drift.
+- Iterate with single-change follow-ups.
+- If the prompt is generic, add only the extra detail that will materially help.
+- If the prompt is already detailed, normalize it instead of expanding it.
+- For CLI fallback only, see `references/cli.md` and `references/image-api.md` for model, `quality`, `input_fidelity`, masks, output format, and output-path guidance.
+- For transparent images, ask built-in `image_gen` for actual transparency and preserve its alpha.
+
+More principles shared by both modes: `references/prompting.md`.
+Copy/paste specs shared by both modes: `references/sample-prompts.md`.
+
+## Guidance by asset type
+Asset-type templates (website assets, game assets, wireframes, logo) are consolidated in `references/sample-prompts.md`.
+
+## gpt-image-2 guidance for CLI fallback
+
+The fallback CLI defaults to `gpt-image-2`.
+
+- Use `gpt-image-2` for new CLI/API workflows unless the user confirms a different model.
+- CLI `gpt-image-2` does not support `background=transparent`; ask before using `gpt-image-1.5` unless the user explicitly requested that model.
+- `gpt-image-2` always uses high fidelity for image inputs; do not set `input_fidelity` with this model.
+- `gpt-image-2` supports `quality` values `low`, `medium`, `high`, and `auto`.
+- Use `quality low` for fast drafts, thumbnails, and quick iterations. Use `medium`, `high`, or `auto` for final assets, dense text, diagrams, identity-sensitive edits, or high-resolution outputs.
+- Square images are typically fastest to generate. Use `1024x1024` for fast square drafts.
+- If the user asks for 4K-style output, use `3840x2160` for landscape or `2160x3840` for portrait.
+- `gpt-image-2` size may be `auto` or `WIDTHxHEIGHT` if all constraints hold: max edge `<= 3840px`, both edges multiples of `16px`, long-to-short ratio `<= 3:1`, total pixels between `655,360` and `8,294,400`.
+
+Popular `gpt-image-2` sizes:
+- `1024x1024` square
+- `1536x1024` landscape
+- `1024x1536` portrait
+- `2048x2048` 2K square
+- `2048x1152` 2K landscape
+- `3840x2160` 4K landscape
+- `2160x3840` 4K portrait
+- `auto`
+
+## Fallback CLI mode only
+
+### Temp and output conventions
+These conventions apply only to the CLI fallback. They do not describe built-in `image_gen` output behavior.
+- Use `tmp/imagegen/` for intermediate files (for example JSONL batches); delete them when done.
+- Write final artifacts under `output/imagegen/`.
+- Use `--out` or `--out-dir` to control output paths; keep filenames stable and descriptive.
+
+### Dependencies
+Prefer `uv` for dependency management in this repo.
+
+Required Python package:
+```bash
+uv pip install openai
+```
+
+Optional for image inspection and downscaling:
+```bash
+uv pip install pillow
+```
+
+Portability note:
+- If you are using the installed skill outside this repo, install dependencies into that environment with its package manager.
+- In uv-managed environments, `uv pip install ...` remains the preferred path.
+
+### Environment
+- `OPENAI_API_KEY` must be set for live API calls.
+- Do not ask the user for `OPENAI_API_KEY` when using the built-in `image_gen` tool.
+- Never ask the user to paste the full key in chat. Ask them to set it locally and confirm when ready.
+
+If the key is missing, give the user these steps:
+1. Create an API key in the OpenAI platform UI: https://platform.openai.com/api-keys
+2. Set `OPENAI_API_KEY` as an environment variable in their system.
+3. Offer to guide them through setting the environment variable for their OS/shell if needed.
+
+If installation is not possible in this environment, tell the user which dependency is missing and how to install it into their active environment.
+
+### Script-mode notes
+- CLI commands + examples: `references/cli.md`
+- API parameter quick reference: `references/image-api.md`
+- Network approvals / sandbox settings for CLI mode: `references/codex-network.md`
+
+## Reference map
+- `references/prompting.md`: shared prompting principles for both modes.
+- `references/sample-prompts.md`: shared copy/paste prompt recipes for both modes.
+- `references/cli.md`: fallback-only CLI usage via `scripts/image_gen.py`.
+- `references/image-api.md`: fallback-only API/CLI parameter reference.
+- `references/codex-network.md`: fallback-only network/sandbox troubleshooting for CLI mode.
+- `scripts/image_gen.py`: fallback-only CLI implementation. Use only when the user explicitly chooses or confirms CLI mode.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'C:/Users/user/.codex/skills/.system/imagegen/SKILL.md'" in C:\Project\Cat_Tang
+ succeeded in 264ms:
+---
+name: "imagegen"
+description: "Generate or edit raster images when the task benefits from AI-created bitmap visuals such as photos, illustrations, textures, sprites, mockups, or transparent-background cutouts. Use when Codex should create a brand-new image, transform an existing image, or derive visual variants from references, and the output should be a bitmap asset rather than repo-native code or vector. Do not use when the task is better handled by editing existing SVG/vector/code-native assets, extending an established icon or logo system, or building the visual directly in HTML/CSS/canvas."
+---
+
+# Image Generation Skill
+
+Generates or edits images for the current project (for example website assets, game assets, UI mockups, product mockups, wireframes, logo design, photorealistic images, or infographics).
+
+## Top-level modes and rules
+
+This skill has exactly two top-level modes:
+
+- **Default built-in tool mode (preferred):** built-in `image_gen` tool for image generation, editing, and transparent-image requests. Does not require `OPENAI_API_KEY`.
+- **Fallback CLI mode:** `scripts/image_gen.py` CLI. Use when the user explicitly asks for or confirms the CLI/API/model path. Requires `OPENAI_API_KEY`.
+
+Within CLI fallback, the CLI exposes three subcommands:
+
+- `generate`
+- `edit`
+- `generate-batch`
+
+Rules:
+- Use the built-in `image_gen` tool by default for normal image generation and editing requests.
+- Do not switch to CLI fallback for ordinary quality, size, or file-path control.
+- For transparent images, ask built-in `image_gen` for a transparent background and preserve the generated alpha.
+- Never silently switch from built-in `image_gen` or CLI `gpt-image-2` to CLI `gpt-image-1.5`; ask the user first unless they explicitly requested `gpt-image-1.5`.
+- The word `batch` by itself does not mean CLI fallback. If the user asks for many assets or says to batch-generate assets without explicitly asking for CLI/API/model controls, stay on the built-in path and issue one built-in call per requested asset or variant.
+- If the built-in tool fails or is unavailable, tell the user the CLI fallback exists and that it requires `OPENAI_API_KEY`. Proceed only if the user explicitly asks for that fallback.
+- If the user explicitly asks for CLI mode, use the bundled `scripts/image_gen.py` workflow. Do not create one-off SDK runners.
+- Never modify `scripts/image_gen.py`. If something is missing, ask the user before doing anything else.
+
+Built-in save-path policy:
+- In built-in tool mode, Codex saves generated images under `$CODEX_HOME/*` by default.
+- Do not describe or rely on OS temp as the default built-in destination.
+- Do not describe or rely on a destination-path argument (if any) on the built-in `image_gen` tool. If a specific location is needed, generate first and then move or copy the selected output from `$CODEX_HOME/generated_images/...`.
+- Save-path precedence in built-in mode:
+  1. If the user names a destination, move or copy the selected output there.
+  2. If the image is meant for the current project, move or copy the final selected image into the workspace before finishing.
+  3. If the image is only for preview or brainstorming, render it inline; the underlying file can remain at the default `$CODEX_HOME/*` path.
+- Never leave a project-referenced asset only at the default `$CODEX_HOME/*` path.
+- Do not overwrite an existing asset unless the user explicitly asked for replacement; otherwise create a sibling versioned filename such as `hero-v2.png` or `item-icon-edited.png`.
+
+Shared prompt guidance for both modes lives in `references/prompting.md` and `references/sample-prompts.md`.
+
+Fallback-only docs/resources for CLI mode:
+- `references/cli.md`
+- `references/image-api.md`
+- `references/codex-network.md`
+- `scripts/image_gen.py`
+
+## When to use
+- Generate a new image (concept art, product shot, cover, website hero)
+- Generate a new image using one or more reference images for style, composition, or mood
+- Edit an existing image (inpainting, lighting or weather transformations, background replacement, object removal, compositing, transparent background)
+- Produce many assets or variants for one task
+
+## When not to use
+- Extending or matching an existing SVG/vector icon set, logo system, or illustration library inside the repo
+- Creating simple shapes, diagrams, wireframes, or icons that are better produced directly in SVG, HTML/CSS, or canvas
+- Making a small project-local asset edit when the source file already exists in an editable native format
+- Any task where the user clearly wants deterministic code-native output instead of a generated bitmap
+
+## Decision tree
+
+Think about two separate questions:
+
+1. **Intent:** is this a new image or an edit of an existing image?
+2. **Execution strategy:** is this one asset or many assets/variants?
+
+Intent:
+- If the user wants to modify an existing image while preserving parts of it, treat the request as **edit**.
+- If the user provides images only as references for style, composition, mood, or subject guidance, treat the request as **generate**.
+- If the user provides no images, treat the request as **generate**.
+
+Built-in edit semantics:
+- Built-in edit mode is for images already visible in the conversation context, such as attached images or images generated earlier in the thread.
+- If the user wants to edit a local image file with the built-in tool, first load it with built-in `view_image` tool so the image is visible in the conversation context, then proceed with the built-in edit flow.
+- Do not promise arbitrary filesystem-path editing through the built-in tool.
+- If a local file still needs direct file-path control, masks, or other explicit CLI-only parameters, use the explicit CLI fallback only when the user asks for it.
+- For edits, preserve invariants aggressively and save non-destructively by default.
+
+Execution strategy:
+- In the built-in default path, produce many assets or variants by issuing one `image_gen` call per requested asset or variant.
+- In the CLI fallback path, use the CLI `generate-batch` subcommand only when the user explicitly chose CLI mode and needs many prompts/assets.
+- For many distinct assets, do not use `n` as a substitute for separate prompts. `n` is for variants of one prompt; distinct assets need distinct built-in calls or distinct CLI `generate-batch` jobs.
+
+Assume the user wants a new image unless they clearly ask to change an existing one.
+
+## Workflow
+1. Decide the top-level mode: built-in by default, including transparent-output requests; fallback CLI only if explicitly requested or confirmed.
+2. Decide the intent: `generate` or `edit`.
+3. Decide whether the output is preview-only or meant to be consumed by the current project.
+4. Decide the execution strategy: single asset vs repeated built-in calls vs CLI `generate-batch`.
+5. Collect inputs up front: prompt(s), exact text (verbatim), constraints/avoid list, and any input images.
+6. For every input image, label its role explicitly:
+   - reference image
+   - edit target
+   - supporting insert/style/compositing input
+7. If the edit target is only on the local filesystem and you are staying on the built-in path, inspect it with `view_image` first so the image is available in conversation context.
+8. If the user asked for a photo, illustration, sprite, product image, banner, or other explicitly raster-style asset, use `image_gen` rather than substituting SVG/HTML/CSS placeholders. If the request is for an icon, logo, or UI graphic that should match existing repo-native SVG/vector/code assets, prefer editing those directly instead.
+9. Augment the prompt based on specificity:
+   - If the user's prompt is already specific and detailed, normalize it into a clear spec without adding creative requirements.
+   - If the user's prompt is generic, add tasteful augmentation only when it materially improves output quality.
+10. Use the built-in `image_gen` tool by default.
+11. For transparent-output requests, ask built-in `image_gen` for a transparent background and preserve the generated alpha channel.
+12. Inspect outputs and validate: subject, style, composition, text accuracy, and invariants/avoid items.
+13. Iterate with a single targeted change, then re-check.
+14. For preview-only work, render the image inline; the underlying file may remain at the default `$CODEX_HOME/generated_images/...` path.
+15. For project-bound work, move or copy the selected artifact into the workspace and update any consuming code or references. Never leave a project-referenced asset only at the default `$CODEX_HOME/generated_images/...` path.
+16. For batches or multi-asset requests, persist every requested deliverable final in the workspace unless the user explicitly asked to keep outputs preview-only. Discarded variants do not need to be kept unless requested.
+17. If the user explicitly chooses or confirms the CLI fallback, then use the fallback-only docs for model, quality, size, `input_fidelity`, masks, output format, output paths, and network setup.
+18. Always report the final saved path(s) for any workspace-bound asset(s), plus the final prompt or prompt set and whether the built-in tool or fallback CLI mode was used.
+
+## Transparent image requests
+
+Ask built-in `image_gen` for a genuinely transparent background and preserve its alpha.
+
+## Prompt augmentation
+
+Reformat user prompts into a structured, production-oriented spec. Make the user's goal clearer and more actionable, but do not blindly add detail.
+
+Treat this as prompt-shaping guidance, not a closed schema. Use only the lines that help, and add a short extra labeled line when it materially improves clarity.
+
+### Specificity policy
+
+Use the user's prompt specificity to decide how much augmentation is appropriate:
+
+- If the prompt is already specific and detailed, preserve that specificity and only normalize/structure it.
+- If the prompt is generic, you may add tasteful augmentation when it will materially improve the result.
+
+Allowed augmentations:
+- composition or framing hints
+- polish level or intended-use hints
+- practical layout guidance
+- reasonable scene concreteness that supports the stated request
+
+Not allowed augmentations:
+- extra characters or objects that are not implied by the request
+- brand names, slogans, palettes, or narrative beats that are not implied
+- arbitrary side-specific placement unless the surrounding layout supports it
+
+## Use-case taxonomy (exact slugs)
+
+Classify each request into one of these buckets and keep the slug consistent across prompts and references.
+
+Generate:
+- photorealistic-natural ??candid/editorial lifestyle scenes with real texture and natural lighting.
+- product-mockup ??product/packaging shots, catalog imagery, merch concepts.
+- ui-mockup ??app/web interface mockups and wireframes; specify the desired fidelity.
+- infographic-diagram ??diagrams/infographics with structured layout and text.
+- scientific-educational ??classroom explainers, scientific diagrams, and learning visuals with required labels and accuracy constraints.
+- ads-marketing ??campaign concepts and ad creatives with audience, brand position, scene, and exact tagline/copy.
+- productivity-visual ??slide, chart, workflow, and data-heavy business visuals.
+- logo-brand ??logo/mark exploration, vector-friendly.
+- illustration-story ??comics, children?셲 book art, narrative scenes.
+- stylized-concept ??style-driven concept art, 3D/stylized renders.
+- historical-scene ??period-accurate/world-knowledge scenes.
+
+Edit:
+- text-localization ??translate/replace in-image text, preserve layout.
+- identity-preserve ??try-on, person-in-scene; lock face/body/pose.
+- precise-object-edit ??remove/replace a specific element (including interior swaps).
+- lighting-weather ??time-of-day/season/atmosphere changes only.
+- background-extraction ??transparent background / clean cutout. Ask built-in `image_gen` for actual transparency.
+- style-transfer ??apply reference style while changing subject/scene.
+- compositing ??multi-image insert/merge with matched lighting/perspective.
+- sketch-to-render ??drawing/line art to photoreal render.
+
+## Shared prompt schema
+
+Use the following labeled spec as shared prompt scaffolding for both top-level modes:
+
+```text
+Use case: <taxonomy slug>
+Asset type: <where the asset will be used>
+Primary request: <user's main prompt>
+Input images: <Image 1: role; Image 2: role> (optional)
+Scene/backdrop: <environment>
+Subject: <main subject>
+Style/medium: <photo/illustration/3D/etc>
+Composition/framing: <wide/close/top-down; placement>
+Lighting/mood: <lighting + mood>
+Color palette: <palette notes>
+Materials/textures: <surface details>
+Text (verbatim): "<exact text>"
+Constraints: <must keep/must avoid>
+Avoid: <negative constraints>
+```
+
+Notes:
+- `Asset type` and `Input images` are prompt scaffolding, not dedicated CLI flags.
+- `Scene/backdrop` refers to the visual setting. It is not the same as the fallback CLI `background` parameter, which controls output transparency behavior.
+- Fallback-only execution notes such as `Quality:`, `Input fidelity:`, masks, output format, and output paths belong in the CLI path only. Do not treat them as built-in `image_gen` tool arguments.
+
+Augmentation rules:
+- Keep it short.
+- Add only the details needed to improve the prompt materially.
+- For edits, explicitly list invariants (`change only X; keep Y unchanged`).
+- If any critical detail is missing and blocks success, ask a question; otherwise proceed.
+
+## Examples
+
+### Generation example (hero image)
+```text
+Use case: product-mockup
+Asset type: landing page hero
+Primary request: a minimal hero image of a ceramic coffee mug
+Style/medium: clean product photography
+Composition/framing: wide composition with usable negative space for page copy if needed
+Lighting/mood: soft studio lighting
+Constraints: no logos, no text, no watermark
+```
+
+### Edit example (invariants)
+```text
+Use case: precise-object-edit
+Asset type: product photo background replacement
+Primary request: replace only the background with a warm sunset gradient
+Constraints: change only the background; keep the product and its edges unchanged; no text; no watermark
+```
+
+## Prompting best practices
+- Structure prompt as scene/backdrop -> subject -> details -> constraints.
+- Include intended use (ad, UI mock, infographic) to set the mode and polish level.
+- Use camera/composition language for photorealism.
+- Only use SVG/vector stand-ins when the user explicitly asked for vector output or a non-image placeholder.
+- Quote exact text and specify typography + placement.
+- For tricky words, spell them letter-by-letter and require verbatim rendering.
+- For multi-image inputs, reference images by index and describe how they should be used.
+- For edits, repeat invariants every iteration to reduce drift.
+- Iterate with single-change follow-ups.
+- If the prompt is generic, add only the extra detail that will materially help.
+- If the prompt is already detailed, normalize it instead of expanding it.
+- For CLI fallback only, see `references/cli.md` and `references/image-api.md` for model, `quality`, `input_fidelity`, masks, output format, and output-path guidance.
+- For transparent images, ask built-in `image_gen` for actual transparency and preserve its alpha.
+
+More principles shared by both modes: `references/prompting.md`.
+Copy/paste specs shared by both modes: `references/sample-prompts.md`.
+
+## Guidance by asset type
+Asset-type templates (website assets, game assets, wireframes, logo) are consolidated in `references/sample-prompts.md`.
+
+## gpt-image-2 guidance for CLI fallback
+
+The fallback CLI defaults to `gpt-image-2`.
+
+- Use `gpt-image-2` for new CLI/API workflows unless the user confirms a different model.
+- CLI `gpt-image-2` does not support `background=transparent`; ask before using `gpt-image-1.5` unless the user explicitly requested that model.
+- `gpt-image-2` always uses high fidelity for image inputs; do not set `input_fidelity` with this model.
+- `gpt-image-2` supports `quality` values `low`, `medium`, `high`, and `auto`.
+- Use `quality low` for fast drafts, thumbnails, and quick iterations. Use `medium`, `high`, or `auto` for final assets, dense text, diagrams, identity-sensitive edits, or high-resolution outputs.
+- Square images are typically fastest to generate. Use `1024x1024` for fast square drafts.
+- If the user asks for 4K-style output, use `3840x2160` for landscape or `2160x3840` for portrait.
+- `gpt-image-2` size may be `auto` or `WIDTHxHEIGHT` if all constraints hold: max edge `<= 3840px`, both edges multiples of `16px`, long-to-short ratio `<= 3:1`, total pixels between `655,360` and `8,294,400`.
+
+Popular `gpt-image-2` sizes:
+- `1024x1024` square
+- `1536x1024` landscape
+- `1024x1536` portrait
+- `2048x2048` 2K square
+- `2048x1152` 2K landscape
+- `3840x2160` 4K landscape
+- `2160x3840` 4K portrait
+- `auto`
+
+## Fallback CLI mode only
+
+### Temp and output conventions
+These conventions apply only to the CLI fallback. They do not describe built-in `image_gen` output behavior.
+- Use `tmp/imagegen/` for intermediate files (for example JSONL batches); delete them when done.
+- Write final artifacts under `output/imagegen/`.
+- Use `--out` or `--out-dir` to control output paths; keep filenames stable and descriptive.
+
+### Dependencies
+Prefer `uv` for dependency management in this repo.
+
+Required Python package:
+```bash
+uv pip install openai
+```
+
+Optional for image inspection and downscaling:
+```bash
+uv pip install pillow
+```
+
+Portability note:
+- If you are using the installed skill outside this repo, install dependencies into that environment with its package manager.
+- In uv-managed environments, `uv pip install ...` remains the preferred path.
+
+### Environment
+- `OPENAI_API_KEY` must be set for live API calls.
+- Do not ask the user for `OPENAI_API_KEY` when using the built-in `image_gen` tool.
+- Never ask the user to paste the full key in chat. Ask them to set it locally and confirm when ready.
+
+If the key is missing, give the user these steps:
+1. Create an API key in the OpenAI platform UI: https://platform.openai.com/api-keys
+2. Set `OPENAI_API_KEY` as an environment variable in their system.
+3. Offer to guide them through setting the environment variable for their OS/shell if needed.
+
+If installation is not possible in this environment, tell the user which dependency is missing and how to install it into their active environment.
+
+### Script-mode notes
+- CLI commands + examples: `references/cli.md`
+- API parameter quick reference: `references/image-api.md`
+- Network approvals / sandbox settings for CLI mode: `references/codex-network.md`
+
+## Reference map
+- `references/prompting.md`: shared prompting principles for both modes.
+- `references/sample-prompts.md`: shared copy/paste prompt recipes for both modes.
+- `references/cli.md`: fallback-only CLI usage via `scripts/image_gen.py`.
+- `references/image-api.md`: fallback-only API/CLI parameter reference.
+- `references/codex-network.md`: fallback-only network/sandbox troubleshooting for CLI mode.
+- `scripts/image_gen.py`: fallback-only CLI implementation. Use only when the user explicitly chooses or confirms CLI mode.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -LiteralPath . -Filter AGENTS.md -Force; Get-ChildItem -LiteralPath 'docs/images/fx_src' -ErrorAction SilentlyContinue | Select-Object Name,Length" in C:\Project\Cat_Tang
+ succeeded in 290ms:
+
+Name                    Length 
+----                    ------ 
+prompts                        
+water_ref                      
+blast.png               289835 
+c3_water.png            644734 
+c4_laserslash.png       1318230
+c4_soundwave.png        1098688
+c5_numeral_bullet.png   164758 
+c5_riftshatter.png      120661 
+c5_shardhit.png         95162  
+c5_starburst.png        86634  
+c5_voidburst.png        141117 
+c5_voidslash.png        101679 
+cloud.png               432227 
+dodge_action.png        125505 
+edge0.png               1557191
+edge1.png               684242 
+edge2.png               612698 
+embers.png              27007  
+enemy_bullets.png       70986  
+execute_rend.png        582048 
+flash.png               77530  
+ice_bloom.png           685887 
+ice_lock.png            884064 
+ice_ref_game.png        236370 
+impact_ref.png          1219063
+pierce_echo.png         568935 
+shards.png              103590 
+trait_delay_burst.png   507290 
+trait_doom_skull.png    623951 
+trait_foresight_eye.png 552782 
+
+
+
+codex
+The generated trails have the rightward charge direction and fading sequence. I’m checking the frame spacing and packing the artwork into the exact 2048 × 256 strips.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Item -LiteralPath 'docs/AGENTS.md','docs/images/AGENTS.md','docs/images/fx_src/AGENTS.md' -ErrorAction SilentlyContinue | ForEach-Object { Get-Content -LiteralPath "'$_.FullName }; Add-Type -AssemblyName System.Drawing; Get-ChildItem -LiteralPath '"'C:/Users/user/.codex/generated_images/01a1f77b-f395-7ca3-bf68-d7bfc83589de' -Filter *.png | ForEach-Object { "'$img=[System.Drawing.Bitmap]::FromFile($_.FullName); [PSCustomObject]@{Name=$_.Name; Width=$img.Width; Height=$img.Height; Corner=$img.GetPixel(0,0).ToString()}; $img.Dispose() }' in C:\Project\Cat_Tang
+ succeeded in 449ms:
+
+Name                                          Width Height Corner                          
+----                                          ----- ------ ------                          
+exec-571115f8-c8ea-41d1-b888-ef7cd4dce181.png  2172    724 Color [A=255, R=14, G=240, B=13]
+exec-96c21e53-4de0-453d-a55e-0ba91d42958b.png  1774    887 Color [A=255, R=14, G=240, B=14]
+exec-a0c6d976-1bd3-41d5-ab45-2bfad61d0697.png  2172    724 Color [A=255, R=16, G=240, B=13]
+exec-abf668e6-7065-41e2-84c3-8b52740c22c6.png  2172    724 Color [A=255, R=14, G=240, B=14]
+exec-c4502be1-0cb4-479a-9859-986c0cee05d8.png  2172    724 Color [A=255, R=15, G=241, B=13]
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short' in C:\Project\Cat_Tang
+ succeeded in 349ms:
+ M Art/tools/blender_bake_fx.py
+ M Art/tools/specs/blender_ch5_surreal_warp_audit.json
+ M Art/tools/specs/blender_ch5_surreal_warp_preview.png
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_AssassinBreath.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_AssassinDive.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_AssassinEmerge.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_AssassinIdle.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_AssassinRun.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_AssassinSlash.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BaseAssassinStep.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BaseBossGlide.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BaseCasterStep.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BaseGiantStep.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BaseGunnerStep.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BaseWitchStep.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BossCast.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BossIdle.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BossReap.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BossReapDash.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BossReapWind.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BossSpear.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_BossWalk.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_CasterIdle.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_CasterLob.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_CasterOpen.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_CasterWalk.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_GiantDash.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_GiantIdle.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_GiantSlam.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_GiantWalk.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_GunnerIdle.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_GunnerShot.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_GunnerWalk.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_WitchCast.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_WitchIdle.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_WitchLink.anim
+ M Game/Assets/Art/Characters/Ch5/Anim/Ch5M_WitchWalk.anim
+ M Game/Assets/Art/Characters/Ch5/Kit_BA_FloatingNumeral.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_BA_HandSpire.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Corridor_S1.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Corridor_S2.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Corridor_S3.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Corridor_S4.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverBrokenColumn.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverBrokenColumn_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverBrokenColumn_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverBrokenColumn_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_10.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_8.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_9.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverShardRock.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverShardRock_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverShardRock_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverShardRock_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverShardRock_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverShardRock_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_CoverShardRock_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Bell_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_DesertPillar.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_DesertPillar_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_DesertPillar_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_DesertPillar_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_DesertPillar_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_DesertPillar_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Gears.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Island.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_MirrorFrame_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_8.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Rail_Toon_9.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Saloon.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Saloon_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Saloon_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Saloon_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Saloon_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Saloon_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_Saloon_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_FD_StationClock_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_Gate_S1.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Gate_S2.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Gate_S3.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Gate_S4.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_LM_ClockHeart.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_LM_DesertShard.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_LM_Hourglass.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_LM_MirrorMonolith.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_LM_SaloonFragment.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_LM_TrainFragment.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_MirrorShard.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Portal_S1.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Portal_S2.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Portal_S3.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Portal_S4.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_RewardDoor.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_RiftCrack.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Wall.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Wall_ClockHeart.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Wall_DebrisEdge.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Wall_MemoryClock.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Wall_MemoryWest.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Wall_Mirror.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_Wall_StarArch.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedKeg_Toon_8.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk.fbx
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_1.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_10.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_2.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_3.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_4.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_5.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_6.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_7.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_8.mat
+ M Game/Assets/Art/Characters/Ch5/Kit_WarpedTrunk_Toon_9.mat
+ M Game/Assets/Editor/EnemyModelBuilder.cs
+ M Game/Assets/Editor/EnemyModelBuilderCh5.cs
+ M Game/Assets/Editor/EnemyMotions.cs
+ M Game/Assets/Resources/Enemies/Ch4_HourHand.prefab
+ M Game/Assets/Resources/Enemies/Ch5_MidBoss.prefab
+ M Game/Assets/Resources/Kit/Ch1/Corridor_S3.prefab
+ M Game/Assets/Resources/Kit/Ch2/Corridor_S3.prefab
+ M Game/Assets/Resources/Kit/Ch3/Corridor_S3.prefab
+ M Game/Assets/Resources/Kit/Ch4/Corridor_S3.prefab
+ M Game/Assets/Resources/Kit/Ch4/FX_SoundWaveMat.mat
+ M Game/Assets/Resources/Kit/Ch5/CoverBrokenColumn.prefab
+ M Game/Assets/Resources/Kit/Ch5/CoverMemoryPile.prefab
+ M Game/Assets/Resources/Kit/Ch5/CoverShardRock.prefab
+ M Game/Assets/Resources/Kit/Ch5/FD_Bell.prefab
+ M Game/Assets/Resources/Kit/Ch5/FD_DesertPillar.prefab
+ M Game/Assets/Resources/Kit/Ch5/FD_MirrorFrame.prefab
+ M Game/Assets/Resources/Kit/Ch5/FD_Rail.prefab
+ M Game/Assets/Resources/Kit/Ch5/FD_Saloon.prefab
+ M Game/Assets/Resources/Kit/Ch5/FD_StationClock.prefab
+ M Game/Assets/Resources/Kit/Ch5/FX_GlassShard.fbx.meta
+ M Game/Assets/Resources/Kit/Ch5/FX_GlassShard2.fbx.meta
+ M Game/Assets/Resources/Kit/Ch5/WarpedKeg.prefab
+ M Game/Assets/Resources/Kit/Ch5/WarpedSpring.prefab
+ M Game/Assets/Resources/Kit/Ch5/WarpedTrunk.prefab
+ M Game/Assets/Scenes/Run.unity
+ M Game/Assets/Scripts/Game/Ch3Bosses.cs
+ M Game/Assets/Scripts/Game/Ch4Bosses.cs
+ M Game/Assets/Scripts/Game/Ch4Kit.cs
+ M Game/Assets/Scripts/Game/Ch5Kit.cs
+ M Game/Assets/Scripts/Game/Enemy.cs
+ M Game/Assets/Scripts/Game/EnemyFactory.cs
+ M Game/Assets/Scripts/Game/FxPart.cs
+ M Game/Assets/Scripts/Game/RoomBuilder.cs
+ M Game/Assets/Scripts/Game/RunManager.cs
+ M Game/ProjectSettings/GraphicsSettings.asset
+ M HANDOFF.md
+?? Art/audio_src/sfx/e3b_beam.wav
+?? Art/audio_src/sfx/e3b_beam.wav.json
+?? Art/audio_src/sfx/e3b_dive.wav
+?? Art/audio_src/sfx/e3b_dive.wav.json
+?? Art/audio_src/sfx/e3b_shards.wav
+?? Art/audio_src/sfx/e3b_shards.wav.json
+?? Art/audio_src/sfx/e3b_slam.wav
+?? Art/audio_src/sfx/e3b_slam.wav.json
+?? Art/audio_src/sfx/e3b_song.wav
+?? Art/audio_src/sfx/e3b_song.wav.json
+?? Art/tools/blender_kit_ch4_bossfloor.py
+?? Art/tools/blender_kit_ch5_obsprops.py
+?? Art/tools/specs/blender_ch5_surreal_warp_run3.log
+?? Art/tools/specs/blender_kit_ch4_bossfloor_preview.png
+?? Art/tools/specs/blender_kit_ch5_obsprops_preview.png
+?? Art/tools/specs/kit_ch4_bossfloor_spec.md
+?? Art/tools/specs/kit_ch5_obsprops.log
+?? Art/tools/specs/kit_ch5_obsprops_spec.md
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor.fbx
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor.fbx.meta
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon.mat
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon.mat.meta
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_1.mat
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_1.mat.meta
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_2.mat
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_2.mat.meta
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_3.mat
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_3.mat.meta
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_4.mat
+?? Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor_Toon_4.mat.meta
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverBrokenColumn_Toon_5.mat
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverBrokenColumn_Toon_5.mat.meta
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_11.mat
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_11.mat.meta
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_12.mat
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_12.mat.meta
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_13.mat
+?? Game/Assets/Art/Characters/Ch5/Kit_CoverMemoryPile_Toon_13.mat.meta
+?? Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon_6.mat
+?? Game/Assets/Art/Characters/Ch5/Kit_WarpedSpring_Toon_6.mat.meta
+?? Game/Assets/Resources/Audio/Sfx/e3b_beam.ogg
+?? Game/Assets/Resources/Audio/Sfx/e3b_beam.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e3b_dive.ogg
+?? Game/Assets/Resources/Audio/Sfx/e3b_dive.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e3b_shards.ogg
+?? Game/Assets/Resources/Audio/Sfx/e3b_shards.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e3b_slam.ogg
+?? Game/Assets/Resources/Audio/Sfx/e3b_slam.ogg.meta
+?? Game/Assets/Resources/Audio/Sfx/e3b_song.ogg
+?? Game/Assets/Resources/Audio/Sfx/e3b_song.ogg.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_DustClump.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_DustClump.prefab.meta
+?? Game/Assets/Resources/FX/Prefabs/FX_FootDust.prefab
+?? Game/Assets/Resources/FX/Prefabs/FX_FootDust.prefab.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_0.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_1.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_10.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_11.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_12.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_13.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_14.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_15.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_2.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_3.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_4.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_5.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_6.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_7.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_8.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_9.png
+?? Game/Assets/Resources/FX/anim/bk_dash_laser_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_0.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_1.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_10.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_11.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_12.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_13.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_14.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_15.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_2.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_3.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_4.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_5.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_6.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_7.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_8.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_9.png
+?? Game/Assets/Resources/FX/anim/bk_dash_mirror_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_0.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_1.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_10.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_11.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_12.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_13.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_14.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_15.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_2.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_3.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_4.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_5.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_6.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_7.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_8.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_9.png
+?? Game/Assets/Resources/FX/anim/bk_dash_rift_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_0.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_1.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_10.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_11.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_12.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_13.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_14.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_15.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_2.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_3.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_4.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_5.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_6.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_7.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_8.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_9.png
+?? Game/Assets/Resources/FX/anim/bk_dash_sand_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_0.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_1.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_10.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_11.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_12.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_13.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_14.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_15.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_2.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_3.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_4.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_5.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_6.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_7.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_8.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_9.png
+?? Game/Assets/Resources/FX/anim/bk_dash_steam_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_0.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_1.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_10.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_11.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_12.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_13.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_14.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_15.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_2.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_3.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_4.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_5.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_6.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_7.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_8.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dash_water_9.png
+?? Game/Assets/Resources/FX/anim/bk_dash_water_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_0.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_1.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_10.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_11.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_12.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_13.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_14.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_15.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_2.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_3.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_4.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_5.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_6.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_7.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_8.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustclump_9.png
+?? Game/Assets/Resources/FX/anim/bk_dustclump_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_0.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_1.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_10.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_11.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_12.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_13.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_14.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_15.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_2.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_3.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_4.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_5.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_6.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_7.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_8.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_9.png
+?? Game/Assets/Resources/FX/anim/bk_dustpuff_9.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_0.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_0.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_1.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_1.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_10.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_10.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_11.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_11.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_12.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_12.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_13.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_13.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_14.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_14.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_15.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_15.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_2.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_2.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_3.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_3.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_4.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_4.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_5.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_5.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_6.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_6.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_7.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_7.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_8.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_8.png.meta
+?? Game/Assets/Resources/FX/anim/bk_dustring_9.png
+?? Game/Assets/Resources/FX/anim/bk_dustring_9.png.meta
+?? Game/Assets/Resources/Kit/Ch4/BossFloor.prefab
+?? Game/Assets/Resources/Kit/Ch4/BossFloor.prefab.meta
+?? Game/Assets/Scripts/Dev/WalkDemo.cs
+?? Game/Assets/Scripts/Dev/WalkDemo.cs.meta
+?? Game/Assets/Scripts/Game/Ch4Twins.cs
+?? Game/Assets/Scripts/Game/Ch4Twins.cs.meta
+?? Game/Assets/Scripts/Game/Ch5MidBoss.cs
+?? Game/Assets/Scripts/Game/Ch5MidBoss.cs.meta
+?? Game/Assets/Scripts/Game/GlassShatter.cs
+?? Game/Assets/Scripts/Game/GlassShatter.cs.meta
+?? Game/Assets/Scripts/Game/GroundFeet.cs
+?? Game/Assets/Scripts/Game/GroundFeet.cs.meta
+?? Game/Assets/Scripts/Game/HeavyStep.cs
+?? Game/Assets/Scripts/Game/HeavyStep.cs.meta
+?? Game/Screenshots/
+?? docs/images/fx_src/prompts/dash_trails.log
+?? docs/images/fx_src/prompts/dash_trails.txt
+?? docs/images/heavy_step_dust.gif
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Add-Type -AssemblyName System.Drawing
+Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
+using System;
+using System.Drawing;
+using System.Drawing.Imaging;
+public static class DashSheetPack {
+  static bool Key(Color c) { return c.G > 85 && c.G > c.R * 1.35 && c.G > c.B * 1.35; }
+  public static string Pack(string source, string target) {
+    using (var src = new Bitmap(source)) {
+      int[] left=new int[8], right=new int[8], top=new int[8], bottom=new int[8];
+      int maxW=1,maxH=1;
+      for(int f=0; f<8; f++) {
+        int x0=(int)Math.Round(f*src.Width/8.0), x1=(int)Math.Round((f+1)*src.Width/8.0);
+        left[f]=x1; right[f]=x0-1; top[f]=src.Height; bottom[f]=-1;
+        for(int y=0;y<src.Height;y++) for(int x=x0;x<x1;x++) {
+          if(Key(src.GetPixel(x,y))) continue;
+          left[f]=Math.Min(left[f],x); right[f]=Math.Max(right[f],x);
+          top[f]=Math.Min(top[f],y); bottom[f]=Math.Max(bottom[f],y);
+        }
+        if(bottom[f]>=0) { maxW=Math.Max(maxW,right[f]-left[f]+1); maxH=Math.Max(maxH,bottom[f]-top[f]+1); }
+      }
+      double scale=Math.Min(224.0/maxW,150.0/maxH);
+      using(var dst=new Bitmap(2048,256,PixelFormat.Format24bppRgb)) {
+        using(var g=Graphics.FromImage(dst)) g.Clear(Color.FromArgb(0,255,0));
+        for(int f=0;f<8;f++) {
+          if(bottom[f]<0) continue;
+          int w=Math.Max(1,(int)Math.Round((right[f]-left[f]+1)*scale));
+          int h=Math.Max(1,(int)Math.Round((bottom[f]-top[f]+1)*scale));
+          int dx=f*256+240-w,dy=184-h;
+          for(int y=0;y<h;y++) for(int x=0;x<w;x++) {
+            int sx=left[f]+Math.Min(right[f]-left[f],(int)(x/scale));
+            int sy=top[f]+Math.Min(bottom[f]-top[f],(int)(y/scale));
+            Color c=src.GetPixel(sx,sy);
+            if("'!Key(c)) dst.SetPixel(dx+x,dy+y,c);
+          }
+        }
+        dst.Save(target,ImageFormat.Png);
+      }
+    }
+    using(var check=new Bitmap(target)) {
+      if(check.Width!=2048 || check.Height!=256) throw new Exception("Invalid sheet size");
+      for(int y=0;y<256;y++) for(int x=0;x<2048;x++) {
+        Color c=check.GetPixel(x,y);
+        bool green=c.R==0 && c.G==255 && c.B==0;
+        int localX=x%256;
+        if((localX<16 || localX>=240 || y<16 || y>=240) && !green) throw new Exception("Effect crossed frame margin");
+        if(Key(c) && !green) throw new Exception("Background is not pure green");
+      }
+      return target+" — "+check.Width+" x "+check.Height+" px; 8 frames; margins and pure-green key verified";
+    }
+  }
+}
+'"'@
+"'$sourceDir='"'C:/Users/user/.codex/generated_images/01a1f77b-f395-7ca3-bf68-d7bfc83589de'
+"'$destDir='"'C:/Project/Cat_Tang/docs/images/fx_src'
+[System.IO.Directory]::CreateDirectory("'$destDir) | Out-Null
+$jobs=@(
+  @('"'sand','exec-a0c6d976-1bd3-41d5-ab45-2bfad61d0697.png'),
+  @('steam','exec-96c21e53-4de0-453d-a55e-0ba91d42958b.png'),
+  @('water','exec-abf668e6-7065-41e2-84c3-8b52740c22c6.png'),
+  @('laser','exec-c4502be1-0cb4-479a-9859-986c0cee05d8.png'),
+  @('rift','exec-3ee85335-2deb-45ba-84e3-31b57348d982.png'),
+  @('mirror','exec-571115f8-c8ea-41d1-b888-ef7cd4dce181.png')
+)
+foreach("'$job in $jobs) {
+  [DashSheetPack]::Pack((Join-Path $sourceDir $job[1]),(Join-Path $destDir ('"'dash_'+"'$job[0]+'"'.png')))
+}" in C:\Project\Cat_Tang
+ succeeded in 5007ms:
+C:\Project\Cat_Tang\docs\images\fx_src\dash_sand.png — 2048 x 256 px; 8 frames; margins and pure-green key verified
+C:\Project\Cat_Tang\docs\images\fx_src\dash_steam.png — 2048 x 256 px; 8 frames; margins and pure-green key verified
+C:\Project\Cat_Tang\docs\images\fx_src\dash_water.png — 2048 x 256 px; 8 frames; margins and pure-green key verified
+C:\Project\Cat_Tang\docs\images\fx_src\dash_laser.png — 2048 x 256 px; 8 frames; margins and pure-green key verified
+C:\Project\Cat_Tang\docs\images\fx_src\dash_rift.png — 2048 x 256 px; 8 frames; margins and pure-green key verified
+C:\Project\Cat_Tang\docs\images\fx_src\dash_mirror.png — 2048 x 256 px; 8 frames; margins and pure-green key verified
+
+codex
+Saved using the image generation tool and your six effect prompts:
+
+- `docs/images/fx_src/dash_sand.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_steam.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_water.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_laser.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_rift.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_mirror.png` — 2048 × 256 px
+
+Verified eight frames, green margins, and pure #00FF00 backgrounds. No other project files edited.
+tokens used
+50,761
+Saved using the image generation tool and your six effect prompts:
+
+- `docs/images/fx_src/dash_sand.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_steam.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_water.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_laser.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_rift.png` — 2048 × 256 px
+- `docs/images/fx_src/dash_mirror.png` — 2048 × 256 px
+
+Verified eight frames, green margins, and pure #00FF00 backgrounds. No other project files edited.

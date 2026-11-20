@@ -277,7 +277,7 @@ namespace CatTang
 
             // 이전 장 바닥 조각 (걸어 다님, 충돌 없음): 윗면을 1~4장 바닥 재질로 — 크기 · 방향 · 좌우 뒤집기 제각각이라 같은 모양이 안 읽힘
             string[] patches = { "FloorPatch_A", "FloorPatch_B", "FloorPatch_C" };
-            int nPatch = Count(3, 6);
+            int nPatch = 0;   // 2026-11-20 천문대 재구성: 앞 장 바닥(체커 · 판자 · 역 타일)을 얹은 조각은 컨셉과 안 맞아 끔 (예전: Count(3, 6))
             for (int k = 0, tries = 0; k < nPatch && tries < 40; tries++)
             {
                 var lp = Spot();

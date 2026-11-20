@@ -701,17 +701,27 @@ namespace CatTang
             return sets[set] = list.ToArray();
         }
 
-        public static bool Spawn(string set, Vector3 pos, Vector3 dir, float size, float life, bool pivotLeft, Vector3 drift = default, float roll = 0)
+        // 풀링 (2026-11-20): 프레임과 자세만 새로 지정하고 쿼드와 재질 블록은 재사용한다.
+        static readonly System.Func<GameObject> factory = Create;
+        static GameObject Create()
         {
-            var fr = Load(set);
-            if (fr.Length == 0) return false;
-            var go = new GameObject("Flip_" + set); VividLayer.Set(go);
+            var go = new GameObject("Flipbook"); VividLayer.Set(go);
             go.AddComponent<MeshFilter>().sharedMesh = GunkataFx.Quad;
             var f = go.AddComponent<FxFlipbook>();
             f.mr = go.AddComponent<MeshRenderer>();
             f.mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             f.mr.receiveShadows = false;
             f.mpb = new MaterialPropertyBlock();
+            return go;
+        }
+
+        public static bool Spawn(string set, Vector3 pos, Vector3 dir, float size, float life, bool pivotLeft, Vector3 drift = default, float roll = 0)
+        {
+            var fr = Load(set);
+            if (fr.Length == 0) return false;
+            var go = GameObjectPool.Get("FxFlipbook", factory);
+            var f = go.GetComponent<FxFlipbook>();
+            f.mpb.Clear();
             f.frames = fr; f.origin = pos; f.dir = dir; f.size = size; f.life = life; f.pivotLeft = pivotLeft; f.drift = drift; f.roll = roll;
             f.born = Time.time;
             f.Pose(0);
@@ -721,7 +731,7 @@ namespace CatTang
         void LateUpdate()
         {
             float t = (Time.time - born) / life;
-            if (t >= 1) { Destroy(gameObject); return; }
+            if (t >= 1) { GameObjectPool.Release(gameObject); return; }
             origin += drift * Time.deltaTime;
             Pose(t);
         }
@@ -974,18 +984,30 @@ namespace CatTang
             return this;
         }
 
-        public static FxMesh Spawn(Mesh mesh, Material mat, Vector3 pos, Quaternion rot, Vector3 size, float life, float delay, Vector3 drift, Kind kind)
+        // 풀링 (2026-11-20): 메시와 재질은 호출 값으로 교체하고 렌더러와 재질 블록은 보관한다.
+        MeshFilter mf;
+        static readonly System.Func<GameObject> factory = Create;
+        static GameObject Create()
         {
-            if (!mesh || !mat) return null;
-            var go = new GameObject("Fx" + kind); VividLayer.Set(go);
-            go.transform.SetPositionAndRotation(pos, rot);
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var go = new GameObject("FxMesh"); VividLayer.Set(go);
             var f = go.AddComponent<FxMesh>();
+            f.mf = go.AddComponent<MeshFilter>();
             f.mr = go.AddComponent<MeshRenderer>();
-            f.mr.sharedMaterial = mat;
             f.mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             f.mr.receiveShadows = false;
             f.mpb = new MaterialPropertyBlock();
+            return go;
+        }
+
+        public static FxMesh Spawn(Mesh mesh, Material mat, Vector3 pos, Quaternion rot, Vector3 size, float life, float delay, Vector3 drift, Kind kind)
+        {
+            if (!mesh || !mat) return null;
+            var go = GameObjectPool.Get("FxMesh", factory);
+            go.transform.SetPositionAndRotation(pos, rot);
+            var f = go.GetComponent<FxMesh>();
+            f.mf.sharedMesh = mesh;
+            f.mr.sharedMaterial = mat;
+            f.mpb.Clear();
             f.mpb.SetFloat(SeedId, Random.Range(0f, 100f));
             f.born = Time.time; f.life = life; f.delay = delay; f.size = size; f.drift = drift; f.kind = kind;
             // 바늘 가시는 돌지 않음 (일렁임 없이 곧게 찌름)
@@ -998,7 +1020,7 @@ namespace CatTang
         void LateUpdate()
         {
             float t = (Time.time - born - delay) / life;
-            if (t >= 1) { Destroy(gameObject); return; }
+            if (t >= 1) { GameObjectPool.Release(gameObject); return; }
             if (t >= 0)
             {
                 transform.position += drift * Time.deltaTime;

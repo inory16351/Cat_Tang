@@ -392,7 +392,7 @@ namespace CatTang
         Vector3 gapDir;
         bool hit, begun;
         LineRenderer lr;
-        readonly List<(Transform t, Vector3 dir)> puffs = new();
+        readonly List<(Transform t, Vector3 dir, int ver)> puffs = new();   // ver = 풀 사용 번호 (풀링 2026-11-20: 수명이 끝나 풀로 돌아가 다른 데 쓰인 뒤엔 건드리지 않음)
         const int Seg = 72, Puffs = 30;
 
         /// <param name="delay">이만큼 기다렸다가 굴뚝에서 나옴 (3겹 연달아)</param>
@@ -421,7 +421,7 @@ namespace CatTang
                 float a = (g0 + gapHalf + 6f + (360f - gapHalf * 2 - 12f) * (i + 0.5f) / Puffs) * Mathf.Deg2Rad;
                 var dir = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
                 var fx = FxEffect.Spawn("FX_SmokePuff", transform.position + dir * r, Quaternion.identity, Random.Range(1.5f, 1.9f));
-                if (fx) puffs.Add((fx.transform, dir));
+                if (fx) puffs.Add((fx.transform, dir, GameObjectPool.Version(fx.gameObject)));
             }
             FxBurst.Spawn(transform.position + Vector3.up * 5.5f, 1.8f, FxBurst.Kind.Dust, Ch2Fx.Smoke);
         }
@@ -432,7 +432,7 @@ namespace CatTang
             if (!begun) Begin();
             r += speed * Time.deltaTime;
             if (r > maxR) { Destroy(gameObject); return; }
-            foreach (var (t, dir) in puffs) if (t) t.position = new Vector3(transform.position.x, t.position.y, transform.position.z) + dir * r;
+            foreach (var (t, dir, ver) in puffs) if (t && GameObjectPool.IsCurrent(t.gameObject, ver)) t.position = new Vector3(transform.position.x, t.position.y, transform.position.z) + dir * r;
             // 앞 선: 빈틈을 뺀 호
             float g0 = Mathf.Atan2(gapDir.x, gapDir.z) * Mathf.Rad2Deg;
             lr.positionCount = Seg + 1;
@@ -455,7 +455,7 @@ namespace CatTang
 
         void OnDestroy()
         {
-            foreach (var (t, _) in puffs) if (t) Destroy(t.gameObject);
+            foreach (var (t, _, ver) in puffs) if (t && GameObjectPool.IsCurrent(t.gameObject, ver)) GameObjectPool.Release(t.gameObject);
         }
     }
 

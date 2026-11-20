@@ -80,8 +80,8 @@ namespace CatTang
         }
 
         // ---------- 스테이지 ----------
-        bool HasMidBoss => chapter <= 4;                 // 1장 술집 · 2장 대합실 · 3장 거울 극장 · 4장 진자 홀
-        string MidBossName => chapter == 4 ? "진자 집행관" : chapter == 3 ? "신기루 마술사" : chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
+        bool HasMidBoss => chapter <= 5;                 // 1장 술집 · 2장 대합실 · 3장 거울 극장 · 4장 진자 홀 · 5장 거울 대전
+        string MidBossName => chapter == 5 ? "거울 속의 고양이" : chapter == 4 ? "진자 집행관" : chapter == 3 ? "신기루 마술사" : chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
 
         void BuildMidBoss()
         {
@@ -131,6 +131,49 @@ namespace CatTang
             if (!attachOrigin.HasValue) player.Teleport(r0.center - r0.farSide * back + Vector3.up * 0.3f);
             Music.PlayFor(IsBossRoom ? "boss" : "stage", chapter);   // 중간 보스 뒤 스테이지 3에서 맵 곡으로 돌아옴
             ui?.Toast(IsBossRoom ? Chapter.BossName : $"{chapter}장 · 스테이지 {index + 1}/{Stages} — 방 {rooms}개");
+            // 풀링 (2026-11-20): 해당 장에서 쓰는 작은 연출만 프레임마다 최대 네 개씩 미리 만든다.
+            if (poolWarmup != null) StopCoroutine(poolWarmup);
+            poolWarmup = StartCoroutine(PrewarmStagePools());
+        }
+
+        Coroutine poolWarmup;
+        static readonly EnemyProjectile.Style[][] warmStyles =
+        {
+            new[] { EnemyProjectile.Style.Orb, EnemyProjectile.Style.Revolver, EnemyProjectile.Style.Pellet, EnemyProjectile.Style.Sniper, EnemyProjectile.Style.Needle, EnemyProjectile.Style.Numeral },
+            new[] { EnemyProjectile.Style.Orb, EnemyProjectile.Style.Ticket, EnemyProjectile.Style.Needle, EnemyProjectile.Style.Numeral },
+            new[] { EnemyProjectile.Style.Orb, EnemyProjectile.Style.Pellet, EnemyProjectile.Style.Needle, EnemyProjectile.Style.Ticket },
+            new[] { EnemyProjectile.Style.Orb, EnemyProjectile.Style.Sniper, EnemyProjectile.Style.Needle, EnemyProjectile.Style.Numeral },
+            new[] { EnemyProjectile.Style.Orb, EnemyProjectile.Style.Needle, EnemyProjectile.Style.Revolver, EnemyProjectile.Style.Sniper, EnemyProjectile.Style.Numeral }
+        };
+
+        IEnumerator PrewarmStagePools()
+        {
+            int ch = chapter;
+            yield return null;
+            for (int count = 4; count <= 12; count += 4)
+            {
+                if (chapter != ch || runOver) yield break;
+                FxEffect.Prewarm("FX_Hit", count, 4); yield return null;
+            }
+            for (int count = 2; count <= 6; count += 2)
+            {
+                if (chapter != ch || runOver) yield break;
+                FxEffect.Prewarm("FX_HitCrit", count, 2); yield return null;
+            }
+            foreach (var style in warmStyles[Mathf.Clamp(ch - 1, 0, warmStyles.Length - 1)])
+                for (int count = 4; count <= 16; count += 4)
+                {
+                    if (chapter != ch || runOver) yield break;
+                    EnemyProjectile.Prewarm(style, count, 4); yield return null;
+                }
+            for (int count = 4; count <= 12; count += 4)
+            {
+                if (chapter != ch || runOver) yield break;
+                DamageNumber.Prewarm(count, 4); yield return null;
+                FxBurst.Prewarm(FxBurst.Kind.Spark, count, 4); yield return null;
+                FxBurst.Prewarm(FxBurst.Kind.Hit, count, 4); yield return null;
+            }
+            poolWarmup = null;
         }
 
         void Update()

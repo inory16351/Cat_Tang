@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace CatTang
 {
-    public class FxEffect : MonoBehaviour
+    public class FxEffect : MonoBehaviour, IPooled
     {
         [Tooltip("탄 색을 입힐지 (false면 조각 재질 색 그대로)")] public bool tintable = true;
 
@@ -23,12 +23,51 @@ namespace CatTang
                 cache[name] = pf;
             }
             if (!pf) return null;
-            var go = Instantiate(pf, pos, rot);
-            VividLayer.SetAll(go);
+            // 풀링 (2026-11-20): 이름별 완성 프리팹을 재사용하고 기존 재생 길이를 유지한다.
+            var go = GameObjectPool.Get(name, factory);
+            go.transform.SetPositionAndRotation(pos, rot);
             go.transform.localScale = Vector3.one * scale;
             var fx = go.GetComponent<FxEffect>();
-            if (fx) fx.Play(tint);
+            if (fx) { fx.SetLayer(); fx.Play(tint); }
             return fx;
+        }
+
+        static readonly System.Func<string, GameObject> factory = Create;
+        static GameObject Create(string name)
+        {
+            var go = Instantiate(cache[name]);
+            VividLayer.SetAll(go);
+            return go;
+        }
+
+        public static void Prewarm(string name, int count, int maxCreate = int.MaxValue)
+        {
+            if (Has(name)) GameObjectPool.Prewarm(name, factory, count, maxCreate);
+        }
+
+        FxPart[] parts;
+        Transform[] nodes;
+        float releaseAt = -1f;
+        void Awake() => CacheParts();
+        void CacheParts()
+        {
+            if (parts != null) return;
+            parts = GetComponentsInChildren<FxPart>(true);
+            nodes = GetComponentsInChildren<Transform>(true);
+            foreach (var p in parts) p.CachePose();
+        }
+
+        void SetLayer()
+        {
+            foreach (var t in nodes) if (t) VividLayer.Set(t.gameObject);
+        }
+
+        public void OnSpawned() { CacheParts(); follow = null; followOffset = Vector3.zero; releaseAt = -1f; }
+        public void OnDespawned() { follow = null; followOffset = Vector3.zero; releaseAt = -1f; }
+
+        void Update()
+        {
+            if (releaseAt >= 0f && Time.time >= releaseAt) GameObjectPool.Release(gameObject);
         }
 
         Transform follow;
@@ -52,15 +91,15 @@ namespace CatTang
             return pf;
         }
 
-        void Play(Color? tint)
+        internal void Play(Color? tint)
         {
             float end = 0;
-            foreach (var p in GetComponentsInChildren<FxPart>(true))
+            foreach (var p in parts)
             {
                 p.Begin(tintable ? tint : null);
                 end = Mathf.Max(end, p.EndTime);
             }
-            Destroy(gameObject, end + 0.05f);
+            releaseAt = Time.time + end + 0.05f;
         }
     }
 }

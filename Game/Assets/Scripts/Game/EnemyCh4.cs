@@ -75,6 +75,15 @@ namespace CatTang
             if (w && BladePts.TryGetValue(weapon, out var bp)) BladeStreak.Begin(w, bp.tip, bp.grip, swing, BladeStreak.Ch4Base);
         }
 
+        /// <summary>진자 기사 낫을 코드로 쥐는 조종기 (2026-11-20 사용자: 낫 휘두르는 애들도 크게 · 가감속). 칼빛 자리는 BladePts 그대로</summary>
+        WeaponSwingRig PkRig()
+        {
+            string n = WeaponT("PendulumScythePlus") ? "PendulumScythePlus" : "PendulumScythe";
+            var r = WeaponSwingRig.Get(this, n, BladeStreak.Ch4Base, true);
+            if (r && BladePts.TryGetValue(n, out var bp)) { r.streakTip = bp.tip; r.streakGrip = bp.grip; }
+            return r;
+        }
+
         /// <summary>죽을 때 4장 처리 (Die에서 부름)</summary>
         void OnDieCh4()
         {
@@ -389,8 +398,20 @@ namespace CatTang
             Anim(right ? "SwingR" : "SwingL");
             var fwd = ToP(p);
             transform.rotation = Quaternion.LookRotation(fwd);
+            // 낫: 반대쪽 앞(50°)에서 시작해 200° 큰 호 (앞 → 친 쪽 → 옆 뒤). 감기 → 멈칫 → 베고 감속
+            // 예고 · 판정 = 칼빛이 쓸고 가는 부채꼴 그대로 (조종기가 없으면 예전 120° · 3m)
+            var rig = PkRig();
+            float wu = PKWindup / AtkMul, act = 0.23f, wh = 0.04f;   // (사용자: 조금 느리게)
+            var sw = new WeaponSwingRig.Swing
+            {
+                axis = Vector3.up, from = new Vector3(right ? -0.77f : 0.77f, -0.03f, 0.64f), sweep = right ? 200f : -200f,   // 낫을 눕혀 수평으로 (사용자)
+                wind = Mathf.Max(0.08f, wu - act - wh), windHold = wh, act = act, actPow = 2.2f, hold = 0.12f, rec = 0.45f,
+                bodyFollow = 0.1f, leanBack = 6f, leanFwd = 12f, lunge = 0.35f, streak = 1f,
+            };
             var center = Quaternion.Euler(0, right ? PKHalf : -PKHalf, 0) * fwd;
-            tele = Telegraph.Sector(transform.position, center, PKRange, PKHalf, PKWindup / AtkMul, Telegraph.Danger, transform).NoLaser();
+            float half = PKHalf, range = PKRange;
+            if (rig) { (center, half, range) = rig.Sector(sw, fwd); rig.Play(sw); }
+            tele = Telegraph.Sector(transform.position, center, range, half, PKWindup / AtkMul, Telegraph.Danger, transform).NoLaser();
             float end = Time.time + PKWindup / AtkMul;
             bool ok = true;
             while (Time.time < end)
@@ -399,12 +420,13 @@ namespace CatTang
                 transform.position += fwd * speed * 0.35f * health.SlowMul * Time.deltaTime;
                 yield return null;
             }
-            if (ok) { Sfx.Play("e4_scythe", 0.6f, 0.06f, 2); Streak("PendulumScythe", 0.2f); }
+            if (ok) { Sfx.Play("e4_scythe", 0.6f, 0.06f, 2); if (!rig) Streak("PendulumScythe", 0.2f); }
+            else if (rig) rig.Release(0.3f);
             if (ok && p && p.health.Alive)
             {
                 var to = Effects.Flat(p.transform.position - transform.position);
-                if (to.magnitude <= PKRange && Vector3.Angle(center, to) <= PKHalf) { p.health.TakeDamage(contactDamage); p.health.Knockback(center * 4f); }
-                PropHit.Area(transform.position + center * PKRange * 0.6f, PKRange * 0.6f, contactDamage);
+                if (to.magnitude <= range && (half >= 180f || Vector3.Angle(center, to) <= half)) { p.health.TakeDamage(contactDamage); p.health.Knockback(center * 4f); }
+                PropHit.Area(transform.position + center * range * 0.6f, range * 0.6f, contactDamage);
             }
             // 휘두른 뒤 남은 시간 = 다음 휘두름까지 (1.2초 주기), 그 사이 반대쪽 · 뒤가 빈틈
             float rest = Mathf.Max(0.1f, PKSwingGap - PKWindup) / AtkMul;
@@ -420,6 +442,12 @@ namespace CatTang
             nextSpecial = Time.time + WhirlCd;
             Anim("Whirl");
             tele = Telegraph.Ring(transform.position, WhirlRadius, WhirlWindup / AtkMul, Telegraph.Danger, transform);
+            var rig = PkRig();
+            if (rig) rig.Play(new WeaponSwingRig.Swing
+            {
+                axis = Vector3.up, from = new Vector3(0.85f, -0.1f, -0.5f), sweep = 80f,
+                wind = WhirlWindup / AtkMul - 0.1f, windHold = 0.1f, act = 0.32f, actPow = 2f, hold = 0.1f, rec = 0.4f, leanBack = 10f, leanFwd = 8f, streak = 1f,
+            });
             bool ok = false;
             yield return Hold(WhirlWindup, r => ok = r);
             if (ok)
@@ -428,7 +456,7 @@ namespace CatTang
                 Sfx.Play("e4_whirl", 0.7f);
                 var trail = GetComponent<EyeTrail>(); if (trail) trail.Hot(0.4f);
                 if (p && p.health.Alive && Effects.Flat(p.transform.position - transform.position).magnitude <= WhirlRadius) p.health.TakeDamage(WhirlDmg);
-                Streak("PendulumScythe", 0.34f);                                    // 한 바퀴 내내 낫에 붙은 칼빛 (예전: 몸 둘레 레이저 호 3장)
+                if (!rig) Streak("PendulumScythe", 0.34f);                          // 한 바퀴 내내 낫에 붙은 칼빛 (조종기가 있으면 조종기가 그림)
                 PropHit.Area(transform.position, WhirlRadius, WhirlDmg);
                 yield return new WaitForSeconds(0.7f);
             }

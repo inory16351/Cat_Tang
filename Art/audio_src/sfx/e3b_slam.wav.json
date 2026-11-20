@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "e3b_slam",
+  "original_idea": "3장 보스 거울 고래 효과음 (꼬리 내려치기)",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, huge whale tail slamming onto a mirror lake, heavy impact boom with a glassy splash and shattering ripple, water, thin mirror glass, deep thud, close, punchy, slight reverb, game sound effect.",
+  "sound_fields": {
+    "source": "huge whale tail slamming onto a mirror lake",
+    "action": "heavy impact boom with a glassy splash and shattering ripple",
+    "material": "water, thin mirror glass, deep thud",
+    "space": "close, punchy, slight reverb, game sound effect"
+  },
+  "bpm": null,
+  "seconds": 1.8,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 1,
+  "seed": 1189535583,
+  "candidate": 1,
+  "file": "e3b_slam.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-20T11:31:28",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -1.42,
+  "raw_peak_dbfs": -1.42,
+  "ceiling_gain_db": 0.0
+}

@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "e3b_dive",
+  "original_idea": "3장 보스 거울 고래 효과음 (잠수 돌진)",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, giant whale diving and charging through a mirror surface, deep rushing whoosh building up, then a bursting splash as it breaks through, water rush, glass crackle, close, dry, game sound effect.",
+  "sound_fields": {
+    "source": "giant whale diving and charging through a mirror surface",
+    "action": "deep rushing whoosh building up, then a bursting splash as it breaks through",
+    "material": "water rush, glass crackle",
+    "space": "close, dry, game sound effect"
+  },
+  "bpm": null,
+  "seconds": 2.0,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 1,
+  "seed": 1239043299,
+  "candidate": 1,
+  "file": "e3b_dive.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-20T11:31:38",
+  "backend": "sa3-torch",
+  "model": "medium + same-l",
+  "peak_dbfs": -1.15,
+  "raw_peak_dbfs": -1.15,
+  "ceiling_gain_db": 0.0
+}

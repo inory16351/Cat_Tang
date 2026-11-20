@@ -480,7 +480,9 @@ namespace CatTang
             Sfx.Play("enemy_die", kind == Kind.Boss ? 1f : 0.65f, kind == Kind.Boss ? 0f : 0.1f, 3);
             if (!blew)
             {
-                if (model) { DeathMist.Play(model, kind == Kind.Boss ? 1.6f : 1f); model = null; }
+                // 거울 고양이: 검은 안개 대신 조각상처럼 유리로 산산조각 (2026-11-20 사용자)
+                if (model && GetComponent<Ch5MidBoss>()) { GlassShatter.Play(model, 28, 1f); model = null; }
+                else if (model) { DeathMist.Play(model, kind == Kind.Boss ? 1.6f : 1f); model = null; }
                 else FxBurst.Spawn(transform.position + Vector3.up, kind == Kind.Boss ? 6f : 2.2f, FxBurst.Kind.Explosion);
             }
             OnDieCh3();

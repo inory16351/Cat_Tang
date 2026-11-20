@@ -8,18 +8,43 @@ using UnityEngine;
 
 namespace CatTang
 {
-    public class DamageNumber : MonoBehaviour
+    public class DamageNumber : MonoBehaviour, IPooled
     {
         static readonly Material[] mats = new Material[10], critMats = new Material[10], bonusMats = new Material[10];
         static readonly float[] aspect = new float[10], critAspect = new float[10], bonusAspect = new float[10];
         static bool critLoaded, hasCritArt, hasBonusArt;
         static Mesh quad;
-        readonly List<MeshRenderer> parts = new();
+        readonly List<MeshRenderer> parts = new(10);
+        readonly int[] digits = new int[10];
+        int partCount;
         float born, scale, life = 0.75f;
         bool crit;
         Color tint = Color.white;
         Vector3 vel;
         MaterialPropertyBlock mpb;
+
+        // 풀링 (2026-11-20): 정수 최대 자릿수만큼 글자를 한 번 만들고 필요한 글자만 켠다.
+        static readonly System.Func<GameObject> factory = Create;
+        static GameObject Create()
+        {
+            var go = new GameObject("Dmg");
+            var d = go.AddComponent<DamageNumber>();
+            d.mpb = new MaterialPropertyBlock();
+            for (int i = 0; i < 10; i++)
+            {
+                var p = new GameObject("Digit");
+                p.transform.SetParent(go.transform, false);
+                p.AddComponent<MeshFilter>().sharedMesh = quad;
+                var mr = p.AddComponent<MeshRenderer>();
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                d.parts.Add(mr);
+                p.SetActive(false);
+            }
+            return go;
+        }
+        public static void Prewarm(int count, int maxCreate = int.MaxValue) { if (Load()) GameObjectPool.Prewarm("DamageNumber", factory, count, maxCreate); }
+        public void OnSpawned() { tint = Color.white; vel = Vector3.zero; crit = false; partCount = 0; mpb.Clear(); }
+        public void OnDespawned() { for (int i = 0; i < parts.Count; i++) parts[i].gameObject.SetActive(false); partCount = 0; }
 
         static bool Load()
         {
@@ -78,9 +103,10 @@ namespace CatTang
         static void Spawn(Vector3 pos, float dmg, bool crit, bool bonus, bool cond = false)
         {
             if (!Load()) return;
-            var go = new GameObject(crit ? "DmgCrit" : "Dmg");
+            var go = GameObjectPool.Get("DamageNumber", factory);
+            go.name = crit ? "DmgCrit" : "Dmg";
             go.transform.position = pos + new Vector3(Random.Range(-0.35f, 0.35f), crit ? 0.25f : 0, 0);
-            var d = go.AddComponent<DamageNumber>();
+            var d = go.GetComponent<DamageNumber>();
             // 2026-11-17 사용자: 피해 숫자가 잘 안 보임 → 전체 1.5배 (0.4 · 0.5 · 0.62 → 0.6 · 0.75 · 0.93), 치명타는 그 1.35배
             d.scale = (dmg >= 30 ? 0.93f : dmg >= 15 ? 0.75f : 0.6f) * (crit ? 1.35f : 1f);
             d.vel = new Vector3(Random.Range(-0.6f, 0.6f), crit ? 3.8f : 3.2f, 0);
@@ -93,24 +119,24 @@ namespace CatTang
             if (bonus && !art) d.tint = cond ? CondGold : new Color(0.35f, 1f, 0.45f);
             if (bonus) { d.scale *= 0.85f; d.vel.y = 2.6f; d.life = 0.85f; }
             d.born = Time.time;
-            d.mpb = new MaterialPropertyBlock();
-            string s = Mathf.Max(1, Mathf.RoundToInt(dmg)).ToString();
+            int value = Mathf.Max(1, Mathf.RoundToInt(dmg));
+            int count = 0;
+            do { d.digits[count++] = value % 10; value /= 10; } while (value > 0);
+            d.partCount = count;
             float total = 0;
-            foreach (var c in s) total += useAspect[c - '0'] * 0.82f;
+            for (int i = count - 1; i >= 0; i--) total += useAspect[d.digits[i]] * 0.82f;
             float x = -total / 2;
-            foreach (var c in s)
+            for (int i = 0; i < count; i++)
             {
-                int n = c - '0';
-                var p = new GameObject("d" + n);
-                p.transform.SetParent(go.transform, false);
+                int n = d.digits[count - 1 - i];
+                var mr = d.parts[i];
+                var p = mr.transform;
                 float w = useAspect[n] * 0.82f;
-                p.transform.localPosition = new Vector3(x + w / 2, 0, 0);
-                p.transform.localScale = new Vector3(useAspect[n], 1, 1);
-                p.AddComponent<MeshFilter>().sharedMesh = quad;
-                var mr = p.AddComponent<MeshRenderer>();
+                p.localPosition = new Vector3(x + w / 2, 0, 0);
+                p.localRotation = Quaternion.identity;
+                p.localScale = new Vector3(useAspect[n], 1, 1);
                 mr.sharedMaterial = useMats[n];
-                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                d.parts.Add(mr);
+                p.gameObject.SetActive(true);
                 x += w;
             }
             go.transform.localScale = Vector3.one * d.scale;
@@ -119,7 +145,7 @@ namespace CatTang
         void Update()
         {
             float t = (Time.time - born) / life;
-            if (t >= 1) { Destroy(gameObject); return; }
+            if (t >= 1) { GameObjectPool.Release(gameObject); return; }
             vel.y -= 9f * Time.deltaTime;
             transform.position += vel * Time.deltaTime;
             var cam = Camera.main;
@@ -130,7 +156,7 @@ namespace CatTang
             if (crit && t < 0.35f) transform.position += cam ? cam.transform.right * Mathf.Sin(Time.time * 90f) * 0.03f * (1 - t / 0.35f) : Vector3.zero;   // 치명타: 처음에 떨림
             float a = t < 0.6f ? 1 : 1 - (t - 0.6f) / 0.4f;
             mpb.SetColor("_Color", new Color(tint.r, tint.g, tint.b, a));
-            foreach (var r in parts) r.SetPropertyBlock(mpb);
+            for (int i = 0; i < partCount; i++) parts[i].SetPropertyBlock(mpb);
         }
     }
 }

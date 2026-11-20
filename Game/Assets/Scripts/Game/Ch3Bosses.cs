@@ -976,6 +976,7 @@ namespace CatTang
         // ② 고래의 노래: 1~12번 울음(0.5초 간격, 숫자 표시 없음, 울 때마다 둘레 물결) → 머리가 빛나는 4초 안에 울음 수 시각 탄을 머리(정면 ±60°)에
         IEnumerator WhaleSong()
         {
+            Sfx.Play("e3b_song", 0.9f, 0f, 1);
             var p = P;
             if (!p) yield break;
             int n = Random.Range(1, 13);
@@ -1148,6 +1149,7 @@ namespace CatTang
             var back = -transform.forward;
             Telegraph.Sector(transform.position, back, 7f, 60f, T(0.8f), Telegraph.Danger, transform);
             yield return Wait(T(0.8f));
+            Sfx.Play("e3b_slam", 0.9f, 0.05f, 2);
             var p = P;
             if (p && p.health.Alive)
             {
@@ -1169,6 +1171,7 @@ namespace CatTang
             var c = transform.position;
             Telegraph.Ring(c, 8f, T(0.8f), Telegraph.Aim, transform).NoGlint();
             yield return Wait(T(0.8f));
+            Sfx.Play("e3b_dive", 0.7f, 0.1f, 2);
             Telegraph.Ring(c, 4f, 1.5f, Telegraph.Danger, transform);
             float end = Time.time + 1.5f;
             while (Time.time < end)
@@ -1188,6 +1191,7 @@ namespace CatTang
         // 잠수 돌진: 잠수 → 고양이 쪽 직선(폭 4m) 예고 1초 → 18m/초 돌진 28, 끝에서 튀어오름 반경 3m 22
         IEnumerator DiveCharge()
         {
+            Sfx.Play("e3b_song", 0.6f, 0.05f, 1);
             hp.invulnerable = true;
             Height(-6f);
             Ripple(transform.position);
@@ -1199,6 +1203,7 @@ namespace CatTang
             Telegraph.Lane(laneFrom, dir, len, 4f, 1f, Telegraph.Danger);
             transform.rotation = Quaternion.LookRotation(dir);
             yield return Wait(1f);
+            Sfx.Play("e3b_dive", 0.9f, 0.05f, 2);
             bool hit = false;
             for (float moved = 0; moved < len;)
             {
@@ -1220,6 +1225,7 @@ namespace CatTang
         // 거울 파편 뿌리기: 떠다니는 거울 조각 4개를 10초 동안 더 + 물방울 탄 12방향(6m/초, 15)
         IEnumerator ScatterShards()
         {
+            Sfx.Play("e3b_shards", 0.8f, 0.08f, 2);
             if (anim) anim.jawTarget = 0.5f;
             yield return Wait(T(0.5f));
             for (int i = 0; i < 12; i++)
@@ -1255,6 +1261,7 @@ namespace CatTang
             Telegraph.Ring(c, 2.5f, T(0.8f), Ch3Fx.Teal).NoGlint();
             Height(1f);
             yield return Wait(T(0.8f));
+            Sfx.Play("e3b_slam", 0.8f, 0.1f, 2);
             if (anim) anim.rollTarget = 30f;
             var p = P;
             if (p && p.health.Alive)
@@ -1272,6 +1279,7 @@ namespace CatTang
         // 빛 브레스: 예고 1초 → 광선(폭 1.5 · 16m)이 2초 동안 90°를 쓸고 지나감, 0.25초마다 12
         IEnumerator LightBreath()
         {
+            Sfx.Play("e3b_beam", 0.9f, 0.03f, 1);
             var d = ToPlayer();
             Telegraph.Sector(transform.position, d, 16f, 45f, 1f, Telegraph.Danger);
             float tEnd = Time.time + 1f;
@@ -1305,6 +1313,7 @@ namespace CatTang
             Height(12f);
             Telegraph.Ring(at, 3.5f, 1.2f, Telegraph.Danger);
             yield return Wait(1.2f);
+            Sfx.Play("e3b_slam", 1f, 0f, 2);
             transform.position = new Vector3(at.x, transform.position.y, at.z);
             Height(0f);
             yield return Wait(0.15f);
@@ -1331,6 +1340,7 @@ namespace CatTang
             hp.invulnerable = true;
             Height(14f);
             yield return Wait(1.5f);
+            Sfx.Play("e3b_beam", 0.8f, 0.1f, 1);
             transform.position = new Vector3(from.x, transform.position.y, from.z);
             transform.rotation = Quaternion.LookRotation(dir);
             Height(1.2f);

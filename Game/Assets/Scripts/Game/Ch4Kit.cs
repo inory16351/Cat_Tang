@@ -70,6 +70,8 @@ namespace CatTang
             {
                 // 꼭대기 문자판: 원형 경계(밖은 별밤 허공)만. 문자판 바닥 · 쌍둥이 기믹은 보스(Ch4Bosses)가 맡음
                 Ch2Kit.ArenaFence(root, ArenaR);
+                // 은빛 거대 문자판 바닥 (2026-11-20)
+                Kit.Place(ch, "BossFloor", root, new Vector3(0, 0.02f, 0), 0f, 1f, false);
                 return;
             }
 

@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace CatTang
 {
-    public class Telegraph : MonoBehaviour
+    public class Telegraph : MonoBehaviour, IPooled
     {
         enum Shape { Ring, Lane, Sector }
         Shape shape;
@@ -29,6 +29,32 @@ namespace CatTang
         public static readonly Color Aim = new(0.82f, 0.38f, 1f);      // 보라
         static readonly Color Shadow = new(0.06f, 0.02f, 0.08f, 0.34f);
         static readonly Color Ink = new(0.05f, 0.01f, 0.07f, 0.9f);
+
+        // 풀링 (2026-11-20): 모양별 완성품과 메시 작성 버퍼를 재사용한다.
+        readonly System.Collections.Generic.List<Vector3> vertices = new(42);
+        readonly System.Collections.Generic.List<int> triangles = new(120);
+        readonly System.Collections.Generic.List<Color> colors = new(42);
+        static readonly System.Func<GameObject> ringFactory = CreateRing, laneFactory = CreateLane, sectorFactory = CreateSector;
+        static GameObject CreateRing() => Create(Shape.Ring);
+        static GameObject CreateLane() => Create(Shape.Lane);
+        static GameObject CreateSector() => Create(Shape.Sector);
+        static GameObject Create(Shape shape)
+        {
+            var go = new GameObject("Telegraph_" + shape);
+            var t = go.AddComponent<Telegraph>(); t.shape = shape;
+            t.areaBack = t.NewArea("AreaShadow", out t.backMesh, 0.025f);
+            t.areaFill = t.NewArea("AreaFill", out t.fillMesh, 0.03f);
+            t.back = t.NewDarkLine("OuterInk"); t.outer = NewLine(t.transform, "Outer"); t.fill = NewLine(t.transform, "Fill");
+            return go;
+        }
+        public void OnSpawned()
+        {
+            follow = null; grow = false; glint = true; glinted = false; laser = true;
+            born = life = radius = len = width = half = 0f; col = Color.white;
+            outer.loop = fill.loop = back.loop = false;
+        }
+        public void OnDespawned() { Enemy.ForgetPooledTelegraph(this); follow = null; vertices.Clear(); triangles.Clear(); colors.Clear(); }
+        void OnDestroy() { if (backMesh) Destroy(backMesh); if (fillMesh) Destroy(fillMesh); }
 
         static Material DarkMat()
         {
@@ -62,13 +88,13 @@ namespace CatTang
         /// <summary>로컬 평면 모양 메시: 원(반지름 r) · 부채꼴(반지름 r, ±half°, +Z가 가운데) · 직선(폭 w, 길이 l, +Z 방향)</summary>
         void ShapeMesh(Mesh m, float r, float l, Color c)
         {
-            var v = new System.Collections.Generic.List<Vector3>();
-            var t = new System.Collections.Generic.List<int>();
+            var v = vertices; var t = triangles;
+            v.Clear(); t.Clear(); colors.Clear();
             if (shape == Shape.Lane)
             {
                 float hw = width / 2;
                 v.Add(new Vector3(-hw, 0, 0)); v.Add(new Vector3(hw, 0, 0)); v.Add(new Vector3(-hw, 0, l)); v.Add(new Vector3(hw, 0, l));
-                t.AddRange(new[] { 0, 2, 1, 2, 3, 1 });
+                t.Add(0); t.Add(2); t.Add(1); t.Add(2); t.Add(3); t.Add(1);
             }
             else
             {
@@ -81,12 +107,11 @@ namespace CatTang
                 }
                 for (int i = 1; i <= n; i++) { t.Add(0); t.Add(i); t.Add(i + 1); }
             }
-            var cs = new Color[v.Count];
-            for (int i = 0; i < cs.Length; i++) cs[i] = c;
+            for (int i = 0; i < v.Count; i++) colors.Add(c);
             m.Clear();
             m.SetVertices(v);
             m.SetTriangles(t, 0);
-            m.colors = cs;
+            m.SetColors(colors);
             m.RecalculateBounds();
         }
 
@@ -114,7 +139,7 @@ namespace CatTang
         /// <summary>원형 범위 예고 (follow가 있으면 그 위치를 따라감)</summary>
         public static Telegraph Ring(Vector3 at, float radius, float dur, Color c, Transform follow = null)
         {
-            var t = new GameObject("Telegraph_Ring").AddComponent<Telegraph>();
+            var t = GameObjectPool.Get("Telegraph_Ring", ringFactory).GetComponent<Telegraph>();
             t.transform.position = at;
             t.shape = Shape.Ring; t.radius = radius; t.life = dur; t.col = c; t.follow = follow;
             t.Init();
@@ -124,7 +149,7 @@ namespace CatTang
         /// <summary>직선 예고: from에서 dir로 len만큼, 폭 width</summary>
         public static Telegraph Lane(Vector3 from, Vector3 dir, float len, float width, float dur, Color c, Transform follow = null)
         {
-            var t = new GameObject("Telegraph_Lane").AddComponent<Telegraph>();
+            var t = GameObjectPool.Get("Telegraph_Lane", laneFactory).GetComponent<Telegraph>();
             t.transform.position = from;
             dir.y = 0;
             t.transform.rotation = Quaternion.LookRotation(dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.forward);
@@ -136,7 +161,7 @@ namespace CatTang
         /// <summary>부채꼴 예고: dir 방향을 가운데로 양쪽 halfAngle도, 반지름 radius</summary>
         public static Telegraph Sector(Vector3 at, Vector3 dir, float radius, float halfAngle, float dur, Color c, Transform follow = null)
         {
-            var t = new GameObject("Telegraph_Sector").AddComponent<Telegraph>();
+            var t = GameObjectPool.Get("Telegraph_Sector", sectorFactory).GetComponent<Telegraph>();
             t.transform.position = at;
             dir.y = 0;
             t.transform.rotation = Quaternion.LookRotation(dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.forward);
@@ -172,11 +197,6 @@ namespace CatTang
         void Init()
         {
             born = Time.time;
-            areaBack = NewArea("AreaShadow", out backMesh, 0.025f);
-            areaFill = NewArea("AreaFill", out fillMesh, 0.03f);
-            back = NewDarkLine("OuterInk");
-            outer = NewLine(transform, "Outer");
-            fill = NewLine(transform, "Fill");
             if (shape == Shape.Ring)
             {
                 outer.loop = fill.loop = true;
@@ -203,7 +223,7 @@ namespace CatTang
         }
 
         /// <summary>바로 지우기 (공격이 취소됐을 때)</summary>
-        public void Kill() { if (this) Destroy(gameObject); }
+        public void Kill() { if (this) GameObjectPool.Release(gameObject); }
 
         void Update()
         {
@@ -224,7 +244,7 @@ namespace CatTang
                     if (shape == Shape.Sector) LaserFx.Slash(transform.position, transform.forward, radius);
                     else if (shape == Shape.Lane) LaserFx.Streak(transform.position, transform.forward, len, width);
                 }
-                Destroy(gameObject);
+                GameObjectPool.Release(gameObject);
             }
         }
 

@@ -74,7 +74,155 @@ namespace CatTang.EditorTools
                 for (int i = 0; i < poses.Count; i++) kv[i] = new[] { poses[i].t, poses[i].p.TryGetValue(n, out var v) ? v : 0f };
                 if (n == "ROOT") root = kv; else keys["+" + n] = kv;
             }
+            var strike = IsSwing(path) ? SwingFeel(keys, ref root) : null;
+            bool yaw = strike != null && BodyYaw(idle, keys);
             Ch2Motion.Make(idle, path, tl[tl.Length - 1].t, loop, keys, root);
+            if (strike != null) StrikeTangents(path, strike);
+            if (yaw) BakeOrientation(path);
+        }
+
+        // ================= 휘두르기 손맛 (2026-11-20 사용자: 참격 모션 전부 상체 회전력 · 가감속으로 사실적으로, 지금 너무 정적) =================
+        // 모든 장의 휘두르기 클립(이름에 Swing · Slash · Whirl · Reap · Stab · Cut · Slam · Smash · Cleave · Chop · Guillotine)을 만든 뒤 한 번 더 다듬음:
+        //  ① 박자 찾기: 몸통(허리 비틀기, 없으면 허리 숙임) 값이 가장 빠르게 바뀌는 키 = 치는 키, 그 앞 키 = 감은 꼭대기
+        //  ② 상체 회전력: 감은 꼭대기 · 치는 키의 허리 값을 1.25배로, 가슴 비틀기는 허리를 따라(0.55배), 고개는 반대로 조금(눈은 목표에)
+        //  ③ 운동 사슬: 다리 · 골반이 먼저(−0.02초) → 허리 → 가슴(+0.02) → 어깨(+0.03) → 위팔(+0.04) → 아래팔(+0.05) → 손(+0.06) 순서로 한 박자씩 늦게 도착 (채찍처럼)
+        //  ④ 가감속: 감는 동안은 부드럽게(ClampedAuto), 치는 키로 들어갈 때는 곧은 선(가속), 친 뒤 몸통은 조금 넘쳤다(18%) 감속하며 돌아옴
+        static readonly System.Text.RegularExpressions.Regex SwingName = new("(Swing|Slash|Whirl|Reap|Stab|Cut|Slam|Smash|Cleave|Chop|Guillotine)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        static bool IsSwing(string path) => SwingName.IsMatch(System.IO.Path.GetFileName(path)) && !path.Contains("Wind");   // 감기만 하는 클립(ReapWind)은 뺌
+
+        static float Delay(string muscle)
+        {
+            if (muscle.Contains("Leg") || muscle.Contains("Foot") || muscle.Contains("Toes")) return -0.02f;
+            if (muscle.Contains("Spine")) return 0f;
+            if (muscle.Contains("Chest") || muscle.Contains("UpperChest")) return 0.02f;
+            if (muscle.Contains("Neck") || muscle.Contains("Head")) return 0.025f;
+            if (muscle.Contains("Shoulder")) return 0.03f;
+            if (muscle.Contains("Forearm")) return 0.05f;
+            if (muscle.Contains("Hand") || muscle.Contains("Finger")) return 0.06f;
+            if (muscle.Contains("Arm")) return 0.04f;
+            return 0f;
+        }
+
+        /// <summary>①~④ 중 키 값 · 시각을 바꾸는 부분. 돌려주는 값 = 근육별 '치는 키' 시각 (접선 다듬기용), 휘두르기로 못 읽으면 null</summary>
+        static Dictionary<string, float> SwingFeel(Dictionary<string, float[][]> keys, ref float[][] root)
+        {
+            string drv = keys.ContainsKey("+Spine Twist Left-Right") ? "+Spine Twist Left-Right" : keys.ContainsKey("+Spine Front-Back") ? "+Spine Front-Back" : null;
+            if (drv == null) return null;
+            var d = keys[drv];
+            int n = d.Length;
+            if (n < 4) return null;
+            // ① 치는 키 = 가장 빠른 변화 (첫 · 마지막 키는 쉬는 자세라 뺌)
+            int s = -1; float best = 0;
+            for (int i = 2; i < n - 1; i++)
+            {
+                float sp = Mathf.Abs(d[i][1] - d[i - 1][1]) / Mathf.Max(0.01f, d[i][0] - d[i - 1][0]);
+                if (sp > best) { best = sp; s = i; }
+            }
+            if (s < 2 || Mathf.Abs(d[s][1] - d[s - 1][1]) < 0.12f) return null;
+            int w = s - 1;
+            float tW = d[w][0], tS = d[s][0];
+            // ② 상체 회전력
+            d[w][1] *= 1.25f; d[s][1] *= 1.25f;
+            if (drv.Contains("Twist"))
+            {
+                if (!keys.ContainsKey("+Chest Twist Left-Right"))
+                {
+                    var c = new float[n][]; for (int i = 0; i < n; i++) c[i] = new[] { d[i][0], d[i][1] * 0.55f };
+                    keys["+Chest Twist Left-Right"] = c;
+                }
+                if (!keys.ContainsKey("+Head Turn Left-Right"))
+                {
+                    var h = new float[n][]; for (int i = 0; i < n; i++) h[i] = new[] { d[i][0], -d[i][1] * 0.3f };
+                    keys["+Head Turn Left-Right"] = h;
+                }
+            }
+            // ③ 운동 사슬: 감은 꼭대기부터 뒤 키들을 근육 무리별로 늦춤 (마지막 키는 끝에 그대로, 순서는 안 뒤집힘)
+            var strike = new Dictionary<string, float>();
+            foreach (var kv in keys)
+            {
+                float dl = Delay(kv.Key);
+                var a = kv.Value;
+                for (int i = 1; i < a.Length - 1; i++)
+                {
+                    if (a[i][0] < tW - 1e-4f) continue;
+                    float lo = a[i - 1][0] + 0.012f, hi = a[i + 1][0] - 0.012f;
+                    a[i][0] = Mathf.Clamp(a[i][0] + dl, lo, Mathf.Max(lo, hi));
+                }
+                strike[kv.Key] = tS + dl;
+            }
+            if (root != null)
+                for (int i = 1; i < root.Length - 1; i++)
+                    if (root[i][0] >= tW - 1e-4f) root[i][0] = Mathf.Clamp(root[i][0] - 0.02f, root[i - 1][0] + 0.012f, Mathf.Max(root[i - 1][0] + 0.012f, root[i + 1][0] - 0.012f));
+            // ④ 몸통 넘침: 친 뒤 0.06초에 감은 쪽 반대로 18% 더 → 그다음 키로 감속하며 돌아옴 (다음 키가 충분히 떨어져 있을 때만)
+            foreach (var m in new[] { drv, "+Chest Twist Left-Right" })
+            {
+                if (!keys.TryGetValue(m, out var a)) continue;
+                int k = -1; float ts = strike.TryGetValue(m, out var t0) ? t0 : tS;
+                for (int i = 0; i < a.Length; i++) if (Mathf.Abs(a[i][0] - ts) < 0.02f) { k = i; break; }
+                if (k < 1 || k >= a.Length - 1 || a[k + 1][0] - a[k][0] < 0.14f) continue;
+                float over = a[k][1] + (a[k][1] - a[k - 1][1]) * 0.18f;
+                var list = new List<float[]>(a);
+                list.Insert(k + 1, new[] { a[k][0] + 0.06f, over });
+                keys[m] = list.ToArray();
+            }
+            return strike;
+        }
+
+        // ⑤ 몸 전체 회전 (2026-11-20 사용자: "돌리는 각이 너무 작아" — 랫키호테 평타는 칼끝이 240 ~ 360° 돎): 허리 비틀기를 따라 몸통 전체(루트 방향)를 같은 쪽으로
+        //    허리 1(≈40°)당 42° 더 돌림 → 감은 쪽 ~110° · 친 쪽 ~110°, 칼끝 호 약 200°. 루트 회전은 클립 '방향 굽기'(Bake Into Pose)로 몸에만 (적 오브젝트 방향은 그대로)
+        const float YawPerTwist = 42f;
+        static bool BodyYaw(AnimationClip idle, Dictionary<string, float[][]> keys)
+        {
+            if (!keys.TryGetValue("+Spine Twist Left-Right", out var tw)) return false;
+            float Q(string n) { foreach (var b in AnimationUtility.GetCurveBindings(idle)) if (b.propertyName == n) return AnimationUtility.GetEditorCurve(idle, b).Evaluate(0.3f); return n == "RootQ.w" ? 1 : 0; }
+            var q0 = new Quaternion(Q("RootQ.x"), Q("RootQ.y"), Q("RootQ.z"), Q("RootQ.w"));
+            var qs = new float[4][][];
+            for (int c = 0; c < 4; c++) qs[c] = new float[tw.Length][];
+            for (int i = 0; i < tw.Length; i++)
+            {
+                var q = Quaternion.Euler(0, YawPerTwist * tw[i][1], 0) * q0;
+                qs[0][i] = new[] { tw[i][0], q.x }; qs[1][i] = new[] { tw[i][0], q.y }; qs[2][i] = new[] { tw[i][0], q.z }; qs[3][i] = new[] { tw[i][0], q.w };
+            }
+            keys["RootQ.x"] = qs[0]; keys["RootQ.y"] = qs[1]; keys["RootQ.z"] = qs[2]; keys["RootQ.w"] = qs[3];
+            return true;
+        }
+
+        static void BakeOrientation(string path)
+        {
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path.StartsWith("Assets/") ? path + ".anim" : path);
+            if (!clip) return;
+            var st = AnimationUtility.GetAnimationClipSettings(clip);
+            st.loopBlendOrientation = true;     // Root Transform Rotation — Bake Into Pose
+            st.keepOriginalOrientation = true;
+            AnimationUtility.SetAnimationClipSettings(clip, st);
+            EditorUtility.SetDirty(clip);
+        }
+
+        /// <summary>④ 가감속 접선 (랫키호테 attack act = ease-out): 감은 꼭대기를 떠나는 순간이 가장 빠르고(나가는 접선 2.4배) 치는 키에 거의 멈추듯 도착(들어가는 접선 0.15배)</summary>
+        static void StrikeTangents(string path, Dictionary<string, float> strike)
+        {
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path.StartsWith("Assets/") ? path + ".anim" : path);
+            if (!clip) return;
+            foreach (var b in AnimationUtility.GetCurveBindings(clip))
+            {
+                if (!strike.TryGetValue("+" + b.propertyName, out float ts)) continue;
+                var c = AnimationUtility.GetEditorCurve(clip, b);
+                for (int i = 1; i < c.length; i++)
+                {
+                    if (Mathf.Abs(c.keys[i].time - ts) > 0.012f) continue;
+                    var a = c.keys[i - 1]; var k = c.keys[i];
+                    float slope = (k.value - a.value) / Mathf.Max(1e-3f, k.time - a.time);
+                    AnimationUtility.SetKeyBroken(c, i - 1, true); AnimationUtility.SetKeyBroken(c, i, true);
+                    AnimationUtility.SetKeyRightTangentMode(c, i - 1, AnimationUtility.TangentMode.Free);
+                    AnimationUtility.SetKeyLeftTangentMode(c, i, AnimationUtility.TangentMode.Free);
+                    a = c.keys[i - 1]; k = c.keys[i];
+                    a.outTangent = slope * 2.4f; k.inTangent = slope * 0.15f;
+                    c.MoveKey(i - 1, a); c.MoveKey(i, k);
+                    break;
+                }
+                AnimationUtility.SetEditorCurve(clip, b, c);
+            }
+            EditorUtility.SetDirty(clip);
         }
 
         static AnimationClip CatClip(string name)
@@ -85,7 +233,9 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>고양이 클립(src)을 그대로 쓰되, pose에 나온 근육만 '고양이 idle + 값'으로 고정 (무기 든 팔). 반복 · 길이는 src 그대로, 앞뒤 근육은 MirrorFrontBack</summary>
-        static void HoldArm(AnimationClip src, string path, string pose)
+        /// <param name="swing">0 = 팔을 자세 그대로 고정. 0보다 크면 고정 자세 위에 원본 걸음의 팔 앞뒤 흔들림(다리와 엇갈림)을 이만큼 얹음
+        /// (2026-11-20 사용자: 붕괴 거인 걸을 때 팔이 같이 안 움직임)</param>
+        static void HoldArm(AnimationClip src, string path, string pose, float swing = 0f)
         {
             var idle = Ch2Motion.CatIdle();
             if (!src || !idle) return;
@@ -104,7 +254,18 @@ namespace CatTang.EditorTools
                 {
                     var ic = AnimationUtility.GetEditorCurve(idle, b);
                     float v0 = ic != null ? ic.Evaluate(0.3f) : c.Evaluate(0);
-                    c = new AnimationCurve(new Keyframe(0, v0 + off), new Keyframe(len, v0 + off));
+                    if (swing > 0 && b.propertyName.EndsWith("Arm Front-Back") && c.length > 1)
+                    {
+                        // 원본 흔들림(평균을 뺀 값)을 얹음. 아래 MirrorHeldOnly가 앞뒤 근육 값을 뒤집으므로 흔들림은 미리 뒤집어 둠 → 뒤집힌 뒤 원래 방향(다리와 엇갈림)
+                        float mean = 0; int n = 24;
+                        for (int k = 0; k < n; k++) mean += c.Evaluate(len * k / n);
+                        mean /= n;
+                        var ks = new Keyframe[n + 1];
+                        for (int k = 0; k <= n; k++) { float t = len * k / n; ks[k] = new Keyframe(t, v0 + off - (c.Evaluate(t) - mean) * swing); }
+                        c = new AnimationCurve(ks);
+                        for (int k = 0; k <= n; k++) c.SmoothTangents(k, 0);
+                    }
+                    else c = new AnimationCurve(new Keyframe(0, v0 + off), new Keyframe(len, v0 + off));
                     held[b.propertyName] = 1;
                 }
                 AnimationUtility.SetEditorCurve(clip, b, c);
@@ -440,7 +601,7 @@ namespace CatTang.EditorTools
             const string RG5_RAM = "SP.FB=.6 RA.FB=.5 RA.DU=.2 LA.FB=-.6 LL.FB=.7 LK=-.2 RL.FB=-.5 RK=.1 HD.ND=.2 ROOT=-.05";
             Clip(idle, D5 + "Ch5M_GiantDash", false, (0, RG5_REST), (.55f, RG5_COIL), (.62f, RG5_RAM), (1.05f, RG5_RAM), (1.5f, RG5_REST));
             Ch2Motion.Walk(idle, D5 + "Ch5M_BaseGiantStep", 1.2f, 0.26f, 0.16f, 0.16f);   // 무겁게 끄는 걸음
-            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseGiantStep.anim"), D5 + "Ch5M_GiantWalk", RG5_REST);
+            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseGiantStep.anim"), D5 + "Ch5M_GiantWalk", RG5_REST, 1.3f);   // 망치 든 채로 팔도 크게 흔듦
 
             // ---- 균열 자객 (균열 칼 두 자루, 앞으로 겨눔) ----
             const string RA5_ARMS = "RA.DU=.35 RA.FB=.32 RF=-.5 LA.DU=.35 LA.FB=.32 LF=-.5";
@@ -479,7 +640,11 @@ namespace CatTang.EditorTools
             //   키 간격으로 가감속 — 들어 올림은 키를 넓게(천천히 출발해 점점 빨리), 꼭대기에서 0.25초 멈칫(예비 동작), 베기는 0.07초(번개처럼),
             //   넘어간 뒤엔 과하게 넘어갔다(오버슈트) 미끄러지며 감속 → 천천히 제자리. 곡선 접선 = ClampedAuto라 키 사이가 부드럽게 가속 · 감속
             const string BS_REST = "RA.DU=.3 RA.FB=.25 RF=-.6 RH.DU=.1 LA.DU=.25 LA.FB=.1 LF=-.4 SP.FB=.05";
-            Clip(idle, D5 + "Ch5M_BossIdle", true, (0, BS_REST + " SP.LR=.04 HD.ND=-.05"), (1.6f, BS_REST + " SP.LR=-.04 HD.ND=.02 ROOT=.06 CH.FB=-.05"), (3.2f, BS_REST + " SP.LR=.04 HD.ND=-.05"));
+            // 떠다님 (2026-11-20 사용자: "막보 떠다니는 느낌을 줘, 왜 걸어가냐"): 발을 바닥에 딛지 않음 — 다리를 모아 발끝을 아래로 늘어뜨리고 무릎은 살짝 굽힘.
+            // 몸이 떠오를 때 다리는 늦게 따라 뒤로 흩날림 (옷자락처럼). 위아래 둥실거림 · 이동 방향 기울기는 런타임 HoverFloat
+            const string BS_LEGS = " LL.FB=.14 RL.FB=.02 LK=-.32 RK=-.14 LFT=-.65 RFT=-.65";
+            const string BS_LEGS2 = " LL.FB=.04 RL.FB=-.08 LK=-.22 RK=-.3 LFT=-.6 RFT=-.7";
+            Clip(idle, D5 + "Ch5M_BossIdle", true, (0, BS_REST + BS_LEGS + " SP.LR=.04 HD.ND=-.05"), (1.6f, BS_REST + BS_LEGS2 + " SP.LR=-.04 HD.ND=.02 CH.FB=-.05"), (3.2f, BS_REST + BS_LEGS + " SP.LR=.04 HD.ND=-.05"));
             // 2026-11-20 사용자: 베어 넘길 때 수평으로, 양손으로 휘두르며 → 낫을 오른쪽 뒤로 수평하게 감음(왼손이 몸을 가로질러 자루를 함께 잡음, 허리를 오른쪽으로 비틂)
             //   → 몸을 왼쪽으로 풀며 양손으로 앞을 수평하게 쓸어 넘김 → 왼쪽까지 넘어간 자세로 미끄러짐. 손목(RF.TW · RH.*)은 자루가 눕도록
             const string BS_WIND1 = "RA.DU=.6 RA.FB=-.05 RA.TW=.2 RF=-.35 RF.TW=-.4 RH.IO=.3 LA.DU=.5 LA.FB=.35 LA.TW=-.2 LF=-.35 SP.TW=.35 CH.TW=.15 HD.TN=-.1 ROOT=-.02";
@@ -497,8 +662,9 @@ namespace CatTang.EditorTools
             const string BS_PULL = BS_REST + " LA.DU=.9 LA.FB=-.5 LF=-.3 SP.TW=.4 SP.FB=-.2 HD.ND=.1";
             const string BS_THROW = BS_REST + " LA.DU=.8 LA.FB=1.0 LF=.2 SP.TW=-.4 SP.FB=.3 LL.FB=.3 ROOT=-.05";
             Clip(idle, D5 + "Ch5M_BossSpear", false, (0, BS_REST), (.8f, BS_PULL), (1.0f, BS_PULL + " SP.TW=.5"), (1.06f, BS_THROW), (1.2f, BS_REST));
-            Ch2Motion.Walk(idle, D5 + "Ch5M_BaseBossGlide", 1.4f, 0.14f, 0.08f, 0.1f);   // 사신: 발을 거의 안 떼고 미끄러지듯
-            HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D5 + "Ch5M_BaseBossGlide.anim"), D5 + "Ch5M_BossWalk", BS_REST);
+            // 이동도 걸음 없이 떠서 미끄러짐: 앞으로 기울고 다리는 뒤로 흩날림 (예전: 발을 조금 떼는 걸음 Ch5M_BaseBossGlide)
+            const string BS_DRIFT = BS_REST + " SP.FB=.16 HD.ND=-.06 LL.FB=-.1 RL.FB=-.22 LK=-.35 RK=-.45 LFT=-.7 RFT=-.7";
+            Clip(idle, D5 + "Ch5M_BossWalk", true, (0, BS_DRIFT), (.9f, BS_DRIFT + " LL.FB=-.2 RL.FB=-.12 LK=-.45 RK=-.32 SP.LR=.04 LA.FB=.05"), (1.8f, BS_DRIFT));
         }
     }
 }

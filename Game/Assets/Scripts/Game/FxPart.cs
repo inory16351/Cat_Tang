@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CatTang
 {
     [RequireComponent(typeof(MeshRenderer))]
-    public class FxPart : MonoBehaviour
+    public class FxPart : MonoBehaviour, IPooled
     {
         public FxMesh.Kind kind = FxMesh.Kind.Core;
         [Tooltip("수명(초)")] public float life = 0.2f;
@@ -23,10 +23,15 @@ namespace CatTang
         [Tooltip("붙어 버팀: 톡 나타난 뒤 수명 끝(마지막 15%)까지 크기 · 열을 그대로 유지하다 확 오그라듦 (지연 충전 폭탄 · 미련 불씨)")] public bool hold;
         [Tooltip("붙어 버틸 때 열 (0 = 짙은 탄 색 · 1 = 하얀 심지)")] [Range(0, 1)] public float holdHeat = 0.5f;
         [Tooltip("깜빡임(초당 횟수, 0 = 없음): 크기가 툭툭 튀고 하얗게 달아오름. 끝으로 갈수록 빨라짐")] public float blink;
+        [Tooltip("플립북을 카메라 대신 바닥에 눕힘 (위에서 내려다보고 구운 그림: 발 디딤 흙먼지 고리 · 돌진 자국). 발 · 몸이 판을 제대로 가림. 그림 위쪽 = 루트 앞(+Z)")] public bool flat;
+        [Tooltip("카메라 보는 플립북: 그림의 어느 높이(아래 0 ~ 위 1)가 이 조각 자리에 오는지. 0.3 = 땅에 닿는 점이 그림 아래 30%인 그림 (솟는 먼지)")] [Range(0, 1)] public float pivotY = 0.5f;
+        [Tooltip("카메라 보는 플립북: 그림의 어느 가로 자리(왼 0 ~ 오른 1)가 이 조각 자리에 오는지. 돌진 꼬리 = 0.85 (오른쪽 새로 생긴 끝이 몸 뒤)")] [Range(0, 1)] public float pivotX = 0.5f;
+        [Tooltip("카메라 보는 판을 화면 자리는 그대로 두고 카메라 쪽으로 당김(m, 루트 크기를 곱함) — 판 아래가 바닥에 묻히지 않게")] public float liftToCamera;
+        [Tooltip("카메라 보는 플립북의 그림 +X(오른쪽)를 화면에 비친 루트 앞(+Z) 방향에 맞춤 (돌진 꼬리: 그림은 오른쪽으로 달려 나가고 꼬리가 왼쪽)")] public bool alignToRoot;
 
         MeshRenderer mr;
         MaterialPropertyBlock mpb;
-        Vector3 baseScale, worldDrift;
+        Vector3 baseScale, worldDrift, baseLocal, driftAcc;
         Quaternion baseRot;
         float born, roll, lifeK = 1;
         bool started;
@@ -36,17 +41,40 @@ namespace CatTang
         Material[] frames;
         static readonly int ColorId = Shader.PropertyToID("_Color");
 
+        // 풀링 (2026-11-20): 최초 자세를 보관해 줄어든 크기와 누적 회전을 다음 재생에 넘기지 않는다.
+        Vector3 originalPosition, originalScale;
+        Quaternion originalRotation;
+        MeshFilter mf;
+        bool cached;
+        void Awake() => CachePose();
+
+        internal void CachePose()
+        {
+            if (cached) return;
+            cached = true;
+            originalPosition = transform.localPosition; originalScale = transform.localScale; originalRotation = transform.localRotation;
+            mr = GetComponent<MeshRenderer>(); mf = GetComponent<MeshFilter>();
+            mpb = new MaterialPropertyBlock();
+        }
+
+        void ResetPose()
+        {
+            transform.localPosition = originalPosition; transform.localRotation = originalRotation; transform.localScale = originalScale;
+        }
+
+        public void OnSpawned() { CachePose(); ResetPose(); started = false; driftAcc = Vector3.zero; frames = null; mpb.Clear(); }
+        public void OnDespawned() { CachePose(); started = false; driftAcc = Vector3.zero; ResetPose(); }
+
         public void Begin(Color? tint)
         {
-            mr = GetComponent<MeshRenderer>();
-            mpb = new MaterialPropertyBlock();
+            CachePose(); ResetPose();
+            mpb.Clear(); frames = null;
             if (!string.IsNullOrEmpty(flipSet))
             {
                 frames = FxFlipbook.Frames(flipSet);
-                var mf = GetComponent<MeshFilter>();
                 if (mf) mf.sharedMesh = GunkataFx.Quad;
                 if (frames.Length > 0) mr.sharedMaterial = frames[0];
-                billboard = true;
+                billboard = !flat;
                 // 구운 그림은 제 색이 있으므로 탄 색은 절반만 섞음
                 var fc = tint.HasValue && useTint ? Color.Lerp(Color.white, tint.Value, 0.5f) : Color.white;
                 fc.a *= opacity;
@@ -66,6 +94,8 @@ namespace CatTang
             var root = transform.parent ? transform.parent : transform;
             worldDrift = root.TransformDirection(drift) * root.lossyScale.x * Random.Range(1 - j, 1 + j);
             born = Time.time;
+            baseLocal = transform.localPosition;
+            driftAcc = Vector3.zero;
             started = true;
             Pose(-1);
         }
@@ -77,7 +107,7 @@ namespace CatTang
             if (t >= 1) { mr.enabled = false; started = false; return; }
             if (t >= 0)
             {
-                transform.position += worldDrift * Time.deltaTime;
+                driftAcc += worldDrift * Time.deltaTime;
                 if (kind != FxMesh.Kind.Tracer) worldDrift *= Mathf.Exp(-6f * Time.deltaTime);
                 if (spin != 0) baseRot = baseRot * Quaternion.AngleAxis(spin * Time.deltaTime, spinAxis);
             }
@@ -86,6 +116,9 @@ namespace CatTang
 
         void Pose(float t)
         {
+            // 자리: 루트 기준 처음 자리 + 흘러간 만큼 (루트가 대상을 따라다녀도 맞음) + 그림 기준점 · 카메라 쪽 당김
+            transform.localPosition = baseLocal;
+            transform.position += driftAcc;
             mr.enabled = t >= 0;
             if (t < 0) { transform.localScale = Vector3.zero; return; }
             var cam0 = Camera.main;
@@ -94,7 +127,26 @@ namespace CatTang
                 // 플립북: 프레임을 차례로, 조금씩 커짐
                 mr.sharedMaterial = frames[Mathf.Min(frames.Length - 1, (int)(t * frames.Length))];
                 transform.localScale = baseScale * Mathf.Lerp(1f, flipGrow, t);
-                if (cam0) transform.rotation = Quaternion.LookRotation(cam0.transform.forward, cam0.transform.up) * Quaternion.Euler(0, 0, roll);
+                if (flat) transform.rotation = Quaternion.Euler(0, (transform.parent ? transform.parent.eulerAngles.y : 0) + roll, 0) * Quaternion.Euler(90, 0, 0);
+                else if (cam0)
+                {
+                    float r = roll;
+                    if (alignToRoot && transform.parent)
+                    {
+                        var f = transform.parent.forward;
+                        r += Mathf.Atan2(Vector3.Dot(f, cam0.transform.up), Vector3.Dot(f, cam0.transform.right)) * Mathf.Rad2Deg;
+                    }
+                    transform.rotation = Quaternion.LookRotation(cam0.transform.forward, cam0.transform.up) * Quaternion.Euler(0, 0, r);
+                    if (pivotX != 0.5f || pivotY != 0.5f || liftToCamera != 0)
+                    {
+                        // 그림 기준점(돌린 그림의 가로 · 세로)이 조각 자리에 오게 + 카메라 쪽 당김 (화면 자리 그대로)
+                        float k = transform.parent ? transform.parent.lossyScale.x : 1f;
+                        float sz = baseScale.y * k * Mathf.Lerp(1f, flipGrow, Mathf.Max(0f, t));
+                        var p0 = transform.position;
+                        transform.position = p0 + transform.right * (0.5f - pivotX) * sz + transform.up * (0.5f - pivotY) * sz
+                            + (cam0.transform.position - p0).normalized * liftToCamera * k;
+                    }
+                }
                 mr.SetPropertyBlock(mpb);
                 return;
             }

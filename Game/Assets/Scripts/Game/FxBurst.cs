@@ -19,6 +19,35 @@ namespace CatTang
         MaterialPropertyBlock mpb;
         float born, life;
 
+        // 풀링 (2026-11-20): 종류별 쿼드와 재질 블록을 최초 생성 뒤 계속 쓴다.
+        static readonly string[] poolKeys = { "Burst_Muzzle", "Burst_Hit", "Burst_Explosion", "Burst_Gold", "Burst_Crit", "Burst_Slash", "Burst_Spark", "Burst_Dust", "Burst_Shield", "Burst_Converge" };
+        static readonly System.Func<string, GameObject> factory = Create;
+        static GameObject Create(string key)
+        {
+            var go = new GameObject(key); VividLayer.Set(go);
+            go.AddComponent<MeshFilter>().sharedMesh = GunkataFx.Quad;
+            var f = go.AddComponent<FxBurst>();
+            f.mr = go.AddComponent<MeshRenderer>();
+            f.mr.sharedMaterial = baseMat;
+            f.mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            f.mpb = new MaterialPropertyBlock();
+            return go;
+        }
+
+        static bool EnsureMat()
+        {
+            if (baseMat) return true;
+            var sh = Shader.Find("CatTang/FX");
+            if (!sh) return false;
+            baseMat = new Material(sh);
+            return true;
+        }
+
+        public static void Prewarm(Kind kind, int count, int maxCreate = int.MaxValue)
+        {
+            if (EnsureMat()) GameObjectPool.Prewarm(poolKeys[(int)kind], factory, count, maxCreate);
+        }
+
         public static void Spawn(Vector3 pos, float size, Kind kind) => Spawn(pos, size, kind, Color.white);
 
         /// <summary>tint: 탄 색 (흰색이면 원래 색)</summary>
@@ -27,22 +56,13 @@ namespace CatTang
         /// <summary>life &lt; 0 이면 종류별 기본 길이</summary>
         public static void Spawn(Vector3 pos, float size, Kind kind, Color tint, float life)
         {
-            if (baseMat == null)
-            {
-                var sh = Shader.Find("CatTang/FX");
-                if (sh == null) return;
-                baseMat = new Material(sh);
-            }
-            var go = GameObject.CreatePrimitive(PrimitiveType.Quad); VividLayer.Set(go);
-            go.name = "FX_" + kind;
-            Destroy(go.GetComponent<Collider>());
+            if (!EnsureMat()) return;
+            var go = GameObjectPool.Get(poolKeys[(int)kind], factory);
             go.transform.position = pos;
             go.transform.localScale = Vector3.one * size;
-            var f = go.AddComponent<FxBurst>();
-            f.mr = go.GetComponent<MeshRenderer>();
-            f.mr.sharedMaterial = baseMat;
-            f.mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            f.mpb = new MaterialPropertyBlock();
+            var f = go.GetComponent<FxBurst>();
+            f.mpb.Clear();
+            f.mpb.SetFloat(ProgressId, 0f);
             f.mpb.SetFloat(ModeId, ModeOf(kind));
             f.mpb.SetFloat(SeedId, Random.Range(0f, 100f));
             f.mpb.SetColor(TintId, tint);
@@ -60,7 +80,7 @@ namespace CatTang
         void Update()
         {
             float k = (Time.time - born) / life;
-            if (k >= 1) { Destroy(gameObject); return; }
+            if (k >= 1) { GameObjectPool.Release(gameObject); return; }
             mpb.SetFloat(ProgressId, k);
             mr.SetPropertyBlock(mpb);
             Face();

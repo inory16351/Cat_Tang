@@ -58,7 +58,7 @@ def set_line_color(sc, rgb):
         s.linestyle.thickness = 2.2
 
 
-def toon_mat(name, bands):
+def toon_mat(name, bands, light=0.0):
     """bands: [(위치 0~1, (r,g,b))] — Layer Weight(Facing) 기준 계단 색. 위치 0 = 정면(심지), 1 = 가장자리.
     재질 값 'heat'(0~1)로 전체를 식은 색으로, 'dissolve'(0~1)로 노이즈 구멍"""
     m = bpy.data.materials.new(name)
@@ -87,7 +87,19 @@ def toon_mat(name, bands):
     mul = nt.nodes.new("ShaderNodeMath"); mul.operation = 'MULTIPLY'; mul.inputs[1].default_value = 0.8
     nt.links.new(inv.outputs[0], mul.inputs[0])
     nt.links.new(mul.outputs[0], add.inputs[1])
-    nt.links.new(add.outputs[0], ramp.inputs["Fac"])
+    if light > 0:
+        # 위쪽 빛: (1 - N.z) / 2 × light 를 더함 → 위 면은 심지 쪽 색, 아래 면은 테 쪽 색 (돌진 꼬리 입체감)
+        geo = nt.nodes.new("ShaderNodeNewGeometry")
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        nt.links.new(geo.outputs["Normal"], sep.inputs[0])
+        down = nt.nodes.new("ShaderNodeMath"); down.operation = 'MULTIPLY_ADD'
+        down.inputs[1].default_value = -0.5 * light; down.inputs[2].default_value = 0.5 * light
+        nt.links.new(sep.outputs["Z"], down.inputs[0])
+        add2 = nt.nodes.new("ShaderNodeMath"); add2.operation = 'ADD'; add2.use_clamp = True
+        nt.links.new(add.outputs[0], add2.inputs[0]); nt.links.new(down.outputs[0], add2.inputs[1])
+        nt.links.new(add2.outputs[0], ramp.inputs["Fac"])
+    else:
+        nt.links.new(add.outputs[0], ramp.inputs["Fac"])
     em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Strength"].default_value = 1.0
     nt.links.new(ramp.outputs["Color"], em.inputs["Color"])
     # dissolve: 3D 노이즈 > dissolve 인 곳만 남김
@@ -1210,7 +1222,457 @@ def bake_c5strip():
     render(sc, "c5strip", 0)
 
 
-SETS = {"c5orb": bake_c5orb, "c5shard": bake_c5shard, "c5spark": bake_c5spark, "c5rift": bake_c5rift, "c5strip": bake_c5strip,
+DUST_BANDS = [(0.0, (0.92, 0.86, 0.77)), (0.1, (0.78, 0.7, 0.6)), (0.3, (0.6, 0.52, 0.43)), (0.58, (0.43, 0.36, 0.3))]
+ROCK_BANDS = [(0.0, (0.46, 0.39, 0.32)), (0.3, (0.3, 0.25, 0.21)), (0.65, (0.17, 0.14, 0.12))]
+
+
+FOOT_RX, FOOT_RY = 0.24, 0.42      # 발바닥 타원 반지름 (게임: HeavyStep이 발 길이에 맞춰 크기를 정함 — 발 길이 0.84 = 크기 1)
+
+
+def bake_dustring():
+    """발 디딤 흙먼지 — 바닥 고리 (한 번 16장, 2026-11-20 사용자: 땅에 닿는 순간 그 자리에서 퍼지게).
+    위에서 똑바로 내려다보고 구움 → 게임에선 바닥에 눕힌 판(FxPart.flat)이라 발이 먼지를 제대로 가림. 그림 가운데 = 발바닥 가운데, 위(+Y) = 발끝 방향.
+    "한 점이 아니라 발이 닿는 면적에서부터 퍼져야" → 첫 장 = 발바닥 윤곽(가로 0.48 × 세로 0.84 타원) 둘레에 먼지가 눌려 삐져나온 모양,
+    그 윤곽에서 바깥으로 빠르게 밀려 퍼지며 부풀었다 녹고, 돌 부스러기가 발 가장자리에서 바닥을 미끄러져 나감"""
+    sc = reset(); set_line_color(sc, (0.16, 0.11, 0.08))
+    sc.render.line_thickness = 1.6
+    cam = sc.camera
+    cam.data.ortho_scale = 3.2
+    cam.location = (0, 0, 10); cam.rotation_euler = (0, 0, 0)
+    rnd = random.Random(21)
+    ring, rocks = [], []
+    for i in range(13):
+        m = toon_mat(f"dust{i}", DUST_BANDS)
+        o = lumpy(f"d{i}", 60 + i, m)
+        o["a"] = TAU * i / 13 + rnd.uniform(-0.08, 0.08); o["r"] = rnd.uniform(0.62, 0.8); o["s"] = rnd.uniform(0.3, 0.46)   # r = 발 윤곽에서 바깥으로 더 나가는 거리
+        o["lag"] = rnd.uniform(0, 0.06); o["spin"] = rnd.uniform(-1.5, 1.5)
+        ring.append((o, m))
+    for i in range(8):
+        m = toon_mat(f"rock{i}", ROCK_BANDS)
+        o = lumpy(f"r{i}", 90 + i, m, subdiv=1)
+        for p in o.data.polygons:
+            p.use_smooth = False
+        a = rnd.uniform(0, TAU)
+        o["d"] = Vector((math.cos(a), math.sin(a), 0)); o["far"] = rnd.uniform(0.7, 1.3); o["s"] = rnd.uniform(0.09, 0.15); o["spin"] = rnd.uniform(4, 9)
+        rocks.append((o, m))
+    for f in range(FRAMES):
+        t = (f + 1) / FRAMES
+        for o, m in ring:
+            k = max(0.0, (t - o["lag"]) / (1 - o["lag"]))
+            e = o["r"] * ease_out(k, 3)
+            o.location = (math.cos(o["a"]) * (FOOT_RX + e), math.sin(o["a"]) * (FOOT_RY + e), 0)   # 발바닥 타원 윤곽 → 바깥
+            fade = min(1.0, max(0.0, (k - 0.6) / 0.4))
+            g = o["s"] * (0.6 + 0.4 * ease_out(min(1, k / 0.18))) * (1 + 0.5 * k) * (1 - fade) ** 1.4
+            o.scale = (g * 1.05, g * 1.45, g * 0.6)            # 고리 둘레 방향(Y)으로 늘여 이어지게
+            o.hide_render = fade > 0.8
+            o.rotation_euler = (0, 0, o["a"] + o["spin"] * k)
+            setv(m, "heat", 1 - 0.6 * k)
+            setv(m, "dissolve", min(0.55, max(0, (k - 0.4) / 0.6)) ** 1.1)
+        for o, m in rocks:
+            k = min(1.0, t / 0.7)
+            dv = Vector(o["d"])
+            o.location = Vector((dv.x * FOOT_RX, dv.y * FOOT_RY, 0)) + dv * o["far"] * ease_out(k, 2.5)
+            o.scale = (o["s"] * (1 - max(0, (k - 0.85) / 0.15)),) * 3
+            o.rotation_euler = (o["spin"] * k, o["spin"] * 0.7 * k, 0)
+            o.hide_render = t > 0.72
+        render(sc, "dustring", f)
+
+
+def bake_dustpuff():
+    """발 디딤 흙먼지 — 솟는 뭉게 (한 번 16장): 게임 카메라(57° 내려다봄) 각도로 구움, 발 디딘 점 = 그림 가운데 아래(높이 30%).
+    디딘 자리에서 뭉게 4개가 낮게 부풀어 오르며 천천히 솟고 녹음 + 돌 부스러기 5개가 포물선으로 튐"""
+    sc = reset(); set_line_color(sc, (0.16, 0.11, 0.08))
+    sc.render.line_thickness = 1.6
+    cam = sc.camera
+    cam.data.ortho_scale = 3.0
+    pitch = math.radians(57)
+    cam.rotation_euler = (math.pi / 2 - pitch, 0, 0)
+    fwd = Vector((0, math.cos(pitch), -math.sin(pitch)))
+    upv = Vector((0, math.sin(pitch), math.cos(pitch)))           # 카메라 위쪽 (월드)
+    cam.location = -fwd * 10 + upv * (0.2 * 3.0)                  # 발 디딘 점이 그림 높이 30%에 오게
+    rnd = random.Random(33)
+    puffs, rocks = [], []
+    for i in range(6):
+        m = toon_mat(f"puff{i}", DUST_BANDS)
+        o = lumpy(f"p{i}", 120 + i, m)
+        a = TAU * i / 6 + rnd.uniform(-0.3, 0.3)
+        o["off"] = Vector((math.cos(a) * 0.3, math.sin(a) * 0.3, 0)); o["s"] = rnd.uniform(0.5, 0.66); o["lag"] = rnd.uniform(0, 0.12); o["rise"] = rnd.uniform(0.5, 0.95)
+        puffs.append((o, m))
+    for i in range(5):
+        m = toon_mat(f"prock{i}", ROCK_BANDS)
+        o = lumpy(f"pr{i}", 140 + i, m, subdiv=1)
+        for p in o.data.polygons:
+            p.use_smooth = False
+        a = rnd.uniform(0, TAU)
+        o["d"] = Vector((math.cos(a), math.sin(a), 0)); o["far"] = rnd.uniform(0.4, 0.8); o["up"] = rnd.uniform(0.5, 0.9)
+        o["s"] = rnd.uniform(0.1, 0.15); o["end"] = rnd.uniform(0.45, 0.6); o["spin"] = rnd.uniform(4, 9)
+        rocks.append((o, m))
+    for f in range(FRAMES):
+        t = (f + 1) / FRAMES
+        for o, m in puffs:
+            k = max(0.0, (t - o["lag"]) / (1 - o["lag"]))
+            o.location = Vector(o["off"]) * (1 + 1.4 * ease_out(k, 2)) + Vector((0, 0, 0.12 + o["rise"] * ease_out(k, 1.6)))
+            fade = min(1.0, max(0.0, (k - 0.55) / 0.45))
+            g = o["s"] * (0.35 + 0.65 * ease_out(min(1, k / 0.25))) * (1 + 0.45 * k) * (1 - fade) ** 1.5
+            o.scale = (g, g, g * 0.85)
+            o.hide_render = fade > 0.8
+            o.rotation_euler = (0.6 * k, 0.4 * k, 0)
+            setv(m, "heat", 1 - 0.55 * k)
+            setv(m, "dissolve", min(0.55, max(0, (k - 0.35) / 0.65)))
+        for o, m in rocks:
+            k = min(1.0, t / o["end"])
+            p = Vector(o["d"]) * o["far"] * ease_out(k, 1.6)
+            p.z = 0.05 + 4 * o["up"] * k * (1 - k)
+            o.location = p
+            o.scale = (o["s"],) * 3
+            o.rotation_euler = (o["spin"] * k, o["spin"] * 0.7 * k, 0)
+            o.hide_render = t >= o["end"]
+        render(sc, "dustpuff", f)
+
+
+def bake_dustclump():
+    """발 윤곽 한 점에서 굴러 나가는 흙먼지 덩이 (한 번 16장, 2026-11-20 사용자: 발 콜라이더가 닿는 면적을 입체로 추적해 그 끝점에서부터 퍼지게).
+    HeavyStep이 발바닥 윤곽(볼록 껍질) 둘레의 점마다 하나씩 놓고 바깥 방향으로 밀어 보냄(FxPart.drift) — 그림 자체는 제자리에서 낮게 부풀었다 녹음.
+    게임 카메라(57°) 각도, 땅에 닿는 점 = 그림 아래 35%. 납작한 덩어리 3개가 눌려 삐져나오듯 옆으로 퍼지고 조금 솟으며, 작은 돌 하나가 튐"""
+    sc = reset(); set_line_color(sc, (0.16, 0.11, 0.08))
+    sc.render.line_thickness = 1.5
+    cam = sc.camera
+    cam.data.ortho_scale = 1.6
+    pitch = math.radians(57)
+    cam.rotation_euler = (math.pi / 2 - pitch, 0, 0)
+    fwd = Vector((0, math.cos(pitch), -math.sin(pitch)))
+    upv = Vector((0, math.sin(pitch), math.cos(pitch)))
+    cam.location = -fwd * 10 + upv * (0.15 * 1.6)                 # 땅 점이 그림 높이 35%에
+    rnd = random.Random(44)
+    blobs = []
+    for i in range(3):
+        m = toon_mat(f"clump{i}", DUST_BANDS)
+        o = lumpy(f"c{i}", 150 + i, m)
+        a = rnd.uniform(0, TAU)
+        o["off"] = Vector((math.cos(a) * 0.12, math.sin(a) * 0.1, 0)); o["s"] = rnd.uniform(0.3, 0.4); o["lag"] = 0.05 * i; o["rise"] = rnd.uniform(0.12, 0.3)
+        blobs.append((o, m))
+    rm = toon_mat("clumprock", ROCK_BANDS)
+    rock = lumpy("crock", 160, rm, subdiv=1)
+    for p in rock.data.polygons:
+        p.use_smooth = False
+    for f in range(FRAMES):
+        t = (f + 1) / FRAMES
+        for o, m in blobs:
+            k = max(0.0, (t - o["lag"]) / (1 - o["lag"]))
+            o.location = Vector(o["off"]) * (1 + 1.5 * ease_out(k, 2)) + Vector((0, 0, 0.05 + o["rise"] * ease_out(k, 2)))
+            fade = min(1.0, max(0.0, (k - 0.55) / 0.45))
+            g = o["s"] * (0.5 + 0.5 * ease_out(min(1, k / 0.2))) * (1 + 0.5 * k) * (1 - fade) ** 1.5
+            o.scale = (g * 1.2, g * 1.2, g * 0.7)
+            o.hide_render = fade > 0.8
+            o.rotation_euler = (0.5 * k, 0.3 * k, 0.8 * k)
+            setv(m, "heat", 1 - 0.55 * k)
+            setv(m, "dissolve", min(0.55, max(0, (k - 0.35) / 0.65)))
+        k = min(1.0, t / 0.5)
+        rock.location = (0.35 * ease_out(k, 1.6), -0.1 * k, 0.04 + 1.2 * k * (1 - k))
+        rock.scale = (0.07,) * 3
+        rock.rotation_euler = (7 * k, 5 * k, 0)
+        rock.hide_render = t > 0.5
+        render(sc, "dustclump", f)
+
+
+# ---------- 돌진 꼬리 (2026-11-20 사용자: 돌진 경로 뒤에 몬스터 컨셉에 맞는 이펙트, 블렌더 + 이미지 섞어서) ----------
+# 그림 규칙 (Codex 시트 dash_*.png와 같음): 몬스터는 오른쪽(+X)으로 달려 나감 → 꼬리는 오른쪽에서 생겨 왼쪽으로 흘러가며 흩어짐.
+# 바닥 = 그림 아래 1/3 (z = -0.55). 한 번 16장. 게임: DashTrail이 돌진 길 뒤에 카메라 보는 판으로, 그림 +X를 화면의 진행 방향에 맞춰 놓음
+def _hex_bands(stops):
+    return [(p, _c5_rgb(c)) for p, c in stops]
+
+
+def _wedge(x):
+    """꼬리 모양: 오른쪽(몸 뒤, x=1.0)이 가장 두껍고 왼쪽(x=-1.2)으로 가늘어짐 → 0~1"""
+    return max(0.0, min(1.0, (x + 1.2) / 2.2)) ** 1.15
+
+
+class _Mound:
+    """바닥을 따라 이어진 둔덕 (2026-11-20: 덩어리를 무작위로 흩지 말고 참고 그림처럼 한 덩어리 둔덕으로).
+    아래 줄 = 바닥에 앉은 덩어리를 겹치게 촘촘히, 오른쪽일수록 큼 / 윗줄 = 오른쪽 절반 위에 얹은 덩어리 / 꼭대기 = 몸 바로 뒤 가장 큰 뭉게.
+    시간: 처음 20%에 부풀고, 전체가 뒤(왼쪽)로 굴러가며(Y축 회전) 꼬리부터 녹아 흩어짐"""
+
+    def __init__(self, name, stops, seed, smin, smax, layers=2, light=0.5, squash=0.8, peak=1.0):
+        rnd = random.Random(seed)
+        self.items = []
+        G = -0.55
+        x = 1.0
+        i = 0
+        while x > -1.2:
+            w = _wedge(x)
+            sz = smin + (smax - smin) * w
+            self._add(name, stops, i, rnd, x, G + sz * 0.42, sz, light, squash, w); i += 1
+            if layers >= 2 and w > 0.4:
+                self._add(name, stops, i, rnd, x - sz * 0.3, G + sz * 0.82, sz * 0.7, light, squash, w); i += 1
+            if layers >= 3 and w > 0.8:
+                self._add(name, stops, i, rnd, x - sz * 0.55, G + sz * 1.15, sz * 0.5, light, squash, w); i += 1
+            x -= sz * 0.62                                         # 겹치게 촘촘히
+        if peak > 0:
+            sz = smax * 1.0 * peak
+            self._add(name, stops, i, rnd, 0.78, G + sz * 0.55, sz, light, squash, 1.0)
+
+    def _add(self, name, stops, i, rnd, x, z, sz, light, squash, w):
+        m = toon_mat(f"{name}_m{i}", _hex_bands(stops), light=light)
+        o = lumpy(f"{name}_m{i}", 900 + i * 7 + int(sz * 100), m)
+        o["x"] = x + rnd.uniform(-0.04, 0.04); o["z"] = z; o["s"] = sz * rnd.uniform(0.9, 1.1); o["w"] = w
+        o["y"] = rnd.uniform(-0.12, 0.12); o["roll"] = rnd.uniform(0, 6.28); o["sq"] = squash
+        o["fade0"] = 0.22 + 0.48 * w + rnd.uniform(-0.04, 0.04)
+        self.items.append((o, m))
+
+    def pose(self, t, drift=0.35, rise=0.12):
+        for o, m in self.items:
+            grow = ease_out(min(1, t / 0.2))
+            fade = min(1.0, max(0.0, (t - o["fade0"]) / 0.32))
+            dx = drift * ease_out(t, 2)
+            o.location = (o["x"] - dx, o["y"], o["z"] + rise * t * (0.3 + o["w"]))
+            g = o["s"] * (0.5 + 0.5 * grow) * (1 + 0.25 * t) * (1 - fade) ** 1.3
+            o.scale = (g * 1.06, g, g * (0.75 + 0.25 * o["sq"]))      # 거의 둥글게 (굴러도 세로로 늘어나 보이지 않게)
+            o.rotation_euler = (0, o["roll"] - dx / max(0.1, o["s"]) * 0.8, 0)   # 뒤로 구름 (혹이 돌아감)
+            o.hide_render = fade > 0.85
+            setv(m, "heat", 1 - 0.45 * t)
+            setv(m, "dissolve", min(0.55, max(0, (t - o["fade0"] + 0.08) / 0.45)))
+
+
+class _Debris:
+    """튀는 조각들: 몸 뒤(오른쪽)에서 뒤 · 위로 튀어 포물선. 종류 gear · shard · drop · star · rod"""
+
+    def __init__(self, name, kind, stops, count, size, seed, vx=(1.2, 2.6), vz=(0.6, 1.8), x0=(0.45, 1.0), z0=(0.0, 0.45), life=(0.5, 0.8), light=0.35):
+        rnd = random.Random(seed)
+        self.items = []
+        G = -0.55
+        for j in range(count):
+            m = toon_mat(f"{name}_{kind}{j}", _hex_bands(stops), light=light)
+            if kind == "gear":
+                o = gear_obj(f"{name}_g{j}", m, teeth=rnd.choice((6, 8, 10)), r=0.2, t=0.07)
+            elif kind == "shard":
+                o = shard_obj(f"{name}_s{j}", m)
+            elif kind == "drop":
+                o = drop_obj(f"{name}_d{j}", m)
+            elif kind == "star":
+                o = star_obj(f"{name}_t{j}", m)
+            else:
+                o = laser_rod(f"{name}_r{j}", m, 1.0, 0.05, 0.2, 6)
+            o["kind"] = kind; o["size"] = size * rnd.uniform(0.75, 1.25)
+            o["p0"] = Vector((rnd.uniform(*x0), rnd.uniform(-0.2, 0.2), G + rnd.uniform(*z0)))
+            o["v"] = Vector((-rnd.uniform(*vx), 0, rnd.uniform(*vz)))
+            o["lag"] = rnd.uniform(0, 0.18); o["life"] = rnd.uniform(*life); o["spin"] = rnd.uniform(4, 10) * rnd.choice((-1, 1))
+            self.items.append((o, m))
+
+    def pose(self, t):
+        G = -0.55
+        for o, m in self.items:
+            k = (t - o["lag"]) / o["life"]
+            if k <= 0 or k >= 1:
+                o.hide_render = True
+                continue
+            o.hide_render = False
+            tt = k * o["life"]
+            v0 = Vector(o["v"])
+            pos = Vector(o["p0"]) + v0 * tt + Vector((0, 0, -4.0 * tt * tt))
+            pos.z = max(G, pos.z)
+            s_ = o["size"] * (1 - max(0, (k - 0.7) / 0.3))
+            if o["kind"] == "rod":
+                _place_rod(o, pos, v0, o["size"] * 3 * (1 - k * 0.6), 0.6 + 0.4 * (1 - k))
+            elif o["kind"] == "drop":
+                v = v0 + Vector((0, 0, -8 * tt))
+                o.location = pos
+                o.rotation_euler = (0, -math.atan2(v.z, v.x), 0)
+                o.scale = (s_ * 1.7, s_, s_)
+            else:
+                o.location = pos
+                o.scale = (s_,) * 3
+                if o["kind"] == "gear":
+                    o.rotation_euler = (0.45, o["spin"] * tt, 0.3)
+                elif o["kind"] == "star":
+                    tw = 0.65 + 0.35 * abs(math.sin(k * 9))
+                    o.scale = (s_ * tw,) * 3; o.rotation_euler = (0, k * 2, 0)
+                else:
+                    o.rotation_euler = (o["spin"] * tt, o["spin"] * 0.6 * tt, o["spin"] * 0.3 * tt)
+            setv(m, "heat", 1 - 0.5 * k)
+
+
+class _Streaks:
+    """수평 속도선: 몸 뒤(오른쪽 끝)에 붙어 왼쪽으로 길게 → 왼쪽 끝부터 오그라들어 0.6에 사라짐"""
+
+    def __init__(self, name, stops, count, thick, seed, zr=(0.06, 0.6), lr=(1.2, 2.0)):
+        rnd = random.Random(seed)
+        self.items = []
+        for j in range(count):
+            m = toon_mat(f"{name}_sl{j}", _hex_bands(stops))
+            o = laser_rod(f"{name}_sl{j}", m, 1.0, thick * rnd.uniform(0.75, 1.25), 0.12, 10)
+            o["z"] = -0.55 + rnd.uniform(*zr); o["len"] = rnd.uniform(*lr); o["lag"] = rnd.uniform(0, 0.1)
+            self.items.append((o, m))
+
+    def pose(self, t):
+        for o, m in self.items:
+            k = max(0.0, (t - o["lag"]) / (1 - o["lag"]))
+            kk = min(1.0, k / 0.6)
+            L = o["len"] * (1 - ease_out(kk, 2))
+            _place_rod(o, (1.1 - 0.25 * kk, 0, o["z"]), (1, 0, 0), max(0.01, L), 1.0 - 0.7 * kk)
+            o.hide_render = kk >= 0.97
+
+
+def _dash_scene(ink_rgb, thick=1.8):
+    sc = reset(); set_line_color(sc, ink_rgb)
+    sc.render.line_thickness = thick
+    for s_ in sc.view_layers[0].freestyle_settings.linesets:
+        s_.linestyle.thickness = thick
+    sc.camera.data.ortho_scale = 2.9
+    sc.camera.location = (0.0, -10, 0.05)              # 바닥(z −0.55)이 그림 아래 30%쯤, 오른쪽 큰 덩어리가 잘리지 않게
+    return sc
+
+
+def _dash_run(sc, set_name, poses):
+    for f in range(FRAMES):
+        t = (f + 1) / FRAMES
+        for p_ in poses:
+            p_(t)
+        render(sc, set_name, f)
+
+
+def bake_dash_sand():
+    """1장 돌진 꼬리 (참고: docs/images/fx_src/dash_sand.png): 바닥에 깔린 모래 둔덕 — 몸 뒤가 높고 꼬리로 낮아짐, 위 면은 밝은 모래 · 아래는 짙은 황토,
+    뒤로 구르며 꼬리부터 흩어짐 + 굴러 튀는 황동 톱니 2 + 모래 알갱이"""
+    sc = _dash_scene((0.23, 0.14, 0.08))
+    SAND = [(0.0, "FBEBC2"), (0.22, "F2D59A"), (0.46, "D9A35B"), (0.74, "9C6232")]
+    mound = _Mound("dash_sand", SAND, 11, 0.16, 0.5, layers=3, squash=0.78)
+    gears = _Debris("dash_sand", "gear", [(0.0, "FFE7A0"), (0.3, "E7B04A"), (0.7, "8A5A1C")], 2, 0.8, 21, vz=(1.0, 1.6), z0=(0.3, 0.6))
+    grains = _Debris("dash_sand", "drop", [(0.0, "F2D59A"), (0.5, "B97A3E")], 14, 0.055, 22, vx=(1.5, 3.2), vz=(0.4, 1.4))
+    _dash_run(sc, "dash_sand", [mound.pose, gears.pose, grains.pose])
+
+
+def bake_dash_steam():
+    """2장 돌진 꼬리 (참고: dash_steam.png): 크게 부푼 증기 둔덕(흰 · 회청, 몸 뒤가 높게 솟음) + 바닥을 긁는 주황 레일 불꽃 줄 + 석탄 조각"""
+    sc = _dash_scene((0.17, 0.16, 0.23))
+    STEAM = [(0.0, "FFFFFF"), (0.26, "EEF0F6"), (0.5, "D6D9E2"), (0.76, "9CA1B3")]
+    mound = _Mound("dash_steam", STEAM, 12, 0.18, 0.56, layers=3, squash=0.92, peak=1.15)
+    sparks = _Streaks("dash_steam", [(0.0, "FFF6C8"), (0.3, "FFD25A"), (0.7, "FF7A1E")], 5, 0.028, 23, zr=(0.0, 0.08), lr=(0.7, 1.5))
+    flicks = _Debris("dash_steam", "rod", [(0.0, "FFF6C8"), (0.25, "FFD25A"), (0.6, "FF7A1E")], 8, 0.11, 24, vz=(0.1, 0.9), z0=(0.0, 0.08))
+    coal = _Debris("dash_steam", "shard", [(0.0, "4A4652"), (0.5, "26232C")], 5, 0.14, 25)
+    _dash_run(sc, "dash_steam", [mound.pose, sparks.pose, flicks.pose, coal.pose])
+
+
+def bake_dash_water():
+    """3장 돌진 꼬리 (참고: dash_water.png): 몸 뒤에서 솟아 뒤로 말리는 물마루(물거품 덩어리를 호를 따라 늘어놓음) + 바닥 물거품 둔덕 +
+    물마루 끝에서 흩날리는 물방울 + 장미 · 하늘 유리 반짝임"""
+    sc = _dash_scene((0.11, 0.23, 0.35))
+    WATER = [(0.0, "FFFFFF"), (0.2, "E9FBFF"), (0.46, "9EE3F5"), (0.76, "4FA9D2")]
+    foam = _Mound("dash_water_f", WATER, 13, 0.12, 0.32, layers=1, squash=0.6, peak=0)
+    rnd = random.Random(31)
+    crest = []
+    for i in range(11):
+        u = i / 10                                                  # 0 = 몸 뒤 바닥, 1 = 꼭대기에서 뒤(왼쪽)로 말려 숙인 끝
+        a = math.radians(5 + 125 * u)
+        m = toon_mat(f"dash_water_c{i}", _hex_bands(WATER), light=0.55)
+        o = lumpy(f"dash_water_c{i}", 300 + i, m)
+        r = 0.62 * (1 - 0.2 * u)
+        crest.append(dict(o=o.name, m=m.name, p=(0.35 + r * math.cos(a), -0.05, -0.55 + r * math.sin(a) * 1.1),
+                          s=0.3 * (1 - 0.5 * u) + 0.07, a=a, u=u))
+
+    def crest_pose(t):
+        grow = ease_out(min(1, t / 0.22))
+        for c in crest:
+            o = bpy.data.objects[c["o"]]; m = bpy.data.materials[c["m"]]        # 이름으로 다시 찾음 (붙잡아 둔 참조가 굽는 중 끊김)
+            show = grow > c["u"] * 0.9                                 # 아래부터 차례로 솟아 말림
+            fall = min(1.0, max(0.0, (t - 0.4 - 0.1 * (1 - c["u"])) / 0.45))
+            px, py, pz = c["p"]
+            o.location = (px - 0.35 * ease_out(t, 2), py, -0.55 + (pz + 0.55) * (1 - 0.7 * fall))
+            g = c["s"] * (0.6 + 0.4 * grow) * (1 - fall) ** 1.2
+            o.scale = (g * 1.5, g, g * 0.85)
+            o.rotation_euler = (0, -c["a"] + math.pi / 2, 0)            # 호를 따라 늘인 방향
+            o.hide_render = not show or fall > 0.9
+            setv(m, "heat", 1 - 0.45 * t)
+            setv(m, "dissolve", min(0.55, fall * 0.7))
+
+    spray = _Debris("dash_water", "drop", [(0.0, "FFFFFF"), (0.25, "BFEFFF"), (0.6, "4FA9D2")], 18, 0.075, 32, vx=(1.0, 2.4), vz=(0.6, 1.6), x0=(0.1, 0.5), z0=(0.45, 0.75))
+    glint1 = _Debris("dash_water", "star", [(0.0, "FFFFFF"), (0.3, "FFB7DE"), (0.7, "E07AB8")], 2, 0.24, 33, vx=(0.6, 1.2), vz=(0.2, 0.6), z0=(0.5, 0.8))
+    glint2 = _Debris("dash_water", "star", [(0.0, "FFFFFF"), (0.3, "BFEFFF"), (0.7, "6FBFE0")], 2, 0.22, 34, vx=(0.6, 1.2), vz=(0.2, 0.6), z0=(0.2, 0.6))
+    _dash_run(sc, "dash_water", [foam.pose, crest_pose, spray.pose, glint1.pose, glint2.pose])
+
+
+def bake_dash_laser():
+    """4장 돌진 꼬리 (참고: dash_laser.png, 느와르 흑백 + 빨강만): 굵은 빨간 레이저 속도선 여러 겹(흰 심지) + 낮게 깔린 흰 연기 둔덕(검은 잉크) +
+    은빛 톱니 · 바늘 조각"""
+    sc = _dash_scene((0.03, 0.02, 0.02), 2.0)
+    SMOKE = [(0.0, "FFFFFF"), (0.4, "E6E6EA"), (0.72, "8E8E98")]
+    smoke = _Mound("dash_laser", SMOKE, 14, 0.1, 0.3, layers=2, squash=0.7, peak=0.8)
+    beams = _Streaks("dash_laser", [(0.0, "FFFFFF"), (0.07, "FF7A7A"), (0.2, "FF2A2A"), (0.55, "7A0710")], 6, 0.07, 26, zr=(0.05, 0.55), lr=(1.3, 2.1))
+    gear = _Debris("dash_laser", "gear", [(0.0, "FFFFFF"), (0.45, "F2F2F2"), (0.8, "8C8C96")], 2, 0.85, 27, vz=(0.8, 1.4), z0=(0.3, 0.5))
+    shards = _Debris("dash_laser", "shard", [(0.0, "FFFFFF"), (0.4, "D0D0D8"), (0.8, "6A6A74")], 7, 0.2, 28)
+    _dash_run(sc, "dash_laser", [smoke.pose, beams.pose, gear.pose, shards.pose])
+
+
+def _jagged_lens(name, mat, L=1.0, H=0.5, teeth=14, seed=3):
+    """찢어진 허공 렌즈: 가로로 긴 렌즈 윤곽에 톱니처럼 들쭉날쭉한 테, 앞뒤로 볼록 (카메라 쪽 = −Y)"""
+    rnd = random.Random(seed)
+    bm = bmesh.new()
+    ring_f, ring_b = [], []
+    n = teeth * 2
+    for i in range(n):
+        a = math.tau * i / n
+        r = 1.0 if i % 2 == 0 else rnd.uniform(0.72, 0.88)       # 들쭉날쭉
+        x = math.cos(a) * L * r
+        z = math.sin(a) * H * r * (0.35 + 0.65 * abs(math.sin(a)) ** 0.5)
+        ring_f.append(bm.verts.new((x, -0.04, z)))
+        ring_b.append(bm.verts.new((x, 0.04, z)))
+    cf = bm.verts.new((0, -0.18, 0)); cb = bm.verts.new((0, 0.18, 0))
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((ring_f[i], ring_f[j], cf)); bm.faces.new((ring_b[j], ring_b[i], cb))
+        bm.faces.new((ring_f[j], ring_f[i], ring_b[i], ring_b[j]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
+    ob = bpy.data.objects.new(name, me); ob.data.materials.append(mat)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def bake_dash_rift():
+    """5장 돌진 꼬리 (참고: dash_rift.png): 몸 뒤에서 꼬리 쪽으로 길게 찢어진 허공 렌즈(속 보라 허공 · 테 자홍, 들쭉날쭉) 안에 흰 별 +
+    뒤로 흩날리는 보라 유리 조각 + 금 불티 줄"""
+    sc = _dash_scene((0.08, 0.03, 0.14))
+    lm_name = toon_mat("dash_rift_lens", _c5_bands("void"), light=0.15).name
+    lens_name = _jagged_lens("dash_rift_lens", bpy.data.materials[lm_name]).name
+    stars = []
+    srnd = random.Random(41)
+    for i in range(5):
+        m = toon_mat(f"dash_rift_st{i}", _c5_bands("white"))
+        o = star_obj(f"dash_rift_st{i}", m, 4, 0.5, 0.1, 0.05)
+        stars.append(dict(o=o.name, p=(srnd.uniform(-0.6, 0.6), srnd.uniform(-0.12, 0.12)), s=srnd.uniform(0.07, 0.12)))
+
+    def lens_pose(t):
+        lens = bpy.data.objects[lens_name]; lm = bpy.data.materials[lm_name]   # 이름으로 다시 찾음
+        grow = ease_out(min(1, t / 0.2))
+        close = min(1.0, max(0.0, (t - 0.35) / 0.6))
+        cx = 0.0 - 0.3 * ease_out(t, 2)
+        lens.location = (cx, 0, -0.3)
+        lens.scale = (1.15 * (0.4 + 0.6 * grow) * (1 - 0.35 * close), 1.0, 0.42 * grow * (1 - close) ** 1.3)
+        lens.hide_render = close > 0.95
+        setv(lm, "heat", 1 - 0.35 * t)
+        setv(lm, "dissolve", min(0.5, close * 0.55))
+        for st in stars:
+            o = bpy.data.objects[st["o"]]
+            o.location = (cx + st["p"][0] * lens.scale.x, -0.2, -0.3 + st["p"][1] * 0.7 * grow * (1 - close))
+            tw = 0.6 + 0.4 * abs(math.sin(t * 20 + st["p"][0] * 7))
+            o.scale = (st["s"] * tw * 2,) * 3
+            o.hide_render = close > 0.7 or grow < 0.5
+
+    shards = _Debris("dash_rift", "shard", [(0.0, "FFFFFF"), (0.15, "EAD9FF"), (0.4, "FF6FD0"), (0.8, "3A1A6A")], 10, 0.24, 42, z0=(0.0, 0.5))
+    gold = _Streaks("dash_rift", [(0.0, "FFF7DB"), (0.3, "FFC64A"), (0.8, "B77722")], 3, 0.025, 43, zr=(0.0, 0.5), lr=(0.6, 1.2))
+    _dash_run(sc, "dash_rift", [lens_pose, shards.pose, gold.pose])
+
+
+def bake_dash_mirror():
+    """거울 고양이 돌진 꼬리 (참고: dash_mirror.png): 몸 뒤에 큰 거울 조각 덩이 → 꼬리로 갈수록 잘게 흩어지는 은빛 조각 + 은빛 속도선 + 흰 반짝임"""
+    sc = _dash_scene((0.13, 0.15, 0.23))
+    big = _Debris("dash_mirror_b", "shard", [(0.0, "FFFFFF"), (0.2, "F4F7FF"), (0.55, "B9C6E0"), (0.85, "6F7C9A")], 6, 0.5, 51, vx=(0.5, 1.2), vz=(0.2, 0.9), x0=(0.6, 1.0), z0=(0.05, 0.5), life=(0.55, 0.8))
+    small = _Debris("dash_mirror_s", "shard", [(0.0, "FFFFFF"), (0.2, "F4F7FF"), (0.55, "B9C6E0"), (0.85, "6F7C9A")], 14, 0.22, 52, vx=(1.6, 3.0), vz=(0.3, 1.2), x0=(0.2, 0.9))
+    glints = _Debris("dash_mirror", "star", [(0.0, "FFFFFF"), (0.4, "E8EEFF")], 4, 0.28, 53, vx=(0.4, 1.0), vz=(0.2, 0.8), z0=(0.3, 0.8))
+    lines = _Streaks("dash_mirror", [(0.0, "FFFFFF"), (0.4, "E8EEFF"), (0.8, "9AA6C4")], 4, 0.03, 54, zr=(0.1, 0.6))
+    _dash_run(sc, "dash_mirror", [big.pose, small.pose, glints.pose, lines.pose])
+
+
+SETS = {"dash_sand": bake_dash_sand, "dash_steam": bake_dash_steam, "dash_water": bake_dash_water, "dash_laser": bake_dash_laser, "dash_rift": bake_dash_rift, "dash_mirror": bake_dash_mirror, "dustclump": bake_dustclump, "dustring": bake_dustring, "dustpuff": bake_dustpuff, "c5orb": bake_c5orb, "c5shard": bake_c5shard, "c5spark": bake_c5spark, "c5rift": bake_c5rift, "c5strip": bake_c5strip,
         "c4grind": bake_c4grind, "c4scrap": bake_c4scrap, "c4orb": bake_c4orb, "c4needle": bake_c4needle, "c4spark": bake_c4spark, "c4slash": bake_c4slash, "c4strip": bake_c4strip,
         "fire": bake_fire, "smoke": bake_smoke, "spark": bake_spark, "mist": bake_mist, "dodge": bake_dodge, "memclock": bake_memclock, "memshatter": bake_memshatter,
         "c3orb": bake_c3orb, "c3shard": bake_c3shard, "c3spark": bake_c3spark, "c3water": bake_c3water}

@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CatTang
 {
-    public class Tracer : MonoBehaviour
+    public class Tracer : MonoBehaviour, IPooled
     {
         LineRenderer halo, core, head;
         float born, life, width;
@@ -51,6 +51,31 @@ namespace CatTang
         }
         Color? haloCol;
         static Tracer last;
+        // 풀링 (2026-11-20): 선 세 겹과 경로 거리 버퍼를 재사용한다.
+        static readonly System.Func<GameObject> factory = Create;
+        static GameObject Create()
+        {
+            var go = new GameObject("Tracer"); VividLayer.Set(go);
+            var t = go.AddComponent<Tracer>();
+            t.halo = Line(go, "Halo", softMat, Vector3.zero, Vector3.zero);
+            t.core = Line(go, "Core", glowMat, Vector3.zero, Vector3.zero);
+            t.head = Line(go, "Head", glowMat, Vector3.zero, Vector3.zero);
+            return go;
+        }
+
+        public void OnSpawned()
+        {
+            keep = TintKeep; haloCol = null; path = null;
+            halo.positionCount = core.positionCount = head.positionCount = 2;
+            ResetLine(halo); ResetLine(core); ResetLine(head);
+        }
+        static void ResetLine(LineRenderer line)
+        {
+            line.enabled = true; line.useWorldSpace = true;
+            line.startWidth = line.endWidth = 0f; line.startColor = line.endColor = Color.white;
+        }
+        public void OnDespawned() { path = null; haloCol = null; if (last == this) last = null; }
+
         Vector3[] path;                 // 곡선 궤적 (자동 추적 탄, 2026-11-18 사용자): 꺾은선, 탄두가 이 선을 따라 날아감
         float[] pathLen;
 
@@ -62,13 +87,11 @@ namespace CatTang
             var t = last;
             if (!t) return;
             t.path = pts;
-            t.pathLen = new float[pts.Length];
+            if (t.pathLen == null || t.pathLen.Length < pts.Length) t.pathLen = new float[pts.Length];
+            t.pathLen[0] = 0f;
             for (int i = 1; i < pts.Length; i++) t.pathLen[i] = t.pathLen[i - 1] + Vector3.Distance(pts[i - 1], pts[i]);
-            foreach (var lr in new[] { t.halo, t.core })
-            {
-                lr.positionCount = pts.Length;
-                lr.SetPositions(pts);
-            }
+            t.halo.positionCount = t.core.positionCount = pts.Length;
+            t.halo.SetPositions(pts); t.core.SetPositions(pts);
             t.head.positionCount = 2;
             t.Update();
         }
@@ -84,13 +107,13 @@ namespace CatTang
         public static void Spawn(Vector3 a, Vector3 b, Color c, float width, bool doubleLine)
         {
             EnsureMats();
-            var go = new GameObject("Tracer"); VividLayer.Set(go);
-            var t = go.AddComponent<Tracer>();
+            var go = GameObjectPool.Get("Tracer", factory);
+            var t = go.GetComponent<Tracer>();
             t.a = a; t.b = b; t.col = c;
             t.width = width;
-            t.halo = Line(go, "Halo", softMat, a, b);
-            t.core = Line(go, "Core", glowMat, a, b);
-            t.head = Line(go, "Head", glowMat, a, a);
+            t.halo.SetPosition(0, a); t.halo.SetPosition(1, b);
+            t.core.SetPosition(0, a); t.core.SetPosition(1, b);
+            t.head.SetPosition(0, a); t.head.SetPosition(1, a);
             t.born = Time.time;
             last = t;
             t.life = doubleLine ? 0.24f : 0.17f;
@@ -123,7 +146,7 @@ namespace CatTang
         {
             float age = Time.time - born;
             float k = age / life;
-            if (k >= 1) { Destroy(gameObject); return; }
+            if (k >= 1) { GameObjectPool.Release(gameObject); return; }
             var tint = Color.Lerp(Red, col, keep);
             var hot = Color.Lerp(tint, Color.white, 0.55f);       // 심지 · 탄두: 하얗게 달군 빨강
 
@@ -150,7 +173,7 @@ namespace CatTang
             head.enabled = tk < 1.15f;
             if (head.enabled && path != null)
             {
-                float plen = pathLen[pathLen.Length - 1];
+                float plen = pathLen[path.Length - 1];
                 float ptip = Mathf.Min(plen, plen * Mathf.Clamp01(tk));
                 head.SetPosition(0, PathAt(Mathf.Max(0, ptip - HeadLen)));
                 head.SetPosition(1, PathAt(ptip));

@@ -498,7 +498,8 @@ namespace CatTang.EditorTools
             try
             {
                 var body = root.transform.Find("Body");
-                if (body) body.localScale = Vector3.Scale(body.localScale, new Vector3(-1f, 1f, 1f));   // 좌우 반전
+                // 2026-11-20: 좌우 반전(스케일 x −1)은 뺌 — KataPoser가 캐릭터 기준 방향으로 뼈를 맞추는데 음수 스케일이면 팔다리가 뒤엉켜 몸이 구겨짐
+                // ("고양이로 리깅된 것 같다"). 주인공과 같은 휴머노이드 아바타 · 컨트롤러 그대로 써서 주인공처럼 서고 걸음
                 // 2026-11-19 사용자: 고양이 재활용 + 셰이더 씌워서 → 전용 셰이더 CatTang/MirrorCat (툰 명암 + 크롬 반사 + 은빛 테두리 + 흐르는 반짝임 + 체력 따라 번지는 금빛 균열)
                 string mp = Ch5Src + "Ch5_MidBoss_Mirror.mat";
                 var sh = Shader.Find("CatTang/MirrorCat") ?? Shader.Find("CatTang/Toon");

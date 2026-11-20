@@ -383,16 +383,16 @@ namespace CatTang
             var rnd = new System.Random(seed + 77);
             var size = SaloonSize;
             if (Ch3Kit.Is(ch)) size = Ch3Kit.TheaterSize;
-            if (Ch4Kit.Is(ch)) size = new Vector2(28f, 24f);                // 4장 진자 홀 (기획서 28×24m)                   // 3장 거울 극장 (2026-11-18 사용자: 훨씬 크게) 36×32m
+            if (Ch4Kit.Is(ch) || Ch5Kit.Is(ch)) size = new Vector2(28f, 24f);  // 4장 진자 홀 · 5장 거울 대전 (기획서 28×24m)                   // 3장 거울 극장 (2026-11-18 사용자: 훨씬 크게) 36×32m
             // 들어오는 벽이 스테이지 2 마지막 방에서 복도 10m 거리에 오게 맞춤 (일반 방 크기가 장 · 스테이지마다 달라 홀과 다름).
             // 뒷문 복도도 10m, 스테이지 3 첫 방은 RunManager가 BackAttachDistance에 지음
             float extra = Mathf.Abs(entrance.x) > 0.5f ? (size.x - stageRoom.x) / 2 : (size.y - stageRoom.y) / 2;
             center -= entrance * extra;
             var info = new RoomInfo { center = center, size = size, midBoss = true, farSide = Vector3.forward };
             bool hall2 = Ch2Kit.Is(ch);                                      // 2장: 대합실 (태엽 역장)
-            bool hall4 = Ch4Kit.Is(ch);                                      // 4장: 진자 홀 (진자 집행관) — 신전 회랑 벽, 장애물 없음 (점멸 공간)
+            bool hall4 = Ch4Kit.Is(ch) || Ch5Kit.Is(ch);                     // 4장: 진자 홀 (진자 집행관) · 5장 거울 대전 (거울 속의 고양이) — 장애물 없음
             bool hall3 = Ch3Kit.Is(ch);                                      // 3장: 거울 극장 (신기루 마술사) — 뒷벽 무대 커튼, 양옆 거울 벽, 바닥 거울, 장애물 없음
-            info.root = new GameObject(hall4 ? "PendulumHall" : hall3 ? "MirrorTheater" : hall2 ? "WaitingHall" : "Saloon").transform;
+            info.root = new GameObject(Ch5Kit.Is(ch) ? "MirrorArena" : hall4 ? "PendulumHall" : hall3 ? "MirrorTheater" : hall2 ? "WaitingHall" : "Saloon").transform;
             info.root.SetParent(layout.root, false);
             info.root.position = center;
             float hw = size.x / 2, hd = size.y / 2;
@@ -401,7 +401,7 @@ namespace CatTang
             var floorM = Mat(new Color(0.5f, 0.32f, 0.2f), 0);
             var floorGo = Prim(PrimitiveType.Cube, "Floor", info.root, new Vector3(0, -0.1f, 0), new Vector3(size.x, 0.2f, size.y), floorM);
             Kit.TileFloor(ch, info.root, size, floorGo, seed, hall2 || hall3 || hall4 ? "Ground" : "SaloonFloor", false);
-            string innerWall = hall4 ? "Facade_Pendulum" : hall3 ? "Facade_MirrorHall" : hall2 ? "Wall" : "PlankWall";
+            string innerWall = Ch5Kit.Is(ch) ? "Facade_Mirror" : hall4 ? "Facade_Pendulum" : hall3 ? "Facade_MirrorHall" : hall2 ? "Wall" : "PlankWall";
             var ent = new Vector2Int(Mathf.RoundToInt(entrance.x), Mathf.RoundToInt(entrance.z));
             var back = new Vector2Int(0, 1);
             foreach (var side in new[] { new Vector2Int(0, 1), new Vector2Int(0, -1), new Vector2Int(1, 0), new Vector2Int(-1, 0) })
