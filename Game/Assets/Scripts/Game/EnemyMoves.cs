@@ -52,6 +52,7 @@ namespace CatTang
 
         void Shoot(Vector3 d, float dmgMul = 1f)
         {
+            ReleaseShot(d, EnemyShotPose.Style.Sidearm, dmgMul < 1f ? 0.86f : 1.10f);
             EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, d, OutlawBulletSpeed, projectileDamage * dmgMul, 0, EnemyProjectile.Style.Revolver);
             GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + d * 0.8f, d, 0.6f);
         }
@@ -104,6 +105,7 @@ namespace CatTang
             busy = true;
             float aim = OutlawAimTime * Random.Range(0.8f, 1.2f);
             Anim("Attack");
+            BraceShot(aim / AtkMul, EnemyShotPose.Style.Sidearm);
             tele = Telegraph.Lane(transform.position + dir * 0.6f, dir, Mathf.Min(dist + 2f, 12f), 0.14f, aim, Telegraph.Aim);
             bool ok = true;
             float end = Time.time + aim / AtkMul;
@@ -117,6 +119,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Burst");                                                         // 허리춤 부채질 사격 (왼손바닥으로 공이를 세 번)
+            BraceShot(0.6f / AtkMul, EnemyShotPose.Style.Sidearm);
             tele = Telegraph.Lane(transform.position + dir * 0.6f, dir, Mathf.Min(dist + 2f, 12f), 0.22f, 0.6f, Telegraph.Aim);
             bool ok = false;
             yield return Hold(0.6f, r => ok = r);
@@ -211,27 +214,69 @@ namespace CatTang
         }
 
         public const float SlamRadius = 2.6f;
+        static readonly Color BruteSlamColor = new(1f, 0.58f, 0.28f);
 
         IEnumerator BruteSlam(PlayerController p)
         {
             busy = true;
+            if (p) transform.rotation = Quaternion.LookRotation(ToP(p));
             Anim("Special");
+            BraceSwing(0.6f, 0.56f, twist: -7f, overhead: true, light: PendulumSwingGlow, amplitude: 1.27f,
+                heldStyle: elite ? HeldStrikePose.Style.Flail : HeldStrikePose.Style.Pendulum);
             tele = Telegraph.Ring(transform.position, SlamRadius, 0.6f / AtkMul, Telegraph.Danger, transform);
             bool ok = false;
             yield return Hold(0.6f, r => ok = r);
             if (ok && p && p.health.Alive)
             {
-                var d = Effects.Flat(p.transform.position - transform.position);
-                if (d.magnitude <= SlamRadius) { p.health.TakeDamage(contactDamage); p.health.Knockback((d.sqrMagnitude > 1e-4f ? d.normalized : transform.forward) * 7f); }
+                var center = transform.position;
+                var d = Effects.Flat(p.transform.position - center);
+                if (d.magnitude <= SlamRadius) { p.health.TakeDamage(contactDamage, hitStop: 0.047f); p.health.Knockback((d.sqrMagnitude > 1e-4f ? d.normalized : transform.forward) * 7f); }
                 Sfx.Play("e_slam", 0.7f);
-                FxBurst.Spawn(transform.position + Vector3.up * 0.15f, SlamRadius * 1.6f, FxBurst.Kind.Dust, FxBurst.MistDust);
-                PropHit.Area(transform.position, SlamRadius, contactDamage);
-                GunkataFx.HitImpact(transform.position + Vector3.up * 0.3f, Vector3.down, new Color(1f, 0.6f, 0.3f), false, 1.4f);
+                PropHit.Area(center, SlamRadius, contactDamage);
+                var capsule = GetComponent<CapsuleCollider>();
+                var scale = transform.lossyScale;
+                float bodyRadius = capsule ? capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z)) : 0f;
+                bodyRadius = Mathf.Min(bodyRadius, SlamRadius);
+                MeleeReachFx.SlamShockwave(center, bodyRadius, SlamRadius, BruteSlamColor, elite);
+                BruteGroundSparks(center, bodyRadius);
+                if (swingPose) yield return null;  // Read the contact pose after the hand has finished its arc.
+                var contact = center + transform.forward * 0.9f;
+                if (swingPose && swingPose.PendulumWeapon(out var hand, out _, out var end))
+                    contact = center + Vector3.ClampMagnitude(Effects.Flat(hand.TransformPoint(end) - center), SlamRadius * 0.82f);
+                EffectShadowLight.Flash(contact + Vector3.up * 0.85f, BruteSlamColor, 4.9f, elite ? 10f : 8f, 0.27f);
+                FxBurst.Spawn(contact + Vector3.up * 0.10f, SlamRadius * 1.08f, FxBurst.Kind.Dust, FxBurst.MistDust);
+                GunkataFx.HitImpact(contact + Vector3.up * 0.22f, Vector3.down, BruteSlamColor, false, 1.3f);
                 CameraFollow.Shake(0.18f);
             }
             yield return new WaitForSeconds(0.55f);
             nextAttack = Time.time + BruteCooldown * Random.Range(0.85f, 1.2f) / AtkMul;
             busy = false;
+        }
+
+        void BruteGroundSparks(Vector3 center, float bodyRadius)
+        {
+            var spike = DashFx.M("fx_spike_0");
+            int count = elite ? 18 : 14;
+            float startAngle = Random.Range(0f, 360f);
+            for (int i = 0; i < count; i++)
+            {
+                var ray = Quaternion.AngleAxis(startAngle + (360f * i / count), Vector3.up) * Vector3.forward;
+                float along = Random.Range(0.28f, 0.70f);
+                float radius = Mathf.Lerp(bodyRadius, SlamRadius, along);
+                var at = center + ray * radius + Vector3.up * 0.08f;
+                var velocity = ray * (SlamRadius - radius) * Random.Range(2.5f, 3.8f) + Vector3.up * Random.Range(0.45f, 1.0f);
+                var size = new Vector3(0.067f, 0.067f, Random.Range(0.25f, 0.46f));
+                float delay = MeleeReachFx.SlamWaveTravel * (1f - Mathf.Sqrt(1f - along));
+                DashFx.Emit(spike, FxMesh.Kind.Spike, at, velocity, size, 0.23f, BruteSlamColor,
+                    gravity: true, drag: 3.1f, delay: delay, rot: Quaternion.LookRotation(velocity));
+            }
+        }
+
+        void PendulumSwingGlow()
+        {
+            if (!model || !swingPose || !swingPose.PendulumWeapon(out var hand, out var grip, out var end)) return;
+            var skin = model.GetComponentInChildren<SkinnedMeshRenderer>();
+            BladeStreak.Begin(hand, end, grip, 0.24f, BruteSlamColor, 1.09f, skin);
         }
 
         // ---------- 폭탄병 ----------
@@ -267,6 +312,7 @@ namespace CatTang
             // (2026-11-17 사용자: 모션 없이 폭발하는 것 같음 — 예전엔 자폭 떨기 클립으로 바로 던졌음)
             Anim("Throw");
             float release = ThrowRelease / AtkMul;
+            BraceShot(release, EnemyShotPose.Style.Throw);
             Telegraph.Ring(at, SandBombRadius, release + SandBombFlight, Telegraph.Danger);
             for (float w = 0; w < release; w += Time.deltaTime)
             {
@@ -281,8 +327,9 @@ namespace CatTang
             if (kit) { bomb = Instantiate(kit); if (!sb) bomb.transform.localScale *= 0.35f; else bomb.transform.localScale *= 1.25f; foreach (var c in bomb.GetComponentsInChildren<Collider>()) Destroy(c); }
             else { bomb = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(bomb.GetComponent<Collider>()); bomb.transform.localScale = Vector3.one * 0.35f; bomb.GetComponent<Renderer>().sharedMaterial = RoomBuilder.Mat(new Color(0.85f, 0.6f, 0.3f), 2f); }   // 최후 대비: 회색 기본 재질 말고 모래색
             var from = transform.position + Vector3.up * 1.4f + transform.forward * 0.3f;   // 손이 앞으로 휘둘러진 자리
+            ReleaseShot(at - transform.position, EnemyShotPose.Style.Throw);
             // 날아가 터지는 건 폭탄이 스스로 함 (2026-11-18 사용자: 던진 도중 폭탄병이 죽으면 폭탄이 공중에 멈춰 남던 문제 → 끝까지 날아가 터짐)
-            ThrownBomb.Launch(bomb, from, at, SandBombFlight, SandBombRadius, contactDamage * 0.6f);
+            ThrownBomb.Launch(bomb, from, at, SandBombFlight, SandBombRadius, contactDamage * 0.6f, softBag: sb);
             for (float t = 0; t < 1f; t += Time.deltaTime / SandBombFlight)
             {
                 // 던진 뒤 옆으로 물러남
@@ -299,12 +346,16 @@ namespace CatTang
     public class ThrownBomb : MonoBehaviour
     {
         Vector3 from, to; float flight, radius, damage, t;
+        Vector3 originalScale;
+        bool softBag;
 
-        public static void Launch(GameObject bomb, Vector3 from, Vector3 to, float flight, float radius, float damage)
+        public static void Launch(GameObject bomb, Vector3 from, Vector3 to, float flight, float radius, float damage, bool softBag = false)
         {
             if (!bomb) return;
             var b = bomb.AddComponent<ThrownBomb>();
             b.from = from; b.to = to; b.flight = Mathf.Max(0.05f, flight); b.radius = radius; b.damage = damage;
+            b.originalScale = bomb.transform.localScale;
+            b.softBag = softBag;
             bomb.transform.position = from;
         }
 
@@ -315,6 +366,13 @@ namespace CatTang
             {
                 transform.position = Vector3.Lerp(from, to, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 3f;
                 transform.Rotate(new Vector3(360f, 0, 180f) * Time.deltaTime);
+                if (softBag)
+                {
+                    float release = Mathf.Sin(Mathf.PI * Mathf.InverseLerp(0f, 0.31f, t));
+                    float landing = WeaponSwingRig.Ease((t - 0.79f) / 0.21f);
+                    float stretch = release * 0.15f - landing * 0.21f;
+                    transform.localScale = Vector3.Scale(originalScale, new Vector3(1f - stretch * 0.40f, 1f + stretch, 1f - stretch * 0.40f));
+                }
                 return;
             }
             var p = PlayerController.Instance;

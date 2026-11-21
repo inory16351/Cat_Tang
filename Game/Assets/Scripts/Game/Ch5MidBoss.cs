@@ -15,7 +15,7 @@ namespace CatTang
     {
         public override float NearDist => 5f;
         public override float PatternGap => phase >= 2 ? 0.9f / 1.2f : 0.9f;
-        public override string DisplayName => "거울 속의 고양이";
+        public override string DisplayName => "미지의 존재";
 
         const float BurstTell = 0.5f, BurstGap = 0.15f, BurstDmg = 10f;
         const float SlashDash = 5f, SlashR = 2.5f, SlashHalf = 50f, SlashDmg = 28f;

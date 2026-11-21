@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "D:\\pro\\Cat_Tang\\Art\\audio_src\\sfx\\intro_stinger_5.wav",
+  "source": {
+    "kind": "generate",
+    "title": "intro_stinger_5",
+    "original_idea": "11:59 game SFX: intro_stinger_5",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, end of time final boss stinger, an ominous choir swell into a deep bell and a reversed clock chime, dark and epic, choir, bell, glass, sub bass, huge cathedral reverb.",
+    "sound_fields": {
+      "source": "end of time final boss stinger",
+      "action": "an ominous choir swell into a deep bell and a reversed clock chime, dark and epic",
+      "material": "choir, bell, glass, sub bass",
+      "space": "huge cathedral reverb"
+    },
+    "bpm": null,
+    "seconds": 2.8,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "intro_stinger_5.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-22T05:09:26",
+    "backend": "sa3-torch",
+    "model": "sm-sfx + same-s",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-22T05:09:26",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 2.8,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (-6.93 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.3299,
+  "file": "intro_stinger_5.ogg"
+}

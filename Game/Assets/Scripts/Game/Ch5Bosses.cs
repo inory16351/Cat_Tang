@@ -114,11 +114,11 @@ namespace CatTang
 
         // ---------- 시간 깎기 ----------
         /// <summary>고양이가 실제로 맞았는지 (대시 저스트 회피 · 확률 회피 · 무적이면 false): 피해 1을 넣어 보고 체력이 줄었는지로 판정</summary>
-        static bool Landed(PlayerController p)
+        static bool Landed(PlayerController p, float hitStop = 0f)
         {
             if (!p || !p.health.Alive) return false;
             float before = p.health.hp;
-            p.health.TakeDamage(1f);
+            p.health.TakeDamage(1f, hitStop: hitStop);
             return p.health.hp < before;
         }
 
@@ -362,7 +362,7 @@ namespace CatTang
                 {
                     axis = Vector3.up, from = new Vector3(0.82f, -0.04f, -0.57f), sweep = -250f,   // 낫을 눕혀 수평으로 크게 (사용자: 눕혀서 크게)
                     wind = Mathf.Max(0.15f, wu - act - wh), windHold = wh, act = act, actPow = 2.4f, hold = 0.25f, rec = 0.6f,
-                    bodyFollow = rig.BodyOnly ? 0.75f : 0.15f, leanBack = 10f, leanFwd = 14f, lunge = 0.8f, streak = 1f,
+                    bodyFollow = rig.BodyOnly ? 0.75f : 0.15f, leanBack = 13f, leanFwd = 17f, lunge = 0.8f, streak = 1f, reachDrive = 0.82f,
                 };
                 if (!rig.BodyOnly) (rc, rHalf, rR) = rig.Sector(sw, d);
                 rig.Play(sw);
@@ -371,13 +371,13 @@ namespace CatTang
             yield return Wait(wu);
             if (t) t.Kill();
             if (rig) rig.Impact(transform.position + d * rR * 0.55f, 1.3f, StylizedFx.Magenta); else ScytheFlash(0.22f);
-            ReaperFx.BigSlash(transform.position, d, rR, true);   // (2026-11-20 사용자) 최종 보스 포스: 잉크 연기 · 깃털 · 불티 겹 베기
+            ReaperFx.BigSlash(transform.position, rc, rR, rHalf, true);   // (2026-11-20 사용자) 최종 보스 포스: 잉크 연기 · 깃털 · 불티 겹 베기
             Sfx.Play("e5b_reap_dash", 0.7f, 0.05f, 2);
             var p = P;
             if (p)
             {
                 var to = Effects.Flat(p.transform.position - transform.position);
-                if (WeaponSwingRig.InSector(p.transform.position, transform.position, rc, rHalf, rR) && Landed(p)) CutTime(ReapCut);
+                if (WeaponSwingRig.InSector(p.transform.position, transform.position, rc, rHalf, rR) && Landed(p, 0.045f)) CutTime(ReapCut);
             }
             PropHit.Area(transform.position + d * 3f, 3f, 40f);
             yield return Wait(T(0.5f));
@@ -397,7 +397,7 @@ namespace CatTang
             var gr = SRig();
             float gw = gr && !gr.BodyOnly ? gr.EffectRadius(1.1f) * 2f : GhostWidth;
             var from = transform.position;
-            var tele = Telegraph.Lane(from, d, GhostDash + 1f, gw, wind, Telegraph.Danger);
+            var tele = Telegraph.Lane(from, d, GhostDash + 1f, gw, wind, Telegraph.Danger).NoLaser();
             Sfx.Play("e5b_reap_wind", 0.7f);
             var aura = StylizedFx.Spawn("swirl", from, Quaternion.identity, new Vector3(2f, 1.5f, 2f), new Vector3(3.2f, 4.5f, 3.2f), 0.3f, StylizedFx.Void, 300f, wind, 0.1f);
             // 예고 동안 방향은 앞 75%만 따라감 (마지막 순간엔 고정 → 옆으로 피할 틈)
@@ -408,7 +408,7 @@ namespace CatTang
                 {
                     d = Vector3.Slerp(d, ToPlayer(), 3f * Time.deltaTime).normalized;
                     if (tele) tele.Kill();
-                    tele = Telegraph.Lane(transform.position, d, GhostDash + 1f, gw, wind - t, Telegraph.Danger);
+                    tele = Telegraph.Lane(transform.position, d, GhostDash + 1f, gw, wind - t, Telegraph.Danger).NoLaser();
                 }
                 transform.rotation = Quaternion.LookRotation(d);
                 yield return null;
@@ -423,6 +423,7 @@ namespace CatTang
             var rm = RunManager.Instance;
             var rel = Effects.Flat(to - C); if (rel.magnitude > arenaR - 2.5f) to = C + rel.normalized * (arenaR - 2.5f);
             float len = Effects.Flat(to - from).magnitude;
+            MeleeReachFx.Lane(from, d, Mathf.Min(GhostDash + 1f, len + 2.5f), gw, T(GhostDashTime), Magenta, followDash: true);
             Ghostly(true);
             // 돌진하며 오른쪽 뒤에서 앞을 지나 왼쪽 뒤까지 280° 베어 넘김 (돌진과 같은 시간, 처음 빠르게 → 끝에서 미끄러지며 감속)
             var rig = SRig();
@@ -430,7 +431,7 @@ namespace CatTang
             {
                 axis = Vector3.up, from = new Vector3(0.88f, -0.04f, -0.47f), sweep = -280f,
                 wind = 0.06f, windHold = 0f, act = T(GhostDashTime), actPow = 2f, hold = 0.2f, rec = 0.5f,
-                bodyFollow = rig.BodyOnly ? 0.6f : 0.1f, leanBack = 6f, leanFwd = 18f, streak = 1.1f,
+                bodyFollow = rig.BodyOnly ? 0.6f : 0.1f, leanBack = 9f, leanFwd = 21f, streak = 1.1f, reachDrive = 0.75f,
             });
             else ScytheFlash(T(GhostDashTime) + 0.12f);                          // 조종기가 없으면 예전 섬광 리본
             bool hit = false; float nextImg = 0;
@@ -443,7 +444,7 @@ namespace CatTang
                 if (!hit && p && p.health.Alive && Telegraph.InLane(p.transform.position, from, d, GhostDash + 1f, gw, mv - 2f, mv + 2.5f))
                 {
                     hit = true;
-                    if (Landed(p)) { CutTime(GhostCut); p.health.Knockback(d * 9f); StylizedFx.Burst(p.transform.position + Vector3.up, 2.5f, StylizedFx.Magenta); }
+                    if (Landed(p, 0.037f)) { CutTime(GhostCut); p.health.Knockback(d * 9f); StylizedFx.Burst(p.transform.position + Vector3.up, 2.5f, StylizedFx.Magenta); }
                 }
                 yield return null;
             }
@@ -475,9 +476,11 @@ namespace CatTang
                 }
             }
             if (!ghostMat) return;
+            var blade = Scythe();
             for (int i = 0; i < rends.Length; i++)
             {
                 if (!rends[i] || rends[i] is ParticleSystemRenderer || rends[i] is LineRenderer || rends[i] is TrailRenderer) continue;
+                if (blade && rends[i].transform.IsChildOf(blade)) continue;
                 if (on)
                 {
                     var mats = new Material[solidMats[i].Length];
@@ -864,10 +867,10 @@ namespace CatTang
 
         static readonly Dictionary<string, (string res, float h, string name)> Models = new()
         {
-            { "melt", ("Enemies/Ch1_Boss", 6f, "녹은 시계 거인의 환영") },
-            { "loco", ("Enemies/Ch2_Boss", 6.5f, "멈춘 기관차 거인의 환영") },
-            { "whale", ("Kit/Ch3/Ch3_Whale", 5f, "거울 고래의 환영") },
-            { "twins", ("Enemies/Ch4_Knight", 4.5f, "시침 · 분침 쌍둥이의 환영") },
+            { "melt", ("Enemies/Ch1_Boss", 6f, "달리오스의 환영") },
+            { "loco", ("Enemies/Ch2_Boss", 6.5f, "로코모스의 환영") },
+            { "whale", ("Kit/Ch3/Ch3_Whale", 5f, "모비 글래스의 환영") },
+            { "twins", ("Enemies/Ch4_Knight", 4.5f, "크로노 & 템포의 환영") },
         };
 
         /// <summary>몸을 반투명 유령으로 (CatTang/MirrorGhost): tint 색 · alpha. 다시 부르면 색만 바꿈 (잔상 카운터 창 = 금빛)</summary>

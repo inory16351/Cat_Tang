@@ -51,6 +51,10 @@ namespace CatTang
             PlayerPrefs.Save();
         }
 
+        // ---------- 보스 등장 연출 (첫 만남은 스킵 불가) ----------
+        public static bool IntroSeen(string id) => PlayerPrefs.GetInt(P + "intro." + id, 0) == 1;
+        public static void MarkIntroSeen(string id) { PlayerPrefs.SetInt(P + "intro." + id, 1); PlayerPrefs.Save(); }
+
         public static void RunEnded()
         {
             PlayerPrefs.SetInt(P + "runs", SlotRuns(ActiveSlot) + 1);

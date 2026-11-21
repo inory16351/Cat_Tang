@@ -81,6 +81,7 @@ namespace CatTang
         {
             var p = PlayerController.Instance;
             if (!health.Alive || p == null || !p.health.Alive) return;
+            if (BossIntro.Playing) { Animate(0); return; }          // 보스 등장 연출 동안 모든 적 멈춤
             if (health.Stunned) { CancelAct(); return; }
             Vector3 to = p.transform.position - transform.position;
             to.y = 0;
@@ -349,14 +350,15 @@ namespace CatTang
             return false;
         }
         /// <summary>모델(몸)을 제자리에서 돌림: dur초 동안 turns바퀴 (회전 베기 · 피루엣). 애니메이터의 몸 기울임 맞춤을 그동안 멈춤</summary>
-        public System.Collections.IEnumerator SpinBody(float dur, float turns, float fromDeg = 0f)
+        public System.Collections.IEnumerator SpinBody(float dur, float turns, float fromDeg = 0f, bool heavy = false)
         {
             if (!model) yield break;
             modelSpinning = true;
             var m = model;
             for (float t = 0; t < dur && m; t += Time.deltaTime)
             {
-                m.localRotation = Quaternion.Euler(0, Mathf.Lerp(fromDeg, 360f * turns, t / dur), 0) * modelBaseRot;
+                float u = t / dur;
+                m.localRotation = Quaternion.Euler(0, Mathf.Lerp(fromDeg, 360f * turns, heavy ? WeaponSwingRig.Heavy(u) : u), 0) * modelBaseRot;
                 yield return null;
             }
             if (m) m.localRotation = modelBaseRot;

@@ -203,11 +203,13 @@ namespace CatTang
         public static void GroundBlast(Vector3 at, float size, Look body)
         {
             at.y = 0.05f;
+            EffectShadowLight.Flash(at + Vector3.up * 0.95f, body.mid, Mathf.Clamp(size * 2.6f, 3.4f, 8.2f),
+                Mathf.Clamp(size * 3.8f, 5f, 12f), 0.26f);
             var rot = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
-            Spawn("dome", at, rot, new Vector3(size * 0.25f, size * 0.18f, size * 0.25f), new Vector3(size * 0.75f, size * 0.55f, size * 0.75f), 0.14f, body.With(pattern: 1, scale: new Vector2(4, 4), opacity: 0f));
+            Spawn("dome", at, rot, new Vector3(size * 0.31f, size * 0.09f, size * 0.31f), new Vector3(size * 0.75f, size * 0.52f, size * 0.75f), 0.14f, body.With(pattern: 1, scale: new Vector2(4, 4), opacity: 0f));
             Spawn("ring_tall", at, rot, new Vector3(size * 0.35f, size * 0.25f, size * 0.35f), new Vector3(size * 0.85f, size * 1.15f, size * 0.85f), 0.42f, body, 40f, 0f, 0.02f, 1f);
             Spawn("ring_tall", at, rot * Quaternion.Euler(0, 37, 0), new Vector3(size * 0.2f, size * 0.15f, size * 0.2f), new Vector3(size * 0.55f, size * 1.5f, size * 0.55f), 0.32f, body.With(scale: new Vector2(2.2f, 6f), scroll: new Vector2(0, -5f)), -60f);
-            Spawn("spike_burst", at + Vector3.up * 0.1f, rot, new Vector3(size * 0.3f, size * 0.08f, size * 0.3f), new Vector3(size * 1.15f, size * 0.22f, size * 1.15f), 0.3f, body.With(scroll: new Vector2(-4f, 0), taperV: 0f, taperU: 0f));
+            Spawn("spike_burst", at + Vector3.up * 0.1f, rot, new Vector3(size * 0.3f, size * 0.17f, size * 0.3f), new Vector3(size * 1.15f, size * 0.12f, size * 1.15f), 0.3f, body.With(scroll: new Vector2(-4f, 0), taperV: 0f, taperU: 0f));
             Spawn("ring", at, rot, Vector3.one * size * 0.3f, Vector3.one * size * 1.5f, 0.38f, body.With(opacity: 0f), 90f);
             Spawn("ring", at + Vector3.up * 0.03f, rot * Quaternion.Euler(0, 50, 0), Vector3.one * size * 0.2f, Vector3.one * size * 1.1f, 0.3f, body.With(opacity: 0f, scale: new Vector2(6, 2)), -120f);
             FxBurst.Spawn(at + Vector3.up * size * 0.3f, size * 0.9f, FxBurst.Kind.Spark, body.mid);

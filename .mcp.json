@@ -3,6 +3,18 @@
     "unityMCP": {
       "type": "http",
       "url": "http://localhost:8080/mcp"
+    },
+    "hyper3d": {
+      "type": "http",
+      "url": "https://api.hyper3d.com/api/mcp"
+    },
+    "audio-studio": {
+      "type": "stdio",
+      "command": "C:\\Project\\audio-studio-mcp\\.venv\\Scripts\\audio-studio-mcp.exe",
+      "args": [],
+      "env": {
+        "AUDIO_STUDIO_SA3_MODEL": "sm-sfx"
+      }
     }
   }
 }

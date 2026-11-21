@@ -78,6 +78,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Shot");
+            BraceShot(GunnerAim / AtkMul, EnemyShotPose.Style.Rifle);
             var d = ToP(p);
             float end = Time.time + GunnerAim / AtkMul;
             bool ok = true;
@@ -94,10 +95,15 @@ namespace CatTang
             if (ok)
             {
                 var muzzle = transform.position + Vector3.up * 1.0f + d * 0.9f;
+                var plusRifle = WeaponT("ShardRiflePlus");
+                var rifle = plusRifle ? plusRifle : WeaponT("ShardRifle");
+                var visibleMuzzle = rifle ? rifle.TransformPoint(new Vector3(0f, plusRifle ? 1.05f : 0.90f, 0f)) : muzzle;
+                ReleaseShot(d, EnemyShotPose.Style.Rifle, 1.05f);
                 var pr = ShardBullet(muzzle, d, 24f);
-                StylizedFx.Spawn("spike_burst", muzzle, Quaternion.LookRotation(d), Vector3.one * 0.25f, Vector3.one * 0.8f, 0.16f, StylizedFx.Magenta.With(taperV: 0f));   // 총구 유리 가시
+                pr.LaunchVisualFrom(visibleMuzzle);
+                StylizedFx.Spawn("spike_burst", visibleMuzzle, Quaternion.LookRotation(d), Vector3.one * 0.25f, Vector3.one * 0.8f, 0.16f, StylizedFx.Magenta.With(taperV: 0f));   // 총구 유리 가시
                 Sfx.Play("e5_shard_shot", 0.5f, 0.06f, 3);
-                Fx5("c5spark", muzzle, 0.6f, 0.2f);
+                Fx5("c5spark", visibleMuzzle, 0.6f, 0.2f);
                 if (elite)
                     LaserFx.Later(GunnerMidSplit / AtkMul, () =>
                     {
@@ -227,21 +233,24 @@ namespace CatTang
             Anim("Slam");
             var d = ToP(p);
             transform.rotation = Quaternion.LookRotation(d);
+            bool braced = BraceSwing(GiantSlamWindup, 0.52f, twist: 8f, overhead: true,
+                light: () => Streak5("RuinMaul", 0.27f), amplitude: 1.26f);
             tele = Telegraph.Sector(transform.position, d, GiantSlamRange, GiantSlamHalf, GiantSlamWindup / AtkMul, Telegraph.Danger, transform);
             bool ok = false;
             yield return Hold(GiantSlamWindup, r => ok = r);
             if (ok)
             {
+                if (!braced) Streak5("RuinMaul", 0.27f);
                 var at = transform.position + d * GiantSlamRange * 0.6f;
                 if (p && p.health.Alive)
                 {
                     var to = Effects.Flat(p.transform.position - transform.position);
-                    if (to.magnitude <= GiantSlamRange && Vector3.Angle(d, to) <= GiantSlamHalf) { p.health.TakeDamage(contactDamage); p.health.Knockback(d * 4f); }
+                    if (to.magnitude <= GiantSlamRange && Vector3.Angle(d, to) <= GiantSlamHalf) { p.health.TakeDamage(contactDamage, hitStop: 0.057f); p.health.Knockback(d * 4f); }
                 }
                 PropHit.Area(at, GiantSlamRange * 0.6f, contactDamage);
                 RiftScarZone.Spawn(at, GiantCrackR, GiantCrackLife, GiantCrackSlow);   // 5장 전용 균열 장판 (깨진 금이 갈라지며 퍼짐)
                 Fx5("c5voidburst", at + Vector3.up * 0.3f, 1.8f, 0.4f);
-                StylizedFx.Shockwave(at, GiantSlamRange, StylizedFx.Void, 0.45f);         // 바닥을 찍은 무게감: 보랏빛 충격파 고리 + 벽 고리
+                MeleeReachFx.Impact(transform.position, d, GiantSlamRange, GiantSlamHalf, Ch5Magenta);
                 Sfx.Play("e5_giant_slam", 0.7f, 0.05f, 2);
                 CameraFollow.Shake(0.12f);
                 if (elite) StartCoroutine(GiantChain(at));
@@ -376,6 +385,9 @@ namespace CatTang
             busy = true;
             Anim(instant ? "Emerge" : "Slash");
             var d = fixedDir ?? ToP(p);
+            bool ownsBlades = WeaponT("RiftBlade") || WeaponT("RiftBladePlus");
+            bool braced = BraceSwing(instant ? 0f : RiftWindup, 0.36f, twist: instant ? 12f : -21f,
+                light: ownsBlades ? RiftBladeSwingGlow : null, amplitude: 1.23f);
             bool ok = true;
             if (!instant)
             {
@@ -386,23 +398,35 @@ namespace CatTang
             if (ok && health.Alive)
             {
                 Sfx.Play("e5_slash", 0.55f, 0.06f, 3);
-                Fx5("c5slash", transform.position + Vector3.up * 1.1f + d * 1.2f, 2.4f, 0.25f, d);
-                // 두 칼 끝을 따라 섬광 리본 (2026-11-20 사용자: 리본 형태 · 섬광에 가깝게)
-                int blades = 0;
-                if (model) foreach (var t in model.GetComponentsInChildren<Transform>(true))
-                    if (t.name.StartsWith("Weapon_RiftBlade") && FlashRibbon.Begin(t, new Vector3(0, 0.15f, 0), new Vector3(0, t.name.EndsWith("Plus") ? 0.92f : 0.68f, 0), 0.2f, StylizedFx.Magenta, 0.15f)) blades++;
-                if (blades == 0 && instant) StylizedFx.Slash(transform.position, d, RiftRange + 0.3f, StylizedFx.Magenta, 1.0f);
+                if (ownsBlades && !braced) RiftBladeSwingGlow();
+                MeleeReachFx.Sweep(transform.position, d, RiftRange, RiftHalf, Ch5Magenta, reverse: instant);
                 if (p && p.health.Alive)
                 {
                     var to = Effects.Flat(p.transform.position - transform.position);
-                    if (to.magnitude <= RiftRange && Vector3.Angle(d, to) <= RiftHalf) p.health.TakeDamage(contactDamage);
+                    if (to.magnitude <= RiftRange && Vector3.Angle(d, to) <= RiftHalf) p.health.TakeDamage(contactDamage, hitStop: 0.032f);
                 }
                 PropHit.Area(transform.position + d * 1.4f, RiftRange * 0.8f, contactDamage);
-                Anim("Breath");
-                yield return Hold(RiftOpen, _ => { });
+                const float follow = 0.19f;
+                yield return Hold(follow, r => ok = r);
+                if (ok)
+                {
+                    Anim("Breath");
+                    yield return Hold(RiftOpen - follow, _ => { });
+                }
             }
             nextAttack = Time.time + 1.2f / AtkMul;
             if (!fixedDir.HasValue) busy = false;
+        }
+
+        void RiftBladeSwingGlow()
+        {
+            if (!model) return;
+            foreach (var t in model.GetComponentsInChildren<Transform>())
+            {
+                if (!t.name.StartsWith("Weapon_RiftBlade") || !BladePts5.TryGetValue(t.name.Substring(7), out var edge))
+                    continue;
+                BladeStreak.Begin(t, edge.tip, edge.grip, 0.24f, Ch5Magenta, 1.2f);
+            }
         }
 
         // 칼빛 (BladeStreak, 5장 = 자홍). 무기 원점 = 손잡이, 긴 축 +Y
@@ -453,11 +477,13 @@ namespace CatTang
         {
             busy = true;
             Anim("Lob");
+            BraceShot(CasterLobRelease / AtkMul, EnemyShotPose.Style.Throw);
             var at = p.transform.position; at.y = transform.position.y;
             Telegraph.Ring(at, CasterLobR, (CasterLobRelease + CasterLobFlight) / AtkMul, Telegraph.Danger);
             for (float w = 0; w < CasterLobRelease / AtkMul; w += Time.deltaTime) { Face(Effects.Flat(at - transform.position)); yield return null; }
             if (health.Alive && !health.Stunned)
             {
+                ReleaseShot(at - transform.position, EnemyShotPose.Style.Throw);
                 VoidLob.Launch(transform.position + Vector3.up * 1.6f, at, CasterLobFlight / AtkMul, CasterLobR, projectileDamage);
                 Sfx.Play("e5_void_lob", 0.5f);
             }
@@ -473,7 +499,7 @@ namespace CatTang
         // 9m 유지, 8초마다 분신 2개(강화 3) — 분신은 고양이를 축으로 본체를 비춘 자리(점대칭 · 좌우 대칭)에 거울 조각이 모여 생김.
         // 자리 바꾸기: 미끄러지지 않고 셋이 동시에 유리처럼 깨졌다가(0.25초) 서로 바뀐 자리에서 다시 맞춰짐 (0.35초). 본체 · 분신 3초마다 허공 탄
         public const float PhKeep = 9f, PhCloneEvery = 8f, PhShatter = 0.25f, PhReform = 0.35f, PhShotEvery = 3f, PhShotSpeed = 8f;
-        float phBob;
+        float phBob, phChargeAt, phChargeUntil, phFiredAt = -1f;
 
         void PhantomUpdate(PlayerController p, Vector3 dir, float dist, float spd)
         {
@@ -488,11 +514,15 @@ namespace CatTang
         {
             busy = true;
             var d = ToP(p);
+            phChargeAt = Time.time;
+            phChargeUntil = Time.time + 0.4f / AtkMul;
             tele = Telegraph.Lane(transform.position + d * 0.6f, d, 9f, 0.14f, 0.4f / AtkMul, Ch5Aim);
             bool ok = false;
             yield return Hold(0.4f, r => ok = r);
+            phChargeUntil = 0f;
             if (ok)
             {
+                phFiredAt = Time.time;
                 EnemyProjectile.Spawn(transform.position + Vector3.up * 1.0f + d * 0.7f, ToP(p), PhShotSpeed, projectileDamage, 18f, EnemyProjectile.Style.Orb);
                 Fx5("c5spark", transform.position + Vector3.up * 1.0f + d * 0.7f, 0.5f, 0.18f);
             }
@@ -551,9 +581,13 @@ namespace CatTang
             phBob += Time.deltaTime * 2.2f;
             float k = Mathf.Clamp01(moveSpeed / Mathf.Max(0.5f, speed));
             float glitch = Random.value < 0.015f ? Random.Range(-0.12f, 0.12f) : 0f;
-            model.localPosition = new Vector3(glitch, 0.3f + Mathf.Sin(phBob) * 0.08f, 0);
-            model.localRotation = Quaternion.Euler(14f * k, 0, Mathf.Sin(phBob * 0.7f) * 6f + glitch * 60f) * modelBaseRot;
-            model.localScale = modelScale;
+            float charge = Time.time < phChargeUntil ? WeaponSwingRig.Ease(Mathf.InverseLerp(phChargeAt, phChargeUntil, Time.time)) : 0f;
+            float age = Time.time - phFiredAt;
+            float thrust = (1f - WeaponSwingRig.Ease(age / 0.21f)) * (0.55f + 0.45f * Mathf.Clamp01(age / 0.035f));
+            model.localPosition = new Vector3(glitch, 0.3f + Mathf.Sin(phBob) * 0.08f - charge * 0.09f, thrust * 0.13f);
+            model.localRotation = Quaternion.Euler(14f * k - charge * 9f + thrust * 13f, 0, Mathf.Sin(phBob * 0.7f) * 6f + glitch * 60f) * modelBaseRot;
+            float stretch = thrust * 0.11f - charge * 0.08f;
+            model.localScale = Vector3.Scale(modelScale, new Vector3(1f - stretch * 0.42f, 1f - stretch * 0.42f, 1f + stretch));
         }
     }
 
@@ -608,21 +642,41 @@ namespace CatTang
     public class VoidLob : MonoBehaviour
     {
         Vector3 from, to; float flight, radius, damage, t;
+        Transform body, halo;
+        TrailRenderer trail;
 
         public static void Launch(Vector3 from, Vector3 to, float flight, float radius, float damage)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            Destroy(go.GetComponent<Collider>());
-            go.name = "VoidLob";
-            go.transform.localScale = Vector3.one * 0.45f;
-            var r = go.GetComponent<Renderer>();
-            var sh = Shader.Find("Universal Render Pipeline/Unlit");
-            if (sh) r.sharedMaterial = new Material(sh) { color = new Color(0.35f, 0.12f, 0.6f) };
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            r.enabled = FxFlipbook.Frames("bk_c5orb").Length == 0;                  // 구운 탄이 있으면 공 대신 그것만
+            var go = new GameObject("VoidLob");
+            go.transform.position = from;
+            var mesh = EnemyProjectile.BuildBody(go.transform, EnemyProjectile.Style.Orb);
+            EnemyProjectile.TintBody(mesh, Enemy.Ch5Magenta, new MaterialPropertyBlock());
             var v = go.AddComponent<VoidLob>();
             v.from = from; v.to = to; v.flight = Mathf.Max(0.05f, flight); v.radius = radius; v.damage = damage;
-            go.transform.position = from;
+            v.body = mesh.transform;
+            v.halo = EnemyProjectile.BuildGlow(go.transform, new Color(1f, 0.18f, 0.7f, 0.76f));
+            v.trail = EnemyProjectile.BuildTrail(go.transform, Enemy.Ch5Magenta, 0.34f, 0.19f);
+            v.Pose();
+            EffectShadowLight.Projectile(v.body, Enemy.Ch5Magenta, 0.23f);
+        }
+
+        void Pose()
+        {
+            transform.position = Vector3.Lerp(from, to, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 2.4f;
+            var tangent = to - from + Vector3.up * (Mathf.Cos(t * Mathf.PI) * Mathf.PI * 2.4f);
+            float push = Mathf.Lerp(-0.20f, 0.34f, WeaponSwingRig.Ease(t / 0.11f))
+                * (1f - WeaponSwingRig.Ease((t - 0.11f) / 0.29f));
+            float squash = WeaponSwingRig.Ease((t - 0.79f) / 0.21f) * 0.23f;
+            float stretch = push - squash;
+            if (tangent.sqrMagnitude > 0.0001f)
+            {
+                var up = Mathf.Abs(Vector3.Dot(tangent.normalized, Vector3.up)) > 0.95f ? Vector3.forward : Vector3.up;
+                body.rotation = Quaternion.LookRotation(tangent, up) * Quaternion.AngleAxis(t * 190f, Vector3.forward);
+            }
+            body.localScale = new Vector3(1f - stretch * 0.45f, 1f - stretch * 0.45f, 1f + stretch) * 1.15f;
+            var cam = Camera.main;
+            if (cam) halo.rotation = cam.transform.rotation;
+            halo.localScale = Vector3.one * 1.45f;
         }
 
         void Update()
@@ -630,9 +684,7 @@ namespace CatTang
             t += Time.deltaTime / flight;
             if (t < 1f)
             {
-                transform.position = Vector3.Lerp(from, to, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 2.4f;
-                Enemy.Fx5("c5orb", transform.position, 0.9f, Time.deltaTime * 1.5f);   // 겉모습 = 블렌더로 구운 보랏빛 보석 탄 (공은 안 보임)
-                if (Random.value < 0.3f) Enemy.Fx5("c5orb", transform.position, 0.45f, 0.22f);   // 꼬리
+                Pose();
                 return;
             }
             var p = PlayerController.Instance;
@@ -642,7 +694,11 @@ namespace CatTang
             Sfx.Play("e5_void_land", 0.55f);
             PropHit.Area(to, radius, damage);
             CameraFollow.Shake(0.04f);
-            Destroy(gameObject);
+            body.gameObject.SetActive(false);
+            halo.gameObject.SetActive(false);
+            trail.emitting = false;
+            enabled = false;
+            Destroy(gameObject, trail.time);
         }
     }
 }

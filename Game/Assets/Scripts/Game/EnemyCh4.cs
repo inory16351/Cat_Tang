@@ -25,6 +25,7 @@ namespace CatTang
         public const float RingerKeep = 9f, RingerInterval = 5f, RingerWindup = 0.6f, RingSpeed = 5f, RingMax = 10f, RingWidth = 0.5f, RingSecond = 0.6f;
         public const float DancerKeep = 8f, DancerInterval = 7f, DancerSpin = 3f, DancerSpinSpeed = 0.8f, DancerShotGap = 0.12f, DancerBullet = 6f, DancerArmTurn = 140f, DancerRise = 0.4f;
         public const float TickBlink = 2.5f, TickCrouch = 0.18f, StabRange = 2.5f, StabWidth = 1f, StabWindup = 0.5f, StabOpen = 1f, BackStabDist = 1.5f, BackStabWindup = 0.6f;
+        const float StabLungeTime = 0.13f, StabLungeDistance = 1.10f;
         public const float PKSwingGap = 1.2f, PKRange = 3f, PKHalf = 60f, PKWindup = 0.5f, PKEngage = 5.5f, WhirlCd = 8f, WhirlWindup = 0.8f, WhirlRadius = 3f;
         public const float RepairKeep = 10f, WindEvery = 4f, WindReach = 8f, WindWindup = 0.6f, WindDur = 3f, WindBoost = 1.3f, WindHeal = 0.15f;
         public const float TossEvery = 3f, TossRelease = 0.3f, TossFlight = 0.5f, TossRadius = 1.2f;
@@ -68,11 +69,11 @@ namespace CatTang
             return t;
         }
         /// <summary>무기에 붙은 칼빛을 swing초 동안 (휘두르는 박자에 맞춰 부름)</summary>
-        void Streak(string weapon, float swing)
+        void Streak(string weapon, float swing, float extend = 1.3f)
         {
             var w = WeaponT(weapon + "Plus");          // 강화형 전용 무기(예: 강화 기사의 큰 양날 낫)가 있으면 그것
             if (w) weapon += "Plus"; else w = WeaponT(weapon);
-            if (w && BladePts.TryGetValue(weapon, out var bp)) BladeStreak.Begin(w, bp.tip, bp.grip, swing, BladeStreak.Ch4Base);
+            if (w && BladePts.TryGetValue(weapon, out var bp)) BladeStreak.Begin(w, bp.tip, bp.grip, swing, BladeStreak.Ch4Base, extend);
         }
 
         /// <summary>진자 기사 낫을 코드로 쥐는 조종기 (2026-11-20 사용자: 낫 휘두르는 애들도 크게 · 가감속). 칼빛 자리는 BladePts 그대로</summary>
@@ -124,6 +125,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Shot");                                                      // 어깨 견착 → 숨 참고 조준 → 반동으로 총구가 튀어 오름
+            BraceShot(SoldierAim / AtkMul, EnemyShotPose.Style.Rifle);
             var d = ToP(p);
             float end = Time.time + SoldierAim / AtkMul;
             bool ok = true;
@@ -146,8 +148,12 @@ namespace CatTang
         void FireRifle(Vector3 d)
         {
             var muzzle = transform.position + Vector3.up * 1.15f + d * 1.1f;
-            EnemyProjectile.Spawn(muzzle, d, SoldierBullet, projectileDamage, 18f, EnemyProjectile.Style.Sniper);
-            Spark(muzzle, 0.7f);
+            var rifle = WeaponT("Rifle");
+            var visibleMuzzle = rifle ? rifle.TransformPoint(new Vector3(0.025f, 0.95f, 0f)) : muzzle;
+            ReleaseShot(d, EnemyShotPose.Style.Rifle);
+            var bullet = EnemyProjectile.Spawn(muzzle, d, SoldierBullet, projectileDamage, 18f, EnemyProjectile.Style.Sniper);
+            bullet.LaunchVisualFrom(visibleMuzzle);
+            Spark(visibleMuzzle, 0.7f);
             Sfx.Play("e4_rifle", 0.45f, 0.08f, 4);
         }
 
@@ -157,6 +163,7 @@ namespace CatTang
             busy = true;
             Anim(drummer ? "Drum" : "Volley");
             float fireAt = volleyStart + VolleyDrum;
+            BraceShot(fireAt - Time.time, EnemyShotPose.Style.Rifle);
             var d = ToP(p);
             if (drummer)
                 for (int b = 0; b < 2; b++)
@@ -190,7 +197,7 @@ namespace CatTang
             nextBayonet = Time.time + BayonetCd;
             Anim("Bayonet");
             var d = ToP(p);
-            tele = Telegraph.Lane(transform.position, d, BayonetDist + 0.8f, 1.2f, BayonetWindup / AtkMul, Telegraph.Danger);
+            tele = Telegraph.Lane(transform.position, d, BayonetDist + 0.8f, 1.2f, BayonetWindup / AtkMul, Telegraph.Danger).NoLaser();
             bool ok = false;
             yield return Hold(BayonetWindup, r => ok = r);
             if (ok)
@@ -201,13 +208,15 @@ namespace CatTang
                 var from = transform.position;
                 var to = from + d * BayonetDist;
                 var rm = RunManager.Instance; if (rm) to = rm.ClampToRoom(to, 1.2f);
+                float visualReach = Mathf.Min(BayonetDist + 0.8f, Vector3.Dot(to - from, d) + 0.9f);
+                MeleeReachFx.Lane(from, d, visualReach, 1.2f, BayonetTime, BladeStreak.Ch4Base);
                 bool hit = false;
                 for (float t = 0; t < 1f; t += Time.deltaTime / BayonetTime)
                 {
                     transform.position = Vector3.Lerp(from, to, 1 - (1 - t) * (1 - t));
                     float mv = Effects.Flat(transform.position - from).magnitude;
                     if (!hit && p && p.health.Alive && Telegraph.InLane(p.transform.position, from, d, BayonetDist + 0.8f, 1.2f, mv - 0.55f, mv + 0.9f))   // 예고 선(폭 1.2)과 같게
-                    { hit = true; p.health.TakeDamage(contactDamage); p.health.Knockback(d * 5f); }
+                    { hit = true; p.health.TakeDamage(contactDamage, hitStop: 0.022f); p.health.Knockback(d * 5f); }
                     yield return null;
                 }
                 Dashing = false;
@@ -230,17 +239,25 @@ namespace CatTang
         /// <summary>망치를 머리 위로 크게 젖힘(0.6초) → 왼손 종을 내려침 = 그 순간 음파 링. 강화형은 두 번 연타 (0.6초 뒤 두 번째 링)</summary>
         IEnumerator RingerBell(PlayerController p)
         {
+            const float bellRadius = 1.3f;
             busy = true;
             Anim(elite ? "RingDouble" : "Ring");
             Face(ToP(p));
-            tele = Telegraph.Ring(transform.position, 1.3f, RingerWindup / AtkMul, Telegraph.Danger, transform);
+            bool braced = BraceSwing(RingerWindup, 0.34f, twist: 10f, overhead: true, light: HammerSwingGlow, amplitude: 1.15f);
+            tele = Telegraph.Ring(transform.position, bellRadius, RingerWindup / AtkMul, Telegraph.Danger, transform);
             bool ok = false;
             yield return Hold(RingerWindup, r => ok = r);
             int rings = elite ? 2 : 1;
             for (int i = 0; ok && i < rings; i++)
             {
-                if (i > 0) { yield return Hold(RingSecond, r => ok = r); if (!ok) break; }
-                Streak("Hammer", 0.12f);
+                if (i > 0)
+                {
+                    braced = BraceSwing(RingSecond, 0.34f, twist: 10f, overhead: true, light: HammerSwingGlow, amplitude: 1.15f);
+                    yield return Hold(RingSecond, r => ok = r);
+                    if (!ok) break;
+                }
+                if (!braced) HammerSwingGlow();
+                MeleeReachFx.Impact(transform.position, transform.forward, bellRadius, 180f, BladeStreak.Ch4Base);
                 var bell = transform.position + Vector3.up * 1.1f + Effects.Flat(transform.forward) * 0.45f;
                 if (!SoundRing.Spawn(transform.position, RingSpeed, projectileDamage, RingMax, RingWidth, 0.8f))   // 3D 음파 고리 (블렌더 조각 + Codex 음파 그림)
                     RippleRing.Spawn(transform.position, RingSpeed, projectileDamage, RingMax, RingWidth, Telegraph.Danger, 0.8f);
@@ -252,6 +269,8 @@ namespace CatTang
             nextAttack = Time.time + RingerInterval * Random.Range(0.85f, 1.15f) / AtkMul;
             busy = false;
         }
+
+        void HammerSwingGlow() => Streak("Hammer", 0.24f);
 
         // ================= 오르골 무희 =================
         void DancerUpdate(PlayerController p, Vector3 dir, float dist, float spd)
@@ -340,43 +359,121 @@ namespace CatTang
             transform.position = new Vector3(to.x, transform.position.y, to.z);   // 한 프레임에 옮김 → 눈빛 꼬리가 곧은 레이저 줄로 남음
         }
 
-        /// <summary>찌르기: 단검을 뒤로 당김(예고 0.5) → 쭉 뻗음. 강화형은 고양이 뒤로 점멸해 반 바퀴 돌며 역수로 한 번 더 → 숨 고르기 1초 빈틈</summary>
+        /// <summary>찌르기: 단검을 거두고 예고 → 단검을 앞세워 직선 돌진. 강화형은 고양이 뒤로 점멸해 한 번 더.</summary>
         IEnumerator AssassinStab(PlayerController p, Vector3 d, bool back)
         {
             busy = true;
             Anim(back ? "BackStab" : "Stab");
             float windup = back ? BackStabWindup : StabWindup;
+            float windTime = windup / AtkMul;
+            var origin = transform.position;
             transform.rotation = Quaternion.LookRotation(d);
-            if (back) HoldYaw(180f);                                                // 등을 돌린 채 역수로 쥐고 웅크림
-            tele = Telegraph.Lane(transform.position, d, StabRange, StabWidth, windup / AtkMul, Telegraph.Danger, transform).NoLaser();
-            bool ok = false;
-            yield return Hold(windup, r => ok = r);
-            if (ok) Streak("NeedleDagger", back ? 0.18f : 0.12f);
-            if (back) { if (ok) StartCoroutine(SpinBody(0.14f, 1f, 180f)); else HoldYaw(null); }   // 반 바퀴 채찍처럼 돌며 찌름
-            if (ok) Sfx.Play("e4_stab", 0.55f);
-            if (ok && p && p.health.Alive)
+            if (back) HoldYaw(180f);
+            var dagger = WeaponT("NeedleDagger");
+            BraceSwing(windup, 0.43f, twist: back ? -7f : 5f, pivot: back, amplitude: 1.22f,
+                heldStyle: back ? HeldStrikePose.Style.BackThrust : HeldStrikePose.Style.Thrust, held: dagger);
+            tele = Telegraph.Lane(origin, d, StabRange, StabWidth, windTime, Telegraph.Danger).NoLaser();
+            float began = Time.time;
+            bool ok = true;
+            while (Time.time - began < windTime)
             {
-                if (Telegraph.InLane(p.transform.position, transform.position, d, StabRange, StabWidth)) p.health.TakeDamage(contactDamage);   // 예고 선과 똑같이 (예전엔 앞뒤 0.3 · 옆 0.35 여유)
-                PropHit.Area(transform.position + d * StabRange * 0.6f, 0.9f, contactDamage);
-                Spark(transform.position + Vector3.up * 1.1f + d * StabRange, 0.9f);
+                if (!health.Alive || health.Stunned)
+                {
+                    if (tele) tele.Kill();
+                    ok = false;
+                    break;
+                }
+                if (back) HoldYaw(Mathf.Lerp(-180f, 0f, HeldStrikePose.BackThrustTurn((Time.time - began) / windTime)));
+                yield return null;
+            }
+            if (back) HoldYaw(null);
+            if (ok)
+            {
+                yield return AssassinLunge(p, origin, d, dagger);
+                ok = health.Alive && !health.Stunned;
             }
             if (ok && elite && !back && p && health.Alive)
             {
                 // 고양이 뒤 1.5m로 점멸 → 고양이 쪽을 보며 한 번 더
                 var pd = Effects.Flat(p.transform.position - transform.position);
                 var behind = p.transform.position + (pd.sqrMagnitude > 1e-4f ? pd.normalized : transform.forward) * BackStabDist;
-                yield return new WaitForSeconds(0.15f);
-                BlinkTo(behind);
-                yield return AssassinStab(p, ToP(p), true);
-                yield break;
+                yield return Hold(0.03f, r => ok = r);
+                if (ok && p.health.Alive)
+                {
+                    BlinkTo(behind);
+                    yield return AssassinStab(p, ToP(p), true);
+                    yield break;
+                }
             }
             if (ok)
             {
-                Anim("Breath");                                                  // 어깨로 숨 쉬는 빈틈
-                yield return Hold(StabOpen, _ => { });
+                const float follow = 0.23f;
+                yield return Hold(follow - StabLungeTime, r => ok = r);
+                if (ok)
+                {
+                    Anim("Breath");
+                    yield return Hold(StabOpen - follow, _ => { });
+                }
             }
             nextAttack = Time.time + 0.4f / AtkMul;
             busy = false;
+        }
+
+        IEnumerator AssassinLunge(PlayerController p, Vector3 origin, Vector3 direction, Transform dagger)
+        {
+            if (!health.Alive || health.Stunned) yield break;
+            float duration = Mathf.Max(0.04f, StabLungeTime / AtkMul);
+            var points = BladePts["NeedleDagger"];
+            var grip = dagger ? dagger.TransformPoint(points.grip) : origin + Vector3.up * 0.90f;
+            var tip = dagger ? dagger.TransformPoint(points.tip) : grip + direction;
+            float start = Mathf.Clamp(Vector3.Dot(tip - origin, direction), StabRange * 0.27f, StabRange * 0.60f);
+            var side = Vector3.Cross(Vector3.up, direction);
+            var effectOrigin = new Vector3(origin.x, grip.y, origin.z)
+                + side * Mathf.Clamp(Vector3.Dot(grip - origin, side), -StabWidth * 0.24f, StabWidth * 0.24f);
+            var red = BladeStreak.Ch4Base;
+            MeleeReachFx.Thrust(effectOrigin, direction, start, StabRange, StabWidth * 0.56f, duration, red * 1.35f);
+            if (dagger) BladeStreak.Begin(dagger, points.tip, points.grip, duration + 0.10f, red, drawRibbon: false);
+
+            var room = RunManager.Instance;
+            float travel = StabLungeDistance;
+            if (room)
+                travel = Mathf.Clamp(Vector3.Dot(room.ClampToRoom(origin + direction * travel, 1.2f) - origin, direction), 0f, travel);
+            if (model && travel > 0.01f)
+            {
+                var ghostTo = origin + direction * (travel + 0.35f);
+                if (room) ghostTo = room.ClampToRoom(ghostTo, 1.2f);
+                Afterimage.DashIn(model, origin, ghostTo, model.rotation, new Color(1f, 0.08f, 0.14f, 0.66f),
+                    duration * 0.8f, 0.14f, vivid: false);
+            }
+            Sfx.Play("e4_stab", 0.55f);
+
+            bool hit = false;
+            float began = Time.time, lastFront = 0f, moved = 0f;
+            Dashing = true;
+            while (health.Alive && !health.Stunned)
+            {
+                float u = Mathf.Clamp01((Time.time - began) / duration);
+                float progress = WeaponSwingRig.Ease(u);
+                float advance = travel * progress;
+                transform.position += direction * (advance - moved);
+                moved = advance;
+                float front = Mathf.Lerp(start, StabRange, progress);
+                if (!hit && p && p.health.Alive
+                    && Telegraph.InLane(p.transform.position, origin, direction, StabRange, StabWidth, lastFront, front))
+                {
+                    hit = true;
+                    p.health.TakeDamage(contactDamage, hitStop: 0.027f);
+                    GunkataFx.SmallFlash(p.transform.position + Vector3.up * 0.85f, 0.48f, red);
+                }
+                lastFront = front;
+                if (u >= 1f)
+                {
+                    PropHit.Area(origin + direction * StabRange * 0.6f, 0.9f, contactDamage);
+                    break;
+                }
+                yield return null;
+            }
+            Dashing = false;
         }
 
         // ================= 진자 기사 =================
@@ -406,7 +503,7 @@ namespace CatTang
             {
                 axis = Vector3.up, from = new Vector3(right ? -0.77f : 0.77f, -0.03f, 0.64f), sweep = right ? 200f : -200f,   // 낫을 눕혀 수평으로 (사용자)
                 wind = Mathf.Max(0.08f, wu - act - wh), windHold = wh, act = act, actPow = 2.2f, hold = 0.12f, rec = 0.45f,
-                bodyFollow = 0.1f, leanBack = 6f, leanFwd = 12f, lunge = 0.35f, streak = 1f,
+                bodyFollow = 0.1f, leanBack = 9f, leanFwd = 15f, lunge = 0.35f, streak = 1f, reachDrive = 0.86f,
             };
             var center = Quaternion.Euler(0, right ? PKHalf : -PKHalf, 0) * fwd;
             float half = PKHalf, range = PKRange;
@@ -420,12 +517,17 @@ namespace CatTang
                 transform.position += fwd * speed * 0.35f * health.SlowMul * Time.deltaTime;
                 yield return null;
             }
-            if (ok) { Sfx.Play("e4_scythe", 0.6f, 0.06f, 2); if (!rig) Streak("PendulumScythe", 0.2f); }
+            if (ok)
+            {
+                MeleeReachFx.Sweep(transform.position, center, range, half, BladeStreak.Ch4Base, reverse: !right);
+                Sfx.Play("e4_scythe", 0.6f, 0.06f, 2);
+                if (!rig) Streak("PendulumScythe", 0.2f);
+            }
             else if (rig) rig.Release(0.3f);
             if (ok && p && p.health.Alive)
             {
                 var to = Effects.Flat(p.transform.position - transform.position);
-                if (to.magnitude <= range && (half >= 180f || Vector3.Angle(center, to) <= half)) { p.health.TakeDamage(contactDamage); p.health.Knockback(center * 4f); }
+                if (to.magnitude <= range && (half >= 180f || Vector3.Angle(center, to) <= half)) { p.health.TakeDamage(contactDamage, hitStop: 0.043f); p.health.Knockback(center * 4f); }
                 PropHit.Area(transform.position + center * range * 0.6f, range * 0.6f, contactDamage);
             }
             // 휘두른 뒤 남은 시간 = 다음 휘두름까지 (1.2초 주기), 그 사이 반대쪽 · 뒤가 빈틈
@@ -446,16 +548,17 @@ namespace CatTang
             if (rig) rig.Play(new WeaponSwingRig.Swing
             {
                 axis = Vector3.up, from = new Vector3(0.85f, -0.1f, -0.5f), sweep = 80f,
-                wind = WhirlWindup / AtkMul - 0.1f, windHold = 0.1f, act = 0.32f, actPow = 2f, hold = 0.1f, rec = 0.4f, leanBack = 10f, leanFwd = 8f, streak = 1f,
+                wind = WhirlWindup / AtkMul - 0.1f, windHold = 0.1f, act = 0.32f, actPow = 2f, hold = 0.1f, rec = 0.4f, leanBack = 13f, leanFwd = 11f, streak = 1f, pivotTurn = true, reachDrive = 0.65f,
             });
             bool ok = false;
             yield return Hold(WhirlWindup, r => ok = r);
             if (ok)
             {
-                StartCoroutine(SpinBody(0.32f, 1f));
+                StartCoroutine(SpinBody(0.32f, 1f, heavy: true));
+                MeleeReachFx.Impact(transform.position, transform.forward, WhirlRadius, 180f, BladeStreak.Ch4Base);
                 Sfx.Play("e4_whirl", 0.7f);
                 var trail = GetComponent<EyeTrail>(); if (trail) trail.Hot(0.4f);
-                if (p && p.health.Alive && Effects.Flat(p.transform.position - transform.position).magnitude <= WhirlRadius) p.health.TakeDamage(WhirlDmg);
+                if (p && p.health.Alive && Effects.Flat(p.transform.position - transform.position).magnitude <= WhirlRadius) p.health.TakeDamage(WhirlDmg, hitStop: 0.047f);
                 if (!rig) Streak("PendulumScythe", 0.34f);                          // 한 바퀴 내내 낫에 붙은 칼빛 (조종기가 있으면 조종기가 그림)
                 PropHit.Area(transform.position, WhirlRadius, WhirlDmg);
                 yield return new WaitForSeconds(0.7f);

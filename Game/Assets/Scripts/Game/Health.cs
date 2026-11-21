@@ -57,6 +57,7 @@ namespace CatTang
         Renderer[] rends;
         MaterialPropertyBlock mpb;
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int HitWhiteId = Shader.PropertyToID("_HitWhite");
         Color[] baseColors;
         Color[][] matColors;                          // 재질이 여러 개인 렌더러: 재질마다 원래 색 (키트 모델 = 메시 하나에 재질 5~10개)
         bool matTinted;                               // 재질별 블록을 씌워 둔 상태 (효과가 끝나면 지움)
@@ -93,7 +94,7 @@ namespace CatTang
         /// <summary>피해 받기. 플레이어는 대시 중이면 저스트 회피, 확률 회피 판정. crit = 치명타 전용 숫자로 띄움.
         /// bonusFrac = 피해 중 정지된 적 추가 피해 몫 (0~1) → 그만큼은 초록 숫자로 따로 띄움</summary>
         /// <remarks>condFrac = 조건부 추가 피해 몫 (보스 · 표식 · 상태 이상 · 거리 · 판정 시각 등, 0~1) → 그만큼은 금빛 숫자로 따로 (2026-11-18 사용자)</remarks>
-        public void TakeDamage(float dmg, bool fromDelayed = false, bool crit = false, float bonusFrac = 0, float condFrac = 0)
+        public void TakeDamage(float dmg, bool fromDelayed = false, bool crit = false, float bonusFrac = 0, float condFrac = 0, float hitStop = 0f)
         {
             if (!Alive) return;
             if (isPlayer && dashing) { OnJustDodge?.Invoke(); return; }
@@ -110,8 +111,16 @@ namespace CatTang
             hp -= dmg;
             if (minHp > 0 && hp < minHp) hp = minHp;
             if (fromDelayed) lastDamageWasDelayed = Time.time;
-            flashUntil = Time.time + 0.08f;
-            if (isPlayer) { hurtUntil = Time.unscaledTime + HurtBlinkTime; Sfx.Play("player_hurt", 0.85f, 0.05f, 1); }
+            if (dmg > 0f)
+            {
+                flashUntil = Time.time + FlashLength;
+                CombatHitStop.Play(hitStop);
+                if (isPlayer)
+                {
+                    hurtUntil = Time.unscaledTime + HurtBlinkTime;
+                    Sfx.Play("player_hurt", 0.85f, 0.05f, 1);
+                }
+            }
             OnDamaged?.Invoke(dmg);
             if (!isPlayer)
             {
@@ -157,9 +166,7 @@ namespace CatTang
         /// <summary>넉백. 보스는 거의 밀리지 않음 (방 밖으로 밀려 나가지 않게)</summary>
         public void Knockback(Vector3 v) => knock += IsBoss ? v * 0.1f : v;
 
-        // 플레이어 피격 점멸: 0.45초 동안 빨갛게 깜빡임 (흰 기본 색 × 텍스처라 흰 번쩍임은 안 보여서 빨강으로)
-        const float HurtBlinkTime = 0.45f;
-        static readonly Color HurtRed = new Color(1f, 0.12f, 0.12f);
+        const float FlashLength = 0.085f, HurtBlinkTime = 0.34f;
         float hurtUntil;
         public bool HurtFlashing => Time.unscaledTime < hurtUntil;
 
@@ -182,7 +189,7 @@ namespace CatTang
                 knock = Vector3.Lerp(knock, Vector3.zero, Time.deltaTime * 8f);
             }
             if (flashAt > 0 && Time.time >= flashAt) { flashAt = -1; flashUntil = Time.time + 0.1f; }
-            bool flash = !isPlayer && Time.time < flashUntil;
+            float flashK = Mathf.SmoothStep(0f, 0.96f, (flashUntil - Time.time) / (FlashLength * 0.68f));
             float tintK = 0;
             if (Time.time >= hitTintFrom && Time.time < hitTintUntil)
             {
@@ -194,24 +201,23 @@ namespace CatTang
                     tintK *= Mathf.Lerp(0.35f, 1f, Mathf.Pow(Mathf.Abs(Mathf.Sin(ph * Mathf.PI)), 2f));
                 }
             }
-            // 플레이어: 남은 시간 동안 약 0.07초 간격으로 빨강 ↔ 원래 색 (갈수록 옅어짐)
             float hurtK = 0;
             if (isPlayer && HurtFlashing)
             {
                 float left = (hurtUntil - Time.unscaledTime) / HurtBlinkTime;
-                bool on = Mathf.Repeat(Time.unscaledTime * 14f, 1f) < 0.55f;
-                hurtK = on ? Mathf.Lerp(0.45f, 0.85f, left) : 0.1f * left;
+                float pulse = Mathf.Repeat((1f - left) * 2.5f, 1f);
+                hurtK = (1f - Mathf.SmoothStep(0f, 1f, pulse * 1.8f)) * left * 0.38f;
             }
             if (mpb == null || rends == null || matColors == null) RefreshRenderers();       // Awake 전에 불린 경우 (비활성으로 만들어진 오브젝트 등)
             bool locked = TimeLocked || GlobalStop, stunned = Time.time < stunUntil;
-            bool active = flash || locked || stunned || tintK > 0 || hurtK > 0;
+            float white = Mathf.Max(flashK, hurtK);
+            bool active = white > 0 || locked || stunned || tintK > 0;
             Color Fx(Color c)
             {
                 if (locked) c = Color.Lerp(c, new Color(0.55f, 0.75f, 1f), 0.65f);
                 else if (stunned) c = Color.Lerp(c, new Color(1f, 0.95f, 0.5f), 0.5f);
                 if (tintK > 0) c = Color.Lerp(c, hitTint, tintK);
-                if (hurtK > 0) c = Color.Lerp(c, HurtRed, hurtK);
-                return flash ? Color.white : c;
+                return Color.Lerp(c, Color.white, white * 0.7f);
             }
             for (int i = 0; i < rends.Length; i++)
             {
@@ -230,6 +236,7 @@ namespace CatTang
                         if (!active) { rends[i].SetPropertyBlock(emptyMpb, k); continue; }
                         matMpb.Clear();
                         matMpb.SetColor(BaseColorId, Fx(matColors[i][k]));
+                        matMpb.SetFloat(HitWhiteId, white);
                         if (actor > 0.5f) matMpb.SetFloat(BrawlActorId, actor);
                         rends[i].SetPropertyBlock(matMpb, k);
                     }
@@ -237,6 +244,7 @@ namespace CatTang
                 }
                 rends[i].GetPropertyBlock(mpb);
                 mpb.SetColor(BaseColorId, Fx(baseColors[i]));
+                mpb.SetFloat(HitWhiteId, white);
                 rends[i].SetPropertyBlock(mpb);
             }
             matTinted = active;

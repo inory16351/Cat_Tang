@@ -86,6 +86,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Attack");
+            BraceShot(TicketAim / AtkMul, EnemyShotPose.Style.Cast);
             // 세 갈래 조준선 (가운데 + 양쪽 15°) → 0.6초 뒤 동시에 발사
             var lanes = new List<Telegraph>();
             float len = Mathf.Min(dist + 2f, 13f);
@@ -107,6 +108,7 @@ namespace CatTang
             if (!ok) foreach (var t in lanes) if (t) t.Kill();
             if (ok)
             {
+                ReleaseShot(dir, EnemyShotPose.Style.Cast);
                 for (int i = -1; i <= 1; i++) Ticket(Quaternion.Euler(0, i * TicketFan / 2, 0) * dir, TicketSpeed);
                 GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + dir * 0.8f, dir, 0.55f);
                 yield return new WaitForSeconds(0.25f);
@@ -120,6 +122,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Attack");
+            BraceShot(0.5f / AtkMul, EnemyShotPose.Style.Cast);
             var dir = ToP(p);
             tele = Telegraph.Lane(transform.position + dir * 0.6f, dir, Mathf.Min(dist + 2f, 13f), 0.18f, 0.5f / AtkMul, Telegraph.Aim);
             float end = Time.time + 0.5f / AtkMul;
@@ -137,6 +140,7 @@ namespace CatTang
                 if (!health.Alive || health.Stunned) break;
                 var to = Effects.Flat(Lead(p, Effects.Flat(p.transform.position - transform.position).magnitude / TicketSpeed * 0.7f) - transform.position);
                 var d = to.sqrMagnitude > 1e-4f ? to.normalized : dir;
+                ReleaseShot(d, EnemyShotPose.Style.Cast, 0.75f);
                 Ticket(Quaternion.Euler(0, Random.Range(-3f, 3f), 0) * d, TicketSpeed + 1f, 0.8f);
                 GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + d * 0.8f, d, 0.45f);
                 Face(d);
@@ -152,6 +156,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Attack");
+            BraceShot(aim / AtkMul, EnemyShotPose.Style.Cast);
             dir = ToP(p);
             tele = Telegraph.Sector(transform.position, dir, 4.5f, 30f, aim / AtkMul, Telegraph.Aim);
             bool ok = false;
@@ -159,6 +164,7 @@ namespace CatTang
             if (ok)
             {
                 dir = ToP(p);
+                ReleaseShot(dir, EnemyShotPose.Style.Cast);
                 for (int i = -2; i <= 2; i++) Ticket(Quaternion.Euler(0, i * 15f, 0) * dir, 7.5f, 0.8f);
                 GunkataFx.MuzzleFlash(transform.position + Vector3.up * 0.9f + dir * 0.8f, dir, 0.6f);
                 yield return new WaitForSeconds(0.2f);
@@ -197,6 +203,7 @@ namespace CatTang
             busy = true;
             nextPunch = Time.time + PunchCooldown / AtkMul;
             Anim("Attack");
+            BraceShot(PunchAim / AtkMul, EnemyShotPose.Style.Cast);
             var dir = ToP(p);
             // 굵은 진홍 조준선이 고양이를 따라가다 마지막 0.15초엔 고정 (펀치는 엄폐물을 뚫음)
             tele = Telegraph.Lane(transform.position + dir * 0.6f, dir, 14f, 0.3f, PunchAim / AtkMul, Telegraph.Danger);
@@ -211,6 +218,7 @@ namespace CatTang
             }
             if (ok)
             {
+                ReleaseShot(dir, EnemyShotPose.Style.Cast, 1.12f);
                 var b = EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + dir * 0.7f, dir, PunchSpeed, projectileDamage, 0, EnemyProjectile.Style.Ticket);
                 b.transform.localScale = Vector3.one * 1.35f;
                 b.pierceCover = true;
@@ -340,21 +348,27 @@ namespace CatTang
             busy = true;
             Anim("Special");                                   // 전용 클립: 젖혀 들어 올림 → 0.7초에 허리를 숙여 바닥을 쾅 → 숙인 채 → 일어남
             var fwd = Effects.Flat(transform.forward).normalized;
+            var trunk = Trunk();
+            bool braced = BraceSwing(SlamWindup, 0.82f, twist: 5f, overhead: true, light: () => TrunkSwingGlow(0.25f), amplitude: 1.27f,
+                heldStyle: HeldStrikePose.Style.Trunk, held: trunk, heldSkin: trunkSkin);
             tele = Telegraph.Sector(transform.position, fwd, SlamRange, SlamHalf, SlamWindup / AtkMul, Telegraph.Danger);
             bool ok = false;
             yield return Hold(SlamWindup, r => ok = r);
             if (ok)
             {
-                var hitAt = transform.position + fwd * 1.5f;
+                if (!braced) TrunkSwingGlow(0.25f);
+                MeleeReachFx.Impact(transform.position, fwd, SlamRange, SlamHalf, new Color(1f, 0.48f, 0.12f));
                 if (p && p.health.Alive)
                 {
                     var d = Effects.Flat(p.transform.position - transform.position);
                     if (d.magnitude <= SlamRange && Vector3.Angle(fwd, d) <= SlamHalf)
                     {
-                        p.health.TakeDamage(contactDamage);
+                        p.health.TakeDamage(contactDamage, hitStop: 0.052f);
                         p.health.Knockback((d.sqrMagnitude > 1e-4f ? d.normalized : fwd) * 6f);
                     }
                 }
+                if (trunk && braced) yield return null;  // Read the trunk after its contact pose has been applied.
+                var hitAt = trunk ? Effects.Flat(trunk.position) + Vector3.up * transform.position.y : transform.position + fwd * 1.5f;
                 FxBurst.Spawn(hitAt + Vector3.up * 0.15f, SlamRange * 1.3f, FxBurst.Kind.Dust, FxBurst.MistDust);
                 PropHit.Area(hitAt, SlamRange * 0.8f, contactDamage);
                 GunkataFx.HitImpact(hitAt + Vector3.up * 0.2f, Vector3.down, new Color(1f, 0.7f, 0.35f), false, 1.2f);
@@ -369,12 +383,30 @@ namespace CatTang
             busy = false;
         }
 
+        void TrunkSwingGlow(float duration)
+        {
+            var trunk = Trunk();
+            if (!trunk || !trunkSkin || !trunkSkin.enabled || !trunkSkin.sharedMesh) return;
+            int bone = System.Array.IndexOf(trunkSkin.bones, trunk);
+            var mesh = trunkSkin.sharedMesh;
+            if (bone < 0 || bone >= mesh.bindposes.Length) return;
+            var bounds = mesh.GetSubMesh(0).bounds;
+            var bind = mesh.bindposes[bone];
+            Vector3 crest = bind.MultiplyPoint3x4(bounds.center + Vector3.up * bounds.extents.y * 0.7f);
+            Vector3 edge = bind.MultiplyPoint3x4(bounds.center - Vector3.up * bounds.extents.y * 0.9f);
+            BladeStreak.Begin(trunk, edge, crest, duration, new Color(1f, 0.48f, 0.12f), 1.05f, trunkSkin);
+        }
+
         /// <summary>방패 돌진: 0.5초 웅크려 예고 → 트렁크를 앞세워 5m 돌진(맞으면 피해 80% + 크게 밀림) → 0.5초 빈틈</summary>
         IEnumerator PorterBash(PlayerController p)
         {
             busy = true;
             var dir = ToP(p);
+            transform.rotation = Quaternion.LookRotation(dir);
             Anim("Attack");
+            var trunk = Trunk();
+            BraceSwing(BashWindup, BashDist / BashSpeed + 0.20f, twist: 5f, amplitude: 1.15f,
+                heldStyle: HeldStrikePose.Style.TrunkBash, held: trunk, heldSkin: trunkSkin);
             var laneFrom = transform.position;
             tele = Telegraph.Lane(laneFrom, dir, BashDist + 0.8f, 1.8f, BashWindup / AtkMul, Telegraph.Danger);
             float end = Time.time + BashWindup / AtkMul;
@@ -382,7 +414,6 @@ namespace CatTang
             while (Time.time < end)
             {
                 if (!health.Alive || health.Stunned) { ok = false; if (tele) tele.Kill(); break; }
-                FaceSlow(dir, 500f);
                 yield return null;
             }
             if (ok)
@@ -392,6 +423,7 @@ namespace CatTang
                 var bashProps = new HashSet<Health>();
                 var rm = RunManager.Instance;
                 FxBurst.Spawn(transform.position + Vector3.up * 0.1f, 1.4f, FxBurst.Kind.Dust, FxBurst.MistDust);
+                TrunkSwingGlow(BashDist / BashSpeed);
                 Dashing = true;
                 while (run < BashDist && health.Alive && !health.Stunned)
                 {
@@ -407,7 +439,7 @@ namespace CatTang
                     if (!hit && p && p.health.Alive && Telegraph.InLane(p.transform.position, laneFrom, dir, BashDist + 0.8f, 1.8f, run - 0.95f, run + 0.95f))   // 예고 선과 같게
                     {
                         hit = true;
-                        p.health.TakeDamage(contactDamage * 0.8f);
+                        p.health.TakeDamage(contactDamage * 0.8f, hitStop: 0.038f);
                         p.health.Knockback(dir * 9f);
                         GunkataFx.HitImpact(p.transform.position + Vector3.up, dir, new Color(1f, 0.7f, 0.35f), false, 1.1f);
                         CameraFollow.Shake(0.14f);
@@ -437,6 +469,7 @@ namespace CatTang
             busy = true;
             nextTrunk = Time.time + TrunkCooldown / AtkMul;
             Anim("Throw");                                     // 전용 클립: 뒤로 젖혀 비틂 → 0.8초에 앞으로 내던짐
+            BraceShot(TrunkAim / AtkMul, EnemyShotPose.Style.Throw);
             var dir = ToP(p);
             tele = Telegraph.Lane(transform.position + dir * 0.5f, dir, TrunkRange, 1.4f, TrunkAim / AtkMul, Telegraph.Danger);
             bool ok = true;
@@ -452,6 +485,7 @@ namespace CatTang
                 // 손에 든 트렁크가 그대로 떨어져 나가 날아감 → 3초 무방비 (새 트렁크를 꺼낼 때까지)
                 var t = Trunk();
                 var from = t ? t.position : transform.position + dir * 0.9f + Vector3.up * 1.1f;
+                ReleaseShot(dir, EnemyShotPose.Style.Throw, 1.10f);
                 var thrown = DetachTrunk();
                 shieldDownUntil = Time.time + TrunkOpen;
                 // 짐꾼이 죽어도 트렁크는 끝까지 날아가게 RunManager가 돌림
@@ -543,12 +577,14 @@ namespace CatTang
         {
             Anim("Attack");
             float release = ThrowRelease / AtkMul;
+            BraceShot(release, EnemyShotPose.Style.Throw);
             for (float w = 0; w < release; w += Time.deltaTime)
             {
                 if (!health.Alive || health.Stunned) { ok(false); yield break; }
                 Face(Effects.Flat(at - transform.position));
                 yield return null;
             }
+            ReleaseShot(at - transform.position, EnemyShotPose.Style.Throw);
             ok(true);
         }
 
@@ -608,7 +644,11 @@ namespace CatTang
             for (int i = 0; ok && i < 3; i++)
             {
                 if (!health.Alive || health.Stunned || !p) break;
-                if (i > 0) Anim("Attack");
+                if (i > 0)
+                {
+                    Anim("Attack");
+                    ReleaseShot(ToP(p), EnemyShotPose.Style.Throw, 0.82f);
+                }
                 Face(ToP(p));
                 SignalBlast.Throw(Hand, InRoom(Lead(p, 0.35f + SignalBlast.Flight)), projectileDamage, false, 1.6f, 1.2f);
                 yield return new WaitForSeconds(0.45f);

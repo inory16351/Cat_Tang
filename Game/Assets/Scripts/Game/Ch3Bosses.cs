@@ -323,7 +323,7 @@ namespace CatTang
     {
         public override float NearDist => 5f;
         public override float PatternGap => 1.0f;
-        public override string DisplayName => "신기루 마술사";
+        public override string DisplayName => "일루시오";
 
         public const float FindFirst = 15f, FindEvery = 25f, FindSeal = 1f, FindWindow = 6f, FindStun = 3f;
         public const float CounterSpeed = 8f, CounterDmg = 18f;
@@ -335,17 +335,19 @@ namespace CatTang
 
         protected override void Setup()
         {
-            Add("카드 부채", Reach.Near, CardFan);
-            Add("칼 꽂기 상자", Reach.Near, SwordBox);
-            Add("모자 속 비둘기", Reach.Far, Doves);
-            Add("거울 상자", Reach.Far, MirrorBox);
-            Add("분신술사 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2);
+            // 동작은 패턴 안 Cast(시간, 상태)가 박자에 맞춰 직접 (2026-11-22 Hyper3D 일루시오: 패턴마다 전용 클립)
+            Add("카드 부채", Reach.Near, CardFan, null, "");
+            Add("칼 꽂기 상자", Reach.Near, SwordBox, null, "");
+            Add("모자 속 비둘기", Reach.Far, Doves, null, "");
+            Add("거울 상자", Reach.Far, MirrorBox, null, "");
+            Add("분신술사 호출", Reach.Any, Summon, () => Enemy.All.Count - 1 <= 2, "");
             nextFind = Time.time + FindFirst;
         }
 
         void Start() { puppet = GetComponentInChildren<PuppetAnim>(); }
 
-        void Cast(float d = 0.5f) { if (puppet) puppet.Cast(d); }
+        /// <summary>예전 키트 모델은 PuppetAnim 팔 들기, Hyper3D 모델은 그 패턴 전용 상태(EnemyModelBuilder.Moves "Ch3_MidBoss")</summary>
+        void Cast(float d = 0.5f, string anim = "Conjure") { if (puppet) puppet.Cast(d); else if (self) self.Anim(anim); }
 
         // 6~9m 거리 유지
         protected override void Move(PlayerController p, Vector3 dir, float dist, float spd)
@@ -383,7 +385,7 @@ namespace CatTang
         {
             var d = ToPlayer();
             Telegraph.Sector(transform.position, d, 8f, 30f, T(0.6f), Telegraph.Danger);
-            Cast(T(0.8f));
+            Cast(T(0.8f), "CardFan");
             float end = Time.time + T(0.6f);
             while (Time.time < end) { Face(d, 14f); yield return null; }
             for (int i = 0; i < 7; i++)
@@ -398,7 +400,7 @@ namespace CatTang
             var p = P;
             if (!p) yield break;
             var at = Effects.Flat(p.transform.position);
-            Cast(T(0.6f));
+            Cast(T(0.6f), "SwordBox");
             Telegraph.Ring(at, 1.2f, T(0.8f), Telegraph.Danger);
             yield return Wait(T(0.8f));
             var box = Ch3Fx.Model("SwordBox", null) ?? Ch3Fx.Prim(PrimitiveType.Cube, "SwordBox", null, Vector3.zero, Vector3.one * 1.5f, new Color(0.94f, 0.47f, 0.4f));
@@ -434,7 +436,7 @@ namespace CatTang
         // 모자 속 비둘기: 4마리, 6m/초 · 초당 120° 유도 · 4초 뒤 소멸, 피해 18
         IEnumerator Doves()
         {
-            Cast(T(0.7f));
+            Cast(T(0.7f), "Doves");
             Telegraph.Ring(transform.position, 1.6f, T(0.5f), Telegraph.Aim, transform);
             yield return Wait(T(0.5f));
             var d = ToPlayer();
@@ -467,7 +469,7 @@ namespace CatTang
                 var side = Vector3.Cross(Vector3.up, n);
                 Telegraph.Lane(c + n * 3f - side * 3f, side, 6f, 0.5f, T(0.8f), Telegraph.Aim).NoGlint();
             }
-            Cast(T(1f));
+            Cast(T(1f), "MirrorBox");
             BossFx.Toast("거울 상자 — 열린 쪽으로!");
             yield return Wait(T(0.8f));
             var walls = new List<GameObject>();
@@ -491,7 +493,7 @@ namespace CatTang
                 var aim = Effects.Flat(c + Random.insideUnitSphere * 2f - transform.position).normalized;
                 var b = EnemyProjectile.Spawn(transform.position + Vector3.up * 1.4f + aim * 1.2f, aim, 8f, 18f, 30f, EnemyProjectile.Style.Needle);
                 b.bounces = 3;
-                Cast(0.25f);
+                Cast(0.25f, "Attack");                              // 한 발마다 카드 튕기기
                 yield return Wait(T(0.35f));
             }
             yield return Wait(Mathf.Max(0, 4f - 0.5f - 6 * T(0.35f)));
@@ -500,7 +502,7 @@ namespace CatTang
 
         IEnumerator Summon()
         {
-            Cast(T(0.6f));
+            Cast(T(0.6f), "Summon");
             yield return Wait(T(0.5f));
             int room = 4 - (Enemy.All.Count - 1);
             for (int i = 0; i < Mathf.Min(2, room); i++)
@@ -698,7 +700,7 @@ namespace CatTang
     {
         public override float NearDist => 7f;
         public override float PatternGap => 1.2f;
-        public override string DisplayName => "거울 고래";
+        public override string DisplayName => "모비 글래스";
 
         public const float ArenaR = 20f;
         const float BeamLap = 20f, BeamWidth = 0.6f, BeamDmg = 15f, BeamTick = 0.5f;

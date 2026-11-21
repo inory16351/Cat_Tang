@@ -41,7 +41,10 @@ Shader "CatTang/MirrorFloor"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS _ADDITIONAL_LIGHTS_VERTEX
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             #pragma multi_compile_fog
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -80,7 +83,21 @@ Shader "CatTang/MirrorFloor"
                 }
                 Light ml = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
                 half sh = lerp(1.0h, ml.shadowAttenuation, _ShadowStrength);
+                half3 reflectionBase = col;
                 col *= sh;
+                #if defined(_ADDITIONAL_LIGHTS)
+                InputData inputData = (InputData)0;
+                inputData.positionWS = i.positionWS;
+                inputData.normalWS = half3(0, 1, 0);
+                inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS);
+                uint count = GetAdditionalLightsCount();
+                LIGHT_LOOP_BEGIN(count)
+                    Light localLight = GetAdditionalLight(lightIndex, i.positionWS, half4(1, 1, 1, 1));
+                    half localShadow = lerp(1.0h, localLight.shadowAttenuation, _ShadowStrength);
+                    col += reflectionBase * localLight.color * saturate(localLight.direction.y)
+                           * localLight.distanceAttenuation * localShadow * 0.65h;
+                LIGHT_LOOP_END
+                #endif
                 col = MixFog(col, i.fogFactor);
                 return half4(col, 1);
             }

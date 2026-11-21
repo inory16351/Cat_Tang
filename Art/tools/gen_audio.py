@@ -122,6 +122,17 @@ SFX = {
     "e5b_time_cut":   ("clock time being cut away", "sharp glassy clock tick that shatters and rewinds quickly, warped", "glass, brass clockwork", "close, slight reverb", 0.9, 1),
     "e5b_bell":       ("enormous cathedral clock bell", "one deep booming toll with a long shimmering metallic decay", "bronze bell", "huge reverb", 2.5, 1),
     "e5b_stop":       ("time freezing in a field", "deep descending whoomp with glassy crystallizing crackle and a stopped-clock tick", "glass, ice, clockwork", "airy reverb", 1.5, 1),
+    # ---- 보스 등장 연출 (2026-11-22 사용자: 연출 효과음도 만들고 보스 브금과 부드럽게) — BossIntro가 있으면 쓰고 없으면 예전 소리 ----
+    "intro_riser":    ("cinematic tension riser", "a rising whoosh with a ticking clock accelerating underneath, building suspense", "air, brass clock ticks, low strings", "cinematic, wide stereo", 1.8, 1),
+    "intro_whoosh":   ("fast camera whip pan", "a quick airy swish whoosh with a short tail", "air", "close, dry, cinematic transition", 0.6, 2),
+    "intro_impact":   ("cinematic freeze frame hit", "a huge low boom with a sharp clock tick and a glassy time-stop shimmer", "sub bass, glass, clockwork", "big, short reverb tail", 1.8, 1),
+    "intro_stinger_1": ("western showdown stinger", "a dramatic twangy electric guitar chord sting with a whip crack and a ricochet", "electric guitar, whip, desert", "cinematic", 2.2, 1),
+    "intro_stinger_2": ("steam train boss stinger", "a loud steam locomotive horn blast with a heavy iron clang and hiss", "steam, iron, brass horn", "big station hall", 2.2, 1),
+    "intro_stinger_3": ("mirror lake magic stinger", "a shimmering glass chime chord swell with a deep whale call and crystal sparkle", "glass, crystal, whale song", "airy cavern reverb", 2.4, 1),
+    "intro_stinger_4": ("clock tower noir stinger", "a single heavy cathedral bell toll with a dark low brass hit and ticking", "bronze bell, brass, clockwork", "tower reverb", 2.4, 1),
+    "intro_stinger_5": ("end of time final boss stinger", "an ominous choir swell into a deep bell and a reversed clock chime, dark and epic", "choir, bell, glass, sub bass", "huge cathedral reverb", 2.8, 1),
+    "intro_flip":     ("split-flap departure board", "rapid mechanical flap clatter settling into place", "plastic flaps, small motor", "close, dry", 1.0, 1),
+    "intro_glitch":   ("digital glitch", "a stuttering corrupted static burst with a reversed tape stop", "digital noise, tape", "close, dry", 0.8, 1),
     "e5b_doom_orb":   ("three dark doom orbs summoned", "low ominous pulse with a magical crackle swelling", "dark magic energy", "medium reverb", 1.2, 1),
     "e5b_spear":      ("giant clock hand thrown like a spear", "fast piercing whoosh ending in a metallic impact", "steel, air", "close, dry", 0.8, 1),
     "e5b_sand":       ("swirling sand and time storm", "rushing whirling wind with hissing sand and ticking clocks inside, continuous", "sand, wind, brass", "outdoor, wide", 3.0, 1),
@@ -204,7 +215,7 @@ async def make_sfx(c: Client, name: str) -> None:
             "input_audio": cand["path"], "trim_silence": not loop, "silence_threshold_db": -45, "mono": True,
             "normalize": "peak", "peak_ceiling_db": -1, "fade_out_ms": 0 if loop else 30,
             "loop": loop, "loop_crossfade_ms": 250,
-            "format": "ogg", "sample_rate": 48000, "title": stem})
+            "format": "ogg", "title": stem, **({"sample_rate": 48000} if shutil.which("ffmpeg") else {})})   # ffmpeg 없으면 원래 샘플레이트 그대로 (Unity는 상관없음)
         shutil.copy(p["path"], RES / "Sfx" / f"{stem}.ogg")
     print(f"sfx {name}: {n}개, {g.get('wall_seconds')}초", flush=True)
 

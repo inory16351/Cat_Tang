@@ -100,6 +100,7 @@ namespace CatTang
         {
             busy = true;
             Anim("Attack");
+            BraceShot(ShooterAim / AtkMul, EnemyShotPose.Style.Cast);
             var d = ToP(p);
             // 손거울로 빛을 모음: 따라오는 조준선
             tele = Telegraph.Lane(transform.position + d * 0.6f, d, 11f, 0.16f, ShooterAim / AtkMul, Telegraph.Aim);
@@ -116,6 +117,7 @@ namespace CatTang
             }
             if (ok)
             {
+                ReleaseShot(d, EnemyShotPose.Style.Cast, 0.82f);
                 var pr = EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, d, ShooterSpeed, projectileDamage, 24f, EnemyProjectile.Style.Orb);
                 pr.bounces = 1;
                 if (elite) pr.OnBounced = (b, at) =>
@@ -143,6 +145,7 @@ namespace CatTang
             busy = true;
             Anim("Attack");
             Sfx.Play("e_conjure", 0.5f, 0.05f, 2);
+            BraceShot(MageConjure / AtkMul, EnemyShotPose.Style.Cast);
             heldOrbs.Clear();
             var back = -Effects.Flat(transform.forward).normalized;
             var side = Vector3.Cross(Vector3.up, back);
@@ -168,7 +171,9 @@ namespace CatTang
                 {
                     Anim(i % 2 == 0 ? "FlingR" : "FlingL");                        // 구슬마다 한 손씩 번갈아 내던짐
                     o.frozenUntil = 0;
-                    o.Retarget(p.transform.position - o.transform.position);
+                    var target = p.transform.position - o.transform.position;
+                    o.Retarget(target);
+                    ReleaseShot(target, EnemyShotPose.Style.Cast, 0.93f, leftHand: i % 2 != 0);
                     o.homing = MageHoming;
                 }
                 heldOrbs[i] = null;
@@ -274,6 +279,9 @@ namespace CatTang
             busy = true;
             Anim(instant ? "Emerge" : "Attack");                                    // 거울에서 솟구치며 올려 베기 / 걸어와 가로 베기
             var d = fixedDir ?? ToP(p);
+            transform.rotation = Quaternion.LookRotation(d);
+            bool braced = BraceSwing(instant ? 0f : BladeWindup, 0.42f, twist: instant ? 11f : -23f,
+                light: MirrorSwingGlow, amplitude: 1.23f);
             bool ok = true;
             if (!instant)
             {
@@ -282,10 +290,12 @@ namespace CatTang
             }
             if (ok && health.Alive)
             {
+                if (!braced) MirrorSwingGlow();
+                MeleeReachFx.Sweep(transform.position, d, BladeRange, BladeHalf, Ch3Light, reverse: instant);
                 if (p && p.health.Alive)
                 {
                     var to = Effects.Flat(p.transform.position - transform.position);
-                    if (to.magnitude <= BladeRange && Vector3.Angle(d, to) <= BladeHalf) p.health.TakeDamage(contactDamage);
+                    if (to.magnitude <= BladeRange && Vector3.Angle(d, to) <= BladeHalf) p.health.TakeDamage(contactDamage, hitStop: 0.032f);
                 }
                 GunkataFx.HitImpact(transform.position + d * 1.4f + Vector3.up, d, Ch3Light, false, 1.1f);
                 PropHit.Area(transform.position + d * 1.4f, BladeRange * 0.8f, contactDamage);
@@ -293,6 +303,40 @@ namespace CatTang
             }
             nextAttack = Time.time + 1.2f / AtkMul;
             if (!fixedDir.HasValue) busy = false;
+        }
+
+        public const string MirrorBladeLongMeshName = "Ch3_BladeLongMesh";
+        public const float MirrorBladeLengthScale = 1.32f;
+        public static readonly Vector3 MirrorBladeGrip = new(0.92f, -0.11f, -0.18f);
+        public static readonly Vector3 MirrorBladeTip = new(3.35f, -0.28f, -0.67f);
+
+        SkinnedMeshRenderer mirrorBladeSkin;
+        void MirrorSwingGlow()
+        {
+            if (!anim || !anim.isHuman) return;
+            if (!mirrorBladeSkin && model) mirrorBladeSkin = model.GetComponentInChildren<SkinnedMeshRenderer>();
+            var wrist = anim.GetBoneTransform(HumanBodyBones.RightHand);
+            var forearm = anim.GetBoneTransform(HumanBodyBones.RightLowerArm);
+            var thumb = anim.GetBoneTransform(HumanBodyBones.RightThumbProximal);
+            if (!wrist || !forearm || !thumb || !mirrorBladeSkin) return;
+
+            // The FBX has a skinned blade inside the body mesh. Its bind-pose
+            // endpoints are measured in forearm lengths from the wrist.
+            var arm = wrist.position - forearm.position;
+            float length = arm.magnitude;
+            if (length < 0.001f) return;
+            arm /= length;
+            var side = Vector3.ProjectOnPlane(thumb.position - wrist.position, arm).normalized;
+            if (side.sqrMagnitude < 0.01f) return;
+            var normal = Vector3.Cross(arm, side);
+            Vector3 grip = Anchor(MirrorBladeGrip);
+            Vector3 tip = Anchor(MirrorBladeTip);
+            if (mirrorBladeSkin.sharedMesh && mirrorBladeSkin.sharedMesh.name == MirrorBladeLongMeshName)
+                tip = grip + (tip - grip) * MirrorBladeLengthScale;
+
+            Vector3 Anchor(Vector3 point) => wrist.position + length * (arm * point.x + side * point.y + normal * point.z);
+            BladeStreak.Begin(forearm, forearm.InverseTransformPoint(tip), forearm.InverseTransformPoint(grip),
+                0.24f, Ch3Light, 1f, mirrorBladeSkin);
         }
 
         // ================= 유리 기사 =================
@@ -389,11 +433,17 @@ namespace CatTang
         {
             busy = true;
             Anim("Attack");
+            BraceShot(0.4f / AtkMul, EnemyShotPose.Style.Cast);
             var d = ToP(p);
             tele = Telegraph.Lane(transform.position + d * 0.6f, d, 9f, 0.14f, 0.4f / AtkMul, Telegraph.Aim);
             bool ok = false;
             yield return Hold(0.4f, r => ok = r);
-            if (ok) EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, ToP(p), TrickShotSpeed, projectileDamage, 18f, EnemyProjectile.Style.Orb);
+            if (ok)
+            {
+                var target = ToP(p);
+                ReleaseShot(target, EnemyShotPose.Style.Cast, 0.76f);
+                EnemyProjectile.Spawn(transform.position + Vector3.up * 0.9f + d * 0.7f, target, TrickShotSpeed, projectileDamage, 18f, EnemyProjectile.Style.Orb);
+            }
             nextAttack = Time.time + TrickShotInterval * Random.Range(0.85f, 1.15f) / AtkMul;
             busy = false;
         }

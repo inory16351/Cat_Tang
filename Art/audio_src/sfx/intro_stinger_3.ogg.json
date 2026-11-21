@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "D:\\pro\\Cat_Tang\\Art\\audio_src\\sfx\\intro_stinger_3.wav",
+  "source": {
+    "kind": "generate",
+    "title": "intro_stinger_3",
+    "original_idea": "11:59 game SFX: intro_stinger_3",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, mirror lake magic stinger, a shimmering glass chime chord swell with a deep whale call and crystal sparkle, glass, crystal, whale song, airy cavern reverb.",
+    "sound_fields": {
+      "source": "mirror lake magic stinger",
+      "action": "a shimmering glass chime chord swell with a deep whale call and crystal sparkle",
+      "material": "glass, crystal, whale song",
+      "space": "airy cavern reverb"
+    },
+    "bpm": null,
+    "seconds": 2.4,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "intro_stinger_3.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-22T05:09:23",
+    "backend": "sa3-torch",
+    "model": "sm-sfx + same-s",
+    "peak_dbfs": -1.99,
+    "raw_peak_dbfs": -1.99,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-22T05:09:23",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 2.4,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+11.52 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.2102,
+  "file": "intro_stinger_3.ogg"
+}

@@ -298,6 +298,7 @@ namespace CatTang.EditorTools
             var idle = Ch2Motion.CatIdle();
             if (!idle) { Debug.LogError("[EnemyMotions] 고양이 idle 클립이 없음"); return; }
             Ch1(idle); Ch2(idle); Ch3(idle); Ch4(idle); Ch5(idle);
+            Intros(idle);
             AssetDatabase.SaveAssets();
             Debug.Log("[EnemyMotions] 적 전용 모션 클립 완료");
         }
@@ -665,6 +666,113 @@ namespace CatTang.EditorTools
             // 이동도 걸음 없이 떠서 미끄러짐: 앞으로 기울고 다리는 뒤로 흩날림 (예전: 발을 조금 떼는 걸음 Ch5M_BaseBossGlide)
             const string BS_DRIFT = BS_REST + " SP.FB=.16 HD.ND=-.06 LL.FB=-.1 RL.FB=-.22 LK=-.35 RK=-.45 LFT=-.7 RFT=-.7";
             Clip(idle, D5 + "Ch5M_BossWalk", true, (0, BS_DRIFT), (.9f, BS_DRIFT + " LL.FB=-.2 RL.FB=-.12 LK=-.45 RK=-.32 SP.LR=.04 LA.FB=.05"), (1.8f, BS_DRIFT));
+        }
+
+        // ======================= 보스 등장 연출 전용 (2026-11-21 사용자: "새로운 동작을 만들어도 됨, 연출 전용으로") =======================
+        // 박자는 BossIntro 컷 길이에 맞춤 (Intro 상태는 각 보스 첫 컷 또는 표시한 컷 시작에 재생). 컷 길이를 바꾸면 여기 시각도 같이.
+        static void Intros(AnimationClip idle)
+        {
+            // 와인더 잭 (눈 컷 시작에 재생 → 단계 줌 첫 총성 0.84): 모자 숙인 채 → 고개 번쩍 → 허리춤에서 뽑아 겨눔 + 왼손 올가미를 머리 위로 돌림
+            const string WJ_DOWN = "HD.ND=-.45 SP.FB=.12 RA.FB=.05 RA.DU=-.05 RF=-.2 LA.FB=.05 LF=-.2 LL.FB=.15 LK=-.15";
+            const string WJ_UP = "HD.ND=.12 CH.FB=-.1 RA.FB=.2 RA.DU=.05 RF=-.6 RH.DU=.3 LA.FB=.1 LF=-.3 LL.FB=.2 LK=-.25 ROOT=-.03";
+            const string WJ_AIM = "HD.ND=.05 HD.TL=-.12 RA.FB=.95 RA.DU=.2 RF=.4 SP.TW=-.25 CH.FB=-.05 LA.DU=1.15 LA.FB=.15 LF=-.35 LL.FB=.35 LK=-.35 RL.FB=-.15 ROOT=-.06";
+            const string WJ_LASSO = WJ_AIM + " LA.FB=-.25 LA.DU=1.05 LF=-.15";
+            Clip(idle, D1 + "Ch1M_HunterIntro", false, (0, WJ_DOWN), (.3f, WJ_DOWN), (.4f, WJ_UP), (.72f, WJ_UP), (.8f, WJ_AIM), (.84f, G(WJ_AIM, "RA.DU=.4 CH.FB=-.15")),
+                (1.0f, WJ_LASSO), (1.2f, WJ_AIM), (1.4f, WJ_LASSO), (1.6f, WJ_AIM));
+
+            // 달리오스 (첫 컷부터, 내려찍기 2.79): 웅크린 채 깨어남 → 일어나며 포효 → 두 팔을 머리 위로 → 바닥을 내려찍음
+            const string DA_HUNCH = "SP.FB=.55 CH.FB=.2 HD.ND=-.4 LA.FB=.3 RA.FB=.3 LA.DU=-.1 RA.DU=-.1 LF=-.2 RF=-.2 LK=-.45 RK=-.45 LL.FB=.3 RL.FB=.3 ROOT=-.15";
+            const string DA_ROAR = "SP.FB=-.25 CH.FB=-.35 HD.ND=.45 LA.DU=.75 RA.DU=.75 LA.FB=-.2 RA.FB=-.2 LF=.2 RF=.2 ROOT=.02";
+            const string DA_OVER = "LA.DU=1.15 RA.DU=1.15 LA.FB=.3 RA.FB=.3 LF=-.3 RF=-.3 SP.FB=-.3 CH.FB=-.2 HD.ND=.3 ROOT=.03";
+            const string DA_SLAM = "LA.DU=-.1 RA.DU=-.1 LA.FB=.85 RA.FB=.85 LF=.25 RF=.25 SP.FB=.65 CH.FB=.25 HD.ND=-.2 LL.FB=.45 RL.FB=.45 LK=-.6 RK=-.6 ROOT=-.16";
+            Clip(idle, D1 + "Ch1M_GiantIntro", false, (0, DA_HUNCH), (.5f, DA_HUNCH), (1.05f, DA_ROAR), (1.45f, G(DA_ROAR, "LA.DU=.86 RA.DU=.66 SP.LR=.07")), (1.85f, DA_ROAR),
+                (2.5f, DA_OVER), (2.64f, G(DA_OVER, "LA.DU=1.25 RA.DU=1.25")), (2.79f, DA_SLAM), (3.4f, DA_SLAM), (3.8f, ""));
+
+            // 컨덕터 반 (첫 컷부터, 크래시 1.28): 몸을 젖혀 호루라기를 길게 → 신호봉(왼손)을 뒤로 감았다 앞으로 쭉 내밂
+            const string CV_BLOW = "RA.FB=.55 RA.DU=.35 RF=-1 RH.DU=.2 SP.FB=-.25 CH.FB=-.25 HD.ND=.25 LA.DU=.2";
+            const string CV_WIND = "LA.DU=.9 LA.FB=-.5 LF=-.4 SP.TW=.35 SP.FB=-.1 RA.FB=.3 RA.DU=.2 RF=-.6 HD.TN=-.15 LL.FB=.2";
+            const string CV_THRUST = "LA.FB=1.0 LA.DU=.45 LF=.45 SP.TW=-.35 SP.FB=.25 RA.FB=.4 RA.DU=.3 RF=-.9 LL.FB=.45 LK=-.35 RL.FB=-.25 HD.ND=-.05 ROOT=-.08";
+            Clip(idle, D2 + "Ch2M_MasterIntro", false, (0, ""), (.25f, CV_BLOW), (.55f, G(CV_BLOW, "SP.FB=-.32 HD.ND=.32 LA.DU=.35 LA.FB=-.2")), (.8f, CV_BLOW),
+                (1.12f, CV_WIND), (1.28f, CV_THRUST), (1.32f, G(CV_THRUST, "SP.LR=.08")), (1.9f, CV_THRUST), (2.3f, ""));
+
+            // 로코모스 (첫 컷부터, 돌진 1.0 ~ 2.2, 펀치 2.89): 압력을 모았다 터뜨림 → 팔을 휘저으며 달려옴 → 오른 주먹을 크게 감아 내지름
+            const string LO_GATH = "LA.FB=.5 RA.FB=.5 LA.DU=.1 RA.DU=.1 LF=-.85 RF=-.85 SP.FB=.35 LK=-.4 RK=-.4 LL.FB=.3 RL.FB=.3 HD.ND=-.2 ROOT=-.1";
+            const string LO_BURST = "LA.DU=.85 RA.DU=.85 LA.FB=-.15 RA.FB=-.15 LF=.35 RF=.35 CH.FB=-.35 SP.FB=-.2 HD.ND=.35 ROOT=.03";
+            const string LO_RA = "SP.FB=.4 LA.FB=.6 RA.FB=-.5 LF=-.6 RF=-.6 LL.FB=-.3 RL.FB=.6 LK=-.7 RK=-.2 HD.ND=-.1 ROOT=-.08";
+            const string LO_RB = "SP.FB=.4 LA.FB=-.5 RA.FB=.6 LF=-.6 RF=-.6 LL.FB=.6 RL.FB=-.3 LK=-.2 RK=-.7 HD.ND=-.1 ROOT=-.08";
+            const string LO_WIND = "RA.FB=-.6 RA.DU=.4 RF=-.8 SP.TW=.5 CH.TW=.2 LA.FB=.5 LA.DU=.3 LF=-.5 LL.FB=.4 LK=-.4 ROOT=-.1";
+            const string LO_PUNCH = "RA.FB=1.05 RA.DU=.3 RF=.5 SP.TW=-.45 CH.TW=-.2 SP.FB=.3 LA.FB=-.4 LA.DU=.2 LL.FB=.55 LK=-.45 RL.FB=-.35 ROOT=-.12";
+            Clip(idle, D2 + "Ch2M_GiantIntro", false, (0, ""), (.25f, LO_GATH), (.4f, G(LO_GATH, "SP.LR=.06")), (.55f, LO_GATH), (.7f, LO_BURST),
+                (1.0f, LO_RA), (1.25f, LO_RB), (1.5f, LO_RA), (1.75f, LO_RB), (2.0f, LO_RA), (2.25f, LO_RB), (2.7f, LO_WIND), (2.88f, LO_PUNCH), (3.5f, LO_PUNCH), (3.9f, ""));
+
+            // 기로틴 (점멸 점프컷 4칸 0 · .25 · .5 · .75, 십자 베기 1.28): 칸마다 다른 자세로 뚝뚝 → 두 칼을 머리 위로 → X자로 내려 벰
+            const string EX_P1 = "LA.FB=.55 RA.FB=.55 LA.DU=.2 RA.DU=.2 LF=-.7 RF=-.7 LA.TW=.3 RA.TW=.3 SP.FB=.1 HD.ND=-.2 ROOT=-.03";
+            const string EX_P2 = "LA.DU=.95 RA.DU=.95 LF=.3 RF=.3 CH.FB=-.2 HD.ND=.2 LL.IO=.2 RL.IO=-.2";
+            const string EX_P3 = "SP.FB=.5 LK=-.75 RK=-.75 LL.FB=.5 RL.FB=.5 LA.FB=-.3 RA.FB=-.3 LA.DU=.2 RA.DU=.2 HD.ND=.25 ROOT=-.25";
+            const string EX_P4 = "RA.DU=1.2 RA.FB=.3 RF=-.1 LA.FB=.5 LA.DU=.1 LF=-.5 SP.TW=.25 HD.ND=.1 RL.FB=-.2 LL.FB=.3 LK=-.3";
+            const string EX_WIND = "LA.DU=1.1 RA.DU=1.1 LA.FB=-.35 RA.FB=-.35 LF=-.2 RF=-.2 SP.FB=-.25 CH.FB=-.2 HD.ND=.2 ROOT=.02";
+            const string EX_X = "LA.DU=.15 RA.DU=.15 LA.FB=.85 RA.FB=.85 LA.TW=.4 RA.TW=.4 LF=.3 RF=.3 SP.FB=.4 HD.ND=-.15 LL.FB=.45 LK=-.45 RL.FB=-.3 ROOT=-.12";
+            Clip(idle, D4 + "Ch4M_ExecIntro", false, (0, EX_P1), (.24f, EX_P1), (.25f, EX_P2), (.49f, EX_P2), (.5f, EX_P3), (.74f, EX_P3), (.75f, EX_P4), (1.0f, EX_P4),
+                (1.18f, EX_WIND), (1.3f, EX_X), (1.34f, G(EX_X, "SP.LR=-.08")), (1.9f, EX_X), (2.2f, ""));
+
+            // 일루시오 (첫 컷부터, 카드 던지기 1.52): 모자 챙에 손을 얹고 깊이 인사 → 두 팔을 활짝 펼쳐 일어남 → 오른손으로 카드를 감아 카메라로 내던짐
+            const string IL_BOW = "SP.FB=.45 CH.FB=.15 HD.ND=-.3 RA.FB=.45 RA.DU=.25 RF=-.85 RH.DU=.2 LA.DU=.7 LA.FB=-.3 LF=.2 LL.FB=-.1 RL.FB=.25 RK=-.25";
+            const string IL_OPEN = "RS.DU=.5 LS.DU=.5 SP.FB=-.15 CH.FB=-.25 HD.ND=.2 RA.DU=1.35 RA.FB=.2 RF=.25 LA.DU=1.35 LA.FB=.2 LF=.25 ROOT=.02";   // 이 리그는 DU 1 ≈ 어깨 높이라 크게
+            const string IL_WIND = "RA.FB=-.3 RA.DU=.5 RF=-.8 RA.TW=-.4 SP.TW=.35 CH.TW=.15 LA.DU=.6 LA.FB=.3 HD.TN=-.1";
+            const string IL_FLING = "RA.FB=1.15 RA.DU=.85 RF=.6 RA.TW=.3 RH.DU=-.4 SP.TW=-.4 CH.TW=-.18 SP.FB=.18 LA.DU=.9 LA.FB=-.4 LL.FB=.35 LK=-.35 RL.FB=-.15 ROOT=-.06";
+            // 2026-11-22 새 연출 박자: 연기 속 등장 0.25(인사 중) → 분신과 함께 팔 펼침 1.2 → 감기 1.62 → 카드 던지기 1.84 (컷 1.0 · 0.7 · 0.7)
+            Clip(idle, D3 + "Ch3M_IllusioIntro", false, (0, IL_BOW), (.95f, G(IL_BOW, "SP.FB=.5 HD.ND=-.35")), (1.25f, IL_OPEN), (1.5f, G(IL_OPEN, "LA.DU=1 RA.DU=1")), (1.66f, IL_WIND), (1.84f, IL_FLING),
+                (1.9f, G(IL_FLING, "SP.LR=.06")), (2.6f, IL_FLING), (3.0f, ""));
+
+            // ---- 일루시오 전투 동작 (패턴 Cast 박자: 카드 부채 0.6 · 칼 상자 0.6/1.4 · 비둘기 0.5 · 거울 상자 0.8 · 분신 0.5) ----
+            const string IL_REST = "RA.FB=.15 RF=-.3 LA.FB=.1 LF=-.25 HD.ND=.05";
+            // 카드 부채: 두 손에 카드를 부채처럼 펼쳐 몸 옆으로 감았다(0.55) 앞으로 휙 흩뿌림
+            const string CF_WIND = "RA.FB=-.35 RA.DU=.95 RF=-.55 LA.FB=.65 LA.DU=.75 LF=-.6 SP.TW=.5 CH.TW=.22 HD.TN=-.15 LL.FB=.2 LK=-.25";
+            const string CF_THROW = "RA.FB=1.15 RA.DU=.9 RF=.6 RH.DU=-.3 LA.FB=-.3 LA.DU=1.0 LF=.4 SP.TW=-.5 CH.TW=-.22 SP.FB=.18 RL.FB=.35 RK=-.35 ROOT=-.05";
+            Clip(idle, D3 + "Ch3M_IllusioCardFan", false, (0, IL_REST), (.45f, CF_WIND), (.55f, G(CF_WIND, "SP.TW=.55")), (.63f, CF_THROW), (.9f, CF_THROW), (1.2f, IL_REST));
+            // 칼 꽂기 상자: 지휘봉처럼 오른팔을 들어(0.5) 칼이 꽂힐 자리를 내리꽂듯 가리킴, 두 번째 칼(1.4)도
+            const string SB_UP = "RS.DU=.9 RA.DU=1.75 RA.FB=.25 RF=-.1 LA.DU=.7 LA.FB=-.25 SP.FB=-.18 HD.ND=.2";
+            const string SB_POINT = "RA.DU=.75 RA.FB=1.2 RF=.6 RH.DU=-.3 LA.DU=.9 LA.FB=-.4 SP.FB=.28 HD.ND=-.15 LL.FB=.35 LK=-.35 ROOT=-.06";
+            Clip(idle, D3 + "Ch3M_IllusioSwordBox", false, (0, IL_REST), (.45f, SB_UP), (.6f, SB_POINT), (1.1f, SB_POINT), (1.3f, SB_UP), (1.42f, SB_POINT), (1.8f, IL_REST));
+            // 모자 속 비둘기: 오른손으로 모자를 머리 위로 번쩍 들어(0.45) 비둘기가 쏟아지는 동안 들고 있음, 왼팔은 펼침
+            const string DV_HAT = "RS.DU=1 RA.TW=-.3 RA.DU=1.85 RA.FB=.25 RF=-.45 RH.DU=.2 LA.DU=1.2 LA.FB=.1 LF=.3 CH.FB=-.25 HD.ND=.2 ROOT=.03";
+            Clip(idle, D3 + "Ch3M_IllusioDoves", false, (0, IL_REST), (.3f, "RA.DU=.9 RA.FB=.35 RF=-1 HD.ND=-.1"), (.45f, DV_HAT), (.55f, G(DV_HAT, "RA.DU=1.95")), (1.3f, DV_HAT), (1.65f, IL_REST));
+            // 거울 상자: 두 팔을 활짝 펼쳐 무대를 소개하듯 (0.8), 몸을 뒤로 젖힘
+            const string MB_OPEN = "RA.DU=1.4 LA.DU=1.4 RA.FB=.25 LA.FB=.25 RF=.35 LF=.35 RH.DU=.3 LH.DU=.3 CH.FB=-.32 SP.FB=-.15 HD.ND=.25 ROOT=.02";
+            Clip(idle, D3 + "Ch3M_IllusioMirrorBox", false, (0, IL_REST), (.35f, "RA.FB=.6 LA.FB=.6 RF=-.8 LF=-.8 SP.FB=.25 HD.ND=-.2 ROOT=-.04"), (.8f, MB_OPEN), (1.4f, MB_OPEN), (1.75f, IL_REST));
+            // 분신술사 호출: 오른손을 얼굴 옆으로 들어 손가락을 딱(0.5), 왼팔은 옆으로
+            const string SM_UP = "RA.DU=1.2 RA.FB=.55 RF=-1 RH.DU=.3 LA.DU=1.0 LA.FB=-.2 HD.TN=-.1 SP.TW=.15";
+            Clip(idle, D3 + "Ch3M_IllusioSummon", false, (0, IL_REST), (.4f, SM_UP), (.5f, G(SM_UP, "RH.DU=-.2 RF=-.9")), (.9f, SM_UP), (1.2f, IL_REST));
+            // 진짜 찾기 · 거울 시계: 두 손을 가슴 앞에서 둥글게 돌리며 마법을 거는 자세 (1초)
+            const string CJ_A = "RA.FB=.7 LA.FB=.7 RA.DU=.4 LA.DU=.2 RF=-.5 LF=-.7 SP.FB=.1 HD.ND=-.1", CJ_B = "RA.FB=.7 LA.FB=.7 RA.DU=.2 LA.DU=.4 RF=-.7 LF=-.5 SP.FB=.1 HD.ND=-.1";
+            Clip(idle, D3 + "Ch3M_IllusioConjure", false, (0, IL_REST), (.25f, CJ_A), (.5f, CJ_B), (.75f, CJ_A), (1f, CJ_B), (1.3f, IL_REST));
+
+            // 크로노(시침) · 템포(분침) (첫 컷부터, 교차 베기 2.93): 고개 숙여 서 있다가 → 고개 들고 자세 → 한 번에 내지름. 팔은 무기 리그가 잡으니 몸 위주
+            const string HH_BOW = "SP.FB=.3 HD.ND=-.35 LL.IO=.15 RL.IO=-.15 ROOT=-.03";
+            const string HH_UP = "SP.FB=-.1 CH.FB=-.2 HD.ND=.2 LL.IO=.25 RL.IO=-.25 LK=-.2 RK=-.2 ROOT=-.05";
+            const string HH_SLAM = "SP.FB=.55 CH.FB=.2 HD.ND=-.1 LL.FB=.5 RL.FB=-.3 LK=-.6 RK=-.3 SP.TW=-.25 ROOT=-.22";
+            Clip(idle, D4 + "Ch4M_HourIntro", false, (0, ""), (.4f, HH_BOW), (1.5f, HH_BOW), (1.9f, HH_UP), (2.75f, G(HH_UP, "SP.TW=.3")), (2.93f, HH_SLAM), (3.5f, HH_SLAM), (3.9f, ""));
+            const string MH_SAL = "RA.FB=.6 RA.DU=.65 RF=-.85 HD.ND=.1 SP.TW=-.1 LA.FB=-.2 LA.DU=.3";
+            const string MH_GUARD = "RA.FB=.7 RA.DU=.3 RF=.2 LA.DU=.6 LA.FB=-.4 LF=-.6 SP.TW=-.35 LL.FB=.35 LK=-.4 RL.FB=-.25 ROOT=-.1";
+            const string MH_LUNGE = "RA.FB=1.0 RA.DU=.2 RF=.5 SP.FB=.35 SP.TW=-.45 LA.FB=-.5 LA.DU=.5 LL.FB=.75 LK=-.55 RL.FB=-.5 RK=.1 ROOT=-.2";
+            Clip(idle, D4 + "Ch4M_MinuteIntro", false, (0, ""), (.4f, MH_SAL), (1.5f, MH_SAL), (1.9f, MH_GUARD), (2.8f, MH_GUARD), (2.93f, MH_LUNGE), (3.5f, MH_LUNGE), (3.9f, ""));
+
+            // 시간의 주인 (첫 컷부터, 째깍 컷 1.2 ~ 2.7을 일곱 칸, 대낫 3.23): 떠 있는 채 두 팔이 째깍째깍 한 칸씩 펼쳐 올라감 → 낫을 옆으로 감았다 수평으로 베어 넘김
+            const string LT_REST = "RA.DU=.3 RA.FB=.25 RF=-.6 RH.DU=.1 LA.DU=.25 LA.FB=.1 LF=-.4 SP.FB=.05 LL.FB=.14 RL.FB=.02 LK=-.32 RK=-.14 LFT=-.65 RFT=-.65";
+            const string LT_SIDE = LT_REST + " RA.DU=.95 RA.FB=-.3 RA.TW=.3 RF=-.3 SP.TW=.65 CH.TW=.3 LA.FB=.45 LA.DU=.3 LF=-.3 SP.FB=-.1";
+            const string LT_SWEEP = LT_REST + " RA.DU=.6 RA.FB=.95 RA.TW=-.3 RF=.05 SP.TW=-.6 CH.TW=-.3 LA.FB=-.3 LA.DU=.35 SP.FB=.35";
+            var keys = new List<(float, string)> { (0, LT_REST), (1.1f, LT_REST + " HD.ND=-.15") };
+            var inv = CultureInfo.InvariantCulture;
+            for (int k = 0; k < 7; k++)
+            {
+                float u = (k + 1) / 7f, t0 = 1.2f + k * (1.5f / 7f);
+                string pose = LT_REST + " LA.DU=" + (0.25f + 0.95f * u).ToString("0.00", inv) + " RA.DU=" + (0.3f + 0.75f * u).ToString("0.00", inv)
+                            + " LF=" + (-0.4f + 0.55f * u).ToString("0.00", inv) + " CH.FB=" + (-0.3f * u).ToString("0.00", inv)
+                            + " HD.ND=" + (-0.15f + 0.5f * u).ToString("0.00", inv) + " ROOT=" + (0.08f * u).ToString("0.00", inv);
+                keys.Add((t0 + 0.01f, pose)); keys.Add((t0 + 1.5f / 7f - 0.01f, pose));
+            }
+            keys.Add((3.05f, LT_SIDE)); keys.Add((3.13f, LT_SIDE + " SP.TW=.75")); keys.Add((3.23f, LT_SWEEP)); keys.Add((3.4f, LT_SWEEP + " SP.TW=-.75")); keys.Add((3.9f, LT_SWEEP)); keys.Add((4.3f, LT_REST));
+            Clip(idle, D5 + "Ch5M_BossIntro", false, keys.ToArray());
         }
     }
 }

@@ -309,6 +309,7 @@ namespace CatTang
             e.projectileDamage = shotDmg;
             e.contactDamage = meleeDmg;
             if (elite) MakeElite(e, plus);
+            if (kind == Enemy.Kind.TickAssassin) SizeHeldBlades(e, "Weapon_NeedleDagger", 1.29f, 1.11f);
             e.GetComponent<Health>().RefreshRenderers();
             EyeTrail.Attach(e);                     // 빠르게 움직일 때(점멸 · 돌진 · 회전) 붉은 레이저 눈빛 꼬리
             return e;
@@ -369,10 +370,21 @@ namespace CatTang
             e.projectileDamage = shotDmg;
             e.contactDamage = meleeDmg;
             if (elite) MakeElite(e, plus);
+            if (kind == Enemy.Kind.RiftAssassin) SizeHeldBlades(e, "Weapon_RiftBlade", 1.22f, 1.08f);
             e.GetComponent<Health>().RefreshRenderers();
             EyeTrail.Attach(e, Enemy.Ch5Magenta);   // 빠르게 움직일 때 자홍 눈빛 꼬리 (4장과 같은 규칙)
             if (kind == Enemy.Kind.RuinGiant) HeavyStep.Attach(e, elite ? 0.85f : 0.7f, 2f);   // 육중한 발걸음 흙먼지
             return e;
+        }
+
+        static void SizeHeldBlades(Enemy enemy, string bladeName, float length, float width)
+        {
+            var model = enemy.transform.Find("Model");
+            if (!model) return;
+            var scale = new Vector3(width, length, width);
+            foreach (var part in model.GetComponentsInChildren<Transform>(true))
+                if (part.name == bladeName || part.name == bladeName + "Plus")
+                    part.localScale = Vector3.Scale(part.localScale, scale);
         }
 
         // 거울 사수: 내구 108 · 이속 2.8 · 반사탄 12
@@ -398,7 +410,7 @@ namespace CatTang
         public static Enemy MirrorBlade(Vector3 pos, ChapterDef ch, bool elite = false)
         {
             var e = Make3("Enemy_MirrorBlade", "Ch3_Blade", pos, ch, elite, 144, Enemy.Kind.MirrorBlade, 0.6f, 2.5f, 3.6f, new Color(0.55f, 0.5f, 0.9f),
-                m => Part(PrimitiveType.Cube, m, new Vector3(0.45f, 1.1f, 0.6f), new Vector3(0.08f, 0.08f, 1.3f), M(Ch3Glass, 1f)));                                 // 유리 칼
+                m => Part(PrimitiveType.Cube, m, new Vector3(0.45f, 1.1f, 0.8f), new Vector3(0.09f, 0.09f, 1.7f), M(Ch3Glass, 1f)));                                 // 유리 칼
             e.contactDamage = 16;
             return e;
         }
@@ -498,7 +510,7 @@ namespace CatTang
         static Enemy MidBoss3(Vector3 pos, ChapterDef ch)
         {
             var e = Root("MidBoss_MirageMagician", pos, 3960, Enemy.Kind.Boss, 1.2f, 4f);
-            if (!AttachKit3<PuppetAnim>(e, "Ch3_Magician")) Proto2(e, ch, new Color(0.45f, 0.4f, 0.65f), 3.8f, 1.1f);
+            if (!AttachModel(e, "Ch3_MidBoss") && !AttachKit3<PuppetAnim>(e, "Ch3_Magician")) Proto2(e, ch, new Color(0.45f, 0.4f, 0.65f), 3.8f, 1.1f);   // 2026-11-22: Hyper3D 일루시오 (없으면 예전 키트)
             e.speed = 3.5f;
             e.chapter = ch;
             e.chapterDmg = 1f;
@@ -614,8 +626,10 @@ namespace CatTang
             e.GetComponent<Health>().IsBoss = true;
             e.brain = e.gameObject.AddComponent<Ch5Boss>();
             e.GetComponent<Health>().RefreshRenderers();
-            EyeTrail.Attach(e, Enemy.Ch5Magenta, 4.9f, 0.55f, 0.32f);   // 시계 얼굴 양옆에서 자홍 눈빛 꼬리 (돌진 때)
-            HoverFloat.Attach(e);                                        // 떠다님: 둥실거림 · 이동 방향으로 기울기 (사용자: 걷지 말고 떠다니게)
+            var hover = HoverFloat.Attach(e);
+            hover.height = 0.42f;
+            hover.bob = 0.20f;
+            EyeTrail.Attach(e, Enemy.Ch5Magenta, 5.15f, 0.55f, 0.32f);
             // 대낫 (2026-11-20 사용자: "낫 두 손으로 들게 해, 사신처럼, 너무 크다"): 10m → 55%, 양손, 쉬는 자세 = 자루를 몸 앞 대각선으로 세워 날이 머리 위
             var srig = WeaponSwingRig.Get(e, "TimeScythe", new Color(1f, 0.18f, 0.72f), false);
             if (srig && !srig.BodyOnly) { srig.ScaleWeapon(0.55f); srig.twoHand = true; srig.handGap = 1.1f; srig.reach = 0.75f; srig.SetRest(new Vector3(-0.35f, 0.85f, 0.4f), Vector3.right); }

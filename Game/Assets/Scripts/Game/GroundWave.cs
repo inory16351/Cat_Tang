@@ -60,9 +60,9 @@ namespace CatTang
                 var p = Vector3.Lerp(a, b, k);
                 var last = pts[pts.Count - 1];
                 float dd = Vector3.Distance(last, p);
-                if (dd >= Step)
+                if (dd >= Step || (t >= 1f && dd > 0.001f))
                 {
-                    int n = Mathf.Min(10, Mathf.FloorToInt(dd / Step));
+                    int n = Mathf.Clamp(Mathf.FloorToInt(dd / Step), 1, 10);
                     float lt = times[times.Count - 1];
                     for (int i = 1; i <= n; i++) { float f = i / (float)n; pts.Add(Vector3.Lerp(last, p, f)); times.Add(Mathf.Lerp(lt, now, f)); }
                 }

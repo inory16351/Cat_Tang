@@ -11,6 +11,29 @@ namespace CatTang
         AudioSource a, b;
         string current;
         public static float Volume = 0.55f;
+        float duck = 1f, duckTarget = 1f, duckSpeed = 1f;
+        bool fading;
+
+        /// <summary>음악을 잠깐 줄임 (보스 등장 연출: 0.3 → 정지 순간 0 → 1). dur초 동안</summary>
+        public static void Duck(float to, float dur)
+        {
+            var m = Inst;
+            m.duckTarget = Mathf.Clamp01(to);
+            m.duckSpeed = dur <= 0.001f ? 999f : Mathf.Abs(m.duckTarget - m.duck) / dur;
+            if (dur <= 0.001f) m.duck = m.duckTarget;
+        }
+
+        /// <summary>지금 곡을 처음부터 (등장 연출이 끝나며 보스 곡이 시작되게)</summary>
+        public static void Restart()
+        {
+            if (inst && inst.a && inst.a.clip) { inst.a.time = 0; if (!inst.a.isPlaying) inst.a.Play(); }
+        }
+
+        void Update()
+        {
+            duck = Mathf.MoveTowards(duck, duckTarget, duckSpeed * Time.unscaledDeltaTime);
+            if (!fading && a && a.isPlaying) a.volume = Volume * duck;
+        }
 
         static Music Inst
         {
@@ -63,14 +86,16 @@ namespace CatTang
                 to.volume = 0;
                 to.Play();
             }
+            fading = true;
             for (float t = 0; t < 1; t += Time.unscaledDeltaTime / 1.2f)
             {
-                if (from) from.volume = Volume * (1 - t);
-                if (next) to.volume = Volume * t;
+                if (from) from.volume = Volume * duck * (1 - t);
+                if (next) to.volume = Volume * duck * t;
                 yield return null;
             }
             if (from) { from.Stop(); from.volume = 0; }
-            if (next) { to.volume = Volume; (a, b) = (to, a); }
+            if (next) { to.volume = Volume * duck; (a, b) = (to, a); }
+            fading = false;
         }
     }
 }

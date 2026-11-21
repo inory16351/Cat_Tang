@@ -34,6 +34,9 @@ namespace CatTang
             }
         }
 
+        /// <summary>그 이름 소리 파일이 있는지 (연출 효과음이 아직 없으면 예전 소리로)</summary>
+        public static bool Has(string name) => Load(name).Length > 0;
+
         static AudioClip[] Load(string name)
         {
             if (clips.TryGetValue(name, out var c)) return c;

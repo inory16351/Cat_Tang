@@ -15,7 +15,7 @@ namespace CatTang
         // 움직이는 분신: from → to 로 moveTime 동안 미끄러지며 들어옴 (끝에서 딱 멈춤), 지나간 자리에 옅은 꼬리 복제
         Vector3 from, to;
         float moveTime, trailT, popIn;
-        bool moving, ownsMeshes = true;
+        bool moving, ownsMeshes = true, vivid;
         float baseScale = 1f;                            // 실루엣 크기 배율 (회상 실루엣은 크게)
         Color trailColor;
 
@@ -23,11 +23,8 @@ namespace CatTang
         public static void Spawn(Transform model, Color c, float life = 0.35f, bool vivid = true)
         {
             if (!model) return;
-            nextVivid = vivid;
-            SpawnAt(model, model.position, c, life);
-            nextVivid = true;
+            SpawnAt(model, model.position, model.rotation, c, life, vivid);
         }
-        static bool nextVivid = true;
 
         public static void SpawnAt(Transform model, Vector3 pos, Color c, float life)
         {
@@ -45,7 +42,7 @@ namespace CatTang
         }
 
         /// <summary>지금 자세 그대로, 바라보는 방향만 rot으로 바꾼 실루엣 (불릿 파티 분신: 사방을 향해 동시에 쏨)</summary>
-        public static void SpawnAt(Transform model, Vector3 pos, Quaternion rot, Color c, float life)
+        public static void SpawnAt(Transform model, Vector3 pos, Quaternion rot, Color c, float life, bool vivid = true)
         {
             if (!model) return;
             if (!baseMat) { var sh = Shader.Find("CatTang/Silhouette") ?? Shader.Find("Sprites/Default"); baseMat = new Material(sh) { renderQueue = 3050 }; }
@@ -56,6 +53,7 @@ namespace CatTang
             a.born = Time.time;
             a.life = life;
             a.color = c;
+            a.vivid = vivid;
             foreach (var mf in model.GetComponentsInChildren<MeshFilter>())
             {
                 var mr = mf.GetComponent<MeshRenderer>();
@@ -94,14 +92,15 @@ namespace CatTang
             }
             // 모델이 플레이어 발밑 기준이면 위치 보정
             root.transform.position = pos + (model.position - model.root.position);
-            if (nextVivid) VividLayer.SetAll(a.gameObject); a.Apply(1);
+            if (a.vivid) VividLayer.SetAll(a.gameObject); a.Apply(1);
             last = a;
         }
 
         /// <summary>분신 대시: 지금 자세 그대로 from에 나타나 to로 moveTime 동안 미끄러져 들어옴. 이동 중 꼬리 잔상, 도착 후 life 동안 사라짐</summary>
-        public static Afterimage DashIn(Transform model, Vector3 from, Vector3 to, Quaternion rot, Color c, float moveTime, float life)
+        public static Afterimage DashIn(Transform model, Vector3 from, Vector3 to, Quaternion rot, Color c, float moveTime, float life, bool vivid = true)
         {
-            SpawnAt(model, from, rot, c, life + moveTime);
+            if (!model) return null;
+            SpawnAt(model, from, rot, c, life + moveTime, vivid);
             var a = last;
             if (!a) return null;
             a.from = a.transform.position; a.to = to + (a.transform.position - from);
@@ -120,7 +119,7 @@ namespace CatTang
             root.transform.SetPositionAndRotation(transform.position, transform.rotation);
             root.transform.localScale = transform.localScale;
             var a = root.AddComponent<Afterimage>();
-            a.mpb = new MaterialPropertyBlock(); a.born = Time.time; a.life = life; a.color = c; a.ownsMeshes = false; a.baseScale = baseScale;
+            a.mpb = new MaterialPropertyBlock(); a.born = Time.time; a.life = life; a.color = c; a.ownsMeshes = false; a.baseScale = baseScale; a.vivid = vivid;
             foreach (var r in rends)
             {
                 if (!r) continue;
@@ -135,7 +134,7 @@ namespace CatTang
                 rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 a.rends.Add(rr);
             }
-            if (nextVivid) VividLayer.SetAll(a.gameObject); a.Apply(1);
+            if (a.vivid) VividLayer.SetAll(a.gameObject); a.Apply(1);
         }
 
         void Apply(float k)

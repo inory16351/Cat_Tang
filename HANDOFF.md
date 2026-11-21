@@ -1,6 +1,64 @@
 # 핸드오프 — 1장 적 · 보스 · Tripo 모델 · 리깅 · 적 탄 이펙트
 
-마지막 갱신: 2026-11-20 오후 (남은 보스 전부 — 4장 시침 · 분침 · 5장 거울 고양이 · 집행관 기믹 · 5장 천문대 소품 · 고래 효과음, "2026-11-20 (오후) — 남은 보스 전부" 절, 다음 = 그 절 "▶ 다음 작업"). 그 전: 2026-11-20 (5장 보스 시간의 주인 · 스타일 VFX(블렌더 영상 기법) · 바닥 가시성 · 보스 강화 부품 — "2026-11-20 — 5장 보스" 절). 그 전: 2026-11-19 밤 끝 (5장 구현: 적 6종 행동 · 전용 모션 · 방 기믹 허공의 균열 · 깨진 바닥 v2 · Codex + 블렌더 이펙트 · 효과음 16종 · Gemini 곡 3 — "2026-11-19 (밤 끝) — 5장" 절). 그 전: 2026-11-19 밤 늦게 (4장 적 행동 · 모든 적 스킬별 전용 모션 · 앞뒤 근육 방향 바로잡기 · 무기 자세 IK · 적 스킬 효과음 — "2026-11-19 (밤 늦게)" 절, 다음 = 그 절 끝 "▶ 다음 작업"). 그 전: 2026-11-19 밤 (4장 적 6종 모델 · 무기 따로 — "4장 적 모델" 절). 그 전: 2026-11-19 저녁 (4장 기획서 PPT · 4장 키트 · 느와르 · 레이저 이펙트 — "2026-11-19 (저녁)" 절). 그 전: 2026-11-19 오후 (4장 기획 확정 · 방 크기 장/스테이지별 · 스테이지별 문 · 복도 완료 — "2026-11-19 (오후)" 절). 그 전: 2026-11-19 (시설 화면 스크롤바 그림 연결 · 빌드 표 복사 — "2026-11-19 — 윈도우 빌드" 절). 그 전: 2026-11-18 밤 (마을 오브젝트 정리 뒤 씬 다시 지음 · 확인 — "(마지막, 다른 세션에서 이어서)" 항목). 그 전: 2026-11-18 밤 (새 마을: 다리로 이어진 섬 5개 · 장 해금 · NPC 5 — "2026-11-18 (밤 2) 새 마을" 절). 그 전: 2026-11-18 밤 늦게 (아웃게임 개편 · 메인 로비 · 마을 — "2026-11-18 (밤 늦게)" 절). 그 전: 2026-11-18 저녁 (3장 맵 키트 · 거울 반사 바닥 — "2026-11-18 (저녁)" 절). 그 전: 2026-11-18 오후 (상인 · 추억 · 3장 구현 시작). 그 전: 2026-11-18 (3장 레벨 디자인 확정 · 3장 기획서 Ver01 — 구현 전, 아래 "3장 구현 할 일" 참고). 이전 핸드오프(연출 · HUD · 판 구조)는 git 기록 `459df5c`의 HANDOFF.md 참고.
+마지막 갱신: 2026-11-22 (보스 등장 연출 마무리 · 연출 효과음 — "2026-11-22 (4)" 절, 위에서부터 2026-11-22 (1)~(4)). 그 전: 2026-11-21 (보스 등장 연출 · 보스 이름/칭호 — "2026-11-21" 절). 그 전: 2026-11-20 오후 (남은 보스 전부 — 4장 시침 · 분침 · 5장 거울 고양이 · 집행관 기믹 · 5장 천문대 소품 · 고래 효과음, "2026-11-20 (오후) — 남은 보스 전부" 절, 다음 = 그 절 "▶ 다음 작업"). 그 전: 2026-11-20 (5장 보스 시간의 주인 · 스타일 VFX(블렌더 영상 기법) · 바닥 가시성 · 보스 강화 부품 — "2026-11-20 — 5장 보스" 절). 그 전: 2026-11-19 밤 끝 (5장 구현: 적 6종 행동 · 전용 모션 · 방 기믹 허공의 균열 · 깨진 바닥 v2 · Codex + 블렌더 이펙트 · 효과음 16종 · Gemini 곡 3 — "2026-11-19 (밤 끝) — 5장" 절). 그 전: 2026-11-19 밤 늦게 (4장 적 행동 · 모든 적 스킬별 전용 모션 · 앞뒤 근육 방향 바로잡기 · 무기 자세 IK · 적 스킬 효과음 — "2026-11-19 (밤 늦게)" 절, 다음 = 그 절 끝 "▶ 다음 작업"). 그 전: 2026-11-19 밤 (4장 적 6종 모델 · 무기 따로 — "4장 적 모델" 절). 그 전: 2026-11-19 저녁 (4장 기획서 PPT · 4장 키트 · 느와르 · 레이저 이펙트 — "2026-11-19 (저녁)" 절). 그 전: 2026-11-19 오후 (4장 기획 확정 · 방 크기 장/스테이지별 · 스테이지별 문 · 복도 완료 — "2026-11-19 (오후)" 절). 그 전: 2026-11-19 (시설 화면 스크롤바 그림 연결 · 빌드 표 복사 — "2026-11-19 — 윈도우 빌드" 절). 그 전: 2026-11-18 밤 (마을 오브젝트 정리 뒤 씬 다시 지음 · 확인 — "(마지막, 다른 세션에서 이어서)" 항목). 그 전: 2026-11-18 밤 (새 마을: 다리로 이어진 섬 5개 · 장 해금 · NPC 5 — "2026-11-18 (밤 2) 새 마을" 절). 그 전: 2026-11-18 밤 늦게 (아웃게임 개편 · 메인 로비 · 마을 — "2026-11-18 (밤 늦게)" 절). 그 전: 2026-11-18 저녁 (3장 맵 키트 · 거울 반사 바닥 — "2026-11-18 (저녁)" 절). 그 전: 2026-11-18 오후 (상인 · 추억 · 3장 구현 시작). 그 전: 2026-11-18 (3장 레벨 디자인 확정 · 3장 기획서 Ver01 — 구현 전, 아래 "3장 구현 할 일" 참고). 이전 핸드오프(연출 · HUD · 판 구조)는 git 기록 `459df5c`의 HANDOFF.md 참고.
+
+## 2026-11-22 (4) — 연출 효과음 생성 · 커밋
+- audio-studio 작은 효과음 모델(`stable-audio-3-small-sfx`, 3.3GB) 다운로드 끝 → `gen_audio.py sfx intro_riser intro_whoosh intro_impact intro_stinger_1~5 intro_flip intro_glitch` 로 11개 생성(`Resources/Audio/Sfx/intro_*.ogg`, whoosh는 _1/_2 두 가지). 코드가 `Sfx.Has`로 파일을 찾아 자동으로 예전 소리 대신 씀 — 코드 수정 없음.
+- 생성 명령 (Git Bash): ffmpeg는 winget으로 깔려 있지만 PATH에 안 잡혀 있음 → 직접 지정해야 함.
+  `F=$LOCALAPPDATA/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.1-full_build/bin; PATH="$F:$PATH" AUDIO_STUDIO_FFMPEG="$F/ffmpeg.exe" AUDIO_STUDIO_SA3_MODEL=sm-sfx C:/Project/audio-studio-mcp/.venv/Scripts/python.exe Art/tools/gen_audio.py sfx <이름…>` (GTX 1060에서 하나 1~2초).
+- 확인: Unity 임포트 · 길이 정상, 음량(최대 -0.1 ~ -1.5 dB, 평균 -8 ~ -20 dB) 정상. **귀로 안 들어 봄** — 소리 느낌 · 브금 연계(줄임 → 정지 침묵 → 곡 처음부터)는 플레이해서 들어 볼 것. 마음에 안 들면 `gen_audio.py` SFX 표 문구나 SEED를 바꿔 다시 생성.
+- audio-studio MCP 서버는 세션 시작 때 연결 시간 초과(30초) — 생성은 `gen_audio.py` 직접 실행(프로세스 안)으로 하면 됨.
+- 아직 확인 안 됨: 장별 실제 보스방에서 연출(촬영은 전부 1장 테스트 방), 일루시오 실제 전투, Unity 재시작 뒤 첫 플레이 맵 안 지어지는 문제(원인 모름).
+
+## 2026-11-22 (3) — 모든 보스 '등장 장면' · 카메라 각도 다양화 · 일루시오 끝 구도
+- 사용자: "등장하는 장면에서부터 시작해서 보스가 나타난다는 걸 명확하게(모비 글래스처럼), 모든 보스 — 소환 · 땅에서 · 점프 등 고유 이미지와 맵 컨셉에 맞게" · "카메라 무빙이 너무 유사, 다각도로" · "일루시오 극장 카드: 멈추는 타이밍과 연결 — 얼굴이 옆에 확실히 보이고 일러는 옆에".
+- **등장**: `BossIntroDef.entryUp`(+ = 하늘에서, 여러 마리면 뒤 녀석 3m씩 더) · `entryBack`(멀리서) · `emerge`(땅 아래) → 비트 `Enter(dur, drop|descend|charge|rise)`, 착지 이펙트는 `Later(초, …)`, 예고 원 `MarkLandings`, 숨김 등장 `Hide`. 카메라 기준점이 보스를 수평으로 따라감(등장 돌진).
+  와인더 잭 = 착지 표시 → 떨어져 쿵 / 달리오스 = 녹은 땅이 터지며 솟음 / 컨덕터 반 = 증기 뿜으며 달려 들어옴 / 로코모스 = 멀리서 돌진 / 일루시오 = 연기 속 / 모비 글래스 = 수면 위로 / 기로틴 = 붉은 글리치 순간이동 / 쌍둥이 = 착지 원 두 개 → 시곗바늘처럼 내리꽂힘 / 미지의 존재 = 거울 깨지며 / 시간의 주인 = 소환 원 → 천천히 내려옴 → 공허 돔.
+- **새 각도**: BehindBoss(보스 등 뒤 어깨 너머) · Profile(완전 옆 망원) · WormEye(발밑 수직 올려다봄) · HighOrbit(높은 새의 눈) + 보스별 다시 배정 (마지막 컷은 정면 유지, 컷 길이는 그대로라 연출 클립 박자 유지). 컨덕터 반 끝 = QuickDraw.
+- **일루시오 끝**: 새 컷 Portrait(얼굴을 화면 왼쪽 1/3에 두고 파고듦) + 극장 카드 다시 — 커튼은 양옆 테두리로만 닫힘, 얼굴에 스포트라이트, 일러스트 오른쪽, 간판은 얼굴 아래.
+
+## 2026-11-22 (2) — 일루시오 새 모델 동작 · 연출 · 연출 소리 자리 · 브금 연계 · audio-studio
+- **일루시오 전투 동작**: 패턴마다 `Cast(시간, 상태)` → 새 클립 `Ch3M_Illusio{CardFan, SwordBox, Doves, MirrorBox, Summon, Conjure}` (거울 상자 연사 = Attack 카드 튕기기). 패턴 시작 Attack 트리거는 끔(anim ""). 예전 키트 모델이면 PuppetAnim 그대로.
+  이 리그는 Arm Down-Up 1 ≈ 어깨 높이라 팔 값을 크게(1.2 ~ 1.95) + 머리 위 자세엔 어깨 들기(RS.DU). 모자 들기는 그래도 어깨 조금 위까지만 올라감.
+- **일루시오 연출 새로**: 컷 LowRise 1.0 → HeroOrbit 0.7 → Spiral 0.7. 보스 숨김(`Hide`) → 0.25초에 섬광 · 연기 속에서 인사하는 채로 등장 → 양옆 거울 분신(`Doubles`: 모델 복제가 같은 동작을 따라 하며 깜빡이다 유리처럼 깨짐) → 카드를 카메라로 내던지는 정면 자세에서 정지. 클립 `Ch3M_IllusioIntro` 박자 다시 맞춤. HeroOrbit 거리 · 화각을 조금 물림(모자 잘림).
+- **브금 연계** `Music.Duck/Restart`: 연출 시작 0.3까지 줄임 → 정지 순간 0(한 박자 침묵) → 카메라가 돌아올 때 보스 곡을 처음부터 0.9초에 걸쳐 키움 (스킵하면 0.4초). **귀로 안 들어 봄.**
+- **연출 효과음 자리**: `intro_riser`(시작) · `intro_whoosh`(휙 전환) · `intro_impact`(정지) · `intro_stinger_1~5`(장별 카드) · `intro_flip`(발차판) · `intro_glitch`(미지의 존재). 파일이 있으면 쓰고 없으면 예전 소리(`Sfx.Has`). 생성 표는 `Art/tools/gen_audio.py` SFX에 추가해 둠 → `gen_audio.py sfx intro_riser intro_whoosh …`.
+- **audio-studio**: 사용자가 설치를 돌려 `.venv` · PyTorch 2.7.1+cu126 · CUDA 됨. 이 PC GPU = **GTX 1060 6GB** (예전 메모의 RTX 5060 아님 → cu128 바꿀 필요 없음). Hugging Face 로그인 안 됨 → 가중치 없음, ffmpeg 없음. 프로젝트 `.mcp.json`에 `audio-studio`(stdio, `AUDIO_STUDIO_SA3_MODEL=sm-sfx`) 등록 — 지금은 가중치가 없어 연결 시간 초과.
+- 확인용: `IntroDemo.RunMoves(folder, 장, 중간?, "상태,…")` (두뇌 끄고 상태를 하나씩 재생하며 찍음). GIF `docs/images/boss_intro/boss_intro_ch3_mid.gif` · `illusio_moves.gif`.
+- 주의: 이번 Unity 재시작 뒤 첫 플레이에서 RunManager가 꺼진 채 시작해 맵이 안 지어진 적 있음(원인 모름, 씬 파일은 그대로) — 그땐 RunManager.Start를 직접 불러 해결.
+
+## 2026-11-22 — 등장 연출 3차 (코드만, **컴파일 · 촬영 확인 안 됨** — Unity 도메인 리로드가 13분 넘게 멈춰서 중단)
+- 사용자: 모비 글래스 앞모습으로 끝 + 일러 가로로 · 일루시오 Hyper3D로 다시 · 미지의 존재 연출 다듬기(맥크리 '최고의 플레이' 참고) · 줌 · 달리 · 극단적 화각 · 로우 앵글 · 가감속 전체 강화 · 스페이스 건너뛰기를 게임식(아이콘)으로 오른쪽 위.
+- `BossIntro.cs`: 새 컷 Vertigo(돌리 줌) · HeroLow(낮은 3/4 정면) · HeroOrbit(허리 높이 근접 궤도) · QuickDraw(정면 낮은 앵글 확 조임). 모든 컷 화각 폭 확대(광각 ~82 ↔ 망원 ~17), 궤도에 달리인, 움직이는 컷은 `SpeedRamp`(빠름 → 느림 → 빠름).
+  고래 끝 = HeroLow (정면 그대로는 고래가 납작한 날개처럼만 보임), 시간의 주인 끝 = Vertigo, 미지의 존재 = OverShoulder → HeroOrbit(모자 챙 · 리볼버 3바퀴) → QuickDraw(두 자루 뽑아 겨눔 · 총구 섬광 · 느린 화면).
+  건너뛰기 = 오른쪽 위 키캡(SPACE) + "건너뛰기 ▶▶", 숨 쉬듯 깜빡, 누르면 키캡이 눌림.
+- `IntroPoser.cs` (새): 클립을 따로 못 만드는 모델(거울 고양이 = 주인공 컨트롤러)에 근육 자세를 런타임으로 덧씀 (EnemyMotions 표기 그대로, 가감속) + 물체 돌리기(Spin, 리볼버).
+- `BossIntroCards.cs`: 거울 금 카드가 가로 그림이면 가로 배치. `Resources/UI/BossIntro/ch3_boss.png` = 가로 고래(ChatGPT, 원본 `Art/illust_incoming/ch3_boss_wide.png`, 예전 세로는 `ch3_boss_portrait_feathered.png`).
+- **일루시오 Hyper3D 완료**: 정면 A자세 원화(`Art/illust_incoming/ch3_mid_front.png`, ChatGPT) → Hyper3D MCP `rodin_generate`(Gen-2.5 Medium, 3만 폴리, generation 5f7131d1…) → `rodin_generate_rigging` bone_template=human(FBX, 548ab791…; human_Unity + unity 내보내기는 "표준 휴머노이드 아님"으로 실패) → `Art/Characters/Ch3/Ch3_MidBoss.fbx` + `_basecolor.png`, 원본 `Art/models/incoming/hyper3d_illusio/`.
+  빌더 `Models3`에 ("Ch3_MidBoss", 3.6), 동작 = 분신술사 카드 튕기기 · 인사 + 연출 전용 `Ch3M_IllusioIntro`(인사 → 팔 펼침 → 카드 던지기 1.52). `EnemyFactory.MidBoss3` = AttachModel("Ch3_MidBoss"), 없으면 예전 키트. 휴머노이드 아바타 정상, 모델 사방 렌더 `docs/images/check/illusio_model.jpg`.
+  남은 확인: 실제 전투에서 패턴 동작(Ch3MidBoss.Cast는 PuppetAnim 전용이라 이제 아무것도 안 함 — 필요하면 Anim("Bow") 등으로), 분신(거울 상자 · 분신술사 호출)이 새 모델과 어울리는지.
+- Hyper3D MCP: 프로젝트 `.mcp.json`에 `hyper3d` (http, https://api.hyper3d.com/api/mcp, OAuth) 추가 — 세션을 다시 열고 승인 · 브라우저 인증해야 도구가 보임.
+- audio-studio: 이 PC엔 없었음 → `C:/Project/audio-studio-mcp`에 클론만 함(설치 스크립트 실행은 권한 확인에서 막힘, 사용자가 직접 실행 필요).
+
+## 2026-11-21 (2) — 등장 연출 보스별 차별화 · 카드 10종 · 연출 전용 동작 (커밋 안 함)
+- 사용자: "보스마다 다른 카메라 워킹 + 액션 · 이펙트로 차별점, 데더다랑 너무 비슷하니 변주" · "새로운 동작 만들어도 됨, 연출 전용으로".
+- `BossIntro.cs` 다시 짬: 보스 표에 컷 순서 + **비트**(`At(컷, 진행률, 람다)` — 보스 동작 · 이펙트 · 소리 · 흔들림 · 느린 화면 · 실제 돌진 `Lunge` · 바닥에서 솟구침 `Emerge`). 새 컷 13종(Feet · Showdown · Chase · JumpCut · Stutter · ClockSweep · OverShoulder · Rise · Snap · Pullback · Spiral · LookUp · Push).
+- `BossIntroCards.cs` (새): 정지 카드 10종 — 현상수배 · 녹아내림 · 발차판(글자 플립) · 기차 띠 · 극장 커튼 · 거울 금 · 느와르 사선 · 흑백 반쪽 · 글리치 · 시계판 11:59. 보스별 배정은 `Def`의 `card`.
+- 연출 전용 동작: `EnemyMotions.Intros` → `Ch1M_HunterIntro` · `Ch1M_GiantIntro` · `Ch2M_MasterIntro` · `Ch2M_GiantIntro` · `Ch4M_ExecIntro` · `Ch4M_HourIntro` · `Ch4M_MinuteIntro` · `Ch5M_BossIntro`, `EnemyModelBuilder.Moves`에 "Intro" 상태. **시각은 BossIntro 컷 길이에 맞춘 값** — 컷 길이를 바꾸면 클립 시각도 같이 고칠 것. 3장 둘(절차 애니) · 5장 중간(고양이 모델)은 클립 없이 Attack.
+- 메뉴 `CatTang/적 전용 모션 다시 만들기 (클립 + 컨트롤러)`로 다시 만듦.
+- 사용자: "마지막은 앞모습으로 멋있는 액션 자세에서 일러" → 마지막 컷은 전부 정면으로 끝남(Snap · Pullback · Spiral · Crash 옆 어긋남 제거, 쌍둥이 마지막 = Crash), 마지막 컷 동안 고양이를 숨김. 연출 클립은 정지 순간(느린 화면 감안)에 타격 자세를 붙잡도록 맞춤.
+- 키 재기: 휴머노이드는 머리 뼈 높이(캡슐의 65 ~ 130%), 떠 있는 사신(HoverFloat)은 캡슐. 쌍둥이 R은 벌어진 거리의 55%만.
+- 확인용 GIF 대신 프레임: `docs/images/check/intro10~13/`. **아직 안 본 것**: 장별 실제 보스 방(벽 · 경기장)에서의 각도, 중간 보스 술집 홀(1장)처럼 방 안에서 시작하는 경우.
+
+## 2026-11-21 — 보스 등장 연출 · 보스 이름 · 칭호 (커밋 안 함)
+- 사용자: 메인 · 중간 보스 전부 고유 등장 연출 — 원신 · 명조식 역동적 카메라 + 전환, 마지막은 데이브 더 다이버식 일러스트 + 정지. 메인 6초 · 중간 4초, 첫 만남 스킵 불가 · 이후 스페이스 스킵. 거대한 보스는 일러스트 상반신만.
+- `BossIntro.cs` (새): 보스 표(`Def(chapter, mid)` — 영어/한글 이름 · 칭호 · 색 · 컷 순서 · 크래시 줌 소리), 컷 6종(Wide · LowRise · Orbit · Crash · Dutch · Top) + 전환 4종(Hard · Flash · Whip · Wipe), 정지 화면(timeScale 0, 색 띠 · 일러스트 · 영어 타이포 · 한글 줄), 가림막 자동 숨김, 하늘 안 보이게 최소 10° 내려다봄.
+  크기 = 보스 루트 CapsuleCollider (스킨 메시 bounds · BakeMesh는 배율이 들쭉날쭉해서 버림). 4장 쌍둥이는 Enemy.All의 보스 둘을 같이 잡음.
+- 연결: `RunManager.SpawnWave`(보스 · 중간 보스 만든 직후 yield), `Enemy.Update`/`TwinDirector.Update`는 `BossIntro.Playing` 동안 멈춤, `CameraFollow.Hold` · `GetFollowPose`, `BossBrain.HoldPatterns`, `Meta.IntroSeen/MarkIntroSeen`(슬롯별).
+- 일러스트: ChatGPT(Chrome)로 10장 생성 · 투명 PNG 그대로 → `Resources/UI/BossIntro/<id>.png` (가장자리 페더 처리). 원본 `Art/illust_incoming/`. 3장 둘은 원화가 없어 게임 화면을 참고로 줌. 5장 보스는 컨셉 원화(망토 사신) 기준이라 게임 모델(갑옷)과 조금 다름.
+- 이름 변경: DisplayName · Chapter.csv BossName · 토스트 · 5장 환영 이름. 4장 체력바 크로노 = 시침 · 템포 = 분침은 내가 정한 것 (사용자 확인 전).
+- 확인용: `Dev/IntroDemo.cs` — 플레이 중 `IntroDemo.Run(folder, "1m,1b,...")`, 화면(UI 포함)을 프레임으로 저장. 결과 `docs/images/check/intro6~7/`.
+- **아직 안 본 것**: 실제 런에서 각 장 보스 방(원형 경기장 · 벽 · 소품)에서의 카메라 각, 스페이스 스킵 직후 대시가 안 나가는지, 영어 글꼴(BlackHanSans 기울임 — 더 맞는 영문 글꼴 받을지 사용자 결정).
 
 ## 2026-11-20 (밤 늦게 5) — 땅 파동 · 땅 솟음 · 낫 눕히기 · 휘두르기 느리게 (커밋 안 함)
 - `GroundWave.cs` (새): 내려찍기 파동 전용 — 돌진 꼬리처럼 땅에 붙은 띠(StylizedVfx, 꼬리부터 흩어짐) + 머리가 지나가는 자리마다 `Upheaval`(블렌더 바위 무더기, `Art/tools/blender_fx_upheaval.py` → `Resources/FX/Upheaval/fx_upheaval_0~2.fbx`, 솟음 0.11초 → 0.75 ~ 0.9초 남음 → 가라앉음, 틈의 빨간빛이 식음). 칼끝 박힌 자리에도 Upheaval.

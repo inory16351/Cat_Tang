@@ -1,9 +1,4 @@
-// 적 탄: 손그림 이펙트 스프라이트(Resources/FX/bullets, docs/images/fx_src/enemy_bullets.png → docs/tools/fx_bullets_cut.py)
-// 스프라이트는 카메라를 보고 눕되, 화면에서 날아가는 방향으로 머리(오른쪽)가 향하도록 돌림.
-// 뒤에 약한 가산 빛 번짐 + 짧은 꼬리. 적 탄은 보라 ~ 붉은 계열이라 플레이어의 금빛 궤적과 구분됨.
-// - Orb      보라 에너지 구체 (보스 탄막)       - Revolver 무법자 리볼버 탄
-// - Pellet   산탄 알갱이                        - Sniper   수배 저격 관통탄 (긴 창)
-// - Needle   초침 탄 (시곗바늘)                 - Numeral  12방향 숫자 탄 (시계판 + 아라비아 숫자, 2026-11-18 사용자: 로마 숫자 X)
+// Enemy projectiles use emissive Blender meshes, with separate glow and flight trails.
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -74,45 +69,23 @@ namespace CatTang
         void OnEnable() => All.Add(this);
         void OnDisable() => All.Remove(this);
 
-        Vector3 dir;
-        float speed, damage, dieAt, rangeLeft, born, haloSize, length;
+        Vector3 dir, launchOffset;
+        float speed, damage, dieAt, rangeLeft, born, releaseAt;
+        bool wasHeld;
         Style style;
-        Transform sprite, halo;
-        static Material glowMat, numeralMat;
-        static readonly Dictionary<Style, Material> spriteMats = new();
-        Material[] flip;                                   // 3장: 블렌더로 구운 3D 탄 프레임 (반복)
-        MeshRenderer sprR;
+        Transform body, halo;
+        MeshRenderer bodyRenderer;
+        MaterialPropertyBlock bodyProperties;
+        Color tint;
+        Vector2 haloSize;
+        static Material coreMat, glowMat, trailMat, numeralMat;
+        static readonly Mesh[] artMeshes = new Mesh[7];
+        static readonly Dictionary<Color, Mesh> glowMeshes = new();
+        static readonly int TintId = Shader.PropertyToID("_Tint"), PhaseId = Shader.PropertyToID("_Phase");
 
-        // 3장 (거울 세계) 일반 몬스터 탄 · 불똥 = 블렌더로 구운 3D 플립북 (2026-11-18 사용자: 2D 말고 블렌더로 구워서)
-        //   구슬 → bk_c3orb (깎은 장미빛 보석 + 빛 고리), 산탄 → bk_c3shard (구르는 유리 조각), 맞음 · 튕김 → bk_c3spark (Art/tools/blender_bake_fx.py)
         static bool Ch3 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 3;
-
-        // 4장 (시계 장치 속, 느와르) = 빨간 계열 구운 3D (2026-11-19 사용자: 흑백 대비, 적 공격 궤적은 빨강): 구슬 → bk_c4orb (달아오른 톱니),
-        //   산탄 · 바늘 · 리볼버 · 저격 → bk_c4needle (빨간 시곗바늘), 맞음 · 튕김 → bk_c4spark (톱니 조각 · 빨간 고리)
         public static bool Ch4 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 4;
         public static bool Ch5 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 5;
-
-        static Material[] Ch3Frames(Style s)
-        {
-            if (Ch4)
-            {
-                string set4 = s == Style.Orb ? "bk_c4orb" : s == Style.Numeral || s == Style.Ticket ? null : "bk_c4needle";
-                if (set4 != null) { var f4 = FxFlipbook.Frames(set4); if (f4.Length > 0) return f4; }
-                return null;
-            }
-            if (Ch5)
-            {
-                // 5장 (보라 · 금 우주): 구슬 → bk_c5orb (보랏빛 보석 + 금 고리), 그 밖 → bk_c5shard (자홍 유리 파편) — 블렌더로 구운 3D
-                string set5 = s == Style.Orb ? "bk_c5orb" : s == Style.Numeral || s == Style.Ticket ? null : "bk_c5shard";
-                if (set5 != null) { var f5 = FxFlipbook.Frames(set5); if (f5.Length > 0) return f5; }
-                return null;
-            }
-            if (!Ch3) return null;
-            string set = s == Style.Orb ? "bk_c3orb" : s == Style.Pellet ? "bk_c3shard" : null;
-            if (set == null) return null;
-            var fr = FxFlipbook.Frames(set);
-            return fr.Length > 0 ? fr : null;
-        }
 
         /// <summary>탄 맞음 · 튕김 불똥: 3장은 구운 유리 섬광, 그 밖엔 2D 불똥</summary>
         static void Spark(Vector3 at, float size, Color c)
@@ -123,29 +96,45 @@ namespace CatTang
             FxBurst.Spawn(at, size, FxBurst.Kind.Spark, c);
         }
 
-        static string TexName(Style s) => s switch
+        static Color ColorOf(int chapter) => chapter switch
         {
-            Style.Revolver => "revolver", Style.Pellet => "pellet", Style.Sniper => "sniper",
-            Style.Needle => "needle", Style.Numeral => "dial", Style.Ticket => "ticket", _ => "orb",
+            1 => new Color(1f, 0.52f, 0.22f),
+            2 => new Color(1f, 0.67f, 0.28f),
+            3 => new Color(0.56f, 0.90f, 1f),
+            4 => BladeStreak.Ch4Base,
+            5 => Enemy.Ch5Magenta,
+            _ => new Color(1f, 0.28f, 0.42f),
         };
 
-        // 화면에서의 길이(m)
-        static float LengthOf(Style s) => s switch
+        static Mesh BodyMesh(Style style)
         {
-            Style.Revolver => 1.5f, Style.Pellet => 0.7f, Style.Sniper => 3.6f,
-            Style.Needle => 2.0f, Style.Numeral => 1.6f, Style.Ticket => 1.5f, _ => 1.9f,
-        };
+            int index = (int)style;
+            if (artMeshes[index]) return artMeshes[index];
+            var asset = Resources.Load<GameObject>("FX/EnemyProjectiles/" + style);
+            var filter = asset ? asset.GetComponentInChildren<MeshFilter>() : null;
+            return artMeshes[index] = filter && filter.sharedMesh ? filter.sharedMesh : FxMeshes.Ball(0);
+        }
 
-        static Color ColorOf(Style s) => Ch4 && s != Style.Numeral ? new Color(1f, 0.1f, 0.12f) : Ch5 ? new Color(1f, 0.2f, 0.72f) : s switch
+        internal static MeshRenderer BuildBody(Transform parent, Style style)
         {
-            Style.Revolver => new Color(1f, 0.25f, 0.35f),
-            Style.Pellet => new Color(1f, 0.3f, 0.3f),
-            Style.Sniper => new Color(1f, 0.2f, 0.4f),
-            Style.Needle => new Color(0.75f, 0.4f, 1f),
-            Style.Numeral => new Color(0.9f, 0.5f, 1f),
-            Style.Ticket => new Color(1f, 0.3f, 0.55f),
-            _ => new Color(0.8f, 0.35f, 1f),
-        };
+            if (!coreMat)
+                coreMat = new Material(Shader.Find("CatTang/EnemyProjectile") ?? Shader.Find("Universal Render Pipeline/Unlit"));
+            var go = new GameObject("EmissiveBody");
+            go.transform.SetParent(parent, false);
+            go.AddComponent<MeshFilter>().sharedMesh = BodyMesh(style);
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = coreMat;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            return renderer;
+        }
+
+        internal static void TintBody(MeshRenderer renderer, Color color, MaterialPropertyBlock properties)
+        {
+            properties.SetColor(TintId, color);
+            properties.SetFloat(PhaseId, (renderer.GetInstanceID() & 255) * 0.37f);
+            renderer.SetPropertyBlock(properties);
+        }
 
         static Material Glow()
         {
@@ -156,63 +145,59 @@ namespace CatTang
                 {
                     float dx = (x + 0.5f) / 32f - 1, dy = (y + 0.5f) / 32f - 1;
                     float a = Mathf.Clamp01(1 - Mathf.Sqrt(dx * dx + dy * dy));
-                    tex.SetPixel(x, y, new Color(1, 1, 1, a * a * a));
+                    tex.SetPixel(x, y, new Color(1, 1, 1, a * a));
                 }
             tex.Apply();
             var sh = Shader.Find("CatTang/AdditiveGlow") ?? Shader.Find("Sprites/Default");
             glowMat = new Material(sh) { mainTexture = tex };
-            if (glowMat.HasProperty("_Intensity")) glowMat.SetFloat("_Intensity", 1.1f);
+            if (glowMat.HasProperty("_Intensity")) glowMat.SetFloat("_Intensity", 0.83f);
             return glowMat;
         }
 
-        static Material numeralMat5;
-        static Material SpriteMat(Style s, out Texture2D tex)
+        static Material TrailMaterial()
         {
-            // 5장 숫자 탄 = 깨진 시계판 수정 (Codex 그림 c5_numeral_bullet → FX/bullets/dial5, 2026-11-20 사용자: 시계 숫자 탄막 아쉬움)
-            if (s == Style.Numeral && Ch5)
-            {
-                var t5 = Resources.Load<Texture2D>("FX/bullets/dial5");
-                if (t5)
-                {
-                    tex = t5;
-                    if (!numeralMat5) numeralMat5 = new Material(Shader.Find("Sprites/Default")) { mainTexture = t5, renderQueue = 3005 };
-                    return numeralMat5;
-                }
-            }
-            tex = Resources.Load<Texture2D>("FX/bullets/" + TexName(s));
-            if (spriteMats.TryGetValue(s, out var m) && m) return m;
-            m = new Material(Shader.Find("Sprites/Default")) { mainTexture = tex, renderQueue = 3005 };
-            spriteMats[s] = m;
-            return m;
+            if (trailMat) return trailMat;
+            trailMat = new Material(Glow()) { mainTexture = Texture2D.whiteTexture };
+            if (trailMat.HasProperty("_Intensity")) trailMat.SetFloat("_Intensity", 1.46f);
+            return trailMat;
         }
 
-        static Mesh quad;
-        static Mesh Quad()
+        internal static TrailRenderer BuildTrail(Transform parent, Color color, float width, float life)
         {
-            if (quad) return quad;
-            quad = new Mesh { name = "BulletQuad" };
-            quad.vertices = new[] { new Vector3(-0.5f, -0.5f), new Vector3(0.5f, -0.5f), new Vector3(-0.5f, 0.5f), new Vector3(0.5f, 0.5f) };
-            quad.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 1), new Vector2(1, 1) };
-            quad.triangles = new[] { 0, 2, 1, 2, 3, 1 };
-            quad.colors = new[] { Color.white, Color.white, Color.white, Color.white };
-            quad.RecalculateBounds();
-            return quad;
-        }
-
-        static GameObject QuadObj(string name, Transform parent, Material m, Color tint)
-        {
-            var go = new GameObject(name);
+            var go = new GameObject("Trail");
             go.transform.SetParent(parent, false);
-            var mf = go.AddComponent<MeshFilter>();
-            var mesh = Instantiate(Quad());
-            var c = new Color[4]; for (int i = 0; i < 4; i++) c[i] = tint;
-            mesh.colors = c;
-            mf.sharedMesh = mesh;
+            var trail = go.AddComponent<TrailRenderer>();
+            trail.sharedMaterial = TrailMaterial();
+            trail.time = life;
+            trail.widthMultiplier = width;
+            trail.widthCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(0.54f, 0.46f), new Keyframe(1, 0));
+            var gradient = new Gradient();
+            gradient.SetKeys(new[] { new GradientColorKey(Color.Lerp(color, Color.white, 0.34f), 0), new GradientColorKey(color, 1) },
+                new[] { new GradientAlphaKey(0.76f, 0), new GradientAlphaKey(0.38f, 0.46f), new GradientAlphaKey(0f, 1) });
+            trail.colorGradient = gradient;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            trail.receiveShadows = false;
+            trail.minVertexDistance = 0.04f;
+            return trail;
+        }
+
+        internal static Transform BuildGlow(Transform parent, Color tint)
+        {
+            var go = new GameObject("Halo");
+            go.transform.SetParent(parent, false);
+            if (!glowMeshes.TryGetValue(tint, out var mesh) || !mesh)
+            {
+                mesh = Instantiate(GunkataFx.Quad);
+                mesh.name = "Projectile Halo";
+                mesh.colors = new[] { tint, tint, tint, tint };
+                glowMeshes[tint] = mesh;
+            }
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = m;
+            mr.sharedMaterial = Glow();
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             mr.receiveShadows = false;
-            return go;
+            return go.transform;
         }
 
         /// <summary>range > 0이면 그 거리만큼 날아가면 사라짐 (산탄 사거리). hour는 숫자 탄의 시각(1~12)</summary>
@@ -235,18 +220,21 @@ namespace CatTang
             return poolKeys[Mathf.Clamp(chapter, 0, 5)][(int)style];
         }
         TrailRenderer trail;
+        float trailWidth, elasticity;
         TextMesh number;
-        Vector3 spriteScale;
-        Mesh spriteMesh, haloMesh;
+        static float nextAccentAt;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetAccent() => nextAccentAt = 0f;
+
         public static void Prewarm(Style style, int count, int maxCreate = int.MaxValue) => GameObjectPool.Prewarm(Key(style), factory, count, maxCreate);
         public void OnSpawned()
         {
             OnHitPlayer = null; OnBounced = null;
             pierceCover = shootable = mirrored = false; frozenUntil = homing = 0f; bounces = 0;
-            dir = Vector3.zero; speed = damage = dieAt = rangeLeft = born = 0f;
-            sprite.localPosition = Vector3.zero; sprite.localRotation = Quaternion.identity; sprite.localScale = spriteScale;
-            halo.localPosition = Vector3.zero; halo.localRotation = Quaternion.identity; halo.localScale = Vector3.one;
-            if (flip != null) sprR.sharedMaterial = flip[0];
+            dir = launchOffset = Vector3.zero; speed = damage = dieAt = rangeLeft = born = releaseAt = 0f;
+            wasHeld = false;
+            TintBody(bodyRenderer, tint, bodyProperties);
+            trail.widthMultiplier = trailWidth;
             trail.emitting = false; trail.Clear();
         }
         public void OnDespawned()
@@ -255,8 +243,6 @@ namespace CatTang
             OnHitPlayer = null; OnBounced = null;
             trail.emitting = false; trail.Clear();
         }
-        void OnDestroy() { if (spriteMesh) Destroy(spriteMesh); if (haloMesh) Destroy(haloMesh); }
-
         public static EnemyProjectile Spawn(Vector3 pos, Vector3 dir, float speed, float damage, float range = 0, Style style = Style.Orb, int hour = 0)
         {
             dir.y = 0;
@@ -265,12 +251,21 @@ namespace CatTang
             root.transform.position = pos;
             var p = root.GetComponent<EnemyProjectile>();
             p.dir = dir; p.speed = speed; p.damage = damage;
-            p.born = Time.time; p.dieAt = Time.time + 6f;
+            p.born = p.releaseAt = Time.time; p.dieAt = Time.time + 6f;
             p.rangeLeft = range > 0 ? range : float.MaxValue;
             if (p.number) p.number.text = hours[Mathf.Clamp(hour, 1, 12)];
-            p.trail.Clear(); p.trail.emitting = true;
             p.Face();
+            p.halo.localScale = new Vector3(p.haloSize.x, p.haloSize.y, 1f);
+            p.trail.Clear(); p.trail.emitting = true;
+            p.Accent();
             return p;
+        }
+
+        void Accent()
+        {
+            if ((style != Style.Orb && style != Style.Sniper) || Time.time < nextAccentAt) return;
+            nextAccentAt = Time.time + 0.16f;
+            EffectShadowLight.Projectile(body, tint);
         }
 
         static readonly System.Func<string, GameObject> factory = Create;
@@ -278,92 +273,112 @@ namespace CatTang
         {
             var style = (Style)(key[key.Length - 1] - '0');
             var root = new GameObject(key);
-            var c = ColorOf(style);
-            float len = LengthOf(style);
-            var flip = Ch3Frames(style);
-            if (flip != null) len = style == Style.Orb ? 1.7f : 1.0f;      // 구운 그림은 정사각 캔버스 (내용이 가운데 약 2/3)
-
-            // 빛 번짐 (뒤)
-            float hs = len * (style == Style.Sniper ? 0.55f : style == Style.Pellet ? 1.6f : style == Style.Numeral ? 0.7f : 1.05f);
-            var halo = QuadObj("Halo", root.transform, Glow(), c * 0.8f);
-
-            // 손그림 탄 스프라이트
-            var mat = SpriteMat(style, out var tex);
-            float aspect = flip != null ? 1f : tex ? tex.height / (float)tex.width : 0.3f;
-            var spr = QuadObj("Sprite", root.transform, flip != null ? flip[0] : mat, Color.white);
-            spr.transform.localScale = new Vector3(len, len * aspect, 1);
+            var color = ColorOf(key[key.Length - 3] - '0');
+            var body = BuildBody(root.transform, style);
+            var size = body.GetComponent<MeshFilter>().sharedMesh.bounds.size;
+            float width = style == Style.Numeral ? size.x : Mathf.Max(size.x, size.y);
+            float length = style == Style.Numeral ? size.y : size.z;
+            var halo = BuildGlow(root.transform, new Color(color.r, color.g, color.b, 0.76f));
+            TextMesh number = null;
 
             if (style == Style.Numeral)
             {
-                var t = new GameObject("Numeral");
-                t.transform.SetParent(spr.transform, false);
-                // 시계판은 스프라이트 오른쪽 끝 쪽에 있음
-                t.transform.localPosition = new Vector3(Ch5 ? 0.31f : 0.24f, 0, -0.01f);   // 5장 dial5: 원판이 그림 81% 자리
-                var tm = t.AddComponent<TextMesh>();
+                var label = new GameObject("Numeral");
+                label.transform.SetParent(body.transform, false);
+                label.transform.localPosition = new Vector3(0f, 0f, -0.098f);
+                number = label.AddComponent<TextMesh>();
                 var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                tm.font = font;
-                if (!numeralMat) numeralMat = new Material(font.material) { renderQueue = 3006 };    // 스프라이트(3005) 위에
-                t.GetComponent<MeshRenderer>().sharedMaterial = numeralMat;
-                tm.text = hours[1];
-                tm.fontSize = 64; tm.characterSize = 0.075f; tm.fontStyle = FontStyle.Bold;
-                tm.anchor = TextAnchor.MiddleCenter; tm.color = Ch5 ? Color.white : new Color(0.22f, 0.03f, 0.3f);   // 5장: 어두운 보라 원판 위 흰 숫자
-                t.transform.localScale = new Vector3(1f / len, 1f / (len * aspect), 1) * 0.55f;
+                number.font = font;
+                if (!numeralMat) numeralMat = new Material(font.material) { renderQueue = 3006 };
+                var renderer = label.GetComponent<MeshRenderer>();
+                renderer.sharedMaterial = numeralMat;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                number.text = hours[1];
+                number.fontSize = 64;
+                number.characterSize = 0.055f;
+                number.fontStyle = FontStyle.Bold;
+                number.anchor = TextAnchor.MiddleCenter;
+                number.color = new Color(1f, 0.97f, 0.90f);
             }
 
-            // 짧은 꼬리 (스프라이트에도 꼬리가 그려져 있어 약하게)
-            var tr = root.AddComponent<TrailRenderer>();
-            tr.sharedMaterial = Glow();
-            tr.time = style switch { Style.Sniper => 0.25f, Style.Pellet => 0.06f, _ => 0.12f };
-            tr.widthMultiplier = len * (style == Style.Sniper ? 0.1f : 0.22f);
-            tr.widthCurve = AnimationCurve.Linear(0, 1, 1, 0);
-            var g = new Gradient();
-            g.SetKeys(new[] { new GradientColorKey(c, 0), new GradientColorKey(c, 1) },
-                      new[] { new GradientAlphaKey(0.55f, 0), new GradientAlphaKey(0f, 1) });
-            tr.colorGradient = g;
-            tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            tr.minVertexDistance = 0.05f;
+            float tailLife = style switch { Style.Sniper => 0.20f, Style.Pellet => 0.095f, _ => 0.15f };
+            var tr = BuildTrail(root.transform, color, Mathf.Clamp(width * 0.63f, 0.16f, 0.36f), tailLife);
 
-            var p = root.AddComponent<EnemyProjectile>();
-            p.style = style;
-            p.sprite = spr.transform;
-            p.flip = flip;
-            p.sprR = spr.GetComponent<MeshRenderer>();
-            p.halo = halo.transform;
-            p.haloSize = hs;
-            p.length = len;
-            p.trail = tr;
-            p.spriteScale = spr.transform.localScale;
-            p.number = style == Style.Numeral ? spr.GetComponentInChildren<TextMesh>() : null;
-            p.spriteMesh = spr.GetComponent<MeshFilter>().sharedMesh;
-            p.haloMesh = halo.GetComponent<MeshFilter>().sharedMesh;
+            var projectile = root.AddComponent<EnemyProjectile>();
+            projectile.style = style;
+            projectile.body = body.transform;
+            projectile.bodyRenderer = body;
+            projectile.bodyProperties = new MaterialPropertyBlock();
+            projectile.tint = color;
+            projectile.halo = halo;
+            projectile.haloSize = new Vector2(length * 1.55f, width * 2.25f);
+            projectile.trail = tr;
+            projectile.trailWidth = tr.widthMultiplier;
+            projectile.elasticity = style switch
+            {
+                Style.Numeral => 0f, Style.Orb => 0.39f, Style.Pellet => 0.20f,
+                Style.Sniper => 0.30f, Style.Needle => 0.32f, Style.Ticket => 0.23f, _ => 0.24f,
+            };
+            projectile.number = number;
             return root;
         }
 
-        // 카메라를 보고 눕되, 화면에서 진행 방향으로 머리가 향하게
-        void Face()
+        internal void LaunchVisualFrom(Vector3 muzzle)
         {
+            launchOffset = muzzle - transform.position;
+            Face(visualOffset: launchOffset);
+            trail.Clear();
+        }
+
+        void Face(Vector3 visualOffset = default, float roll = 0f)
+        {
+            var at = transform.position + visualOffset;
+            body.position = at;
+            trail.transform.position = at;
             var cam = Camera.main;
+            var heading = dir.sqrMagnitude > 0.001f ? dir : Vector3.forward;
+            body.rotation = style == Style.Numeral && cam ? cam.transform.rotation
+                : Quaternion.LookRotation(heading) * Quaternion.AngleAxis(roll, Vector3.forward);
+            halo.position = at;
             if (!cam) return;
             var fwd = cam.transform.forward;
-            var right = flip != null && style == Style.Orb ? cam.transform.right : Vector3.ProjectOnPlane(dir, fwd);   // 구운 보석 구슬은 고리가 늘 같은 쪽으로 기울게 세워 둠
+            var right = style == Style.Numeral ? cam.transform.right : Vector3.ProjectOnPlane(heading, fwd);
             if (right.sqrMagnitude < 0.0001f) right = cam.transform.right;
             right.Normalize();
-            var up = Vector3.Cross(fwd, right);
-            var rot = Quaternion.LookRotation(fwd, up);
-            sprite.rotation = rot;
-            halo.rotation = rot;
-            // 빛 번짐은 탄 몸통(앞쪽) 중심에
-            halo.position = transform.position + right * length * (style == Style.Sniper ? 0.3f : 0.15f) - fwd * 0.02f;
+            halo.rotation = Quaternion.LookRotation(fwd, Vector3.Cross(fwd, right));
+            halo.position = at - fwd * 0.03f;
         }
 
         void LateUpdate()
         {
-            Face();
-            float pulse = 1f + 0.1f * Mathf.Sin((Time.time - born) * 32f);
-            if (halo) halo.localScale = Vector3.one * haloSize * pulse;
-            // 구체 · 시계판은 살짝 출렁, 바늘은 떨림
-            if (flip != null) { if (sprR) sprR.sharedMaterial = flip[(int)((Time.time - born) * 20f) % flip.Length]; }
-            else if (style == Style.Orb && sprite) sprite.localScale = new Vector3(length, sprite.localScale.y, 1) * (1f + 0.06f * Mathf.Sin((Time.time - born) * 40f));
+            float now = Time.time;
+            float age = now - born;
+            bool held = now < frozenUntil;
+            if (held != wasHeld)
+            {
+                if (!held) { releaseAt = now; Accent(); }
+                trail.emitting = !held;
+                wasHeld = held;
+            }
+            float release = now - releaseAt;
+            // Stretch along the flight axis, then rebound slightly before the silhouette settles.
+            float charge = Mathf.Lerp(-0.52f, 1f, WeaponSwingRig.Ease(release / 0.032f));
+            float rebound = Mathf.Sin(Mathf.PI * Mathf.InverseLerp(0.076f, 0.20f, release)) * 0.26f;
+            float stretch = held ? -0.40f * elasticity
+                : (charge * (1f - WeaponSwingRig.Ease((release - 0.032f) / 0.105f)) - rebound) * elasticity;
+            float pulse = style == Style.Orb ? 1f + (held ? 0.09f : 0.025f) * Mathf.Sin(age * 23f) : 1f;
+            float along = 1f + stretch;
+            float across = 1f - stretch * 0.55f;
+            // Blend from the rendered muzzle onto the existing collision path.
+            float converge = Mathf.Max(0.13f, Mathf.Abs(Vector3.Dot(launchOffset, dir)) / Mathf.Max(1f, speed) * 1.70f);
+            var offset = launchOffset * (1f - WeaponSwingRig.Ease(age / converge));
+            if (held) offset += Vector3.right * (Mathf.Sin(now * 70f) * 0.02f);
+            float roll = style switch { Style.Orb => age * 125f, Style.Ticket => Mathf.Sin(age * 24f) * 15f, _ => 0f };
+            Face(offset, roll);
+            body.localScale = new Vector3(across, across, along) * pulse;
+            halo.localScale = new Vector3(haloSize.x * along, haloSize.y * across, 1f) * pulse;
+            trail.widthMultiplier = trailWidth * across;
         }
 
         void Update()
@@ -372,10 +387,8 @@ namespace CatTang
             {
                 // 정지 구역: 제자리에서 살짝 떨림, 사라지는 시각도 멈춘 만큼 미룸
                 dieAt += Time.deltaTime;
-                if (sprite) sprite.localPosition = new Vector3(Mathf.Sin(Time.time * 70f) * 0.02f, 0, 0);
                 return;
             }
-            if (sprite && sprite.localPosition != Vector3.zero) sprite.localPosition = Vector3.zero;
             float step = speed * Time.deltaTime;
             if (homing > 0)
             {
@@ -383,7 +396,7 @@ namespace CatTang
                 if (pt && pt.health.Alive)
                 {
                     var want = Effects.Flat(pt.transform.position - transform.position);
-                    if (want.sqrMagnitude > 0.01f) { dir = Vector3.RotateTowards(dir, want.normalized, homing * Mathf.Deg2Rad * Time.deltaTime, 0); Face(); }
+                    if (want.sqrMagnitude > 0.01f) dir = Vector3.RotateTowards(dir, want.normalized, homing * Mathf.Deg2Rad * Time.deltaTime, 0);
                 }
             }
             // 3장 떠다니는 거울 조각: 한 번 튕겨 냄 (판에 닿은 자리에서 꺾여 남은 거리를 감)
@@ -395,8 +408,10 @@ namespace CatTang
                     mirrored = true;
                     dir = ms.Reflect(dir);
                     transform.position = mp + dir * 0.05f;
+                    launchOffset = Vector3.zero;
+                    releaseAt = Time.time;
                     rangeLeft -= mt;
-                    ms.OnBounce(mp, ColorOf(style), false);
+                    ms.OnBounce(mp, tint, false);
                     Face();
                     if (bounces > 0) { bounces--; OnBounced?.Invoke(this, mp); }
                     return;
@@ -412,7 +427,9 @@ namespace CatTang
                     var n = Effects.Flat(hit.normal);
                     dir = Effects.Flat(Vector3.Reflect(dir, n.sqrMagnitude > 1e-4f ? n.normalized : -dir)).normalized;
                     transform.position = hit.point + dir * 0.15f + Vector3.up * (transform.position.y - hit.point.y);
-                    Spark(hit.point, 0.8f, ColorOf(style));
+                    launchOffset = Vector3.zero;
+                    releaseAt = Time.time;
+                    Spark(hit.point, 0.8f, tint);
                     Face();
                     OnBounced?.Invoke(this, hit.point);
                     return;
@@ -445,8 +462,8 @@ namespace CatTang
         void Pop(Vector3 at, bool quiet = false)
         {
             if (!enabled) return;
-            if (!quiet) Spark(at, style == Style.Pellet ? 0.7f : style == Style.Orb ? 1.4f : 1.0f, ColorOf(style));
-            sprite.gameObject.SetActive(false); halo.gameObject.SetActive(false);
+            if (!quiet) Spark(at, style == Style.Pellet ? 0.7f : style == Style.Orb ? 1.4f : 1.0f, tint);
+            body.gameObject.SetActive(false); halo.gameObject.SetActive(false);
             enabled = false;
             All.Remove(this);
             trail.emitting = false;

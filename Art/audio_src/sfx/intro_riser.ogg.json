@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "D:\\pro\\Cat_Tang\\Art\\audio_src\\sfx\\intro_riser_2.wav",
+  "source": {
+    "kind": "generate",
+    "title": "intro_riser",
+    "original_idea": "11:59 game SFX: intro_riser",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, cinematic tension riser, a rising whoosh with a ticking clock accelerating underneath, building suspense, air, brass clock ticks, low strings, cinematic, wide stereo.",
+    "sound_fields": {
+      "source": "cinematic tension riser",
+      "action": "a rising whoosh with a ticking clock accelerating underneath, building suspense",
+      "material": "air, brass clock ticks, low strings",
+      "space": "cinematic, wide stereo"
+    },
+    "bpm": null,
+    "seconds": 1.8,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "intro_riser_2.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-22T05:08:58",
+    "backend": "sa3-torch",
+    "model": "sm-sfx + same-s",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-22T05:09:13",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 1.8,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (-6.63 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.3525,
+  "file": "intro_riser.ogg"
+}

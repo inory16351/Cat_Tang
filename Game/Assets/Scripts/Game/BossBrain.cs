@@ -75,6 +75,8 @@ namespace CatTang
         }
 
         protected abstract void Setup();
+        /// <summary>등장 연출 뒤 첫 패턴까지 최소 s초</summary>
+        public void HoldPatterns(float s) => nextPatternAt = Mathf.Max(nextPatternAt, Time.time + s);
         protected void Add(string id, Reach reach, System.Func<IEnumerator> run, System.Func<bool> allowed = null, string anim = "Attack") =>
             patterns.Add(new BossPattern { id = id, reach = reach, run = run, allowed = allowed, anim = anim });
 

@@ -68,7 +68,7 @@ namespace CatTang
     {
         public override float NearDist => 5f;
         public override float PatternGap => 0.9f;
-        public override string DisplayName => "진자 집행관";
+        public override string DisplayName => "기로틴";
 
         // 전광석화 점멸
         public const float ChainEveryMin = 3.0f, ChainEveryMax = 4.5f;   // 패턴 사이 점멸 이동 간격
@@ -219,7 +219,7 @@ namespace CatTang
             if (dir.sqrMagnitude < 0.01f) dir = -face;
             dir.Normalize();
             Glitch.Ghost(model, at, T(AmbushTell));
-            Telegraph.Sector(at, dir, AmbushRange, AmbushHalf, T(AmbushTell), Telegraph.Danger);
+            Telegraph.Sector(at, dir, AmbushRange, AmbushHalf, T(AmbushTell), Telegraph.Danger).NoLaser();
             Sfx.Play("e4m_glitch", 0.7f, 0.05f, 2);
             yield return Glitch.Shake(model, T(AmbushTell) * 0.6f);
             Glitch.Show(model, false);
@@ -237,12 +237,13 @@ namespace CatTang
         {
             Sfx.Play("e4_scythe", 0.8f, 0.05f, 2);
             CameraFollow.Shake(0.12f);
+            MeleeReachFx.Sweep(transform.position, dir, range, half, BladeStreak.Ch4Base);
             BladeRibbon(0.35f);   // (2026-11-20 사용자) 4장 적처럼 무기 궤적 = 레이저 리본 (예전: 판 그림 FxBurst.Slash)
             var p = P;
             if (p && p.health.Alive)
             {
                 var to = Effects.Flat(p.transform.position - transform.position);
-                if (to.magnitude <= range && Vector3.Angle(dir, to) <= half) { p.health.TakeDamage(dmg); p.health.Knockback(dir * 5f); }
+                if (to.magnitude <= range && Vector3.Angle(dir, to) <= half) { p.health.TakeDamage(dmg, hitStop: 0.036f); p.health.Knockback(dir * 5f); }
             }
             PropHit.Area(transform.position + dir * range * 0.5f, range * 0.5f, dmg);
             yield return null;
@@ -253,7 +254,7 @@ namespace CatTang
         IEnumerator CrossSlash()
         {
             var d = ToPlayer();
-            Telegraph.Sector(transform.position, d, CrossRange, CrossHalf, T(CrossTell), Telegraph.Danger);
+            Telegraph.Sector(transform.position, d, CrossRange, CrossHalf, T(CrossTell), Telegraph.Danger).NoLaser();
             float end = Time.time + T(CrossTell);
             while (Time.time < end) { Face(d, 12f); yield return null; }
             yield return Slash(d, CrossRange, CrossHalf, CrossDmg);

@@ -1,0 +1,31 @@
+{
+  "kind": "generate",
+  "title": "intro_whoosh",
+  "original_idea": "11:59 game SFX: intro_whoosh",
+  "audio_type": "sfx",
+  "prompt": "",
+  "prompt_used": "TrackType: SFX, fast camera whip pan, a quick airy swish whoosh with a short tail, air, close, dry, cinematic transition.",
+  "sound_fields": {
+    "source": "fast camera whip pan",
+    "action": "a quick airy swish whoosh with a short tail",
+    "material": "air",
+    "space": "close, dry, cinematic transition"
+  },
+  "bpm": null,
+  "seconds": 0.6,
+  "negative_prompt": null,
+  "cfg": 1.0,
+  "steps": 8,
+  "variations": 2,
+  "seed": 1159,
+  "candidate": 1,
+  "file": "intro_whoosh_v1.wav",
+  "sample_rate": 44100,
+  "bit_depth": 24,
+  "created": "2026-11-22T05:09:16",
+  "backend": "sa3-torch",
+  "model": "sm-sfx + same-s",
+  "peak_dbfs": -1.0,
+  "raw_peak_dbfs": 0.0,
+  "ceiling_gain_db": -1.0
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "D:\\pro\\Cat_Tang\\Art\\audio_src\\sfx\\intro_flip.wav",
+  "source": {
+    "kind": "generate",
+    "title": "intro_flip",
+    "original_idea": "11:59 game SFX: intro_flip",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, split-flap departure board, rapid mechanical flap clatter settling into place, plastic flaps, small motor, close, dry.",
+    "sound_fields": {
+      "source": "split-flap departure board",
+      "action": "rapid mechanical flap clatter settling into place",
+      "material": "plastic flaps, small motor",
+      "space": "close, dry"
+    },
+    "bpm": null,
+    "seconds": 1.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "intro_flip.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-22T05:09:27",
+    "backend": "sa3-torch",
+    "model": "sm-sfx + same-s",
+    "peak_dbfs": -6.29,
+    "raw_peak_dbfs": -6.29,
+    "ceiling_gain_db": 0.0
+  },
+  "created": "2026-11-22T05:09:27",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 0.264,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+5.26 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.0977,
+  "file": "intro_flip.ogg"
+}

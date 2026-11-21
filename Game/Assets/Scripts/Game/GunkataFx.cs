@@ -164,6 +164,8 @@ namespace CatTang
             FxEffect.Spawn("FX_Explosion", p, Quaternion.identity, radius / 2f, tint);
             float r = Mathf.Max(0.5f, radius);
             var up = Vector3.up;
+            EffectShadowLight.Flash(p + up * Mathf.Clamp(r * 0.48f, 0.7f, 1.7f), tint ?? new Color(1f, 0.64f, 0.29f),
+                Mathf.Clamp(r * 2.75f, 3.4f, 8.2f), Mathf.Clamp(r * 4.1f, 5.0f, 13.5f), 0.29f);
             // 1) 섬광 덩어리: 한가운데에서 하얗게 펑
             T(FxMesh.Spawn(FxMeshes.Ball(Random.Range(0, 3)), spikeMat, p + up * r * 0.35f, Random.rotation,
                 Vector3.one * r * 1.25f, 0.32f, 0, up * r * 0.6f, FxMesh.Kind.Core));

@@ -67,7 +67,7 @@ namespace CatTang
     {
         public override float NearDist => 5f;
         public override float PatternGap => 1.1f;
-        public override string DisplayName => "태엽 역장";
+        public override string DisplayName => "컨덕터 반";
 
         public const float RedEvery = 25f, YellowTime = 1f, RedTime = 3f, RedDmg = 0.2f;
         float nextRed;
@@ -466,7 +466,7 @@ namespace CatTang
     {
         public override float NearDist => 6f;
         public override float PatternGap => 1.3f;
-        public override string DisplayName => "멈춘 기관차 거인";
+        public override string DisplayName => "로코모스";
 
         const float RingEvery = 5f, RingSpeed = 4.5f, RingDmg = 12f, RingLayerGap = 0.6f;   // 2026-11-18 사용자: 너무 잦고 빠름 → 5초마다 · 4.5m/초 (겹 사이 0.6초 = 약 2.7m 유지)
         const int RingLayers = 3;
@@ -723,7 +723,7 @@ namespace CatTang
             if (!hp.Alive) yield break;
             if (departHit)
             {
-                BossFx.Toast("출발 저지! 기관차 거인 기절");
+                BossFx.Toast("출발 저지! 로코모스 기절");
                 FxBurst.Spawn(transform.position + Vector3.up * 4f + transform.forward * 1.2f, 3f, FxBurst.Kind.Gold, new Color(1f, 0.85f, 0.35f));
                 CameraFollow.Shake(0.18f);
                 hp.ApplyStun(DepartStun);

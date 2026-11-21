@@ -51,6 +51,10 @@ Shader "CatTang/Toon"
         _OuterOutlineWidth ("Outer Outline Width (px, 0 = 끔)", Range(0, 12)) = 0
         _OuterStencilRef ("Outer Outline Stencil Ref", Int) = 0
         [Toggle] _OutlineVertexAlpha ("Vertex Alpha = Width", Float) = 0
+        [HideInInspector] _HitWhite ("Hit White", Range(0, 1)) = 0
+        [HideInInspector] _SwingGlow ("Swing Glow", Color) = (0, 0, 0, 0)
+        [HideInInspector] _SwingGlowStart ("Swing Glow Start", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _SwingGlowEnd ("Swing Glow End", Vector) = (0, 0, 0, 0)
         [HideInInspector] _BrawlActor ("Brawl Actor (1 = 캐릭터 · 적)", Float) = 0
     }
 
@@ -92,6 +96,9 @@ Shader "CatTang/Toon"
             half _OuterOutlineWidth;
             half _RecolorAmount, _RecolorFrom, _RecolorWidth, _RecolorHue, _RecolorSat, _RecolorVal;
             half _BrawlActor;
+            half _HitWhite;
+            half4 _SwingGlow;
+            float4 _SwingGlowStart, _SwingGlowEnd;
         CBUFFER_END
 
         // 브롤 스타즈풍 시험 모드 스위치 (전역, Shader.SetGlobalFloat). 0 = 원래 모습
@@ -190,6 +197,22 @@ Shader "CatTang/Toon"
                 return lerp(shade2, lerp(shade1, albedo, lit), deep);
             }
 
+            half3 SwingEmission(half3 surface, float3 positionWS, half facing)
+            {
+                if (_SwingGlow.a <= 0.0h) return surface;
+                float3 blade = _SwingGlowEnd.xyz - _SwingGlowStart.xyz;
+                float3 rel = positionWS - _SwingGlowStart.xyz;
+                float lengthSq = max(dot(blade, blade), 1e-4);
+                float u = dot(rel, blade) / lengthSq;
+                float3 offset = rel - saturate(u) * blade;
+                half mask = (1.0h - smoothstep(0.026, 0.16, dot(offset, offset) / lengthSq))
+                          * smoothstep(-0.08, 0.15, u);
+                half rim = pow(1.0h - saturate(facing), 2.0h);
+                half glow = saturate(_SwingGlow.a * mask * 1.36h);
+                half3 heated = surface * 0.38h + _SwingGlow.rgb * (0.90h + rim * 1.55h);
+                return lerp(surface, heated, glow);
+            }
+
             // 브롤 스타즈풍: 그림자 1단(같은 색상을 어둡게) · 선명한 단색 면 · 작고 단단한 림 · 하이라이트. 배경은 한 톤 낮고 무늬를 뭉갬
             half4 FragBrawl(Varyings i)
             {
@@ -238,6 +261,8 @@ Shader "CatTang/Toon"
                 // 채도 살짝 (2026-11-17 사용자: 파스텔 톤이라 전체가 뿌옇다 → 밝기 올리기 · 배경 뭉개기를 줄이고 채도만 조금. 대비 늘리기는 빛 세기 > 1이라 과해져 뺌)
                 half lum = dot(color, half3(0.299h, 0.587h, 0.114h));
                 color = max(0, lerp(lum.xxx, color, 1.06h));
+                color = SwingEmission(color, i.positionWS, dot(N, V));
+                color = lerp(color, half3(1.16h, 1.16h, 1.16h), _HitWhite);
                 color = MixFog(color, i.fogFactor);
                 return half4(color, 1);
             }
@@ -293,6 +318,8 @@ Shader "CatTang/Toon"
                 half rim = smoothstep(_RimThreshold - 0.02h, _RimThreshold + 0.02h, fresnel) * step(0.05h, light);
                 color += _RimColor.rgb * rim * _RimStrength;
 
+                color = SwingEmission(color, i.positionWS, dot(N, V));
+                color = lerp(color, half3(1.16h, 1.16h, 1.16h), _HitWhite);
                 color = MixFog(color, i.fogFactor);
                 return half4(color, 1);
             }

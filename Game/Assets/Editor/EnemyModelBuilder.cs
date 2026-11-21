@@ -134,6 +134,7 @@ namespace CatTang.EditorTools
             { "Ch3_Blade", ("ch3m_bladeslash", 1.45f, null, 0, false) },
             { "Ch3_Knight", ("ch3m_knightbash", 1.2f, null, 0, false) },
             { "Ch3_Trickster", ("ch3m_trickflick", 0.6f, null, 0, false) },
+            { "Ch3_MidBoss", ("ch3m_trickflick", 0.6f, "ch3m_trickbow", 0.9f, false) },   // 일루시오: 카드 튕기기 · 인사 (분신술사 모션을 빌림)
             { "Ch4_Soldier", ("ch4m_soldiershot", 0.8f, null, 0, false) },
             { "Ch4_Ringer", ("ch4m_ringerring", 1.0f, null, 0, false) },
             { "Ch4_Dancer", ("ch4m_dancerspin", 0.6f, null, 0, true) },
@@ -172,31 +173,33 @@ namespace CatTang.EditorTools
             { "Ch1_Outlaw_Plus", new[] { ("Burst", "ch1m_outlawfan", 1.05f, false), ("Dash", "ch1m_outlawsidedash", 0.4f, false) } },
             { "Ch1_Brute", new[] { ("Spin", "ch1m_brutespin", 1.0f, false) } },
             { "Ch1_Brute_Plus", new[] { ("Spin", "ch1m_brutespin", 1.0f, false) } },
-            { "Ch1_MidBoss", new[] { ("SpinFire", "ch1m_hunterspinfire", 2.4f, false), ("Snipe", "ch1m_huntersnipe", 1.9f, false), ("Tackle", "ch1m_huntertackle", 1.6f, false), ("Summon", "ch1m_hunterwhistle", 0.9f, false) } },
-            { "Ch1_Boss", new[] { ("Puddles", "ch1m_giantdrip", 1.2f, false), ("Numbers", "ch1m_giantcast", 1.7f, false), ("Rewind", "ch1m_giantrewind", 1.8f, false), ("SlowZone", "ch1m_giantpress", 0.9f, false) } },
-            { "Ch2_MidBoss", new[] { ("Schedule", "ch2m_masterschedule", 2.9f, false), ("Whistle", "ch2m_masterwhistle", 1.3f, false), ("Call", "ch2m_mastercall", 0.9f, false) } },
-            { "Ch2_Boss", new[] { ("Vent", "ch2m_giantvent", 1.6f, false), ("Heave", "ch2m_giantheave", 1.5f, false), ("CoachSpin", "ch2m_giantcoachspin", 1.4f, false) } },
+            { "Ch1_MidBoss", new[] { ("Intro", "ch1m_hunterintro", 0, false), ("SpinFire", "ch1m_hunterspinfire", 2.4f, false), ("Snipe", "ch1m_huntersnipe", 1.9f, false), ("Tackle", "ch1m_huntertackle", 1.6f, false), ("Summon", "ch1m_hunterwhistle", 0.9f, false) } },
+            { "Ch1_Boss", new[] { ("Intro", "ch1m_giantintro", 0, false), ("Puddles", "ch1m_giantdrip", 1.2f, false), ("Numbers", "ch1m_giantcast", 1.7f, false), ("Rewind", "ch1m_giantrewind", 1.8f, false), ("SlowZone", "ch1m_giantpress", 0.9f, false) } },
+            { "Ch2_MidBoss", new[] { ("Intro", "ch2m_masterintro", 0, false), ("Schedule", "ch2m_masterschedule", 2.9f, false), ("Whistle", "ch2m_masterwhistle", 1.3f, false), ("Call", "ch2m_mastercall", 0.9f, false) } },
+            { "Ch2_Boss", new[] { ("Intro", "ch2m_giantintro", 0, false), ("Vent", "ch2m_giantvent", 1.6f, false), ("Heave", "ch2m_giantheave", 1.5f, false), ("CoachSpin", "ch2m_giantcoachspin", 1.4f, false) } },
             { "Ch3_Mage", new[] { ("FlingR", "ch3m_mageflingr", 0.4f, false), ("FlingL", "ch3m_mageflingl", 0.4f, false) } },
             { "Ch3_Blade", new[] { ("Dive", "ch3m_bladedive", 0.45f, false), ("Emerge", "ch3m_bladeemerge", 1.4f, false) } },
             { "Ch3_Knight", new[] { ("Stagger", "ch3m_knightstagger", 0.7f, false) } },
             { "Ch3_Trickster", new[] { ("Bow", "ch3m_trickbow", 0.9f, false) } },
+            { "Ch3_MidBoss", new[] { ("Intro", "ch3m_illusiointro", 0, false), ("Bow", "ch3m_trickbow", 0.9f, false), ("CardFan", "ch3m_illusiocardfan", 0, false), ("SwordBox", "ch3m_illusioswordbox", 0, false),
+                                    ("Doves", "ch3m_illusiodoves", 0, false), ("MirrorBox", "ch3m_illusiomirrorbox", 0, false), ("Summon", "ch3m_illusiosummon", 0, false), ("Conjure", "ch3m_illusioconjure", 0, false) } },
             { "Ch4_Soldier", new[] { ("Shot", "ch4m_soldiershot", 0.8f, false), ("Drum", "ch4m_soldierdrum", 1.25f, false), ("Volley", "ch4m_soldiervolley", 1.25f, false), ("Bayonet", "ch4m_soldierbayonet", 1.45f, false) } },
             { "Ch4_Ringer", new[] { ("Ring", "ch4m_ringerring", 1.0f, false), ("RingDouble", "ch4m_ringerdouble", 1.6f, false) } },
             { "Ch4_Dancer", new[] { ("Rise", "ch4m_dancerrise", 0.4f, false), ("Spin", "ch4m_dancerspin", 0.6f, true), ("Finale", "ch4m_dancerfinale", 0.7f, false) } },
             { "Ch4_Assassin", new[] { ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
             { "Ch4_Knight", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
             // 4장 보스 (Hyper3D, 2026-11-20): 집행관 · 시침 = 진자 기사 모션, 분침 = 초침 자객 모션을 빌려 씀
-            { "Ch4_Executioner", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
-            { "Ch4_HourHand", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
-            { "Ch4_MinuteHand", new[] { ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
+            { "Ch4_Executioner", new[] { ("Intro", "ch4m_execintro", 0, false), ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
+            { "Ch4_HourHand", new[] { ("Intro", "ch4m_hourintro", 0, false), ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
+            { "Ch4_MinuteHand", new[] { ("Intro", "ch4m_minuteintro", 0, false), ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
             { "Ch4_Repairman", new[] { ("Wind", "ch4m_repairwind", 0.95f, false), ("Toss", "ch4m_repairtoss", 0.65f, false) } },
             { "Ch5_Gunner", new[] { ("Shot", "ch5m_gunnershot", 0.85f, false) } },
             { "Ch5_Witch", new[] { ("Cast", "ch5m_witchcast", 0.95f, false), ("Link", "ch5m_witchlink", 0.65f, false) } },
             { "Ch5_Giant", new[] { ("Slam", "ch5m_giantslam", 1.45f, false), ("Dash", "ch5m_giantdash", 1.5f, false) } },
             { "Ch5_Assassin", new[] { ("Dive", "ch5m_assassindive", 0.45f, false), ("Emerge", "ch5m_assassinemerge", 1.4f, false), ("Slash", "ch5m_assassinslash", 0.9f, false), ("Breath", "ch5m_assassinbreath", 1.0f, false) } },
             { "Ch5_Caster", new[] { ("Open", "ch5m_casteropen", 0.6f, false), ("Lob", "ch5m_casterlob", 0.55f, false) } },
-            { "Ch5_Boss", new[] { ("ReapWind", "ch5m_bossreapwind", 1.1f, false), ("ReapDash", "ch5m_bossreapdash", 1.05f, false), ("Reap", "ch5m_bossreap", 1.4f, false), ("Cast", "ch5m_bosscast", 1.1f, false), ("Spear", "ch5m_bossspear", 1.2f, false) } },
-            { "Ch5_LordOfTime", new[] { ("ReapWind", "ch5m_bossreapwind", 1.1f, false), ("ReapDash", "ch5m_bossreapdash", 1.05f, false), ("Reap", "ch5m_bossreap", 1.4f, false), ("Cast", "ch5m_bosscast", 1.1f, false), ("Spear", "ch5m_bossspear", 1.2f, false) } },
+            { "Ch5_Boss", new[] { ("Intro", "ch5m_bossintro", 0, false), ("ReapWind", "ch5m_bossreapwind", 1.1f, false), ("ReapDash", "ch5m_bossreapdash", 1.05f, false), ("Reap", "ch5m_bossreap", 1.4f, false), ("Cast", "ch5m_bosscast", 1.1f, false), ("Spear", "ch5m_bossspear", 1.2f, false) } },
+            { "Ch5_LordOfTime", new[] { ("Intro", "ch5m_bossintro", 0, false), ("ReapWind", "ch5m_bossreapwind", 1.1f, false), ("ReapDash", "ch5m_bossreapdash", 1.05f, false), ("Reap", "ch5m_bossreap", 1.4f, false), ("Cast", "ch5m_bosscast", 1.1f, false), ("Spear", "ch5m_bossspear", 1.2f, false) } },
         };
         // 달리기 대신 쓸 전용 걷기 (없으면 고양이 run)
         static readonly Dictionary<string, string> Walks = new()
@@ -426,6 +429,8 @@ namespace CatTang.EditorTools
         static readonly (string name, float size)[] Models3 =
         {
             ("Ch3_Shooter", 2.6f), ("Ch3_Mage", 2.5f), ("Ch3_Blade", 2.7f), ("Ch3_Knight", 2.95f), ("Ch3_Trickster", 2.5f),
+            // 중간 보스 일루시오 (2026-11-22 사용자: 하이퍼 3D로 다시): ChatGPT 정면 A자 원화 → Hyper3D Gen-2.5 + 자동 리깅(human) → Ch3_MidBoss.fbx
+            ("Ch3_MidBoss", 3.6f),
         };
 
         [MenuItem("CatTang/3장 적 프리팹 만들기 (Tripo)")]
@@ -458,6 +463,7 @@ namespace CatTang.EditorTools
                         imp.SaveAndReimport();
                     }
                     Build(n, h, 0f, 'h', OutDir, n);
+                    if (n == "Ch3_Blade") MirrorBladeMesh.Apply();
                 }
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
@@ -1304,6 +1310,8 @@ namespace CatTang.EditorTools
                 // 3장 섬 가장자리는 밑면이 바닥 아래로 늘어져 있어 원래 원점(테두리 바닥 = 0) 그대로
                 float y = outName == "Floor" ? b.max.y - 0.02f : KeepOrigin.Contains(name) ? inst.transform.position.y : b.min.y;
                 inst.transform.localPosition -= new Vector3(b.center.x, y, b.center.z);
+                // The final boss's animated hem sits higher than its imported bounds.
+                if (outName == "Ch5_LordOfTime") inst.transform.localPosition += Vector3.down * 2.38f;
                 // 마을 신비 소품: 흙 받침 · 둘레 돌이 땅과 따로 놀아서(2026-11-18 사용자: 균일화) 받침 윗면까지 땅에 묻음 → 식물이 땅에서 바로 자람
                 if (SinkBed.Contains(name)) { float top = SubmeshTop(inst, "earth"); if (top > 0f) inst.transform.localPosition -= new Vector3(0f, top, 0f); }
             }

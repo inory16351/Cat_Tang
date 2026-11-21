@@ -74,6 +74,7 @@ namespace CatTang
             if ((!hour || !hour.Alive) && (!minute || !minute.Alive)) { Destroy(gameObject); return; }
             var p = P;
             if (!p || !p.health.Alive) return;
+            if (BossIntro.Playing) { nextStar = Mathf.Max(nextStar, Time.time + 1f); return; }
             if (Time.time >= nextStar)
             {
                 nextStar = Time.time + (Phase2 ? StarEvery2 : StarEvery);
@@ -193,7 +194,7 @@ namespace CatTang
                 if (!needTarget) { done++; FxBurst.Spawn(targets[done - 1].transform.position + Vector3.up, 1.6f, FxBurst.Kind.Gold, Color.white); targets[done - 1].gameObject.SetActive(false); }
             }
             needTarget = null;
-            if (done >= n) { BossFx.Toast("성공 — 쌍둥이 기절!"); StunBoth(); yield return new WaitForSeconds(0.5f); }
+            if (done >= n) { BossFx.Toast("성공 — 크로노 & 템포 기절!"); StunBoth(); yield return new WaitForSeconds(0.5f); }
             else
             {
                 // 실패: 남은 표적마다 바늘 낙하
@@ -316,7 +317,7 @@ namespace CatTang
                 yield return null;
             }
             int left = gearHour.Count - gearDone.Count;
-            if (left == 0) { BossFx.Toast("문자판이 멈췄다 — 쌍둥이 기절!"); StunBoth(); }
+            if (left == 0) { BossFx.Toast("문자판이 멈췄다 — 크로노 & 템포 기절!"); StunBoth(); }
             else { CameraFollow.Shake(0.25f); HurtFrac(0.12f * left); }
             gearHour.Clear(); gearDone.Clear();
             yield return new WaitForSeconds(0.5f);
@@ -339,7 +340,7 @@ namespace CatTang
         public float HpFrac => hp ? hp.hp / Mathf.Max(1f, hp.maxHp) : 0;
         public override float NearDist => isHour ? 6f : 5f;
         public override float PatternGap => (isHour ? 1.4f : 1.0f) / (rage ? 1.2f : 1f);
-        public override string DisplayName => isHour ? "시침" : "분침";
+        public override string DisplayName => isHour ? "크로노" : "템포";
         TwinDirector D => TwinDirector.Inst;
 
         // 수치 (기획서)
@@ -426,39 +427,51 @@ namespace CatTang
         WeaponSwingRig rig;
         WeaponSwingRig Rig => rig ? rig : rig = GetComponent<WeaponSwingRig>();
 
-        // 내려찍기 (2026-11-20 사용자: 거대한 무기를 휘두르는 압도적인 느낌): 대검을 머리 뒤로 천천히 끌어 올림(몸을 젖힘) → 꼭대기에서 멈칫 →
-        // 170° 수직 호로 0.16초 만에 내려찍음 (처음이 가장 빠름) → 칼끝이 바닥에 닿는 순간 히트스톱 · 큰 흔들림 · 충격 고리 → 길 따라 바닥이 차례로 터짐 → 박힌 채 빈틈
+        // 대검이 떨어지며 가속하고, 칼끝의 마지막 자세에서 충격과 땅 파동이 시작된다.
         IEnumerator Slam()
         {
             var d = ToPlayer();
-            Telegraph.Lane(transform.position, d, SlamLen, SlamW, T(SlamTell), Telegraph.Danger);
+            var origin = transform.position;
+            float tell = T(SlamTell);
+            Telegraph.Lane(origin, d, SlamLen, SlamW, tell, Telegraph.Danger).NoLaser();
             transform.rotation = Quaternion.LookRotation(d);
-            float act = 0.32f, hold = 0.12f, tell = T(SlamTell);   // (사용자: 휘두르기 전체 조금 느리게)
+            float act = Mathf.Min(0.32f, tell * 0.49f), pause = Mathf.Min(0.12f, tell * 0.2f);
             var r = Rig;
+            bool contacted = false;
+
+            void Contact()
+            {
+                if (contacted || !hp.Alive || hp.Stunned) return;
+                contacted = true;
+                var tip = r && !r.BodyOnly ? r.TipWorld : origin + d * 5f;
+                if (r) r.Impact(tip, 1.6f, StylizedFx.BlastRed); else CameraFollow.Shake(0.28f);
+                Upheaval.Spawn(tip, 1.5f, Random.Range(0f, 360f), 0.9f);
+                Sfx.Play("e5_giant_slam", 1f, 0.05f, 2);
+                var p = P;
+                if (p && p.health.Alive && Telegraph.InLane(p.transform.position, origin, d, SlamLen, SlamW))
+                    p.health.TakeDamage(SlamDmg);
+                SlamCrack(origin, d);
+            }
+
             if (r) r.Play(new WeaponSwingRig.Swing
             {
-                axis = Vector3.right, from = new Vector3(0.18f, 0.6f, -0.78f), sweep = 168f,
-                wind = Mathf.Max(0.15f, tell - act - hold), windHold = hold, act = act, actPow = 3f,
-                hold = T(SlamStuck) * 0.8f, rec = 0.55f, leanBack = 14f, leanFwd = 16f, lunge = 0.9f, streak = 1f,
+                axis = Vector3.right, from = new Vector3(0.18f, 0.6f, -0.78f), sweep = 172f,
+                wind = Mathf.Max(0f, tell - act - pause), windHold = pause, act = act,
+                hold = T(SlamStuck) * 0.8f, rec = 0.55f, leanBack = 17f, leanFwd = 19f, lunge = 0.9f,
+                streak = 1f, reachDrive = 0.7f, accelerateToImpact = true, onHit = Contact,
             });
             float end = Time.time + tell;
             while (Time.time < end) { Face(d, 10f); yield return null; }
-            var origin = transform.position;
-            var tip = r ? r.TipWorld : origin + d * 5f;
-            if (r) r.Impact(tip, 1.6f, StylizedFx.BlastRed); else CameraFollow.Shake(0.28f);
-            Upheaval.Spawn(tip, 1.5f, Random.Range(0f, 360f), 0.9f);              // 칼끝이 박힌 자리 땅이 솟음 (블렌더 바위)
-            Sfx.Play("e5_giant_slam", 1f, 0.05f, 2);
-            var p = P;
-            if (p && p.health.Alive && Telegraph.InLane(p.transform.position, origin, d, SlamLen, SlamW)) p.health.TakeDamage(SlamDmg);
-            StartCoroutine(SlamCrack(origin, d));
-            yield return Wait(T(SlamStuck));                                    // 대검이 박혀 빈틈
+            if (r && r.Swinging && !contacted && hp.Alive && !hp.Stunned) yield return null;
+            if (!contacted) Contact();
+            yield return Wait(T(SlamStuck));
         }
 
-        IEnumerator SlamCrack(Vector3 origin, Vector3 d)
+        void SlamCrack(Vector3 origin, Vector3 d)
         {
             // 날아가는 파동 = 땅을 타고 가는 전용 파동 (2026-11-20 사용자: 칼빛 재활용 말고 돌진 이펙트처럼 땅에 붙어서) + 머리가 지나가는 자리마다 땅 솟음
-            GroundWave.Spawn(origin + d * 4f, origin + d * SlamLen, SlamW, 0.42f, StylizedFx.BlastRed.With(opacity: 0.85f, scale: new Vector2(1.4f, 6f), scroll: new Vector2(-6f, 0)), 1.7f);
-            yield break;
+            MeleeReachFx.Lane(origin, d, SlamLen, SlamW, 0.37f, BladeStreak.Ch4Base);
+            GroundWave.Spawn(origin + d * 1.25f, origin + d * SlamLen, SlamW, 0.42f, StylizedFx.BlastRed.With(opacity: 0.72f, scale: new Vector2(1.4f, 6f), scroll: new Vector2(-6f, 0)), 1.7f);
         }
 
         // 대검 회전: 대검을 오른쪽 뒤로 감고 웅크림 → 1.5바퀴 (몸이 돌고 칼은 원심력에 끌려 늦게 따라옴) → 칼빛이 원을 그림
@@ -474,17 +487,18 @@ namespace CatTang
             {
                 axis = new Vector3(0, 1f, 0.12f), from = new Vector3(0.75f, -0.12f, -0.65f), sweep = -110f,
                 wind = Mathf.Max(0.15f, tell - hold), windHold = hold, act = act, actPow = 2.2f,
-                hold = 0.1f, rec = 0.5f, bodyFollow = 0f, leanBack = 8f, leanFwd = 10f, streak = 1f,
+                hold = 0.1f, rec = 0.5f, bodyFollow = 0f, leanBack = 11f, leanFwd = 13f, streak = 1f, pivotTurn = true, reachDrive = 0.78f,
             });
             yield return Wait(tell);
             Sfx.Play("e4_whirl", 1f, 0.05f, 2);
             float spun = 0;
             for (float t = 0; t < act; t += Time.deltaTime)
             {
-                float u = Mathf.Min(1, (t + Time.deltaTime) / act), e = 1 - Mathf.Pow(1 - u, 2.2f), to = -540f * e;   // 반시계 1.5바퀴, 처음이 가장 빠름
+                float u = Mathf.Min(1, (t + Time.deltaTime) / act), to = -540f * WeaponSwingRig.Heavy(u);   // 반시계 1.5바퀴, 발과 몸이 함께 가속
                 transform.Rotate(0, to - spun, 0); spun = to;
                 yield return null;
             }
+            MeleeReachFx.Impact(transform.position, transform.forward, spinR, 180f, BladeStreak.Ch4Base);
             if (r) r.Impact(transform.position, 1.1f, StylizedFx.BlastRed);
             HitCircle(transform.position, spinR, SpinDmg);
             yield return Wait(T(0.5f));

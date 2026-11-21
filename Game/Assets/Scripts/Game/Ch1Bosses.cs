@@ -84,7 +84,7 @@ namespace CatTang
     {
         public override float NearDist => 5f;
         public override float PatternGap => 1.1f;
-        public override string DisplayName => "태엽 현상금 사냥꾼";
+        public override string DisplayName => "와인더 잭";
 
         public const float BountyEvery = 20f, BountyCount = 5f, BountyDmg = 0.2f;
         float nextBounty;
@@ -251,7 +251,7 @@ namespace CatTang
     {
         public override float NearDist => 6f;
         public override float PatternGap => 1.3f;
-        public override string DisplayName => "녹은 시계 거인";
+        public override string DisplayName => "달리오스";
 
         float secondAngle, nextSecond;
         readonly Queue<(float t, Vector3 p)> trail = new();

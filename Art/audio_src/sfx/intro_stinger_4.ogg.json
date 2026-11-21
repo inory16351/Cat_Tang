@@ -1,0 +1,51 @@
+{
+  "kind": "process",
+  "input_audio": "D:\\pro\\Cat_Tang\\Art\\audio_src\\sfx\\intro_stinger_4.wav",
+  "source": {
+    "kind": "generate",
+    "title": "intro_stinger_4",
+    "original_idea": "11:59 game SFX: intro_stinger_4",
+    "audio_type": "sfx",
+    "prompt": "",
+    "prompt_used": "TrackType: SFX, clock tower noir stinger, a single heavy cathedral bell toll with a dark low brass hit and ticking, bronze bell, brass, clockwork, tower reverb.",
+    "sound_fields": {
+      "source": "clock tower noir stinger",
+      "action": "a single heavy cathedral bell toll with a dark low brass hit and ticking",
+      "material": "bronze bell, brass, clockwork",
+      "space": "tower reverb"
+    },
+    "bpm": null,
+    "seconds": 2.4,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 1159,
+    "candidate": 1,
+    "file": "intro_stinger_4.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-11-22T05:09:24",
+    "backend": "sa3-torch",
+    "model": "sm-sfx + same-s",
+    "peak_dbfs": -1.0,
+    "raw_peak_dbfs": 0.0,
+    "ceiling_gain_db": -1.0
+  },
+  "created": "2026-11-22T05:09:24",
+  "format": "ogg",
+  "sample_rate": 48000,
+  "channels": 1,
+  "seconds": 2.4,
+  "steps": [
+    "trim_silence -45 dB",
+    "mono",
+    "resample 44100→48000",
+    "fade 0.0/30 ms",
+    "peak normalize -1 dBFS (+1.87 dB)"
+  ],
+  "peak": 0.891,
+  "peak_dbfs": -1.0,
+  "rms": 0.1584,
+  "file": "intro_stinger_4.ogg"
+}

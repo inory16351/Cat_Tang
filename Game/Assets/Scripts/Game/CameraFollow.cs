@@ -8,12 +8,27 @@ namespace CatTang
         public Vector3 offset = new Vector3(0, 17f, -11f);
         public float smooth = 8f;
         static float shake, shakeUntil, zoom = 1f, zoomTarget = 1f;
-        static Vector3? focus;                                        // 연출: 플레이어 대신 이 자리를 봄 (마을 다리 이어짐 등)
+        static Vector3? focus;
+        /// <summary>보스 등장 연출 등이 카메라를 직접 잡는 동안 따라가기 멈춤</summary>
+        public static bool Hold;
+
+        /// <summary>지금 따라가기가 놓을 카메라 자리 (연출이 끝날 때 여기로 돌아옴)</summary>
+        public static bool GetFollowPose(out Vector3 pos, out Quaternion rot)
+        {
+            var p = PlayerController.Instance;
+            var c = FindFirstObjectByType<CameraFollow>();
+            pos = default; rot = Quaternion.identity;
+            if (!p || !c) return false;
+            var look = focus ?? p.transform.position;
+            pos = look + c.offset * zoom;
+            rot = Quaternion.LookRotation(look + Vector3.up * 0.5f - pos, Vector3.up);
+            return true;
+        }                                        // 연출: 플레이어 대신 이 자리를 봄 (마을 다리 이어짐 등)
 
         /// <summary>플레이어 대신 한 자리를 비춤 (null = 다시 플레이어). zoom = 그동안 거리 배율 (0이면 그대로)</summary>
         public static void FocusOn(Vector3? at, float zoomMul) { focus = at; if (zoomMul > 0) zoomTarget = zoomMul; else zoomTarget = 1f; }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() { focus = null; zoom = zoomTarget = 1f; }       // 도메인 리로드를 꺼 둬서 플레이 사이에 남지 않게
+        static void ResetStatics() { focus = null; zoom = zoomTarget = 1f; Hold = false; }       // 도메인 리로드를 꺼 둬서 플레이 사이에 남지 않게
 
         /// <summary>카메라 당기기 (1 = 기본, 0.5 = 절반 거리). 궁극기 연출용</summary>
         public static void Zoom(float target) => zoomTarget = target;
@@ -27,7 +42,7 @@ namespace CatTang
         void LateUpdate()
         {
             var p = PlayerController.Instance;
-            if (!p) return;
+            if (!p || Hold) return;
             zoom = Mathf.Lerp(zoom, zoomTarget, 1 - Mathf.Exp(-10f * Time.unscaledDeltaTime));
             var look = focus ?? p.transform.position;
             var target = look + offset * zoom;

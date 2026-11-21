@@ -81,7 +81,7 @@ namespace CatTang
 
         // ---------- 스테이지 ----------
         bool HasMidBoss => chapter <= 5;                 // 1장 술집 · 2장 대합실 · 3장 거울 극장 · 4장 진자 홀 · 5장 거울 대전
-        string MidBossName => chapter == 5 ? "거울 속의 고양이" : chapter == 4 ? "진자 집행관" : chapter == 3 ? "신기루 마술사" : chapter == 2 ? "태엽 역장" : "태엽 현상금 사냥꾼";
+        string MidBossName => BossIntro.Def(chapter, true)?.nameKo ?? "중간 보스";   // 이름 2026-11-21 사용자 확정
 
         void BuildMidBoss()
         {
@@ -224,12 +224,16 @@ namespace CatTang
             var c = current.center;
             if (IsMidBossRoom)
             {
-                alive.Add(EnemyFactory.MidBoss(c + current.farSide * 3f, Chapter));
+                var mb = EnemyFactory.MidBoss(c + current.farSide * 3f, Chapter);
+                alive.Add(mb);
+                yield return BossIntro.Play(mb, chapter, true);
                 yield break;
             }
             if (IsBossRoom)
             {
-                alive.Add(EnemyFactory.Boss(c + new Vector3(0, 0, 4), Chapter));
+                var bb = EnemyFactory.Boss(c + new Vector3(0, 0, 4), Chapter);
+                alive.Add(bb);
+                yield return BossIntro.Play(bb, chapter, false);
                 yield break;
             }
             spawning = true;
