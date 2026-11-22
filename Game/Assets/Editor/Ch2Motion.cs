@@ -100,7 +100,9 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>걷기: stride = 다리 앞뒤 폭, sway = 상체 좌우 기우뚱 (무거울수록 보폭 작고 몸이 크게 내려앉음)</summary>
-        internal static void Walk(AnimationClip idle, string name, float W, float stride, float sway, float lean = 0.1f)
+        /// <param name="neutralLegs">다리 앞뒤 근육을 대기 자세 대신 똑바로 선 값(0.62) 둘레로 뒤집음 — 대기 자세가 한 발을 뒤로 뺀 몸(4장 기사 · 시침)은
+        /// 대기 기준으로 뒤집으면 그 발이 걷는 내내 뒤에 남아 절뚝이며 미끄러짐 (2026-11-22 사용자: "시침 걷는 모션이 없는 것 같음")</param>
+        internal static void Walk(AnimationClip idle, string name, float W, float stride, float sway, float lean = 0.1f, bool neutralLegs = false)
         {
             float q = W / 4, a = 0.62f + stride, b = 0.62f - stride;
             Make(idle, name, W, true, new()
@@ -114,7 +116,8 @@ namespace CatTang.EditorTools
                 { "+Right Arm Front-Back", K(0, stride, 2 * q, -stride, W, stride) },
                 { "Spine Left-Right", K(0, sway, 2 * q, -sway, W, sway) },
                 { "+Spine Front-Back", K(0, lean, W, lean) },
-            }, K(0, -0.05f, q, 0.02f, 2 * q, -0.05f, 3 * q, 0.02f, W, -0.05f));
+            }, K(0, -0.05f, q, 0.02f, 2 * q, -0.05f, 3 * q, 0.02f, W, -0.05f),
+            neutralLegs ? new Dictionary<string, float> { { "Left Upper Leg Front-Back", 0.62f }, { "Right Upper Leg Front-Back", 0.62f } } : null);
         }
 
         internal static AnimationClip CatIdle()
@@ -125,7 +128,7 @@ namespace CatTang.EditorTools
         }
 
         /// <param name="name">클립 이름 (2장 폴더) 또는 "Assets/..."로 시작하는 확장자 뺀 전체 경로 (다른 장 전용 모션 EnemyMotions)</param>
-        internal static void Make(AnimationClip idle, string name, float end, bool loop, Dictionary<string, float[][]> keys, float[][] rootDy)
+        internal static void Make(AnimationClip idle, string name, float end, bool loop, Dictionary<string, float[][]> keys, float[][] rootDy, Dictionary<string, float> pivot = null)
         {
             string path = name.StartsWith("Assets/") ? name + ".anim" : Dir + name + ".anim";
             Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -152,7 +155,7 @@ namespace CatTang.EditorTools
                 AnimationUtility.SetEditorCurve(clip, bnd, curve);
             }
             foreach (var k in keys.Keys) if (!used.Contains(k)) Debug.LogWarning($"[Ch2Motion] {clip.name}: 근육 이름 '{k}'을 고양이 idle 클립에서 못 찾음 — 무시됨");
-            MirrorFrontBack(clip, idle);
+            MirrorFrontBack(clip, idle, pivot);
             AnimationUtility.SetAnimationClipSettings(clip, new AnimationClipSettings { loopTime = loop, keepOriginalPositionY = true, keepOriginalOrientation = true, keepOriginalPositionXZ = true, stopTime = end });
             EditorUtility.SetDirty(clip);
         }

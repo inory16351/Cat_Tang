@@ -18,6 +18,7 @@ namespace CatTang
         Feet, Showdown, Chase, JumpCut, Stutter, ClockSweep, OverShoulder, Rise, Snap, Pullback, Spiral, LookUp, Push,
         Vertigo, HeroLow, HeroOrbit, QuickDraw, Portrait,
         BehindBoss, Profile, WormEye, HighOrbit,
+        Duel,
     }
     public enum IntroCut { Hard, Flash, Whip, Wipe }
     public enum IntroCard { Wanted, Melt, Board, Rail, Curtain, Shatter, NoirSlash, TwinSplit, Glitch, Dial }
@@ -33,6 +34,7 @@ namespace CatTang
         public IntroBeat[] beats;
         public IntroCard card;
         public bool glitch, noir;
+        public bool faceLeft;              // 마지막 컷에서 보스를 화면 왼쪽 1/3에 둠 (정지 카드 일러스트가 얼굴을 안 가리게, 2026-11-22 사용자)
         public bool bust;                  // 거대한 보스: 일러스트를 상반신만 크게 (2026-11-21 사용자)
         public bool emerge;                // 처음엔 바닥 아래에 숨었다가 비트(Emerge)로 솟아오름 (고래)
         // 2026-11-22 사용자: "등장하는 장면에서부터 시작해서 보스의 등장이라는 걸 명확하게" (모든 보스) → 시작 위치를 비켜 두고 비트 Enter로 들어옴
@@ -166,22 +168,41 @@ namespace CatTang
                                        StylizedFx.Slash(x.Chest, (x.Side - Vector3.up * 0.4f).normalized, x.Size * 0.9f, StylizedFx.BlastRed, 1f, true); }),
                 },
             },
-            // 4장 보스: 쌍둥이 — 위에서 시계바늘처럼 한 바퀴 → 궤도 → 빠지며 둘 다 보여 줌 + 교차 베기
+            // 4장 보스: 쌍둥이 (2026-11-22 사용자: "너무 가만히 서 있음, 컷 전환도 더") — 시계바늘처럼 돌며 둘이 내리꽂혀 착지 →
+            // 크로노가 대검을 휘두르는 근접 컷 → 템포가 레이피어를 찌르는 근접 컷 → 옆에서 둘이 서로 자리를 바꾸며 교차 베기(느린 화면) → 정면 결정 자세
             (4, false) => new BossIntroDef
             {
                 id = "ch4_boss", bust = true, entryUp = 12f, titleEn = "GUARDIANS OF TIME", nameEn = "CHRONO & TEMPO", titleKo = "시간의 수문장", nameKo = "크로노 & 템포", main = true, noir = true,
                 accent = C("D9D9DE"), accent2 = C("B3141A"), card = IntroCard.TwinSplit,
-                shots = new[] { (IntroShot.ClockSweep, 1.6f, IntroCut.Hard), (IntroShot.BehindBoss, 1.1f, IntroCut.Whip), (IntroShot.Crash, 1.5f, IntroCut.Flash) },
+                shots = new[] { (IntroShot.ClockSweep, 1.0f, IntroCut.Hard), (IntroShot.Duel, 0.55f, IntroCut.Whip), (IntroShot.Duel, 0.5f, IntroCut.Hard),
+                                (IntroShot.Profile, 0.8f, IntroCut.Flash), (IntroShot.Push, 1.35f, IntroCut.Whip) },   // 끝 = 낮게 다가가는 정면, 둘 다 크게 (Crash는 둘 사이로 너무 붙고 Pullback은 너무 작아짐)
                 beats = new[]
                 {
-                    At(0, 0.0f, x => x.Act("Intro")), At(0, 0.2f, x => x.Snd("e4_tick_1")),
-                    At(0, 0.05f, x => x.MarkLandings(2.2f, 0.75f)),
-                    At(0, 0.28f, x => { x.Enter(0.5f, "drop"); x.Snd("e_dive", 0.6f);
-                                        x.Later(0.5f, () => { x.Snd("e_slam_1"); x.Snd("e4_bell_1", 0.6f); x.Shake(0.5f);
-                                                              StylizedFx.Shockwave(x.Feet, x.Radius + 3f, StylizedFx.BlastRed, 0.5f); StylizedFx.GroundBlast(x.Feet, 3.5f, StylizedFx.BlastRed); }); }), At(0, 0.45f, x => x.Snd("e4_tick_2")), At(0, 0.7f, x => x.Snd("e4_tick_1")),
-                    At(0, 0.92f, x => { x.Snd("e4_bell_1"); x.Shake(0.15f); }),
-                    At(1, 0.3f, x => x.Snd("e4_whirl", 0.7f)),
-                    At(2, 0.15f, x => { x.Snd("e4_bell_2"); x.Snd("e4_scythe_2", 0.7f); x.Shake(0.5f); x.Slow(0.45f);
+                    At(0, 0.0f, x => { x.Act("Intro"); x.Snd("e4_tick_1"); }),
+                    At(0, 0.05f, x => x.MarkLandings(2.2f, 0.6f)),
+                    At(0, 0.2f, x => { x.Enter(0.5f, "drop"); x.Snd("e_dive", 0.6f);
+                                       x.Later(0.5f, () => { x.Snd("e_slam_1"); x.Snd("e4_bell_1", 0.6f); x.Shake(0.55f);
+                                                             x.EachFeet(p => { StylizedFx.Shockwave(p, x.Radius + 2f, StylizedFx.BlastRed, 0.5f); StylizedFx.GroundBlast(p, 3f, StylizedFx.BlastRed); }); }); }),
+                    At(0, 0.45f, x => x.Snd("e4_tick_2")), At(0, 0.85f, x => x.Snd("e4_tick_1")),
+                    // 크로노: 대검 휘두르기
+                    At(1, 0.0f, x => { x.Focus(x.Twin(true)); x.Act(x.Twin(true), "SwingR"); x.Snd("e4_wind", 0.7f); }),
+                    At(1, 0.55f, x => { x.Snd("e4_scythe_1"); x.Snd("e4_clank", 0.5f); x.Shake(0.35f);
+                                        var c = x.FocusChest; StylizedFx.Slash(c + x.Fw * 0.6f, (x.Side + Vector3.up * 0.25f).normalized, x.Size * 0.8f, StylizedFx.BlastRed, 0.8f);
+                                        StylizedFx.Slash(c + x.Fw * 0.6f, (x.Side - Vector3.up * 0.35f).normalized, x.Size * 0.6f, StylizedFx.SlashCore, 0.6f, true); }),
+                    // 템포: 레이피어 찌르기
+                    At(2, 0.0f, x => { x.Focus(x.Twin(false)); x.Act(x.Twin(false), "Stab"); x.Snd("e4m_blink_1", 0.6f); x.Flicker(0.06f); }),
+                    At(2, 0.45f, x => { x.Snd("e4_stab_1"); x.Shake(0.3f);
+                                        var c = x.FocusChest; StylizedFx.Slash(c + x.Fw * 0.8f, x.Fw, x.Size * 0.7f, StylizedFx.SlashCore, 0.6f);
+                                        }),
+                    // 옆에서 자리 바꾸며 교차 베기
+                    At(3, 0.02f, x => { x.Act(x.Twin(true), "Whirl"); x.Act(x.Twin(false), "Stab"); x.Swap(0.6f); x.Snd("e4_whirl", 0.8f); x.Snd("dash", 0.6f); }),
+                    At(3, 0.42f, x => { x.Snd("e4_bell_2"); x.Snd("e4_scythe_2"); x.Snd("e4_stab_2", 0.7f); x.Shake(0.5f); x.Slow(0.3f); x.Flash(x.Accent2, 0.5f);
+                                        StylizedFx.Slash(x.Chest, (x.Fw + Vector3.up * 0.5f).normalized, x.Size * 1.1f, StylizedFx.BlastRed, 0.9f);
+                                        StylizedFx.Slash(x.Chest, (x.Fw - Vector3.up * 0.5f).normalized, x.Size * 1.1f, StylizedFx.SlashCore, 0.9f, true);
+                                        x.Later(0.09f, () => x.Slow(1f)); }),
+                    // 정면 결정 자세
+                    At(4, 0.0f, x => { x.FaceFront(); x.Act("IntroPose"); x.Snd("e4_tick_2"); }),
+                    At(4, 0.24f, x => { x.Snd("e4_bell_2"); x.Snd("e4_scythe_2", 0.7f); x.Shake(0.5f); x.Slow(0.45f);
                                         StylizedFx.Slash(x.Chest, x.Side, x.Size * 1.1f, StylizedFx.BlastRed, 1f);
                                         StylizedFx.Slash(x.Chest, Vector3.Cross(x.Side, Vector3.up), x.Size * 1.1f, StylizedFx.SlashCore, 1f, true);
                                         StylizedFx.Shockwave(x.Feet, x.Radius + 3f, StylizedFx.BlastRed, 0.6f); }),
@@ -191,7 +212,7 @@ namespace CatTang
             // 낮게 돌며 모자 챙을 내렸다 올리고 리볼버를 손가락으로 돌림 → 정면 낮은 앵글에서 두 자루를 번개처럼 뽑아 카메라를 겨눔
             (5, true) => new BossIntroDef
             {
-                id = "ch5_mid", titleEn = "", nameEn = "UNKNOWN", titleKo = "", nameKo = "미지의 존재", glitch = true,
+                id = "ch5_mid", titleEn = "", nameEn = "UNKNOWN", titleKo = "", nameKo = "미지의 존재", glitch = true, faceLeft = true,
                 accent = C("E8E4F4"), accent2 = C("2A1E48"), card = IntroCard.Glitch,
                 shots = new[] { (IntroShot.OverShoulder, 0.75f, IntroCut.Hard), (IntroShot.HeroOrbit, 0.95f, IntroCut.Flash), (IntroShot.QuickDraw, 1.0f, IntroCut.Hard) },
                 beats = new[]
@@ -217,7 +238,7 @@ namespace CatTang
                     At(1, 0.5f, x => { x.Snd("gunkata_spin", 0.6f); GunkataFx.Swirl(x.Chest + x.Side * 0.4f, 0.5f, 2f, 0.4f); }),
                     At(2, 0.15f, x => { x.Snd("shot_1"); x.Snd("shot_2", 0.8f); x.Shake(0.4f); x.Slow(0.35f); x.Flash(Color.white, 0.5f);
                                         GunkataFx.MuzzleFlash(x.Chest + x.Fw * 0.9f + x.Side * 0.25f, x.Fw, 1.6f); GunkataFx.MuzzleFlash(x.Chest + x.Fw * 0.9f - x.Side * 0.25f, x.Fw, 1.6f); }),
-                    At(2, 0.32f, x => { x.Snd("e5_phantom_break_1"); x.Flicker(0.4f); StylizedFx.Burst(x.Head, 1.2f, StylizedFx.Glass); }),
+                    At(2, 0.32f, x => { x.Snd("e5_phantom_break_1"); StylizedFx.Burst(x.Chest - x.Fw * (x.Radius + 1.2f), 1.6f, StylizedFx.Glass); StylizedFx.Shockwave(x.Feet, 2.5f, StylizedFx.Glass, 0.4f); }),
                 },
             },
             // 5장 보스: 시간의 주인 — 부감 공허 돔 → 째깍째깍 끊기는 궤도 → 느린 돌리 + 대낫
@@ -285,6 +306,17 @@ namespace CatTang
             foreach (var e in Enemy.All) if (e && e.kind == Enemy.Kind.Boss && e.health && e.health.Alive) targets.Add(e);
             if (!targets.Contains(boss)) targets.Add(boss);
             foreach (var e in targets) groundY.Add(e.transform.position.y);
+            modelPose.Clear();
+            foreach (var e in targets)
+            {
+                if (!e) continue;
+                var m = e.transform.Find("Model"); if (m) modelPose[m] = (m.localPosition, m.localRotation);
+                foreach (var an in e.GetComponentsInChildren<Animator>())
+                {
+                    if (an.transform != e.transform) modelPose[an.transform] = (an.transform.localPosition, an.transform.localRotation);
+                    if (an.applyRootMotion) { an.applyRootMotion = false; rootMotion.Add(an); }   // 연출 중 휘두르기 · 돌기 동작이 모델을 돌려 등을 보이지 않게
+                }
+            }
             Frame(p);
             GatherOccluders();
             groundPos.Clear(); foreach (var e in targets) groundPos.Add(e.transform.position);
@@ -368,6 +400,65 @@ namespace CatTang
         public float Radius => R;
         public Vector3 Front(float d) => B + F * (R + d);
         public void Act(string anim) { foreach (var e in targets) if (e) e.Anim(anim); }
+        public Color Accent2 => def.accent2;
+        /// <summary>쌍둥이 중 크로노(시침, true) · 템포(분침, false)의 번호. 없으면 0</summary>
+        public int Twin(bool hour)
+        {
+            for (int i = 0; i < targets.Count; i++)
+                if (targets[i] && (hour ? (Component)targets[i].GetComponent<Ch4HourBrain>() : targets[i].GetComponent<Ch4MinuteBrain>())) return i;
+            return 0;
+        }
+        /// <summary>이 컷 동안 카메라가 보스 하나만 봄 (Duel 컷). 컷이 바뀌면 풀림</summary>
+        public void Focus(int idx)
+        {
+            focus = idx; focusH = H;
+            if (idx < 0 || idx >= targets.Count || !targets[idx]) return;
+            var an = targets[idx].GetComponentInChildren<Animator>();
+            var head = an && an.isHuman ? an.GetBoneTransform(HumanBodyBones.Head) : null;
+            if (head) focusH = Mathf.Clamp((head.position.y - targets[idx].transform.position.y) * 1.12f + 0.15f, 1.6f, H);
+        }
+        int focus = -1;
+        float focusH;
+        readonly Dictionary<Transform, (Vector3 pos, Quaternion rot)> modelPose = new();
+        readonly List<Animator> rootMotion = new();
+        public Vector3 FocusChest => (focus >= 0 && focus < targets.Count && targets[focus] ? targets[focus].transform.position : B) + Vector3.up * H * 0.55f;
+        public void EachFeet(System.Action<Vector3> fx) { foreach (var e in targets) if (e) fx(e.transform.position); }
+        /// <summary>모두 고양이 쪽을 봄</summary>
+        public void FaceFront()
+        {
+            var p = PlayerController.Instance;
+            if (entryDone) for (int i = 0; i < targets.Count && i < groundPos.Count; i++) if (targets[i]) targets[i].transform.position = groundPos[i];
+            foreach (var kv in modelPose) if (kv.Key) kv.Key.localRotation = kv.Value.rot;   // 휘두르기 동작으로 돌아간 모델 방향만 되돌림 (위치는 X — 처음 프레임 값은 발 맞춤 전이라 2m 떠 버림)
+            foreach (var e in targets) if (e)
+            {
+                var to = Effects.Flat((p ? p.transform.position : e.transform.position + F) - e.transform.position);
+                if (to.sqrMagnitude > 0.01f) e.transform.rotation = Quaternion.LookRotation(to);
+            }
+        }
+        /// <summary>둘이 서로 자리를 바꾸며 스쳐 지나감 (한 녀석은 앞으로, 한 녀석은 뒤로 둥글게 비켜 감)</summary>
+        public void Swap(float dur) { if (targets.Count >= 2) StartCoroutine(SwapRun(dur)); }
+        IEnumerator SwapRun(float dur)
+        {
+            Transform a = targets[0] ? targets[0].transform : null, b = targets[1] ? targets[1].transform : null;
+            if (!a || !b) yield break;
+            Vector3 pa = groundPos.Count >= 2 ? groundPos[0] : a.position, pb = groundPos.Count >= 2 ? groundPos[1] : b.position;   // 앞 컷 루트 모션으로 밀렸어도 원래 자리 기준
+            var run = Effects.Flat(pb - pa).normalized;
+            // 스쳐 지나가 서로 어깨를 맞댄 자리에서 멈춤 (8m 벌어져 있으면 마지막 정면 컷에 둘이 화면 양 끝으로 밀려남)
+            var mid = (pa + pb) * 0.5f; float half = Mathf.Min(Effects.Flat(pb - pa).magnitude * 0.5f, 2.3f);
+            Vector3 ea = mid + run * half, eb = mid - run * half;
+            if (run.sqrMagnitude > 0.01f) { a.rotation = Quaternion.LookRotation(run); b.rotation = Quaternion.LookRotation(-run); }
+            float arc = Mathf.Max(1.2f, R * 0.35f), nextPuff = 0;
+            for (float t = 0; t <= dur; t += Time.deltaTime)
+            {
+                float u = Mathf.Clamp01(t / dur), e = EaseInOut(u), bow = Mathf.Sin(Mathf.PI * u) * arc;
+                a.position = Vector3.Lerp(pa, ea, e) + F * bow;
+                b.position = Vector3.Lerp(pb, eb, e) - F * bow;
+                if (t >= nextPuff) { nextPuff = t + 0.05f; GunkataFx.Smoke(a.position, 1f, 0.6f); GunkataFx.Smoke(b.position, 1f, 0.6f); }
+                yield return null;
+            }
+            a.position = ea; b.position = eb;
+            if (groundPos.Count >= 2) { groundPos[0] = ea; groundPos[1] = eb; }
+        }
         public void Act(int idx, string anim) { if (idx < targets.Count && targets[idx]) targets[idx].Anim(anim); }
         public void Snd(string n, float vol = 0.9f) => Sfx.Play(n, vol, 0f);
         public void Shake(float a) => shakeAmt = Mathf.Max(shakeAmt, a);
@@ -536,7 +627,7 @@ namespace CatTang
         static bool LowShot(IntroShot s) => s is IntroShot.LowRise or IntroShot.Top or IntroShot.Feet or IntroShot.Chase or IntroShot.ClockSweep
                                                  or IntroShot.Rise or IntroShot.LookUp or IntroShot.Push or IntroShot.OverShoulder
                                                  or IntroShot.HeroLow or IntroShot.HeroOrbit or IntroShot.QuickDraw or IntroShot.Vertigo or IntroShot.Portrait
-                                                 or IntroShot.BehindBoss or IntroShot.Profile or IntroShot.WormEye;
+                                                 or IntroShot.BehindBoss or IntroShot.Profile or IntroShot.WormEye or IntroShot.Duel;
 
         int subCut;   // 점프컷 · 끊김 컷의 지금 칸 (바뀌면 효과음)
 
@@ -676,7 +767,8 @@ namespace CatTang
                     float e = EaseInOut(u);
                     var a = B + F * (R + k * 2.4f) + up * k * 0.3f;
                     var b = B + F * (R + k * 1.4f) + up * k * 0.45f;
-                    return new Pose { pos = Vector3.Lerp(a, b, e), look = B + up * k * 0.72f, up = up, fov = Mathf.Lerp(56, 28, e) };
+                    bool two = targets.Count > 1;                                       // 쌍둥이: 둘 다 들어오게 덜 조임
+                    return new Pose { pos = Vector3.Lerp(a, b, e), look = B + up * k * (two ? 0.62f : 0.72f), up = up, fov = Mathf.Lerp(56, two ? 34 : 28, e) };
                 }
                 case IntroShot.Vertigo:        // 버티고(돌리 줌): 보스 크기는 그대로 두고 카메라는 물러나며 화각을 조여 배경이 빨려 들어옴
                 {
@@ -705,7 +797,21 @@ namespace CatTang
                     float e = Expo(Mathf.Clamp01(u / 0.3f)) * 0.8f + 0.2f * u;
                     var a = B + F * (R + k * 3.2f) + up * k * 0.3f;
                     var b = B + F * (R + k * 1.9f) + up * k * 0.42f;
-                    return new Pose { pos = Vector3.Lerp(a, b, e), look = B + up * k * 0.62f, up = up, fov = Mathf.Lerp(60, 24, e), roll = Mathf.Lerp(-6f, 0f, e) };
+                    var pose = new Pose { pos = Vector3.Lerp(a, b, e), look = B + up * k * 0.62f, up = up, fov = Mathf.Lerp(60, 24, e), roll = Mathf.Lerp(-6f, 0f, e) };
+                    if (def.faceLeft) ShiftLeft(ref pose, e);
+                    return pose;
+                }
+                case IntroShot.Duel:           // 쌍둥이 하나만: 바깥쪽 낮은 3/4에서 가까이, 휘두르는 쪽으로 조여 듦
+                {
+                    k = focus >= 0 ? focusH : H;
+                    float e = EaseOut(u);
+                    var mid = Vector3.zero; int n = 0;
+                    foreach (var t in targets) if (t) { mid += t.transform.position; n++; }
+                    mid = n > 0 ? mid / n : B;
+                    float out_ = Vector3.Dot(B - mid, S) >= 0 ? 1f : -1f;              // 다른 녀석 반대편(바깥)에서
+                    var dir = Quaternion.Euler(0, Mathf.Lerp(48f, 28f, e) * -out_, 0) * F;
+                    var pos = B + dir * (k * Mathf.Lerp(1.5f, 1.05f, e)) + up * k * Mathf.Lerp(0.2f, 0.35f, e);
+                    return new Pose { pos = pos, look = B + up * k * 0.55f, up = up, fov = Mathf.Lerp(58, 40, e), roll = Mathf.Lerp(8f, 2f, e) * out_ };
                 }
                 // 2026-11-22 사용자: "카메라 무빙이 너무 유사, 앵글이 더 다각도" → 정면 쪽이 아닌 각도 넷
                 case IntroShot.BehindBoss:     // 보스 등 뒤 낮은 곳에서 어깨 위로 올라가며 고양이 쪽을 봄 (보스 실루엣이 앞에)
@@ -751,11 +857,21 @@ namespace CatTang
             }
         }
 
+        /// <summary>보스를 화면 왼쪽 1/3로 보냄 (오른쪽은 정지 카드 일러스트 자리)</summary>
+        static void ShiftLeft(ref Pose p, float e)
+        {
+            var fwd = p.look - p.pos; float d = fwd.magnitude;
+            var right = Vector3.Cross(Vector3.up, fwd / d).normalized;
+            float half = Mathf.Tan(p.fov * 0.5f * Mathf.Deg2Rad) * d * (16f / 9f);
+            p.look += right * half * 0.34f * e;
+        }
+
         const float CutLen = 0.13f;
 
         IEnumerator RunShot(IntroShot s, float dur, int i, IntroCut cutIn, IntroCut cutOut, bool last)
         {
             subCut = -1;
+            focus = -1;
             var fired = new bool[def.beats?.Length ?? 0];
             bool whooshed = false;
             if (i == 0) StartCoroutine(Letterbox(true));
@@ -769,7 +885,8 @@ namespace CatTang
                 if (targets.Count > 0)                           // 보스가 움직이면(등장 돌진 · 돌진 비트) 카메라 기준점도 수평으로 따라감
                 {
                     Vector3 avg = Vector3.zero; int n = 0;
-                    foreach (var e in targets) if (e) { avg += e.transform.position; n++; }
+                    if (focus >= 0 && focus < targets.Count && targets[focus]) { avg = targets[focus].transform.position; n = 1; }
+                    else foreach (var e in targets) if (e) { avg += e.transform.position; n++; }
                     if (n > 0) { avg /= n; B = new Vector3(avg.x, B.y, avg.z); }
                 }
                 for (int b = 0; b < fired.Length; b++)
@@ -1047,6 +1164,8 @@ namespace CatTang
             doubles.Clear();
             foreach (var r in flickered) if (r) r.enabled = true;
             flickered.Clear();
+            foreach (var an in rootMotion) if (an) an.applyRootMotion = true;
+            rootMotion.Clear();
             Playing = false;
         }
 

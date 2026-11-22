@@ -190,8 +190,8 @@ namespace CatTang.EditorTools
             { "Ch4_Knight", new[] { ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
             // 4장 보스 (Hyper3D, 2026-11-20): 집행관 · 시침 = 진자 기사 모션, 분침 = 초침 자객 모션을 빌려 씀
             { "Ch4_Executioner", new[] { ("Intro", "ch4m_execintro", 0, false), ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
-            { "Ch4_HourHand", new[] { ("Intro", "ch4m_hourintro", 0, false), ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
-            { "Ch4_MinuteHand", new[] { ("Intro", "ch4m_minuteintro", 0, false), ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
+            { "Ch4_HourHand", new[] { ("Intro", "ch4m_hourintro", 0, false), ("IntroPose", "ch4m_hourpose", 0, false), ("SwingL", "ch4m_knightswingl", 1.2f, false), ("SwingR", "ch4m_knightswingr", 1.2f, false), ("Whirl", "ch4m_knightwhirl", 1.4f, false) } },
+            { "Ch4_MinuteHand", new[] { ("Intro", "ch4m_minuteintro", 0, false), ("IntroPose", "ch4m_minutepose", 0, false), ("Blink", "ch4m_assassinblink", 0.35f, false), ("Stab", "ch4m_assassinstab", 0.9f, false), ("Breath", "ch4m_assassinbreath", 1.0f, false), ("BackStab", "ch4m_assassinbackstab", 1.0f, false) } },
             { "Ch4_Repairman", new[] { ("Wind", "ch4m_repairwind", 0.95f, false), ("Toss", "ch4m_repairtoss", 0.65f, false) } },
             { "Ch5_Gunner", new[] { ("Shot", "ch5m_gunnershot", 0.85f, false) } },
             { "Ch5_Witch", new[] { ("Cast", "ch5m_witchcast", 0.95f, false), ("Link", "ch5m_witchlink", 0.65f, false) } },

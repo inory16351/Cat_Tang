@@ -534,7 +534,7 @@ namespace CatTang.EditorTools
             const string KCOIL = "SP.TW=-.8 CH.TW=-.4 LA.FB=-.3 LA.DU=.3 LL.FB=.4 RL.FB=.4 LK=-.6 RK=-.6 SP.FB=.3 HD.TN=.3 ROOT=-.13 " + KN_COIL;
             const string KOUT = "SP.TW=.3 LA.DU=.55 LF=.3 LL.FB=.3 RL.FB=.1 LK=-.3 RK=-.3 SP.FB=.1 ROOT=-.08 " + KN_OUT;
             Clip(idle, D4 + "Ch4M_KnightWhirl", false, (0, KN_REST), (.7f, KCOIL), (.8f, KCOIL + " ROOT=-.16"), (.9f, KOUT), (1.12f, KOUT), (1.4f, KN_REST));
-            Ch2Motion.Walk(idle, D4 + "Ch4M_BaseKnightStep", 1.1f, 0.24f, 0.14f, 0.12f);   // 무거운 쇠 걸음 (바탕)
+            Ch2Motion.Walk(idle, D4 + "Ch4M_BaseKnightStep", 1.1f, 0.3f, 0.14f, 0.12f, neutralLegs: true);   // 무거운 쇠 걸음 (바탕). 다리는 똑바로 선 값 기준 (대기 자세 기준이면 왼발이 뒤에 남아 안 걷는 것처럼 보임)
             HoldArm(AssetDatabase.LoadAssetAtPath<AnimationClip>(D4 + "Ch4M_BaseKnightStep.anim"), D4 + "Ch4M_KnightWalk", KN_REST);   // + 낫 든 팔 고정
             HoldArm(idle, D4 + "Ch4M_KnightIdle", KN_REST);
 
@@ -748,14 +748,19 @@ namespace CatTang.EditorTools
             Clip(idle, D3 + "Ch3M_IllusioConjure", false, (0, IL_REST), (.25f, CJ_A), (.5f, CJ_B), (.75f, CJ_A), (1f, CJ_B), (1.3f, IL_REST));
 
             // 크로노(시침) · 템포(분침) (첫 컷부터, 교차 베기 2.93): 고개 숙여 서 있다가 → 고개 들고 자세 → 한 번에 내지름. 팔은 무기 리그가 잡으니 몸 위주
-            const string HH_BOW = "SP.FB=.3 HD.ND=-.35 LL.IO=.15 RL.IO=-.15 ROOT=-.03";
+
             const string HH_UP = "SP.FB=-.1 CH.FB=-.2 HD.ND=.2 LL.IO=.25 RL.IO=-.25 LK=-.2 RK=-.2 ROOT=-.05";
-            const string HH_SLAM = "SP.FB=.55 CH.FB=.2 HD.ND=-.1 LL.FB=.5 RL.FB=-.3 LK=-.6 RK=-.3 SP.TW=-.25 ROOT=-.22";
-            Clip(idle, D4 + "Ch4M_HourIntro", false, (0, ""), (.4f, HH_BOW), (1.5f, HH_BOW), (1.9f, HH_UP), (2.75f, G(HH_UP, "SP.TW=.3")), (2.93f, HH_SLAM), (3.5f, HH_SLAM), (3.9f, ""));
-            const string MH_SAL = "RA.FB=.6 RA.DU=.65 RF=-.85 HD.ND=.1 SP.TW=-.1 LA.FB=-.2 LA.DU=.3";
             const string MH_GUARD = "RA.FB=.7 RA.DU=.3 RF=.2 LA.DU=.6 LA.FB=-.4 LF=-.6 SP.TW=-.35 LL.FB=.35 LK=-.4 RL.FB=-.25 ROOT=-.1";
-            const string MH_LUNGE = "RA.FB=1.0 RA.DU=.2 RF=.5 SP.FB=.35 SP.TW=-.45 LA.FB=-.5 LA.DU=.5 LL.FB=.75 LK=-.55 RL.FB=-.5 RK=.1 ROOT=-.2";
-            Clip(idle, D4 + "Ch4M_MinuteIntro", false, (0, ""), (.4f, MH_SAL), (1.5f, MH_SAL), (1.9f, MH_GUARD), (2.8f, MH_GUARD), (2.93f, MH_LUNGE), (3.5f, MH_LUNGE), (3.9f, ""));
+            // 2026-11-22: 착지(Intro, 첫 컷 0초부터: 공중에서 웅크림 → 0.7 착지 무릎 꿇듯 → 일어섬) + 마지막 컷 정면 결정 자세(IntroPose, 0.32에 내지름)
+            const string TW_AIR = "SP.FB=-.1 HD.ND=-.15 LL.FB=.55 LK=-.9 RL.FB=.35 RK=-.85 ROOT=.05";
+            const string TW_LAND = "SP.FB=.55 CH.FB=.15 HD.ND=.2 LL.FB=.75 LK=-1 RL.FB=-.25 RK=-.9 ROOT=-.4";
+            Clip(idle, D4 + "Ch4M_HourIntro", false, (0, TW_AIR), (.55f, TW_AIR), (.7f, TW_LAND), (.88f, TW_LAND), (1.2f, HH_UP), (1.5f, ""));
+            // 결정 자세는 상체를 세움 (숙이면 위에서 보는 정면 카메라에 투구 꼭대기만 보여 등을 보이는 것 같음)
+            const string HH_STRIKE = "SP.FB=.12 CH.FB=-.15 HD.ND=-.05 SP.TW=-.3 LL.FB=.45 RL.FB=-.3 LK=-.45 RK=-.15 ROOT=-.12";
+            Clip(idle, D4 + "Ch4M_HourPose", false, (0, HH_UP), (.2f, G(HH_UP, "SP.TW=.35")), (.32f, HH_STRIKE), (2.2f, HH_STRIKE), (2.6f, ""));
+            Clip(idle, D4 + "Ch4M_MinuteIntro", false, (0, TW_AIR), (.55f, TW_AIR), (.7f, TW_LAND), (.88f, TW_LAND), (1.2f, MH_GUARD), (1.5f, ""));
+            const string MH_THRUST = "RA.FB=1.0 RA.DU=.25 RF=.5 SP.FB=.1 SP.TW=-.45 CH.FB=-.1 LA.FB=-.5 LA.DU=.6 LL.FB=.65 LK=-.55 RL.FB=-.45 RK=.05 HD.ND=.05 ROOT=-.16";
+            Clip(idle, D4 + "Ch4M_MinutePose", false, (0, MH_GUARD), (.2f, MH_GUARD), (.32f, MH_THRUST), (2.2f, MH_THRUST), (2.6f, ""));
 
             // 시간의 주인 (첫 컷부터, 째깍 컷 1.2 ~ 2.7을 일곱 칸, 대낫 3.23): 떠 있는 채 두 팔이 째깍째깍 한 칸씩 펼쳐 올라감 → 낫을 옆으로 감았다 수평으로 베어 넘김
             const string LT_REST = "RA.DU=.3 RA.FB=.25 RF=-.6 RH.DU=.1 LA.DU=.25 LA.FB=.1 LF=-.4 SP.FB=.05 LL.FB=.14 RL.FB=.02 LK=-.32 RK=-.14 LFT=-.65 RFT=-.65";

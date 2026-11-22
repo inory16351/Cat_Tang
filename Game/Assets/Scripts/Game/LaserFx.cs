@@ -150,49 +150,312 @@ namespace CatTang
             return t;
         }
 
+        // 2026-11-22 사용자: "눈에 붙는 레이저 궤적 — 타격처럼 단색에 광효과, 눈 위치 정확히 파악해서 눈에 붙여"
+        // → 휴머노이드면 머리 뼈에 붙여 동작(회전 베기 · 찌르기)을 그대로 따라감. 단색 심지(알파 섞기 — 밝은 바닥에서도 또렷) + 넓은 빛 번짐(빛 더하기) 두 겹
+        public static readonly Color Ch4Red = new(1f, 0.1f, 0.14f);
+        static Material coreMat, glowMat;
+
+        /// <summary>폭 방향으로 가운데가 꽉 차고 가장자리만 부드러운 띠 (soft = 빛 번짐용 넓은 감쇠)</summary>
+        static Texture2D Strip(bool soft)
+        {
+            const int W = 8, H = 64;
+            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            for (int y = 0; y < H; y++)
+            {
+                float v = Mathf.Abs(y / (H - 1f) * 2f - 1f);                     // 0 = 가운데, 1 = 가장자리
+                float a = soft ? Mathf.Pow(1f - v, 2.2f) : Mathf.Clamp01((1f - v) / 0.35f);
+                for (int x = 0; x < W; x++) tex.SetPixel(x, y, new Color(1, 1, 1, a));
+            }
+            tex.Apply();
+            return tex;
+        }
+        static Material CoreMat()
+        {
+            if (coreMat) return coreMat;
+            var sh = Shader.Find("CatTang/Sprite") ?? Shader.Find("Sprites/Default");
+            return coreMat = new Material(sh) { mainTexture = Strip(false), renderQueue = 3004 };
+        }
+        static Material GlowMat()
+        {
+            if (glowMat) return glowMat;
+            var sh = Shader.Find("CatTang/AdditiveGlow") ?? Shader.Find("Sprites/Default");
+            glowMat = new Material(sh) { mainTexture = Strip(true), renderQueue = 3005 };
+            if (glowMat.HasProperty("_Intensity")) glowMat.SetFloat("_Intensity", 2.2f);
+            return glowMat;
+        }
+        static Gradient Solid(Color c, float a0, float a1)
+        {
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(c, 0f), new GradientColorKey(c, 1f) }, new[] { new GradientAlphaKey(a0, 0f), new GradientAlphaKey(a1, 1f) });
+            return g;
+        }
+
         void Build(Enemy e)
         {
-            // 머리 높이 = 모델 렌더러 경계 위쪽 85%, 정면으로 몸 반지름 35%
-            float h = 2f, r = 0.5f;
-            var rs = GetComponentsInChildren<Renderer>();
-            if (rs.Length > 0)
+            var col = tint ?? Ch4Red;
+            // 눈 자리: 휴머노이드면 머리 뼈 기준 (리그에 눈 뼈가 있으면 그것, 없으면 목 → 머리 길이로 크기를 잡아 앞 · 위로). 아니면 렌더러 경계로 짐작
+            var an = GetComponentInChildren<Animator>();
+            bool human = an && an.isHuman && eyeY <= 0;
+            Transform head = human ? an.GetBoneTransform(HumanBodyBones.Head) : null;
+            var at = new Vector3[2];
+            Transform parent = transform;
+            float width = 0.14f;
+            if (head)
             {
-                var b = rs[0].bounds; foreach (var x in rs) if (!(x is TrailRenderer) && !(x is LineRenderer)) b.Encapsulate(x.bounds);
-                h = b.max.y - transform.position.y; r = Mathf.Max(b.extents.x, b.extents.z);
+                parent = head; faceHead = head; placeAt = Time.frameCount + 2;   // 실제 얼굴 측정은 스킨이 한 번 돈 뒤(LateUpdate)로 미룸 — 만든 프레임엔 구운 메시가 아직 안 굽혀 있음
+                {
+                    // 메시를 못 읽으면 키 비례로 짐작 (머리 뼈 = 목 밑동 근처)
+                    float hh = Mathf.Max(0.5f, head.position.y - transform.position.y);
+                    for (int i = 0; i < 2; i++) at[i] = head.position + transform.up * hh * EyeUp + transform.forward * hh * EyeFwd + transform.right * hh * EyeGap * (i == 0 ? -1 : 1);
+                    width = Mathf.Clamp(hh * 0.025f, 0.06f, 0.3f);
+                }
             }
-            float y = Mathf.Max(0.8f, h * 0.84f), fwd = Mathf.Clamp(r * 0.35f, 0.15f, 0.6f), gap = Mathf.Clamp(h * 0.06f, 0.07f, 0.25f);
-            if (eyeY > 0) y = eyeY;
-            if (eyeFwd > 0) fwd = eyeFwd;
-            if (eyeGap > 0) gap = eyeGap;
-            trails = new TrailRenderer[2]; eyes = new Transform[2];
+            else
+            {
+                float h = 2f, r = 0.5f;
+                var rs = GetComponentsInChildren<Renderer>();
+                if (rs.Length > 0)
+                {
+                    var bb = rs[0].bounds; foreach (var x in rs) if (!(x is TrailRenderer) && !(x is LineRenderer)) bb.Encapsulate(x.bounds);
+                    h = bb.max.y - transform.position.y; r = Mathf.Max(bb.extents.x, bb.extents.z);
+                }
+                float y = Mathf.Max(0.8f, h * 0.84f), fwd = Mathf.Clamp(r * 0.35f, 0.15f, 0.6f), gap = Mathf.Clamp(h * 0.06f, 0.07f, 0.25f);
+                if (eyeY > 0) y = eyeY;
+                if (eyeFwd > 0) fwd = eyeFwd;
+                if (eyeGap > 0) gap = eyeGap;
+                for (int i = 0; i < 2; i++) at[i] = transform.TransformPoint(new Vector3(i == 0 ? -gap : gap, y, fwd));
+            }
+            trails = new TrailRenderer[4]; eyes = new Transform[2];
             for (int i = 0; i < 2; i++)
             {
                 var go = new GameObject(i == 0 ? "EyeL" : "EyeR");
-                go.transform.SetParent(transform, false);
-                go.transform.localPosition = new Vector3(i == 0 ? -gap : gap, y, fwd);
-                var tr = go.AddComponent<TrailRenderer>();
-                tr.sharedMaterial = tint.HasValue ? LaserFx.StripMat5() : LaserFx.StripMat();
-                tr.textureMode = LineTextureMode.Stretch;
-                tr.time = 0.001f;
-                tr.minVertexDistance = 0.08f;
-                tr.widthMultiplier = 0.2f;
-                tr.widthCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 0.7f));   // 끝이 0이 되면 리본 꼬리(제비꼬리)가 안 보임
-                tr.numCapVertices = 2;
-                tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                tr.receiveShadows = false;
-                tr.colorGradient = tint.HasValue ? LaserFx.TailGradient(tint.Value) : LaserFx.TailGradient();
-                tr.emitting = true;                     // 끄지 않음: 끄면 다음 점에서 폭이 0으로 뚝 끊김 (Unity 동작) → 대신 time을 줄여 꼬리가 눈으로 빨려 들어감
-                trails[i] = tr; eyes[i] = go.transform; prevEye[i] = go.transform.position;
+                go.transform.SetParent(parent, true);
+                go.transform.position = at[i];
+                trails[i] = MakeTrail(go, CoreMat(), width, Solid(col, 1f, 0.75f));
+                var glow = new GameObject("Glow"); glow.transform.SetParent(go.transform, false);
+                trails[i + 2] = MakeTrail(glow, GlowMat(), width * 3.6f, Solid(col, 0.55f, 0.2f));
+                eyes[i] = go.transform; prevEye[i] = go.transform.position;
             }
             last = transform.position;
+        }
+        /// <summary>메시를 못 읽을 때 머리 뼈 기준 눈 자리 (머리 뼈 높이 배수): 위 · 앞 · 좌우 간격</summary>
+        public static float EyeUp = 0.08f, EyeFwd = 0.07f, EyeGap = 0.035f;
+
+        /// <summary>
+        /// 실제 얼굴에서 눈 자리 찾기: 스킨 메시를 구워 머리 뼈(와 그 아래 뼈)에 주로 묶인 정점만 모아, 몸 기준 좌우 · 위 · 앞 축으로
+        /// 백분위 범위를 잡음 (투구 장식 · 후광처럼 튀어나온 부분에 안 끌려가게). 눈 높이 = 머리 아래에서 45%, 깊이 = 그 높이 띠에서 가장 앞 얼굴 면, 간격 = 머리 폭 18%
+        /// </summary>
+        static readonly System.Collections.Generic.Dictionary<int, (Vector3 l, Vector3 r, float w)> faceCache = new();
+        bool FaceFromMesh(Transform head, Vector3[] at, out float width)
+        {
+            var smr0 = GetComponentInChildren<SkinnedMeshRenderer>();
+            int key = smr0 && smr0.sharedMesh ? smr0.sharedMesh.GetInstanceID() : 0;
+            if (key != 0 && faceCache.TryGetValue(key, out var f))           // 같은 모델은 한 번만 굽기 (머리 뼈 로컬 좌표라 크기가 달라도 그대로)
+            {
+                at[0] = head.TransformPoint(f.l); at[1] = head.TransformPoint(f.r);
+                width = f.w * head.lossyScale.y;
+                return true;
+            }
+            bool ok = FaceFromMeshBake(head, at, out width);
+            if (ok && key != 0) faceCache[key] = (head.InverseTransformPoint(at[0]), head.InverseTransformPoint(at[1]), width / Mathf.Max(1e-4f, head.lossyScale.y));
+            return ok;
+        }
+        /// <summary>확인용: 아무 모델에서나 눈 두 점을 찾음 (적 컴포넌트 없이)</summary>
+        public static bool FindEyes(GameObject go, Color? tint, out Vector3 l, out Vector3 r)
+        {
+            l = r = Vector3.zero;
+            var an = go.GetComponentInChildren<Animator>();
+            var head = an && an.isHuman ? an.GetBoneTransform(HumanBodyBones.Head) : null;
+            if (!head) return false;
+            var t = go.AddComponent<EyeTrail>(); t.tint = tint;
+            var at = new Vector3[2];
+            bool ok = t.FaceFromMeshBake(head, at, out _);
+            Destroy(t);
+            l = at[0]; r = at[1];
+            return ok;
+        }
+
+        /// <summary>눈다운 덩어리: 너무 넓지 않고(고글 · 큰 눈까지) 세로로 긴 줄(투구 깃털 줄무늬)이 아님</summary>
+        static bool EyeLike(float w, float h, float H) => w < H * 0.12f && h < H * 0.12f && h < w * 2.2f + H * 0.01f;
+
+        /// <summary>점들을 격자 칸 이웃끼리 묶은 덩어리: 가운데 · 좌우 폭 · 가장 앞 깊이</summary>
+        static System.Collections.Generic.List<(Vector3 c, float w, float h, float zMax)> Blobs(System.Collections.Generic.List<Vector3> ps, float cell)
+        {
+            var cells = new System.Collections.Generic.Dictionary<(int, int), System.Collections.Generic.List<Vector3>>();
+            foreach (var p in ps)
+            {
+                var k = (Mathf.FloorToInt(p.x / cell), Mathf.FloorToInt(p.y / cell));
+                if (!cells.TryGetValue(k, out var l)) cells[k] = l = new System.Collections.Generic.List<Vector3>();
+                l.Add(p);
+            }
+            var seen = new System.Collections.Generic.HashSet<(int, int)>();
+            var outL = new System.Collections.Generic.List<(Vector3, float, float, float)>();
+            foreach (var start in cells.Keys)
+            {
+                if (seen.Contains(start)) continue;
+                var stack = new System.Collections.Generic.Stack<(int, int)>(); stack.Push(start); seen.Add(start);
+                Vector3 sum = Vector3.zero; int n = 0; float x0 = float.MaxValue, x1 = float.MinValue, y0 = float.MaxValue, y1 = float.MinValue, zm = float.MinValue;
+                while (stack.Count > 0)
+                {
+                    var k = stack.Pop();
+                    foreach (var p in cells[k]) { sum += p; n++; x0 = Mathf.Min(x0, p.x); x1 = Mathf.Max(x1, p.x); y0 = Mathf.Min(y0, p.y); y1 = Mathf.Max(y1, p.y); zm = Mathf.Max(zm, p.z); }
+                    for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++)
+                    {
+                        var nk = (k.Item1 + dx, k.Item2 + dy);
+                        if (cells.ContainsKey(nk) && seen.Add(nk)) stack.Push(nk);
+                    }
+                }
+                if (n >= 3) outL.Add((sum / n, x1 - x0, y1 - y0, zm));
+            }
+            return outL;
+        }
+
+        // 텍스처 픽셀 (읽기 불가 텍스처라 GPU로 512칸에 옮겨 읽음, 텍스처마다 한 번)
+        static readonly System.Collections.Generic.Dictionary<int, Color32[]> texCache = new();
+        const int TexN = 512;
+        static Color32[] ReadTex(Texture t)
+        {
+            if (!t) return null;
+            if (texCache.TryGetValue(t.GetInstanceID(), out var c)) return c;
+            var rt = RenderTexture.GetTemporary(TexN, TexN, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            var prev = RenderTexture.active;
+            Graphics.Blit(t, rt);
+            RenderTexture.active = rt;
+            var tex = new Texture2D(TexN, TexN, TextureFormat.RGBA32, false);
+            tex.ReadPixels(new Rect(0, 0, TexN, TexN), 0, 0); tex.Apply();
+            RenderTexture.active = prev; RenderTexture.ReleaseTemporary(rt);
+            c = tex.GetPixels32(); Destroy(tex);
+            return texCache[t.GetInstanceID()] = c;
+        }
+
+        /// <summary>
+        /// 실제 얼굴에서 눈 찾기 (2026-11-22): 스킨 메시를 구워 머리 뼈 둘레 정점마다 텍스처 색을 봄 → 눈빛 색(4장 빨강 · 5장 자홍)이고 얼굴 앞면에 있는 점들 중
+        /// 가장 위 무리(목도리 · 망토 같은 아래쪽 빨강은 버림)를 좌우로 나눠 그 가운데 = 눈. 칠한 눈이 없으면 머리 뼈 높이의 얼굴 앞면에 키 비례 간격으로
+        /// </summary>
+        bool FaceFromMeshBake(Transform head, Vector3[] at, out float width)
+        {
+            width = 0.14f;
+            Vector3 rt = transform.right, up = transform.up, fw = transform.forward;
+            var pts = new System.Collections.Generic.List<Vector3>(); var eye = new System.Collections.Generic.List<bool>();
+            Color.RGBToHSV(tint ?? Ch4Red, out float hue, out _, out _);
+            float minY = float.MaxValue, maxY = float.MinValue;
+            foreach (var sm in GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (!sm.sharedMesh) continue;
+                var baked = new Mesh();
+                try { sm.BakeMesh(baked, true); } catch { continue; }
+                var v = baked.vertices; var uv = baked.uv;
+                var mat = sm.sharedMaterial;
+                var pix = mat ? ReadTex(mat.HasProperty("_BaseMap") ? mat.GetTexture("_BaseMap") : mat.mainTexture) : null;
+                var m = sm.transform.localToWorldMatrix;
+                for (int i = 0; i < v.Length; i++)
+                {
+                    var wp = m.MultiplyPoint3x4(v[i]);
+                    minY = Mathf.Min(minY, wp.y); maxY = Mathf.Max(maxY, wp.y);
+                    var p = wp - head.position;
+                    pts.Add(new Vector3(Vector3.Dot(p, rt), Vector3.Dot(p, up), Vector3.Dot(p, fw)));
+                    bool e = false;
+                    if (pix != null && i < uv.Length)
+                    {
+                        float u = Mathf.Repeat(uv[i].x, 1f), w = Mathf.Repeat(uv[i].y, 1f);
+                        var c = (Color)pix[Mathf.Min(TexN - 1, (int)(w * TexN)) * TexN + Mathf.Min(TexN - 1, (int)(u * TexN))];
+                        Color.RGBToHSV(c, out float h, out float s, out float val);
+                        float dh = Mathf.Abs(h - hue); dh = Mathf.Min(dh, 1f - dh);
+                        e = s > 0.55f && val > 0.4f && dh < 0.09f;   // 빨강 ~ 분홍 눈까지 (거울 고양이)
+                    }
+                    eye.Add(e);
+                }
+                Destroy(baked);
+            }
+            float H = maxY - minY;
+            if (pts.Count < 30 || H < 0.3f) return false;                       // 아직 안 굽혀졌거나 이상한 메시: 버림 (저장 안 함)
+            // 머리 둘레 (머리 뼈 기준 위아래 · 좌우 키의 12%) 에서 얼굴 앞면 깊이
+            float front = float.MinValue;
+            for (int i = 0; i < pts.Count; i++) { var p = pts[i]; if (Mathf.Abs(p.x) < H * 0.05f && Mathf.Abs(p.y) < H * 0.1f && p.z < H * 0.15f) front = Mathf.Max(front, p.z); }
+            if (front == float.MinValue) return false;
+            var cand = new System.Collections.Generic.List<Vector3>();
+            for (int i = 0; i < pts.Count; i++)
+            {
+                var p = pts[i];
+                if (eye[i] && Mathf.Abs(p.x) < H * 0.18f && p.y > -H * 0.14f && p.y < H * 0.16f && p.z > front - H * 0.25f && p.z > -H * 0.1f) cand.Add(p);   // 두건 · 철창 속 눈은 얼굴 앞면보다 깊이 들어가 있음 → 머리 앞쪽 절반이면 됨
+            }
+            float gap0 = H * 0.035f;
+            // 후보를 덩어리로 묶음 (격자 칸 이웃끼리) → 눈 = 같은 높이 · 얼굴 가운데를 사이에 두고 마주 보는 작은 덩어리 한 쌍.
+            // 목도리 · 망토 · 투구 장식 빨강은 넓거나 짝이 없어서 빠짐. 짝이 없으면 가운데의 작은 한 덩어리(외눈 · 투구 눈구멍 띠)를 좌우로 나눔
+            var blobs = Blobs(cand, H * 0.012f);
+            (Vector3 c, float w, float h, float zMax) best1 = default, best2 = default; float bestScore = float.MaxValue; bool pair = false;
+            for (int a = 0; a < blobs.Count; a++)
+                for (int b = 0; b < blobs.Count; b++)
+                {
+                    var A = blobs[a]; var B = blobs[b];
+                    if (A.c.x >= B.c.x || !EyeLike(A.w, A.h, H) || !EyeLike(B.w, B.h, H)) continue;
+                    float dy = Mathf.Abs(A.c.y - B.c.y), sep = B.c.x - A.c.x, sym = Mathf.Abs(A.c.x + B.c.x) * 0.5f;
+                    if (dy > H * 0.025f || sep < H * 0.02f || sep > H * 0.24f || sym > H * 0.05f) continue;   // 고글 · 큰 눈은 간격도 넓음
+                    float score = dy * 2f + sym - (A.c.y + B.c.y) * 0.3f;          // 높은 쌍 우선 (눈은 목도리 위)
+                    if (score < bestScore) { bestScore = score; best1 = A; best2 = B; pair = true; }
+                }
+            // 가운데 외눈(마녀 · 사수) · 투구 눈구멍 띠: 짝이 없거나, 짝보다 확실히 높으면 그쪽 (짝은 옷깃 장식일 수 있음)
+            (Vector3 c, float w, float h, float zMax) single = default; bool hasSingle = false;
+            foreach (var A in blobs)
+                if (A.w < H * 0.12f && A.h < H * 0.1f && A.w > H * 0.015f && A.c.y < H * 0.1f && Mathf.Abs(A.c.x) < H * 0.04f && (!hasSingle || A.c.y > single.c.y)) { single = A; hasSingle = true; }   // 뿔 끝 빨강 같은 높은 장식 제외
+            if (hasSingle && (!pair || single.c.y > (best1.c.y + best2.c.y) * 0.5f + H * 0.03f)) { pair = false; best1 = single; bestScore = 0; }
+            if (pair || bestScore == 0)
+            {
+                Vector3 L, R;
+                if (pair) { L = best1.c; R = best2.c; L.z = best1.zMax; R.z = best2.zMax; }
+                else { float g = Mathf.Max(best1.w * 0.3f, H * 0.02f); L = best1.c - Vector3.right * g; R = best1.c + Vector3.right * g; L.z = R.z = best1.zMax; }
+                L.z += H * 0.004f; R.z += H * 0.004f;
+                at[0] = head.position + rt * L.x + up * L.y + fw * L.z;
+                at[1] = head.position + rt * R.x + up * R.y + fw * R.z;
+            }
+            else
+            {
+                // 칠한 눈이 없음: 머리 뼈 높이의 얼굴 앞면 (이 모델들은 머리 뼈가 대개 눈 높이)
+                float ez = float.MinValue;
+                foreach (var p in pts) if (Mathf.Abs(p.x) < H * 0.03f && Mathf.Abs(p.y) < H * 0.015f && p.z < H * 0.15f) ez = Mathf.Max(ez, p.z);
+                if (ez == float.MinValue) ez = front;
+                for (int i = 0; i < 2; i++) at[i] = head.position + rt * gap0 * (i == 0 ? -1 : 1) + fw * (ez + H * 0.004f);
+            }
+            width = Mathf.Clamp(H * 0.016f, 0.04f, 0.3f);
+            return true;
+        }
+
+        static TrailRenderer MakeTrail(GameObject go, Material m, float width, Gradient g)
+        {
+            var tr = go.AddComponent<TrailRenderer>();
+            tr.sharedMaterial = m;
+            tr.textureMode = LineTextureMode.Stretch;
+            tr.time = 0.001f;
+            tr.minVertexDistance = 0.05f;
+            tr.widthMultiplier = width;
+            tr.widthCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 0.55f));
+            tr.numCapVertices = 3;
+            tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            tr.receiveShadows = false;
+            tr.colorGradient = g;
+            tr.emitting = true;                     // 끄지 않음: 끄면 다음 점에서 폭이 0으로 뚝 끊김 (Unity 동작) → 대신 time을 줄여 꼬리가 눈으로 빨려 들어감
+            return tr;
         }
 
         /// <summary>강제로 잠깐 꼬리를 켬 (회전 베기처럼 제자리에서 빠른 동작)</summary>
         public void Hot(float dur) => hotUntil = Mathf.Max(hotUntil, Time.time + dur);
 
+        Transform faceHead; int placeAt = -1;
+        /// <summary>스킨이 돈 뒤 실제 얼굴 메시로 눈 두 점 · 폭을 다시 잡음 (한 번)</summary>
+        void PlaceOnFace()
+        {
+            placeAt = -1;
+            if (!faceHead || eyes == null) return;
+            var at = new Vector3[2];
+            if (!FaceFromMesh(faceHead, at, out float width)) return;
+            for (int i = 0; i < 2; i++) if (eyes[i]) { eyes[i].position = at[i]; prevEye[i] = at[i]; }
+            for (int i = 0; i < trails.Length; i++) if (trails[i]) { trails[i].widthMultiplier = i < 2 ? width : width * 3.6f; trails[i].Clear(); }
+        }
+
         void LateUpdate()
         {
             if (trails == null) return;
+            if (placeAt >= 0 && Time.frameCount >= placeAt) PlaceOnFace();
             var p = transform.position;
             float moved = Effects.Flat(p - last).magnitude;
             float spd = moved / Mathf.Max(1e-4f, Time.deltaTime);
@@ -201,8 +464,8 @@ namespace CatTang
             if (on)
             {
                 if (curTime < 0.01f)
-                    for (int i = 0; i < 2; i++)
-                        if (trails[i]) { trails[i].Clear(); trails[i].AddPosition(prevEye[i]); }   // 새로 시작: 지난 프레임 눈 자리부터 (점멸이면 옛 자리 → 새 자리가 곧은 레이저 줄)
+                    for (int i = 0; i < trails.Length; i++)
+                        if (trails[i]) { trails[i].Clear(); trails[i].AddPosition(prevEye[i % 2]); }   // 새로 시작: 지난 프레임 눈 자리부터 (점멸이면 옛 자리 → 새 자리가 곧은 레이저 줄)
                 curTime = TrailTime;
             }
             else

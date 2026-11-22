@@ -590,14 +590,16 @@ namespace CatTang
         IEnumerator CardGlitch(float T)
         {
             var dim = Dim(new Color(0.06f, 0.03f, 0.12f));
-            var illR = Ill(card, IllPos, 1120, 1150, Keep);
-            var illC = Ill(card, IllPos, 1120, 1150, Keep);
-            var ill = Ill(card, IllPos, 1120, 1150, Keep);
+            var P = def.faceLeft ? new Vector2(620f, -550f) : IllPos;                 // 보스 얼굴(왼쪽 1/3)을 안 가리게 오른쪽 끝으로
+            float illW = def.faceLeft ? 860f : 1150f, dimA = def.faceLeft ? 0.4f : 0.72f;
+            var illR = Ill(card, P, 1120, illW, Keep);
+            var illC = Ill(card, P, 1120, illW, Keep);
+            var ill = Ill(card, P, 1120, illW, Keep);
             var bars = new List<Image>();
             for (int i = 0; i < 18; i++) bars.Add(Img("Scan", card, new Color(1, 1, 1, 0), Vector2.zero, new Vector2(2200, 4)));
             var blocks = new List<Image>();
             for (int i = 0; i < 6; i++) blocks.Add(Img("Block", card, Alpha(def.accent, 0), Vector2.zero, new Vector2(300, 40)));
-            var root2 = new GameObject("Name", typeof(RectTransform)).GetComponent<RectTransform>(); root2.SetParent(card, false); root2.anchoredPosition = new Vector2(-330, 30);
+            var root2 = new GameObject("Name", typeof(RectTransform)).GetComponent<RectTransform>(); root2.SetParent(card, false); root2.anchoredPosition = new Vector2(-330, def.faceLeft ? -290 : 30);
             Text N(Color c) { var t = Tx(root2, def.nameEn, 190, new Vector2(-575, 0), c, TextAnchor.MiddleLeft); Fit(t, 780); return t; }
             var nR = N(new Color(1f, 0.1f, 0.35f, 0)); var nC = N(new Color(0.1f, 1f, 1f, 0)); var nW = N(new Color(1, 1, 1, 0));
             var chap = Tx(root2, $"CHAPTER {def.Chapter}   ·   ???", 30, new Vector2(-575, 140), new Color(0.8f, 0.75f, 1f, 0), TextAnchor.MiddleLeft, UIKit.BodyBold);
@@ -609,7 +611,7 @@ namespace CatTang
             for (float t = 0; t < T; t += Time.unscaledDeltaTime)
             {
                 if (SkipPressed()) yield break;
-                dim.color = Alpha(dim.color, 0.72f * Seg(t, 0, 0.08f));
+                dim.color = Alpha(dim.color, dimA * Seg(t, 0, 0.08f));
                 bool jump = t >= nextJump; if (jump) nextJump = t + Random.Range(0.03f, 0.08f);
                 if (jump)
                 {
@@ -632,8 +634,8 @@ namespace CatTang
                 {
                     ill.color = new Color(1, 1, 1, Random.value < 0.06f ? 0.35f : k);
                     illR.color = new Color(1f, 0.15f, 0.4f, 0.45f * k); illC.color = new Color(0.1f, 1f, 1f, 0.45f * k);
-                    illR.rectTransform.anchoredPosition = IllPos + new Vector2(-j, Random.Range(-3f, 3f));
-                    illC.rectTransform.anchoredPosition = IllPos + new Vector2(j, Random.Range(-3f, 3f));
+                    illR.rectTransform.anchoredPosition = P + new Vector2(-j, Random.Range(-3f, 3f));
+                    illC.rectTransform.anchoredPosition = P + new Vector2(j, Random.Range(-3f, 3f));
                 }
                 int solved = Mathf.FloorToInt(Seg(t, 0.25f, 0.6f) * full.Length);
                 var sb = new System.Text.StringBuilder();
