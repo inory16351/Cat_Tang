@@ -259,6 +259,35 @@ namespace CatTang.Dev
         /// 긴 연출 녹화 (스토리 몽타주 · 꿈): 화면을 960x540으로 줄여 JPG로 바로 저장 (메모리에 쌓지 않음 → 몇 분도 가능).
         /// 파일 이름에 실제 시각(ms) — docs 쪽 enc.py가 그 간격대로 MP4로 묶음. stop()을 부르면 멈춤
         /// </summary>
+        /// <summary>꿈 n을 재생하며 녹화 (2026-11-23 배색 변주 확인용): 플레이 중 IntroDemo.RecordDream(dir, 1)</summary>
+        public static void RecordDream(string dir, int n, float interval = 0.1f) =>
+            new GameObject("DreamDemoRunner").AddComponent<IntroDemo>().StartCoroutine(DreamSeq(dir, n, interval));
+
+        static IEnumerator DreamSeq(string dir, int n, float interval)
+        {
+            var ov = StoryOverlay.I;
+            if (!ov) { Debug.LogWarning("DreamDemo: StoryOverlay 없음"); yield break; }
+            var stop = Record(dir, interval);
+            var d = StoryRun.Dreams[n - 1];
+            yield return ov.PlayDream(n, d.title, d.fragments, authored: DreamCuts.For(n));
+            stop();
+            Debug.Log("DreamDemo DONE");
+        }
+
+        /// <summary>오프닝 몽타주를 재생하며 녹화: 플레이 중 IntroDemo.RecordOpening(dir)</summary>
+        public static void RecordOpening(string dir, float interval = 1f / 30f) =>
+            new GameObject("OpeningDemoRunner").AddComponent<IntroDemo>().StartCoroutine(OpeningSeq(dir, interval));
+
+        static IEnumerator OpeningSeq(string dir, float interval)
+        {
+            var ov = StoryOverlay.I;
+            if (!ov) { Debug.LogWarning("OpeningDemo: StoryOverlay 없음"); yield break; }
+            var stop = Record(dir, interval);
+            yield return StoryRun1.PlayOpening(ov);
+            stop();
+            Debug.Log("OpeningDemo DONE");
+        }
+
         public static System.Action Record(string dir, float interval = 1f / 15f)
         {
             System.IO.Directory.CreateDirectory(dir);

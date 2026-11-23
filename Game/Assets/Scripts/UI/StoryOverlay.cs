@@ -427,14 +427,19 @@ namespace CatTang
             System.Array.Sort(frames, (a, b) => string.CompareOrdinal(a.name, b.name));
             var paper = new Color(0.93f, 0.9f, 0.84f);
             black.color = paper;
-            if (Sfx.Has("story_dream")) Sfx.Play("story_dream", 0.7f, 0f);
+            if (authored == null && Sfx.Has("story_dream")) Sfx.Play("story_dream", 0.7f, 0f);
             if (authored != null && frames.Length > 0)
             {
                 // 짜 둔 컷 목록 (꿈1 '멈춘 손' 등): 오프닝처럼 컷 많고 역동적이되 수채화 — 잔상은 은은하게, 디지털 글리치 대신 번짐
+                // 효과음 없이 전용 곡 story_dream{n}만 (2026-11-23 사용자), 재생 중 인게임 곡은 멈춤
                 var mt = Montage();
-                mt.echo = 0.2f; mt.glitch = 1.5f; mt.paintGlitch = true; mt.vignette = 0.35f;   // 물감 글리치 무작위 (2026-11-23 사용자)
+                mt.echo = 0.2f; mt.glitch = 0.6f; mt.glitchCueMin = 18f; mt.paintGlitch = true;   // 글리치 적당히 (2026-11-23 사용자: 너무 많음) mt.vignette = 0.35f;   // 물감 글리치 무작위 (2026-11-23 사용자)
+                mt.gradeChance = 0.35f; mt.gradeGlitch = 0.3f;                                    // 배색 변주: 디졸브 · 글리치 조각에 세피아 · 음화 · 청사진 무작위
+                mt.sfx = false; mt.mixTrans = 0.6f;                                                // 꿈 전체: 긴 컷 전환을 물감 덮기 ↔ 조각 섞기 + 글리치로 (2026-11-23 사용자)
+                Music.Story("story_dream" + n);
                 yield return mt.Play(authored, "Story/Dreams/dream" + n + "/");
-                mt.vignette = 1f; mt.paintGlitch = false; mt.glitch = 1f;
+                Music.StoryEnd(1.2f);
+                mt.vignette = 1f; mt.paintGlitch = false; mt.glitch = 1f; mt.gradeChance = 0f; mt.gradeGlitch = 0f; mt.sfx = true; mt.mixTrans = 0f; mt.glitchCueMin = 14f;
                 HideMontage();
             }
             else if (frames.Length > 0)
@@ -484,10 +489,7 @@ namespace CatTang
                 }
                 placeholder.text = "";
             }
-            caption.text = title;
-            caption.color = new Color(0.25f, 0.22f, 0.3f, 1);
-            yield return new WaitForSecondsRealtime(1.6f);
-            caption.text = ""; caption.color = UIKit.Cream;
+            // 꿈 제목 카드는 뺌 (2026-11-23 사용자: "멈춘 손 없애고") — 깨어나서 "젠장… 또 이상한 꿈을 꿨군…"으로 이어짐 (VillageStory)
             yield return FadeWhite(0, 1, 1.2f);
             Clear();
             SetBlack(1);

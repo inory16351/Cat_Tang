@@ -96,6 +96,45 @@ namespace CatTang
             S(dur, "휙 지나가는 기억: " + img, tin, 0.1f, ghost == null ? new[] { W(img, 1f, 0.003f) } : new[] { W(img, 1f, 0.003f), Ghost(W(ghost, 1.2f, 0.01f), 0.4f, 0f, 1f) },
               p0, p1, z0, z1, rot0, rot1, 9, 1, 1, new[] { Q(0f, sfx, shake) });
 
+        // ---- 배색 변주 (2026-11-23 사용자: "배색이랑 질감이 동일해서 … 세피아 필터나 색반전 같은 것도, 배색 다른 컷들도 중간중간, 디졸브 컷에도 섞어서") ----
+        // 보라 · 황토 수채화 사이에 끼우는 것: 컷 배색(G) · 빠져나가는 장면 배색(T) · 박자 음화 번쩍(Neg 큐 = 음수 flash) · 컷 안 잠깐 뒤집힘(F)
+        //   다른 배색으로 따로 그린 컷(크롬 ChatGPT): night_ws(남색 밤 작업대) · ink_wind(먹 + 주홍 초침) · teal_corridor(녹청 병원 복도)
+        //   · gold_child(주황 · 코발트, 거대한 문자판 앞 아이) · chalk_watch(검은 종이에 흰 분필 회중시계) · cyan_heart(청사진 심장 시계)
+        static MShot G(MShot s, MGrade g) { s.grade = g; return s; }
+        static MShot T(MShot s, MGrade g) { s.tinGrade = g; return s; }
+        static MShot F(MShot s, params (float u, float dur, MGrade g)[] f) { s.flips = f; return s; }
+        static MLayer LG(MLayer l, MGrade g) { l.grade = g; return l; }
+        static (float, string, float, float) Neg(float u, string sfx, float shake, float dur = 0.14f) => (u, sfx, shake, -dur);
+        // 다른 배색 컷 한 장: 짧게 · 크게 흔들리며
+        static MShot Alien(string img, string desc, float dur, float rot0, float rot1, float z0, float z1, Vector2 p0, Vector2 p1, string sfx, float shake, MTrans tin = MTrans.Cut, float tinDur = 0.1f, string ghost = null, MGrade ghostGrade = null) =>
+            S(dur, desc, tin, tinDur, ghost == null ? new[] { W(img, 1f, 0.003f) } : new[] { W(img, 1f, 0.003f), LG(Ghost(W(ghost, 1.15f, 0.01f), 0.3f, 0f, 1f), ghostGrade) },
+              p0, p1, z0, z1, rot0, rot1, 7, 1, 1, new[] { Q(0f, sfx, shake) });
+
+        // 움직이는 건 셀 프레임 · 오려 낸 부품으로 (2026-11-23 사용자: "움직이는 오브젝트는 연속된 동작 전부 이미지로 만들거나 오브젝트 따로 뽑아서 애니메이션 방식으로, 컷 엄청 많이")
+        //   ink_wind → _b → _c : 태엽 꼭지 · 손가락 · 주홍 초침이 한 단계씩 (셀)
+        //   cyan_heart ↔ _b : 이완 ↔ 수축 (박동마다 뚝뚝)
+        //   gold_child → _b → _c : 거대 문자판 바늘이 12시로 → 빛이 터지며 아이가 빛에 삼켜짐
+        //   chalk_bg + chalk_watch_obj : 분필 회중시계만 오려 내 진자로 흔들림 (축 = 사슬 꼭대기)
+        static readonly string[] InkCels = { "ink_wind", "ink_wind_b", "ink_wind_c" };
+        static MShot Ink(int cel, float dur, float rot, float z, string sfx = "e4_tick_2", float shake = 9, MGrade g = null) =>
+            G(S(dur, "먹 · 주홍 초침 태엽 (셀 " + (cel + 1) + ")", MTrans.Cut, 0, new[] { W(InkCels[cel % 3], 1f, 0.002f) }, O, O, z, z + 0.04f, rot, rot, 5, 1, 1,
+              new[] { Q(0f, sfx, shake) }), g);
+        static MShot Heart(bool squeeze, float dur, float rot, float z, float shake, MGrade g = null) =>
+            G(S(dur, squeeze ? "청사진 심장 · 수축" : "청사진 심장 · 이완", MTrans.Cut, 0, new[] { W(squeeze ? "cyan_heart_b" : "cyan_heart", 1f, 0.002f) }, O, O, z, z + (squeeze ? -0.03f : 0.05f), rot, rot, 4, 1, 1,
+              new[] { Q(0f, "heart", shake) }), g);
+        static MShot Child(int cel, float dur, Vector2 p0, Vector2 p1, float z0, float z1, (float, string, float, float)[] cues, MTrans tin = MTrans.Cut) =>
+            S(dur, "거대한 문자판 앞의 작은 아이 (셀 " + (cel + 1) + ")", tin, 0.12f,
+              new[] { W(cel == 0 ? "gold_child" : cel == 1 ? "gold_child_b" : "gold_child_c", 0.75f, 0.004f, 0.002f) }, p0, p1, z0, z1, 1.5f, -1.5f, 4, 1.06f, 2, cues);
+        /// <summary>검은 종이 + 오려 낸 분필 회중시계가 사슬 꼭대기를 축으로 흔들림 (wave)</summary>
+        static MShot Chalk(float dur, float hz, float amp, float z0, float z1, float rot, (float, string, float, float)[] cues)
+        {
+            var watch = Part("chalk_watch_obj", 1067, new Vector2(40f / 730f, 1f), new Vector2(134, 605), 1.1f, -26f, -26f + amp, 0.0015f, 0f);
+            watch.wave = hz;
+            var s = S(dur, "분필 회중시계 진자", MTrans.Cut, 0, new[] { W("chalk_bg", 0.7f, 0.004f), watch }, O, new(0, -20), z0, z1, rot, rot * 0.5f, 4, 1, 2, cues);
+            s.tint = Color.black;
+            return s;
+        }
+
         static MShot[] Dream1 => new[]
         {
             // ══ 1. 꿈이 열림: 종이에 물감 한 방울 → 시계공 작업대가 카메라를 따라 그려짐 → 흔들리는 회중시계
@@ -111,85 +150,135 @@ namespace CatTang
               new[] { Q(0.1f, "e4_tick_1", 2), Q(0.45f, "e4_tick_2", 2), Q(0.8f, "e4_tick_1", 2) }),
             S(0.35f, "흔들리는 시계 크래시 줌", MTrans.Cut, 0, new[] { W("ws_bg", 0.55f, 0.012f), Pendulum(-120, 820, 18, 0.7f) },
               new(-260, 20), new(150, -330), 1.3f, 2.3f, -6, 12, 10, 1, 1, new[] { Q(0f, "e4_bell_2", 16, 0.06f) }),
-            Dart("dial_face", "wind_child", 0.16f, 14, 8, 1.6f, 1.75f, new(80, 0), new(-60, 0), "e4_tick_2", 10),
+            // 같은 작업대, 한밤의 남색 — 노을빛이 꺼지고 등불만 남음
+            T(Alien("night_ws", "한밤의 작업대 (남색 · 등불 하나)", 0.55f, -3, 2, 1.12f, 1.26f, new(140, 0), new(-90, 10), "e4_tick_2", 6, MTrans.Dissolve, 0.16f, "ws_bg", MGrade.Negative), MGrade.Cyanotype),
+            G(Dart("dial_face", "wind_child", 0.16f, 14, 8, 1.6f, 1.75f, new(80, 0), new(-60, 0), "e4_tick_2", 10), MGrade.Negative),
             Dart("book_old", null, 0.13f, -12, -16, 1.3f, 1.4f, new(-90, 20), new(70, -10), "heart", 9),
 
             // ══ 2. 태엽 감는 손: 노인 ↔ 아이 (같은 구도 매치 컷, 점점 빨라짐) · 컷마다 다른 시간이 겹쳐 비침
             S(1.0f, "태엽을 감는 주름진 손", MTrans.Dissolve, 0.18f, new[] { W("wind_old", 1f, 0.004f, 0f), Ghost(W("wind_child", 1.08f, 0.006f), 0.45f, 0.3f, 0.7f), Ghost(W("book_old", 0.7f, 0.012f), 0.18f, 0.05f, 0.45f) },
               new(-40, 0), new(45, -16), 1.04f, 1.2f, 3, -3, 5, 1, 1, new[] { Q(0.15f, "e4_tick_1", 3), Q(0.55f, "e4_tick_2", 3) }),
-            Wind(false, 0.32f, 5, 1.06f), Wind(true, 0.28f, -6, 1.1f),
+            // 노인 손은 바랜 사진(세피아) · 먹 · 음화로 번갈아, 아이 손은 원래 색 → 같은 구도인데 시간의 색이 엇갈림
+            Wind(false, 0.32f, 5, 1.06f), G(Wind(true, 0.28f, -6, 1.1f), MGrade.Sepia),
             Crown(true, 0.22f, -8), Dart("book_page1", "crown_child", 0.12f, 10, 14, 1.5f, 1.6f, new(200, 0), new(80, 0), "e4_tick_1", 12),
-            Crown(false, 0.2f, 9), Wind(false, 0.17f, 11, 1.14f), Wind(true, 0.15f, -12, 1.18f),
-            Dart("ecg_wash", "wind_old", 0.12f, -14, -10, 1.35f, 1.45f, new(-120, 0), new(60, 0), "heart", 14),
-            Crown(true, 0.13f, -13), Crown(false, 0.12f, 14), Wind(false, 0.11f, 15, 1.22f), Wind(true, 0.11f, -16, 1.26f),
+            // 먹 · 주홍 초침 셀: 꼭지가 한 단계씩 감기고 초침이 한 칸씩 (째깍마다 한 장)
+            Ink(0, 0.1f, -10, 1.1f, "e4_tick_1"), Ink(1, 0.1f, -10, 1.12f), Ink(2, 0.12f, -10, 1.14f, "e4_tick_1", 11),
+            Crown(false, 0.2f, 9), Wind(false, 0.17f, 11, 1.14f), G(Wind(true, 0.15f, -12, 1.18f), MGrade.Ink),
+            G(Dart("ecg_wash", "wind_old", 0.12f, -14, -10, 1.35f, 1.45f, new(-120, 0), new(60, 0), "heart", 14), MGrade.Verdigris),
+            G(Crown(true, 0.13f, -13), MGrade.Negative), Crown(false, 0.12f, 14),
+            Ink(0, 0.07f, 14, 1.5f, "e4_tick_1", 12), Ink(1, 0.07f, 14, 1.54f), Ink(2, 0.08f, 14, 1.58f, "e4_tick_1", 12, MGrade.Negative),
+            Wind(false, 0.11f, 15, 1.22f), G(Wind(true, 0.11f, -16, 1.26f), MGrade.OldNegative),
 
             // ══ 3. 아이 — 작업대에서 지켜보던 눈 → 밤에 펼치던 그림책 (실루엣)
-            S(1.1f, "작업대에서 노인의 손을 지켜보는 아이", MTrans.Paint, 0.6f, new[] { W("boy_watch", 0.5f, 0.004f), Ghost(W("book_boy", 0.9f, 0.01f), 0.35f, 0.35f, 0.9f), Ghost(W("hands_overlap", 1.1f, 0.014f), 0.14f, 0.05f, 0.4f) },
-              new(70, 0), new(-50, 10), 1.18f, 1.22f, -2, 3, 4, 0.78f, 1, new[] { Q(0.3f, "e4_tick_2", 2), Q(0.7f, "e4_tick_1", 2) }),
+            T(S(1.1f, "작업대에서 노인의 손을 지켜보는 아이", MTrans.Paint, 0.6f, new[] { W("boy_watch", 0.5f, 0.004f), Ghost(W("book_boy", 0.9f, 0.01f), 0.35f, 0.35f, 0.9f), LG(Ghost(W("hands_overlap", 1.1f, 0.014f), 0.14f, 0.05f, 0.4f), MGrade.Negative) },
+              new(70, 0), new(-50, 10), 1.18f, 1.22f, -2, 3, 4, 0.78f, 1, new[] { Q(0.3f, "e4_tick_2", 2), Q(0.7f, "e4_tick_1", 2) }), MGrade.Sepia),
             Dart("wind_child", "book_boy", 0.14f, 12, 6, 1.3f, 1.42f, new(100, 0), new(-40, 0), "heart", 10),
-            S(1.2f, "이불 속에서 그림책을 펼친 아이 (실루엣)", MTrans.Paint, 0.7f, new[] { W("book_boy", 0.8f, 0.004f, 0f), Ghost(W("book_page1", 1.1f, 0.01f), 0.3f, 0.4f, 0.9f), Ghost(W("dial_face", 1.2f, 0.014f), 0.12f, 0f, 0.35f) },
-              new(-90, 20), new(60, -20), 1.06f, 1.26f, -4, 3, 4, 1.12f, 1, new[] { Q(0.25f, "e4_tick_1", 2), Q(0.65f, "e4_tick_2", 2) }),
-            S(0.32f, "그림책 표지로 크래시 줌", MTrans.Cut, 0, new[] { W("book_boy", 0.8f, 0.006f) }, new(60, -20), new(-980, 420), 1.3f, 2.4f, 4, -8, 9, 1, 1,   // 표지의 고양이 실루엣 쪽으로
-              new[] { Q(0f, "intro_whoosh_1", 14) }),
-            // 파노라마: 펼친 그림책을 훑어 가는 카메라를 따라 장면이 물감으로 그려짐 (왼쪽 노을 → 오른쪽 고양이 실루엣)
-            S(1.9f, "펼친 그림책을 따라 그려지는 노을과 고양이", MTrans.Zoom, 0.2f, new[]
+            // 주황 · 코발트: 거대한 문자판 앞의 작은 아이 (따로 그린 다른 배색 컷) — 줌 관통으로 그림책에 이어짐
+            //   셀 3장: 바늘이 12시로 모임 → 12시 → 빛이 터지며 아이가 빛에 삼켜짐. 카메라는 세 컷을 이어 한 번에 올려다봄
+            Child(0, 0.32f, new(0, 70), new(0, 30), 1.05f, 1.1f, new[] { Q(0f, "e4_bell_2", 8), Q(0.6f, "e4_tick_1", 3) }, MTrans.Whip),
+            Child(1, 0.26f, new(0, 30), new(0, 0), 1.1f, 1.16f, new[] { Q(0f, "e4_tick_2", 10) }),
+            Child(2, 0.34f, new(0, 0), new(0, -40), 1.16f, 1.3f, new[] { Neg(0f, "e4_bell_2", 16, 0.14f) }),
+            // 동화책 (2026-11-23 사용자: "동화 부분은 배색이 너무 비슷함, 글리치랑 물감 트랜지션 적절하게 섞어"):
+            //   긴 파노라마 · 대결 컷을 쪼개 구간마다 배색을 바꾸고(원색 → 청록 돌림 → 달밤 / 달밤 → 황토 판화)
+            //   구간 사이는 물감 덮기(Paint)와 조각 섞기(Mix) + 글리치 박자(흔들림 ≥ 14)를 번갈아 → 책장이 넘어갈 때마다 다른 판본으로 찍힌 듯
+            T(F(S(1.2f, "이불 속에서 그림책을 펼친 아이 (실루엣)", MTrans.Paint, 0.7f, new[] { W("book_boy", 0.8f, 0.004f, 0f), LG(Ghost(W("book_page1", 1.1f, 0.01f), 0.3f, 0.4f, 0.9f), MGrade.Negative), Ghost(W("dial_face", 1.2f, 0.014f), 0.12f, 0f, 0.35f) },
+              new(-90, 20), new(60, -20), 1.06f, 1.26f, -4, 3, 4, 1.12f, 1, new[] { Q(0.25f, "e4_tick_1", 2), Q(0.55f, "e4_tick_2", 15), Q(0.8f, "e4_tick_1", 2) }),
+              (0.55f, 0.1f, MGrade.Cyanotype)), MGrade.OldNegative),
+            G(S(0.32f, "그림책 표지로 크래시 줌 (달밤)", MTrans.Mix, 0.2f, new[] { W("book_boy", 0.8f, 0.006f) }, new(60, -20), new(-980, 420), 1.3f, 2.4f, 4, -8, 9, 1, 1,   // 표지의 고양이 실루엣 쪽으로
+              new[] { Q(0f, "intro_whoosh_1", 16) }), MGrade.Moon),
+            // 파노라마 ①: 원래 노을빛으로 그려지기 시작
+            S(0.75f, "펼친 그림책 ① 노을", MTrans.Zoom, 0.2f, new[]
               {
-                  Painted(W("book_page1", 1f, 0.003f, 0.002f), 0.45f, 1.25f, R, 0.16f),
-                  Ghost(W("ws_bg", 0.7f, 0.014f), 0.16f, 0.05f, 0.45f),
-                  Ghost(W("book_boy", 0.8f, 0.014f), 0.12f, 0.6f, 1f),
-              }, new(360, 30), new(-360, -20), 1.45f, 1.55f, 3, -3, 4, 1, 2,
-              new[] { Q(0.1f, "e4_tick_1", 2), Q(0.5f, "e4_tick_2", 2), Q(0.9f, "shot_1", 8) }),
-            Dart("book_old", "book_page1", 0.12f, -10, -14, 1.4f, 1.5f, new(-60, 0), new(60, 0), "heart", 12),
-            // 무법자와 대결: 악당 쪽이 먼저 그려지고 → 카메라가 넘어가며 고양이가 그려짐
-            S(1.6f, "무법자들과 맞서는 고양이 (그려지며 훑음)", MTrans.Cut, 0, new[]
+                  Painted(W("book_page1", 1f, 0.003f, 0.002f), 0.45f, 0.85f, R, 0.16f),
+                  Ghost(W("ws_bg", 0.7f, 0.014f), 0.16f, 0.05f, 0.6f),
+              }, new(360, 30), new(130, 15), 1.45f, 1.49f, 3, 1, 4, 1, 2,
+              new[] { Q(0.1f, "e4_tick_1", 2), Q(0.6f, "e4_tick_2", 2) }),
+            // ② 물감이 덮었다 걷히면 같은 책장이 청록으로 (노을 → 청록 하늘)
+            T(G(S(0.6f, "펼친 그림책 ② 청록", MTrans.Paint, 0.34f, new[]
               {
-                  Painted(W("book_page2", 1f, 0.003f, 0.002f), 0.2f, 1.25f, R, 0.16f),
-                  Ghost(W("book_boy", 0.8f, 0.012f), 0.18f, 0.55f, 1f),
-              }, new(380, 10), new(-360, 0), 1.5f, 1.6f, -4, 4, 5, 1, 2,
-              new[] { Q(0.15f, "e4_tick_2", 3), Q(0.55f, "e4_tick_1", 3) }),
+                  Painted(W("book_page1", 1f, 0.003f, 0.002f), 0.8f, 1.05f, R, 0.16f),
+                  LG(Ghost(W("book_boy", 0.8f, 0.014f), 0.18f, 0.2f, 1f), MGrade.Negative),
+              }, new(130, 15), new(-120, 0), 1.49f, 1.52f, 1, -1, 4, 1, 2,
+              new[] { Q(0.15f, "e4_tick_2", 2), Q(0.7f, "e4_tick_1", 15) }), MGrade.Shift(150)), MGrade.Sepia),
+            // ③ 조각이 엇갈리며(글리치) 달밤 판본으로 — 오른쪽 고양이 실루엣
+            G(S(0.65f, "펼친 그림책 ③ 달밤의 고양이", MTrans.Mix, 0.26f, new[]
+              {
+                  Painted(W("book_page1", 1f, 0.003f, 0.002f), 1.0f, 1.25f, R, 0.16f),
+                  Ghost(W("ws_bg", 0.7f, 0.014f), 0.14f, 0.3f, 1f),
+              }, new(-120, 0), new(-360, -20), 1.52f, 1.56f, -1, -3, 4, 1, 2,
+              new[] { Q(0f, "e4_tick_2", 15), Q(0.85f, "shot_1", 8) }), MGrade.Moon),
+            G(Dart("book_old", "book_page1", 0.12f, -10, -14, 1.4f, 1.5f, new(-60, 0), new(60, 0), "heart", 14), MGrade.Verdigris),
+            // 무법자와 대결: 악당 쪽이 먼저 그려지고(달밤) → 물감이 덮고 걷히며 고양이 쪽은 황토 판화로
+            G(S(0.8f, "무법자들 (그려지며 훑음 · 달밤)", MTrans.Mix, 0.22f, new[]
+              {
+                  Painted(W("book_page2", 1f, 0.003f, 0.002f), 0.2f, 0.75f, R, 0.16f),
+                  Ghost(W("book_boy", 0.8f, 0.012f), 0.18f, 0.4f, 1f),
+              }, new(380, 10), new(10, 5), 1.5f, 1.55f, -4, 0, 5, 1, 2,
+              new[] { Q(0f, "e4_tick_2", 15), Q(0.55f, "e4_tick_1", 3) }), MGrade.Moon),
+            T(G(S(0.8f, "맞서는 고양이 (그려지며 훑음 · 황토 판화)", MTrans.Paint, 0.3f, new[]
+              {
+                  Painted(W("book_page2", 1f, 0.003f, 0.002f), 0.7f, 1.25f, R, 0.16f),
+                  LG(Ghost(W("wind_child", 1.15f, 0.012f), 0.2f, 0.3f, 1f), MGrade.Negative),
+              }, new(10, 5), new(-360, 0), 1.55f, 1.6f, 0, 4, 5, 1, 2,
+              new[] { Q(0.2f, "e4_tick_1", 3), Q(0.75f, "e4_tick_2", 14) }), MGrade.Ochre), MGrade.Moon),
             // 탕! — 고양이 ↔ 악당 (셀처럼 끊어서, 물감 글리치)
-            S(0.2f, "총을 뽑은 고양이 실루엣", MTrans.Cut, 0, new[] { W("book_page2", 1f, 0.002f) }, new(-360, 40), new(-430, 70), 2.0f, 2.4f, 8, 12, 9, 1, 1, new[] { Q(0f, "shot_1", 20, 0.1f) }),
-            S(0.16f, "무법자들", MTrans.Cut, 0, new[] { W("book_page2", 1f, 0.002f) }, new(560, 40), new(610, 50), 1.9f, 2.05f, -12, -14, 10, 1, 1, new[] { Q(0f, "shot_1", 16, 0.06f) }),
-            S(0.16f, "총을 뽑은 고양이 실루엣", MTrans.Cut, 0, new[] { W("book_page2", 1f, 0.002f) }, new(-400, 60), new(-420, 60), 2.3f, 2.5f, -6, -9, 10, 1, 1, new[] { Q(0f, "shot_1", 18, 0.08f) }),
-            S(0.4f, "쌍권총 고양이 실루엣", MTrans.Cut, 0, new[] { W("book_page2", 1f, 0.002f), Ghost(W("wind_child", 1.2f, 0.01f), 0.25f, 0.2f, 1f) },
-              new(-380, 50), new(-320, 30), 2.5f, 1.95f, 6, 0, 6, 1, 1, new[] { Q(0f, "shot_1", 22, 0.12f), Q(0.5f, "e4_tick_1", 6) }),
+            // 총성마다 화면이 음화로 뒤집힘 · 악당 컷은 핏빛 두 색 · 다시 고양이는 먹 판화 · 마지막 쌍권총은 청사진 → 바랜 음화
+            S(0.2f, "총을 뽑은 고양이 실루엣", MTrans.Cut, 0, new[] { W("book_page2", 1f, 0.002f) }, new(-360, 40), new(-430, 70), 2.0f, 2.4f, 8, 12, 9, 1, 1, new[] { Neg(0f, "shot_1", 20, 0.12f) }),
+            G(S(0.16f, "무법자들", MTrans.Cut, 0, new[] { W("book_page2", 1f, 0.002f) }, new(560, 40), new(610, 50), 1.9f, 2.05f, -12, -14, 10, 1, 1, new[] { Q(0f, "shot_1", 16, 0.06f) }), MGrade.Blood),
+            G(S(0.16f, "총을 뽑은 고양이 실루엣", MTrans.Cut, 0, new[] { W("book_page2", 1f, 0.002f) }, new(-400, 60), new(-420, 60), 2.3f, 2.5f, -6, -9, 10, 1, 1, new[] { Q(0f, "shot_1", 18, 0.08f) }), MGrade.Ink),
+            F(G(S(0.4f, "쌍권총 고양이 실루엣", MTrans.Mix, 0.14f, new[] { W("book_page2", 1f, 0.002f), Ghost(W("wind_child", 1.2f, 0.01f), 0.25f, 0.2f, 1f) },
+              new(-380, 50), new(-320, 30), 2.5f, 1.95f, 6, 0, 6, 1, 1, new[] { Q(0f, "shot_1", 22, 0.12f), Q(0.5f, "e4_tick_1", 15) }), MGrade.Cyanotype), (0.5f, 0.2f, MGrade.OldNegative)),
 
             // ══ 4. 현재: 같은 그림책이 낡은 채 병상 협탁에 — 어린 시간과 겹침
-            S(1.3f, "병상 협탁의 낡은 그림책", MTrans.Paint, 0.65f, new[] { W("book_old", 0.8f, 0.004f, 0.002f), Ghost(W("book_boy", 1.05f, 0.01f), 0.35f, 0.05f, 0.45f), Ghost(W("ecg_wash", 0.9f, 0.012f), 0.25f, 0.5f, 0.95f) },
-              new(60, -20), new(-50, 10), 1.12f, 1.26f, 2, -2, 3, 0.84f, 1, new[] { Q(0.15f, "heart", 3), Q(0.6f, "heart", 3) }),
+            T(S(1.3f, "병상 협탁의 낡은 그림책", MTrans.Paint, 0.65f, new[] { W("book_old", 0.8f, 0.004f, 0.002f), LG(Ghost(W("book_boy", 1.05f, 0.01f), 0.35f, 0.05f, 0.45f), MGrade.Sepia), Ghost(W("ecg_wash", 0.9f, 0.012f), 0.25f, 0.5f, 0.95f) },
+              new(60, -20), new(-50, 10), 1.12f, 1.26f, 2, -2, 3, 0.84f, 1, new[] { Q(0.15f, "heart", 3), Q(0.6f, "heart", 3) }), MGrade.Negative),
             Dart("ecg_wash", "book_page2", 0.13f, -10, -6, 1.35f, 1.45f, new(140, 0), new(20, 0), "heart", 14),
+            // 녹청 형광등 복도 (따로 그린 다른 배색 컷): 실려 가며 올려다본 천장
+            S(0.7f, "실려 가며 올려다본 녹청 복도", MTrans.Whip, 0.1f, new[] { W("teal_corridor", 0.9f, 0.004f, 0.01f), LG(Ghost(W("book_old", 1.15f, 0.012f), 0.2f, 0.3f, 1f), MGrade.Negative) },
+              new(0, 200), new(0, -220), 1.15f, 1.35f, -9, -4, 10, 1.15f, 2, new[] { Q(0f, "heart", 10), Q(0.4f, "heart", 8), Neg(0.75f, "heart", 16, 0.1f) }),
             Dart("wind_old", "book_old", 0.12f, 12, 16, 1.3f, 1.4f, new(-80, 0), new(40, 0), "e4_tick_1", 10),
             // 바늘 없는 문자판 + 따로 얹은 바늘: 초침 55 → 57 째깍
             S(1.1f, "회중시계: 째깍이는 초침", MTrans.Zoom, 0.2f, Dial("dial_face", null, 0, 0, 55, 57, 2f / 1.1f * 1.01f),
               O, O, 1.0f, 1.14f, 0, -3, 2.5f, 1, 1, new[] { Q(0f, "e4_tick_1", 3), Q(0.5f, "e4_tick_2", 3), Q(0.98f, "e4_tick_1", 3) }),
             // 레퀴엠식 끼어들기 (현재 · 과거 · 그림책 무작위, 겹쳐 비침)
-            Flick("wind_child", 9, 1.3f, "heart", "book_page1"), Flick("book_old", -11, 1.35f, "e4_tick_2"), Flick("boy_watch", 7, 1.28f, "heart", "ecg_wash"),
-            Flick("book_page2", -13, 1.6f, "shot_1"), Flick("crown_old", 12, 1.4f, "e4_tick_1", "wind_child"), Flick("book_boy", -8, 1.5f, "heart"),
-            Flick("hands_overlap", 10, 1.4f, "e4_tick_2", "book_old"), Flick("ws_bg", -14, 1.5f, "heart", "dial_face"),
+            //   (배색도 컷마다 뒤섞임: 음화 · 세피아 · 청사진 · 따로 그린 분필 회중시계 · 녹청 복도)
+            Flick("wind_child", 9, 1.3f, "heart", "book_page1"), G(Flick("book_old", -11, 1.35f, "e4_tick_2"), MGrade.Negative), G(Flick("boy_watch", 7, 1.28f, "heart", "ecg_wash"), MGrade.Sepia),
+            Chalk(0.4f, 1.3f, 30, 1.04f, 1.14f, -5, new[] { Q(0f, "e4_tick_1", 6), Q(0.5f, "e4_tick_2", 6) }),
+            G(Flick("book_page2", -13, 1.6f, "shot_1"), MGrade.Blood), Flick("crown_old", 12, 1.4f, "e4_tick_1", "wind_child"), G(Flick("book_boy", -8, 1.5f, "heart"), MGrade.Cyanotype),
+            Flick("teal_corridor", 11, 1.3f, "heart", "dial_face"),
+            G(Flick("hands_overlap", 10, 1.4f, "e4_tick_2", "book_old"), MGrade.OldNegative), Flick("ws_bg", -14, 1.5f, "heart", "dial_face"), Flick("night_ws", 8, 1.35f, "e4_tick_2"),
 
             // ══ 5. 박동마다 줌이 확확 들어가며 심장의 피가 물감처럼 번지고 초침이 한 칸씩
+            //   박동 = 한 번씩 화면이 음화로 뒤집힘(Neg) · 박동 사이 끼어드는 컷은 청사진 · 핏빛
             Beat("dial_face", "bleed1", 57, 58, 1.0f, 1.14f, 0.5f, 10, 0.05f, -3),
-            Dart("book_page2", "bleed1", 0.1f, 14, 10, 1.7f, 1.8f, new(-300, 40), new(-340, 40), "shot_1", 16),
-            Beat("bleed1", "bleed2", 58, 59, 1.18f, 1.36f, 0.48f, 14, 0.08f, 4),
-            Dart("wind_child", "bleed2", 0.1f, -12, -16, 1.4f, 1.5f, new(60, 0), new(-60, 0), "heart", 14),
+            G(Dart("book_page2", "bleed1", 0.1f, 14, 10, 1.7f, 1.8f, new(-300, 40), new(-340, 40), "shot_1", 16), MGrade.Blood),
+            F(Beat("bleed1", "bleed2", 58, 59, 1.18f, 1.36f, 0.48f, 14, 0.08f, 4), (0.55f, 0.07f, MGrade.Negative)),
+            G(Dart("wind_child", "bleed2", 0.1f, -12, -16, 1.4f, 1.5f, new(60, 0), new(-60, 0), "heart", 14), MGrade.Cyanotype),
             S(0.6f, "59초에서 떨리는 초침", MTrans.Cut, 0, Dial("bleed2", null, 0, 0, 59, 59, 0, 12f), O, O, 1.4f, 1.55f, -6, 6, 8, 1, 1,
-              new[] { Q(0f, "heart", 16, 0.06f), Q(0.55f, "heart", 10) }),
+              new[] { Neg(0f, "heart", 16, 0.1f), Q(0.55f, "heart", 10) }),
+            // 청사진 심장 시계 (따로 그린 다른 배색 컷)
+            // 청사진 심장 셀: 이완 ↔ 수축이 박동마다 뚝뚝 (점점 빨라짐)
+            Heart(false, 0.14f, 8, 1.2f, 12), Heart(true, 0.1f, 8, 1.24f, 18), Heart(false, 0.11f, 9, 1.28f, 10), Heart(true, 0.09f, 10, 1.32f, 20, MGrade.Negative),
             Beat("bleed2", "bleed3", 59, 59, 1.6f, 1.9f, 0.55f, 20, 0.1f, -8),
-            S(0.24f, "시계 뒤로 번져 오는 심장 (근접)", MTrans.Cut, 0, new[] { W("heart_clock2", 1f, 0.002f), Ghost(W("book_page2", 1.2f, 0.012f), 0.2f, 0f, 1f) }, O, O, 1.2f, 1.5f, 10, 14, 10, 1, 1, new[] { Q(0f, "heart", 20, 0.08f) }),
+            G(S(0.24f, "시계 뒤로 번져 오는 심장 (근접)", MTrans.Cut, 0, new[] { W("heart_clock2", 1f, 0.002f), Ghost(W("book_page2", 1.2f, 0.012f), 0.2f, 0f, 1f) }, O, O, 1.2f, 1.5f, 10, 14, 10, 1, 1, new[] { Q(0f, "heart", 20, 0.08f) }), MGrade.Negative),
+            Heart(true, 0.08f, -12, 1.6f, 20), Heart(false, 0.08f, -13, 1.66f, 12), Heart(true, 0.08f, -14, 1.72f, 22, MGrade.Blood),
             S(0.3f, "하나로 번진 시계와 심장 (근접)", MTrans.Cut, 0, new[] { W("heart_clock3", 1f, 0.002f), Ghost(W("book_old", 1.1f, 0.014f), 0.15f, 0f, 1f) }, O, O, 1.5f, 2.0f, -10, -15, 11, 1, 1, new[] { Q(0f, "heart", 24, 0.1f) }),
             S(1.1f, "피로 넘쳐흐르는 시계", MTrans.Cut, 0, Dial("bleed3", null, 0, 0, 59, 59, 0, 8f), O, O, 2.0f, 1.0f, 8, 0, 5, 1, 1,
               new[] { Q(0f, "heart", 18, 0.06f), Q(0.5f, "heart", 8), Q(0.9f, "heart", 4) }),
             // 심전도가 물에 번져 흘러내림 — 카메라를 따라 그려지며 (박동이 느려짐)
-            S(1.0f, "물에 번지는 심전도", MTrans.Paint, 0.6f, new[] { Painted(W("ecg_wash", 1f, 0.002f, 0.004f), 0.2f, 1.3f, R, 0.2f), Ghost(W("bleed3", 1.1f, 0.012f), 0.25f, 0.05f, 0.55f), Ghost(W("book_old", 0.8f, 0.012f), 0.16f, 0.45f, 1f) },
-              new(240, 0), new(-240, -10), 1.2f, 1.28f, 5, 1, 4, 1, 2, new[] { Q(0.1f, "heart", 6), Q(0.6f, "heart", 3) }),
+            T(S(1.0f, "물에 번지는 심전도", MTrans.Paint, 0.6f, new[] { Painted(W("ecg_wash", 1f, 0.002f, 0.004f), 0.2f, 1.3f, R, 0.2f), Ghost(W("bleed3", 1.1f, 0.012f), 0.25f, 0.05f, 0.55f), Ghost(W("book_old", 0.8f, 0.012f), 0.16f, 0.45f, 1f) },
+              new(240, 0), new(-240, -10), 1.2f, 1.28f, 5, 1, 4, 1, 2, new[] { Q(0.1f, "heart", 6), Q(0.6f, "heart", 3) }), MGrade.Blood),
 
             // ══ 6. 엇갈리는 기억이 휙휙 → 그림책 속 고양이가 책장 밖으로 걸어 나옴 (고양이는 어디서 왔나)
-            Dart("book_boy", "wind_old", 0.12f, 10, 14, 1.3f, 1.4f, new(-90, 0), new(30, 0), "e4_tick_1", 10, MTrans.Flash),
-            Dart("book_page2", "dial_face", 0.11f, -14, -10, 1.6f, 1.7f, new(-340, 30), new(-300, 30), "shot_1", 16),
-            Dart("boy_watch", "bleed2", 0.11f, 9, 5, 1.3f, 1.42f, new(80, 0), new(-40, 0), "heart", 12),
-            Dart("wind_child", "book_old", 0.11f, -12, -16, 1.35f, 1.45f, new(-60, 0), new(60, 0), "e4_tick_2", 12),
-            S(0.9f, "펼친 그림책 (다시)", MTrans.Dissolve, 0.18f, new[] { W("book_page1", 1f, 0.004f, 0.002f), Ghost(W("book_old", 0.9f, 0.012f), 0.25f, 0.05f, 0.55f), Ghost(W("hands_overlap", 1.1f, 0.014f), 0.15f, 0.5f, 1f) },
-              new(-200, 10), new(-280, 0), 1.35f, 1.48f, 2, -2, 3, 1, 1, new[] { Q(0.3f, "heart", 3) }),
+            G(Dart("book_boy", "wind_old", 0.12f, 10, 14, 1.3f, 1.4f, new(-90, 0), new(30, 0), "e4_tick_1", 10, MTrans.Flash), MGrade.Sepia),
+            Ink(1, 0.06f, -8, 1.3f, "e4_tick_2", 12), Ink(2, 0.06f, -8, 1.33f, "e4_tick_1", 12),
+            G(Dart("book_page2", "dial_face", 0.11f, -14, -10, 1.6f, 1.7f, new(-340, 30), new(-300, 30), "shot_1", 16), MGrade.Negative),
+            Child(1, 0.07f, new(0, 20), new(0, 10), 1.3f, 1.34f, new[] { Q(0f, "heart", 12) }), Child(2, 0.08f, new(0, 10), new(0, -10), 1.36f, 1.42f, new[] { Q(0f, "e4_tick_1", 12) }),
+            G(Dart("boy_watch", "bleed2", 0.11f, 9, 5, 1.3f, 1.42f, new(80, 0), new(-40, 0), "heart", 12), MGrade.Verdigris),
+            Chalk(0.16f, 3f, 34, 1.3f, 1.4f, -10, new[] { Q(0f, "e4_tick_1", 12) }),
+            G(Dart("wind_child", "book_old", 0.11f, -12, -16, 1.35f, 1.45f, new(-60, 0), new(60, 0), "e4_tick_2", 12), MGrade.Cyanotype),
+            T(S(0.9f, "펼친 그림책 (다시)", MTrans.Dissolve, 0.18f, new[] { W("book_page1", 1f, 0.004f, 0.002f), Ghost(W("book_old", 0.9f, 0.012f), 0.25f, 0.05f, 0.55f), Ghost(W("hands_overlap", 1.1f, 0.014f), 0.15f, 0.5f, 1f) },
+              new(-200, 10), new(-280, 0), 1.35f, 1.48f, 2, -2, 3, 1, 1, new[] { Q(0.3f, "heart", 3) }), MGrade.OldNegative),
             S(2.2f, "책장 밖으로 걸어 나오는 고양이", MTrans.Zoom, 0.25f, new[]
               {
                   Painted(W("book_rise", 1f, 0.004f, 0.0f), 0.0f, 1.25f, Up, 0.2f),   // 아래(책장)에서 위(떠오른 고양이)로 번져 그려짐
@@ -198,16 +287,17 @@ namespace CatTang
               }, new(0, -100), new(0, 70), 1.15f, 1.34f, -2, 2, 2.5f, 1.12f, 0,
               new[] { Q(0.1f, "story_dream", 1), Q(0.5f, "heart", 4), Q(0.88f, "e4_bell_2", 8, 0.05f) }),
             S(0.3f, "떠오른 고양이로 크래시 줌", MTrans.Cut, 0, new[] { W("book_rise", 1f, 0.003f) }, new(0, 70), new(-60, -330), 1.34f, 2.2f, 2, -7, 8, 1, 1,
-              new[] { Q(0f, "shot_1", 18, 0.1f) }),
+              new[] { Neg(0f, "shot_1", 18, 0.14f) }),
 
             // ══ 7. 아이 손이 노인 손 위에 겹쳐 같은 시계를 쥠 → 녹아내리는 11:59 (셀 단계)
-            S(1.9f, "노인 손 위에 겹친 아이 손", MTrans.Paint, 0.8f, new[] { W("hands_overlap", 1f, 0.006f, 0.0f), Ghost(W("book_old", 0.7f, 0.012f), 0.25f, 0.05f, 0.45f), Ghost(W("boy_watch", 0.6f, 0.012f), 0.2f, 0.4f, 0.8f) },
-              new(0, -14), new(0, 14), 1.02f, 1.16f, 0, 0, 1.5f, 1.08f, 0, new[] { Q(0.15f, "heart", 2), Q(0.6f, "heart", 2) }),
-            Dart("book_rise", "hands_overlap", 0.12f, 8, 4, 1.25f, 1.32f, new(40, 0), new(-30, 0), "heart", 8),
-            S(0.55f, "녹기 시작하는 11:59", MTrans.Dissolve, 0.2f, new[] { W("melt_a", 1f, 0.003f), Ghost(W("bleed3", 1.1f, 0.012f), 0.18f, 0f, 0.6f) }, new(0, 20), new(0, 10), 1.04f, 1.08f, 0, 0, 2, 1, 0,
-              new[] { Q(0.3f, "e4_tick_1", 2) }),
+            //   빠져나가는 크래시 줌은 세피아로 바래며 · 겹친 손 사이로 음화 한 번 · 녹는 시계는 먹 → 원래 색으로 돌아와 끝
+            T(F(S(1.9f, "노인 손 위에 겹친 아이 손", MTrans.Paint, 0.8f, new[] { W("hands_overlap", 1f, 0.006f, 0.0f), LG(Ghost(W("book_old", 0.7f, 0.012f), 0.25f, 0.05f, 0.45f), MGrade.Sepia), LG(Ghost(W("boy_watch", 0.6f, 0.012f), 0.2f, 0.4f, 0.8f), MGrade.Negative) },
+              new(0, -14), new(0, 14), 1.02f, 1.16f, 0, 0, 1.5f, 1.08f, 0, new[] { Q(0.15f, "heart", 2), Q(0.6f, "heart", 2) }), (0.6f, 0.08f, MGrade.Negative)), MGrade.Sepia),
+            G(Dart("book_rise", "hands_overlap", 0.12f, 8, 4, 1.25f, 1.32f, new(40, 0), new(-30, 0), "heart", 8), MGrade.Cyanotype),
+            T(G(S(0.55f, "녹기 시작하는 11:59", MTrans.Dissolve, 0.2f, new[] { W("melt_a", 1f, 0.003f), Ghost(W("bleed3", 1.1f, 0.012f), 0.18f, 0f, 0.6f) }, new(0, 20), new(0, 10), 1.04f, 1.08f, 0, 0, 2, 1, 0,
+              new[] { Q(0.3f, "e4_tick_1", 2) }), MGrade.Ink), MGrade.Negative),
             S(0.35f, "녹아내리는 11:59", MTrans.Cut, 0, new[] { W("melt_b", 1f, 0.003f), Ghost(W("book_page1", 1.1f, 0.014f), 0.15f, 0f, 1f) }, new(0, 10), new(0, 0), 1.08f, 1.12f, 0, 0, 2, 1, 2,
-              new[] { Q(0f, "heart", 6) }),
+              new[] { Neg(0f, "heart", 6, 0.1f) }),
             S(1.8f, "녹아 흘러내린 11:59", MTrans.Cut, 0, new[] { W("melt_1159", 1f, 0.003f, 0.007f), Ghost(W("book_rise", 1.1f, 0.014f), 0.14f, 0.35f, 1f) }, new(0, 0), new(0, -40), 1.12f, 1.24f, 0, 0, 1, 1, 0,
               new[] { Q(0.05f, "heart", 3), Q(0.6f, "e4_tick_2", 1) }),
             new MShot { dur = 0.9f, tint = Paper, tin = MTrans.Dissolve, tinDur = 0.8f },

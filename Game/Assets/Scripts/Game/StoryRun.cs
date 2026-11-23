@@ -19,6 +19,9 @@ namespace CatTang
         public static bool DreamPending(int chapter) => chapter >= 1 && chapter <= Dreams.Length && !Meta.StorySeen("dream" + chapter);
         /// <summary>마을에서 깨어난 뒤 띄울 한 줄 (꿈을 보고 돌아오면 결과 창이 없으니 얻은 조각을 여기로)</summary>
         public static string PendingToast;
+        /// <summary>꿈을 보고 마을에서 깨어남 → 고양이 혼잣말 "젠장… 또 이상한 꿈을 꿨군…" 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory)</summary>
+        public static bool PendingWake;
+        public const string WakeLine = "고양이#두통::젠장… 또 이상한 꿈을 꿨군…";
 
         public static void OnRunStart(RunManager rm)
         {
@@ -66,6 +69,7 @@ namespace CatTang
             yield return ov.PlayDream(chapter, d.title, d.fragments, authored: DreamCuts.For(chapter));
             Meta.MarkStory("dream" + chapter);
             PendingToast = $"시간의 조각 +{gain}";
+            PendingWake = true;
             CameraFollow.FocusOn(null, 0f);
             ov.RevealAfterLoad(0.8f, 1.2f);
             RunManager.ReturnToVillage();
@@ -296,6 +300,17 @@ namespace CatTang
             RunManager.StoryHold = false;
         }
 
+        /// <summary>현실 몽타주: 잔상 + 글리치 · 효과음 없이 전용 곡 story_opening만, 재생 중 인게임 곡 멈춤 (2026-11-23 사용자)</summary>
+        public static IEnumerator PlayOpening(StoryOverlay ov)
+        {
+            Music.Story("story_opening", 0.2f);
+            var mt = ov.Montage(); mt.echo = 0.22f; mt.glitch = 1f; mt.sfx = false;
+            yield return mt.Play(Montage, "Story/Opening/");
+            mt.sfx = true;
+            Music.StoryEnd(1.5f);
+            ov.HideMontage();
+        }
+
         IEnumerator Start()
         {
             p = PlayerController.Instance;
@@ -306,9 +321,7 @@ namespace CatTang
             // 1. 현실 몽타주
             if (!Meta.StorySeen(StoryRun.KeyOpening))
             {
-                Music.Duck(0f, 0.1f);
-                { var mt = ov.Montage(); mt.echo = 0.22f; mt.glitch = 1f; yield return mt.Play(Montage, "Story/Opening/"); }   // 현실 몽타주: 잔상 + 글리치
-                ov.HideMontage();
+                yield return PlayOpening(ov);
                 Meta.MarkStory(StoryRun.KeyOpening);
             }
             // 2. 깨어남: 쓰러진 고양이 옆 낮은 곳에서 플레이 시점으로 올라감

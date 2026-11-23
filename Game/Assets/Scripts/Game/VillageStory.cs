@@ -29,8 +29,9 @@ namespace CatTang
                 "태엽 풀린 뻐꾸기::남쪽 시간의 문으로 나서면 다시 1장부터. 장을 하나 넘을 때마다 끊긴 다리가 하나씩 이어질 거야."),
             // 장을 넘으면 기절해 꿈을 꾸고(StoryRun.Dreams) 깨어나 이 대화 — 꿈 내용에 반응하되 설명하지 않고 암시만 (2026-11-23 사용자: "NPC 대화도 연결")
             // 1장 → 꿈1 '멈춘 손' (태엽 감는 주름진 손 · 같은 동작의 작은 손 · 째깍과 심장 소리가 엇갈림)
+            // (꿈 → 깨어남 혼잣말 "젠장… 또 이상한 꿈을 꿨군…"(StoryRun.WakeLine) 바로 뒤에 이어짐)
             new("ch1", 1, Cuckoo, false,
-                "고양이#두통::……또 꿈이다. 누군가 시계 태엽을 감고 있었어.",
+                "고양이#두통::누군가 시계 태엽을 감고 있었어.",
                 "태엽 풀린 뻐꾸기#다정::꿈을 꿨구나. 여기선 다들 꿈을 꿔. 잊어버린 걸 꿈이 대신 기억해 주거든.",
                 "고양이#의문::손이 둘이었어. 주름진 손이랑, 아주 작은 손. 똑같은 동작으로 태엽을 감더군.",
                 "태엽 풀린 뻐꾸기#쓸쓸::……째깍 소리였니, 심장 소리였니. 어느 쪽이 먼저 멈췄어?",
@@ -62,6 +63,25 @@ namespace CatTang
             Cuckoo => "NpcSpot_MemoryRoom", Smith => "NpcSpot_AmmoWorkshop", Tailor => "NpcSpot_Wardrobe", Sheriff => "NpcSpot_GunShop", _ => "",
         };
 
+        static Meta.Facility? FacilityOf(string speaker) => speaker switch
+        {
+            Cuckoo => Meta.Facility.MemoryRoom, Smith => Meta.Facility.AmmoWorkshop, Tailor => Meta.Facility.Wardrobe, Sheriff => Meta.Facility.GunShop, _ => null,
+        };
+
+        /// <summary>열린 시설 문을 잠깐 비추고 "마을에 '…'이(가) 열렸다"</summary>
+        static IEnumerator RevealFacility(GameUI ui, Meta.Facility f)
+        {
+            FacilityDoor door = null;
+            foreach (var d in FindObjectsByType<FacilityDoor>(FindObjectsSortMode.None)) if (d.facility == f) door = d;
+            if (door) CameraFollow.FocusOn(door.transform.position + Vector3.back * 1.5f, 0.7f);
+            yield return new WaitForSecondsRealtime(0.7f);
+            if (Sfx.Has("ui_buy")) Sfx.Play("ui_buy", 0.8f, 0f);
+            ui.Toast($"<color=#FFD54A>마을에 '{Meta.FacilityName[(int)f]}'이(가) 열렸다</color>");
+            yield return new WaitForSecondsRealtime(1.4f);
+            CameraFollow.FocusOn(null, 0f);
+            yield return new WaitForSecondsRealtime(0.3f);
+        }
+
         public static void Begin() => new GameObject("VillageStory").AddComponent<VillageStory>();
 
         IEnumerator Start()
@@ -72,6 +92,16 @@ namespace CatTang
             var p = PlayerController.Instance;
             if (!ui || !p) { Destroy(gameObject); yield break; }
             if (!string.IsNullOrEmpty(StoryRun.PendingToast)) { ui.Toast(StoryRun.PendingToast); StoryRun.PendingToast = null; }   // 꿈을 보고 돌아옴 (결과 창 대신)
+            // 꿈에서 깨어난 혼잣말 → 이어서 NPC 대화 · 해금 (2026-11-23 사용자: "젠장…또 이상한 꿈을 꿨군… 이런 걸로 이어주고, 해금 구조 스토리랑 이어서")
+            if (StoryRun.PendingWake)
+            {
+                StoryRun.PendingWake = false;
+                p.InputLocked = true;
+                bool woke = false;
+                ui.Talk("고양이", new[] { StoryRun.WakeLine }, () => woke = true);
+                while (!woke) yield return null;
+                yield return new WaitForSecondsRealtime(0.2f);
+            }
             foreach (var b in Beats)
             {
                 if (Meta.ChaptersCleared < b.chapter || Meta.StorySeen(b.key)) continue;
@@ -87,6 +117,10 @@ namespace CatTang
                 CameraFollow.FocusOn(null, 0f);
                 Meta.MarkStory(b.key);
                 yield return new WaitForSecondsRealtime(0.25f);
+                // 해금 연결: 이 NPC가 지키는 시설이 이번 장에서 열렸으면 문을 비추며 알림 (꿈으로 돌아오면 결과 창의 '시설 열림' 줄이 없으니 여기서)
+                var fac = FacilityOf(b.speaker);
+                if (fac.HasValue && Meta.FacilityUnlockChapter[(int)fac.Value] == b.chapter && Meta.FacilityUnlocked(fac.Value))
+                    yield return RevealFacility(ui, fac.Value);
             }
             // 대화 없이 열린 다리가 남았으면 (예: 장을 한 번에 여러 개 넘음) 마저 이음
             foreach (var br in FindObjectsByType<IslandBridge>(FindObjectsSortMode.None))

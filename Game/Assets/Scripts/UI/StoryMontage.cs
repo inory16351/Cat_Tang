@@ -21,8 +21,70 @@ namespace CatTang
 {
     public enum MTrans { Cut, Dissolve, Shatter, Mix, Flash, Whip, Zoom, Paint }   // Paint = 물감이 뒤덮었다 걷히며 넘어감
 
+    /// <summary>배색 변주 (2026-11-23 사용자: "배색이랑 질감이 동일해서 글리치 넣어도 긴박하고 몽환적인 꿈 느낌이 안 남 → 세피아 · 색반전 · 다른 배색")
+    /// UIBlur 셰이더의 _Sepia · _Invert · _Duo(두 색 판화) · _Hue(색상 돌리기, 라디안) · _Contrast</summary>
+    public class MGrade
+    {
+        public float sepia, invert, duo, hue, contrast = 1f;
+        public Color duoA = new(0.05f, 0.1f, 0.3f), duoB = new(0.9f, 0.95f, 1f);
+
+        public static MGrade Sepia => new() { sepia = 1f, contrast = 1.12f };
+        public static MGrade Negative => new() { invert = 1f, contrast = 1.1f };
+        /// <summary>반전 + 세피아: 바랜 필름 음화</summary>
+        public static MGrade OldNegative => new() { invert = 1f, sepia = 0.85f, contrast = 1.25f };
+        /// <summary>청사진 (프러시안 블루 판화)</summary>
+        public static MGrade Cyanotype => new() { duo = 1f, duoA = new Color(0.03f, 0.12f, 0.32f), duoB = new Color(0.86f, 0.93f, 0.97f), contrast = 1.15f };
+        /// <summary>핏빛 두 색 (검붉은 그림자 · 장밋빛 밝은 곳)</summary>
+        public static MGrade Blood => new() { duo = 1f, duoA = new Color(0.16f, 0.02f, 0.05f), duoB = new Color(1f, 0.78f, 0.7f), contrast = 1.2f };
+        /// <summary>병원 형광등 녹청</summary>
+        public static MGrade Verdigris => new() { duo = 0.85f, duoA = new Color(0.02f, 0.13f, 0.12f), duoB = new Color(0.82f, 0.98f, 0.86f), contrast = 1.1f };
+        /// <summary>색상만 돌림 (보라 · 황토 → 청록 · 남색 등)</summary>
+        public static MGrade Shift(float deg) => new() { hue = deg * Mathf.Deg2Rad, contrast = 1.08f };
+        /// <summary>흑백 고대비 (먹)</summary>
+        public static MGrade Ink => new() { duo = 1f, duoA = new Color(0.04f, 0.035f, 0.05f), duoB = new Color(0.96f, 0.94f, 0.9f), contrast = 1.45f };
+        /// <summary>달밤 그림책: 짙은 남색 그림자 · 옅은 금빛 밝은 곳</summary>
+        public static MGrade Moon => new() { duo = 1f, duoA = new Color(0.05f, 0.04f, 0.2f), duoB = new Color(1f, 0.92f, 0.62f), contrast = 1.15f };
+        /// <summary>바랜 황토 판화: 번트 시에나 그림자 · 크림</summary>
+        public static MGrade Ochre => new() { duo = 1f, duoA = new Color(0.25f, 0.08f, 0.02f), duoB = new Color(1f, 0.95f, 0.82f), contrast = 1.2f };
+        static readonly MGrade[] pool = { Sepia, Negative, OldNegative, Cyanotype, Blood, Verdigris, Ink, Shift(150) };
+        public static MGrade Any => pool[Random.Range(0, pool.Length)];
+
+        public static void Apply(Material m, MGrade g, float k = 1f)
+        {
+            if (!m) return;
+            if (g == null) k = 0;
+            m.SetFloat("_Sepia", k * (g?.sepia ?? 0));
+            m.SetFloat("_Invert", k * (g?.invert ?? 0));
+            m.SetFloat("_Duo", k * (g?.duo ?? 0));
+            m.SetFloat("_Hue", k * (g?.hue ?? 0));
+            m.SetFloat("_Contrast", Mathf.Lerp(1f, g?.contrast ?? 1f, k));
+            if (g != null) { m.SetColor("_DuoA", g.duoA); m.SetColor("_DuoB", g.duoB); }
+        }
+
+        /// <summary>셰이더와 같은 계산을 CPU로 (바탕 종이색 같은 단색)</summary>
+        public Color Of(Color c)
+        {
+            var v = new Vector3(c.r, c.g, c.b);
+            if (Mathf.Abs(hue) > 0.001f)
+            {
+                var k = new Vector3(0.57735f, 0.57735f, 0.57735f); float ca = Mathf.Cos(hue);
+                v = v * ca + Vector3.Cross(k, v) * Mathf.Sin(hue) + k * Vector3.Dot(k, v) * (1 - ca);
+            }
+            float C(float x) => Mathf.Clamp01((x - 0.5f) * contrast + 0.5f);
+            v = new Vector3(C(v.x), C(v.y), C(v.z));
+            float l = v.x * 0.3f + v.y * 0.59f + v.z * 0.11f;
+            var d = Color.Lerp(duoA, duoB, Mathf.SmoothStep(0, 1, Mathf.InverseLerp(0.04f, 0.96f, l)));
+            v = Vector3.Lerp(v, new Vector3(d.r, d.g, d.b), duo);
+            var sp = new Vector3(Mathf.Clamp01(Vector3.Dot(v, new Vector3(0.393f, 0.769f, 0.189f))), Mathf.Clamp01(Vector3.Dot(v, new Vector3(0.349f, 0.686f, 0.168f))), Mathf.Clamp01(Vector3.Dot(v, new Vector3(0.272f, 0.534f, 0.131f))));
+            v = Vector3.Lerp(v, sp, sepia);
+            v = Vector3.Lerp(v, Vector3.one - v, invert);
+            return new Color(v.x, v.y, v.z, c.a);
+        }
+    }
+
     public class MLayer
     {
+        public MGrade grade;                      // 이 레이어만 다른 배색 (null = 컷 배색) — 겹쳐 비치는 다른 시간을 음화 · 세피아로
         public string img;
         public float depth = 1f;                  // 카메라 이동 · 줌을 얼마나 따라가나 (배경 0.4 · 대상 1.2 …)
         public float blur0, blur1;                // 흐림 시작 → 끝 (0 = 또렷, 0.012 = 꽤 흐림)
@@ -71,6 +133,9 @@ namespace CatTang
         public float dolly = 1f;                  // 달리 줌(현기증): 배경(depth<1)만 이 배율까지 커지고(>1) / 작아지고(<1) 대상은 그대로
         public float hand;                        // 핸드헬드: 정신없이 흔들리는 카메라 (px, 회전 = hand × 0.12°)
         public bool reverse;                      // 거꾸로 재생 (시간 역행: 깨진 조각이 모이고 컵이 책상으로 되돌아감)
+        public MGrade grade;                      // 컷 전체 배색 (null = 원래 색)
+        public MGrade tinGrade;                   // 전환 동안 빠져나가는 앞 장면이 이 배색으로 물들며 사라짐 (디졸브 · 물감 덮기 · 줌 · 휙)
+        public (float u, float dur, MGrade g)[] flips;   // 컷 안에서 잠깐 배색이 뒤집힘 (u = 시작 진행, dur = 초) — 박자에 맞춰 음화 · 세피아로 번쩍
     }
 
     public class StoryMontage : MonoBehaviour
@@ -121,7 +186,8 @@ namespace CatTang
         static Sprite Load(string folder, string n)
         {
             if (string.IsNullOrEmpty(n)) return null;
-            if (cache.TryGetValue(folder + n, out var s)) return s;
+            // 캐시된 스프라이트가 파괴됐으면(플레이 재시작 · 메모리 정리) 다시 만듦 — 안 하면 그림 없이 자리 표시 글자만 나옴
+            if (cache.TryGetValue(folder + n, out var s) && s) return s;
             var t = Resources.Load<Texture2D>(folder + n);
             s = t ? Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f)) : null;
             cache[folder + n] = s;
@@ -262,8 +328,20 @@ namespace CatTang
             }
         }
 
+        /// <summary>지금 진행(u)에서의 배색: 컷 배색, 단 flips 구간이면 그 배색</summary>
+        static MGrade GradeAt(MShot s, float u)
+        {
+            if (s.flips != null)
+                foreach (var f in s.flips)
+                    if (u >= f.u && u < f.u + f.dur / Mathf.Max(0.01f, s.dur)) return f.g;
+            return s.grade;
+        }
+
         void Pose(MShot s, float u)
         {
+            var g = GradeAt(s, u);
+            back.color = g != null ? g.Of(s.tint) : s.tint;
+            if (collageMat) MGrade.Apply(collageMat, g);
             if (s.reverse) u = 1 - u;
             float e = Ease(s.ease, u);
             var pan = Vector2.Lerp(s.pan0, s.pan1, e);
@@ -305,6 +383,7 @@ namespace CatTang
                     m.SetFloat("_Reveal", Mathf.Lerp(l.reveal0, l.reveal1, e));
                     m.SetVector("_RevealDir", l.revealDir);
                     m.SetFloat("_RevealSoft", l.revealSoft);
+                    MGrade.Apply(m, l.grade ?? g);
                 }
                 var c = l.tint; c.a *= Keys(l.fade, u, l.alpha);
                 im.color = c;
@@ -420,9 +499,15 @@ namespace CatTang
         // 글리치: 센 박자(흔들림 ≥ 14)나 무작위 간격으로 0.1~0.25초 — 가로 띠가 옆으로 찢겨 밀리고 빨강/청록으로 갈라짐
         public float echo = 0.2f, glitch = 1f;   // 꿈(수채화)은 glitch 0
         public float vignette = 1f;              // 화면 비네트 세기 (수채화 꿈은 종이가 밝아 약하게)
+        public bool sfx = true;                  // 컷 · 박자 · 전환 효과음 (2026-11-23 사용자: 오프닝 · 꿈은 효과음 빼고 전용 곡만 → false)
         // 물감 글리치 (2026-11-23 사용자: "디졸브 동시랑 함께 화면에 어울리는 글리치도 무작위로"): 수채화 꿈용
         //   띠 · 블록이 밀리되 가장자리가 흐리고(블러 재질) · 아래로 번져 늘어지고(물감이 흐르듯) · 갈라지는 색은 장미빛/보랏빛 안료 · 안료색으로 물듦
         public bool paintGlitch;
+        public float glitchCueMin = 14f;         // 박자 흔들림이 이 이상이면 글리치 (꿈1은 18 — 아주 센 박자에만)
+        public float mixTrans;                 // 긴 컷의 전환을 물감 덮기 · 조각 섞기(+ 글리치)로 바꾸는 확률 (꿈1)
+        public float gradeChance;                // 배색을 안 정한 전환이 무작위 배색(세피아 · 음화 · 청사진 …)으로 물들 확률
+        public float gradeGlitch;                // 글리치 띠 · 블록 중 배색이 뒤집힌 조각의 비율 (음화 · 세피아 · 청사진)
+        Material[] stripGrade;
         Material glitchBlur;
         RawImage echoImg, splitR, splitC; readonly List<RawImage> strips = new();
         RenderTexture rtA, rtB; bool fxOn, glitchSplit = true; float glitchLeft, glitchNext = 0.6f; int glitchCount = 7;
@@ -509,6 +594,18 @@ namespace CatTang
                     ww = Mathf.Min(ww, 1f - x);
                     s.texture = rtA; s.uvRect = FlipRect(new Rect(x, y, ww, hh));
                     s.material = gm;
+                    bool graded = false;
+                    if (gradeGlitch > 0 && blurBase && Random.value < gradeGlitch)
+                    {
+                        if (stripGrade == null)
+                        {
+                            var gs = new[] { MGrade.Negative, MGrade.Sepia, MGrade.Cyanotype };
+                            stripGrade = new Material[gs.Length];
+                            for (int k = 0; k < gs.Length; k++) { stripGrade[k] = new Material(blurBase); stripGrade[k].SetFloat("_Blur", 0.003f); MGrade.Apply(stripGrade[k], gs[k]); }
+                        }
+                        s.material = stripGrade[Random.Range(0, stripGrade.Length)];
+                        graded = true;
+                    }
                     if (paintGlitch)
                     {
                         // 물감 띠: 덜 밀리고 · 아래로 흘러내리며 세로로 늘어짐(번짐) · 안료색으로 물듦 · 반투명
@@ -518,13 +615,14 @@ namespace CatTang
                         s.rectTransform.anchoredPosition = new Vector2((x + ww * 0.5f - 0.5f) * 1920 + shiftP, (y + hh * 0.5f - 0.5f) * 1080 - 1080 * hh * (smear - 1) * 0.5f - Random.Range(0f, 18f));
                         float rp = Random.value;
                         s.color = rp < 0.3f ? new Color(1f, 0.72f, 0.75f, 0.82f) : rp < 0.55f ? new Color(0.78f, 0.7f, 1f, 0.8f) : rp < 0.7f ? new Color(1f, 0.88f, 0.65f, 0.8f) : new Color(1, 1, 1, 0.88f);
+                        if (graded) s.color = new Color(1, 1, 1, 0.92f);
                         continue;
                     }
                     s.rectTransform.sizeDelta = new Vector2(1920 * ww, 1080 * hh);
                     float shift = block ? Random.Range(-140f, 140f) : Random.Range(-90f, 90f);
                     s.rectTransform.anchoredPosition = new Vector2((x + ww * 0.5f - 0.5f) * 1920 + shift, (y + hh * 0.5f - 0.5f) * 1080 + (block ? Random.Range(-12f, 12f) : 0));
                     float r = Random.value;
-                    s.color = r < 0.2f ? new Color(0.75f, 1f, 1f, 0.95f) : r < 0.32f ? new Color(1f, 0.6f, 0.65f, 0.95f) : Color.white;
+                    s.color = graded ? Color.white : r < 0.2f ? new Color(0.75f, 1f, 1f, 0.95f) : r < 0.32f ? new Color(1f, 0.6f, 0.65f, 0.95f) : Color.white;
                 }
             }
             foreach (var g in new[] { echoImg, splitR, splitC }) if (g) g.enabled = false;
@@ -541,8 +639,24 @@ namespace CatTang
             fxOn = true; StartCoroutine(Fx());
             var vigT = root.Find("Vignette"); if (vigT) vigT.GetComponent<RawImage>().color = new Color(1, 1, 1, vignette);
             Texture2D prev = null;
-            foreach (var s in shots)
+            // 물감 · 글리치 전환 섞기 (2026-11-23 사용자: "글리치랑 물감 트랜지션 섞는 건 2번째 스토리 전체적으로 전부 다")
+            //   0.3초 이상 컷의 끊기 · 디졸브 · 줌을 확률 mixTrans로 물감 덮기 ↔ 조각 섞기(번갈아)로 바꾸고, 그 전환마다 글리치 한 번.
+            //   짧은 셀 컷(앞 · 지금 컷 중 하나라도 0.25초 미만)은 끊기 그대로 (셀 애니메이션이 번지지 않게). 같은 순서로 재생되게 씨앗 고정
+            var mixRng = new System.Random(1159);
+            bool mixPaint = true;
+            float prevDur = 0;
+            foreach (var s0 in shots)
             {
+                var s = s0;
+                if (mixTrans > 0 && s.dur >= 0.3f && prevDur >= 0.25f && (s.tin == MTrans.Cut || s.tin == MTrans.Dissolve || s.tin == MTrans.Zoom)
+                    && mixRng.NextDouble() < mixTrans)
+                {
+                    s.tin = mixPaint ? MTrans.Paint : MTrans.Mix;
+                    s.tinDur = mixPaint ? 0.34f : 0.24f;
+                    mixPaint = !mixPaint;
+                }
+                prevDur = s.dur;
+                if (mixTrans > 0 && s.tin == MTrans.Mix) Glitch(0.15f);   // 조각 섞기 전환에만 짧은 물감 글리치 (2026-11-23 사용자: 글리치 너무 많음 → 적당히)
                 // 앞 장면을 찍어 둠 (전환 조각 · 디졸브용)
                 if (s.tin != MTrans.Cut && s.tin != MTrans.Flash)
                 {
@@ -553,19 +667,21 @@ namespace CatTang
                 }
                 Build(s, folder);
                 Pose(s, 0);
-                if (!string.IsNullOrEmpty(s.sfx) && Sfx.Has(s.sfx)) Sfx.Play(s.sfx, 0.85f, 0f);
+                if (sfx && !string.IsNullOrEmpty(s.sfx) && Sfx.Has(s.sfx)) Sfx.Play(s.sfx, 0.85f, 0f);
                 if (s.tin == MTrans.Flash) StartCoroutine(FlashIn(s.tinDur));
                 else if (s.tin != MTrans.Cut && prev)
                 {
                     Texture2D next = null;
                     if (s.tin == MTrans.Mix) { yield return new WaitForEndOfFrame(); next = Grab(); }
+                    // 빠져나가는 장면의 배색: 정해 둔 것 · 없으면 gradeChance 확률로 무작위 (디졸브에 세피아 · 음화가 섞여 듦)
+                    var tg = s.tinGrade ?? (gradeChance > 0 && Random.value < gradeChance ? MGrade.Any : null);
                     StartCoroutine(s.tin switch
                     {
-                        MTrans.Dissolve => Dissolve(prev, s.tinDur),
+                        MTrans.Dissolve => Dissolve(prev, s.tinDur, tg),
                         MTrans.Shatter => Shatter(prev, s.tinDur),
-                        MTrans.Whip => Whip(prev, s.tinDur),
-                        MTrans.Zoom => ZoomThrough(prev, s.tinDur),
-                        MTrans.Paint => PaintWipe(prev, s.tinDur),
+                        MTrans.Whip => Whip(prev, s.tinDur, tg),
+                        MTrans.Zoom => ZoomThrough(prev, s.tinDur, tg),
+                        MTrans.Paint => PaintWipe(prev, s.tinDur, tg),
                         _ => Mix(prev, next, s.tinDur),
                     });
                 }
@@ -576,10 +692,11 @@ namespace CatTang
                     while (s.cues != null && cue < s.cues.Length && u >= s.cues[cue].u)
                     {
                         var c = s.cues[cue++];
-                        if (!string.IsNullOrEmpty(c.sfx) && Sfx.Has(c.sfx)) Sfx.Play(c.sfx, 0.9f, 0f);
+                        if (sfx && !string.IsNullOrEmpty(c.sfx) && Sfx.Has(c.sfx)) Sfx.Play(c.sfx, 0.9f, 0f);
                         kick = Mathf.Max(kick, c.shake);
                         if (c.flash > 0) StartCoroutine(FlashIn(c.flash));
-                        if (glitch > 0 && c.shake >= 14) Glitch(0.12f + c.shake * 0.006f);
+                        else if (c.flash < 0) StartCoroutine(InvertPulse(-c.flash));   // 음수 = 색 반전 번쩍
+                        if (glitch > 0 && c.shake >= glitchCueMin) Glitch(0.12f + c.shake * 0.006f);
                     }
                     Pose(s, u);
                     yield return null;
@@ -601,6 +718,20 @@ namespace CatTang
             return sum < 0.15f;
         }
 
+        /// <summary>캡처한 앞 장면을 배색만 바꾼 새 텍스처로</summary>
+        Texture2D Recolor(Texture2D a, MGrade g)
+        {
+            if (!blurBase) return Instantiate(a);
+            var m = new Material(blurBase); MGrade.Apply(m, g);
+            var rt = RenderTexture.GetTemporary(a.width, a.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            Graphics.Blit(a, rt, m);
+            var was = RenderTexture.active; RenderTexture.active = rt;
+            var t = new Texture2D(a.width, a.height, TextureFormat.RGBA32, false, false);
+            t.ReadPixels(new Rect(0, 0, a.width, a.height), 0, 0); t.Apply(false, false);
+            RenderTexture.active = was; RenderTexture.ReleaseTemporary(rt); Destroy(m);
+            return t;
+        }
+
         static Texture2D Grab()
         {
             var raw = ScreenCapture.CaptureScreenshotAsTexture();
@@ -618,23 +749,45 @@ namespace CatTang
             Destroy(w.gameObject);
         }
 
-        IEnumerator Dissolve(Texture2D a, float dur)
+        IEnumerator Dissolve(Texture2D a, float dur, MGrade g = null)
         {
             var img = UIKit.Stretch("Dissolve", root).gameObject.AddComponent<RawImage>(); img.texture = a; img.raycastTarget = false;
+            var mat = g != null && blurBase ? new Material(blurBase) : null; if (mat) img.material = mat;
             for (float t = 0; t < dur; t += Time.unscaledDeltaTime)
             {
                 float u = t / dur;
                 img.color = new Color(1, 1, 1, 1 - u * u);
                 img.rectTransform.localScale = Vector3.one * (1 + 0.04f * u);   // 꿈처럼 살짝 번지며 사라짐
+                // 사라지며 다른 배색으로 물듦: 앞쪽에서 확 바뀌고(색이 뒤집히는 순간) 흐려지며 녹아듦
+                if (mat) { MGrade.Apply(mat, g, Mathf.Clamp01(u * 2.2f)); mat.SetFloat("_Blur", 0.006f * u); }
                 yield return null;
             }
-            Destroy(img.gameObject);
+            Destroy(img.gameObject); if (mat) Destroy(mat);
+        }
+
+        /// <summary>색 반전 번쩍: 화면이 음화로 뒤집혔다가 한 번 더 깜빡이고 돌아옴</summary>
+        static Shader invertSh;
+        IEnumerator InvertPulse(float dur)
+        {
+            if (!invertSh) invertSh = Shader.Find("CatTang/UIInvert");
+            if (!invertSh) yield break;
+            var w = UIKit.Stretch("Invert", root).gameObject.AddComponent<Image>(); w.raycastTarget = false;
+            var mat = new Material(invertSh); w.material = mat;
+            for (float t = 0; t < dur; t += Time.unscaledDeltaTime)
+            {
+                float u = t / dur;
+                bool on = u < 0.45f || (u > 0.6f && u < 0.72f);
+                w.color = new Color(1, 1, 1, on ? 1f - 0.25f * u : 0f);
+                yield return null;
+            }
+            Destroy(w.gameObject); Destroy(mat);
         }
 
         /// <summary>물감 덮기: 앞 장면 위로 물감 방울들이 번져 화면을 뒤덮고(앞 절반) → 다른 모양으로 걷히며 다음 장면이 드러남(뒤 절반)</summary>
         static Shader paintWipeSh;
-        IEnumerator PaintWipe(Texture2D a, float dur)
+        IEnumerator PaintWipe(Texture2D a, float dur, MGrade g = null)
         {
+            if (g != null) { var ga = Recolor(a, g); yield return PaintWipe(ga, dur, null); Destroy(ga); yield break; }   // 물감 덮기 셰이더는 자기 색을 쓰므로 배색을 미리 구움
             if (!paintWipeSh) paintWipeSh = Shader.Find("CatTang/PaintWipe");
             if (!paintWipeSh) { yield return Dissolve(a, dur); yield break; }
             var img = UIKit.Stretch("PaintWipe", root).gameObject.AddComponent<RawImage>(); img.texture = a; img.raycastTarget = false;
@@ -642,7 +795,7 @@ namespace CatTang
             mat.SetFloat("_Seed", Random.Range(0f, 50f));
             // 꿈마다 같은 안료 (장미 · 보라 · 황토), 가끔 붉은 피 같은 물감
             if (Random.value < 0.3f) { mat.SetColor("_ColA", new Color(0.7f, 0.24f, 0.28f)); mat.SetColor("_ColB", new Color(0.48f, 0.3f, 0.44f)); }
-            if (Sfx.Has("story_dream")) Sfx.Play("story_dream", 0.25f, 0f);
+            if (sfx && Sfx.Has("story_dream")) Sfx.Play("story_dream", 0.25f, 0f);
             for (float t = 0; t < dur; t += Time.unscaledDeltaTime)
             {
                 float u = t / dur;
@@ -656,10 +809,11 @@ namespace CatTang
         }
 
         /// <summary>휙: 앞 장면이 흐려지며 옆으로 빠르게 쓸려 나감 (카메라를 휙 돌린 느낌)</summary>
-        IEnumerator Whip(Texture2D a, float dur)
+        IEnumerator Whip(Texture2D a, float dur, MGrade g = null)
         {
             var img = UIKit.Stretch("Whip", root).gameObject.AddComponent<RawImage>(); img.texture = a; img.raycastTarget = false;
             var mat = blurBase ? new Material(blurBase) : null; if (mat) img.material = mat;
+            MGrade.Apply(mat, g);
             float dir = Random.value < 0.5f ? -1 : 1;
             for (float t = 0; t < dur; t += Time.unscaledDeltaTime)
             {
@@ -673,10 +827,11 @@ namespace CatTang
         }
 
         /// <summary>줌 관통(매치 컷): 앞 장면 가운데로 빨려 들어가며 다음 장면에 겹쳐 사라짐 — 같은 자리 원형끼리 이어 붙임</summary>
-        IEnumerator ZoomThrough(Texture2D a, float dur)
+        IEnumerator ZoomThrough(Texture2D a, float dur, MGrade g = null)
         {
             var img = UIKit.Stretch("ZoomThrough", root).gameObject.AddComponent<RawImage>(); img.texture = a; img.raycastTarget = false;
             var mat = blurBase ? new Material(blurBase) : null; if (mat) img.material = mat;
+            MGrade.Apply(mat, g);
             for (float t = 0; t < dur; t += Time.unscaledDeltaTime)
             {
                 float u = t / dur;
@@ -733,7 +888,7 @@ namespace CatTang
                 var d = c - hit;
                 list.Add((g, d.normalized * Random.Range(500f, 1100f) + Vector2.down * 200f, Random.Range(-160f, 160f), d.magnitude * 0.25f));
             }
-            if (Sfx.Has("e_glass")) Sfx.Play("e_glass", 0.6f, 0f);
+            if (sfx && Sfx.Has("e_glass")) Sfx.Play("e_glass", 0.6f, 0f);
             for (float t = 0; t < dur + 0.25f; t += Time.unscaledDeltaTime)
             {
                 foreach (var (g, dir, spin, delay) in list)

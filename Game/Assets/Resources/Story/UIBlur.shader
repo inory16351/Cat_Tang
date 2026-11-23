@@ -14,6 +14,13 @@ Shader "CatTang/UIBlur"
         _Reveal ("Paint Reveal Front", Float) = 2
         _RevealDir ("Paint Reveal Dir", Vector) = (1, 0, 0, 0)
         _RevealSoft ("Paint Reveal Softness", Float) = 0.12
+        _Sepia ("Grade Sepia", Range(0, 1)) = 0
+        _Invert ("Grade Invert", Range(0, 1)) = 0
+        _Duo ("Grade Duotone", Range(0, 1)) = 0
+        _DuoA ("Duotone Shadow", Color) = (0.05, 0.1, 0.3, 1)
+        _DuoB ("Duotone Light", Color) = (0.9, 0.95, 1, 1)
+        _Hue ("Grade Hue Shift (rad)", Float) = 0
+        _Contrast ("Grade Contrast", Float) = 1
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
         _StencilOp ("Stencil Operation", Float) = 0
@@ -37,6 +44,28 @@ Shader "CatTang/UIBlur"
             struct appdata { float4 vertex : POSITION; float4 color : COLOR; float2 uv : TEXCOORD0; };
             struct v2f { float4 pos : SV_POSITION; fixed4 color : COLOR; float2 uv : TEXCOORD0; };
             sampler2D _MainTex; float4 _MainTex_TexelSize; fixed4 _Color; float _Blur; float _Edge; float _Sat; float _Paint; fixed4 _PaperTint; float _Reveal; float4 _RevealDir; float _RevealSoft;
+            float _Sepia, _Invert, _Duo, _Hue, _Contrast; fixed4 _DuoA, _DuoB;
+            /// 배색 변주 (2026-11-23 사용자: "배색이랑 질감이 동일해서 … 세피아 필터나 색반전 같은 것도"):
+            ///  감마 공간에서 색상 돌리기 → 대비 → 두 색 판화(듀오톤) → 세피아 → 색 반전. 전부 0이면 그대로
+            fixed3 Grade(fixed3 c)
+            {
+                if (_Sepia + _Invert + _Duo + abs(_Hue) + abs(_Contrast - 1) < 0.001) return c;
+            #ifndef UNITY_COLORSPACE_GAMMA
+                c = LinearToGammaSpace(c);
+            #endif
+                if (abs(_Hue) > 0.001) { const float3 k = float3(0.57735, 0.57735, 0.57735); float ca = cos(_Hue); c = c * ca + cross(k, c) * sin(_Hue) + k * dot(k, c) * (1 - ca); }
+                c = saturate((c - 0.5) * _Contrast + 0.5);
+                float l = dot(c, float3(0.3, 0.59, 0.11));
+                c = lerp(c, lerp(_DuoA.rgb, _DuoB.rgb, smoothstep(0.04, 0.96, l)), _Duo);
+                float3 sp = float3(dot(c, float3(0.393, 0.769, 0.189)), dot(c, float3(0.349, 0.686, 0.168)), dot(c, float3(0.272, 0.534, 0.131)));
+                c = lerp(c, saturate(sp), _Sepia);
+                c = lerp(c, 1 - c, _Invert);
+            #ifndef UNITY_COLORSPACE_GAMMA
+                c = GammaToLinearSpace(saturate(c));
+            #endif
+                return c;
+            }
+            fixed4 Graded(fixed4 c) { c.rgb = Grade(c.rgb); return c; }
             // 물감 섞임용 값 노이즈
             float hash21(float2 p) { p = frac(p * float2(123.34, 456.21)); p += dot(p, p + 45.32); return frac(p.x * p.y); }
             float vnoise(float2 p) { float2 i = floor(p), f = frac(p); f = f * f * (3 - 2 * f);
@@ -85,7 +114,7 @@ Shader "CatTang/UIBlur"
                 float2 d = i.uv - 0.5;
                 float b = _Blur + _Edge * smoothstep(0.18, 0.62, length(d * float2(1.0, 1.25)));
                 b = max(b, _Paint * 0.004);   // 물감 섞임: 가장자리를 부드럽게 풀 여유
-                if (b <= 0.0001) { fixed4 c0 = tex2D(_MainTex, i.uv) * i.color; c0.rgb = lerp(dot(c0.rgb, float3(0.3, 0.59, 0.11)).xxx, c0.rgb, _Sat); return Reveal(c0, i.uv); }
+                if (b <= 0.0001) { fixed4 c0 = tex2D(_MainTex, i.uv) * i.color; c0.rgb = lerp(dot(c0.rgb, float3(0.3, 0.59, 0.11)).xxx, c0.rgb, _Sat); return Graded(Reveal(c0, i.uv)); }
                 // 가로세로 비율 보정 (텍스처 비율)
                 float2 r = float2(b, b * _MainTex_TexelSize.z / _MainTex_TexelSize.w);
                 static const float2 k[12] = {
@@ -100,7 +129,7 @@ Shader "CatTang/UIBlur"
                 fixed4 c = avg * i.color;
                 c.rgb = lerp(dot(c.rgb, float3(0.3, 0.59, 0.11)).xxx, c.rgb, _Sat);
                 if (_Paint > 0.001) { fixed4 p = Paint(fixed4(c.rgb, 1), avg.a, i.uv); c = fixed4(p.rgb, p.a * i.color.a); }
-                return Reveal(c, i.uv);
+                return Graded(Reveal(c, i.uv));
             }
             ENDCG
         }
