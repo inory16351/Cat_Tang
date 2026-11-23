@@ -71,6 +71,8 @@ namespace CatTang
             player = PlayerController.Instance;
             ui = FindFirstObjectByType<GameUI>();
             clearedAtStart = Meta.ChaptersCleared;
+            lastStandLeft = Meta.HasTech(Meta.TechLastStand);   // 기억의 방 기술 노드 (판마다 1번)
+            RerollLeft = Meta.HasTech(Meta.TechReroll);
             frontier = Mathf.Min(Meta.ChapterCount, clearedAtStart + 1);
             chapter = 1;
             Chapter = Tables.Chapter(chapter);
@@ -346,9 +348,27 @@ namespace CatTang
                 BuildStage(2, afterMidBoss);
                 return;
             }
-            if (IsBossRoom) { ui?.ShowRewardPick("최종 보상 — 하나 고르기", BossOptions(), ChapterClear); return; }
+            if (IsBossRoom)
+            {
+                // 기억의 방 '보스의 선물': 고르고 남은 것 중에서 하나 더 (다시 뽑으면 새로 뽑은 것 중에서)
+                if (Meta.HasTech(Meta.TechBossGift))
+                {
+                    List<RewardOption> shown = null; RewardOption picked = null;
+                    List<RewardOption> Track(List<RewardOption> l) { shown = l; foreach (var o in l) { var me = o; var a = o.apply; var at = o.applyThen; o.apply = a == null ? null : () => { picked = me; a(); }; o.applyThen = at == null ? null : d => { picked = me; at(d); }; } return l; }
+                    ui?.ShowRewardPick("최종 보상 — 하나 고르기", Track(BossOptions()), () =>
+                    {
+                        var rest = shown?.FindAll(o => o != picked);
+                        if (rest == null || rest.Count == 0) { ChapterClear(); return; }
+                        ui.ShowRewardPick("보스의 선물 · 추가 선택", rest, ChapterClear);
+                    }, () => Track(BossOptions()));
+                    return;
+                }
+                ui?.ShowRewardPick("최종 보상 — 하나 고르기", BossOptions(), ChapterClear, BossOptions);
+                return;
+            }
             if (pendingReward == RewardKind.Gold || pendingReward == RewardKind.Shard || pendingReward == RewardKind.Armor) { GrantFixed(pendingReward); AfterReward(); return; }
-            ui?.ShowRewardPick($"스테이지 보상 — {RoomDoor.NameOf(pendingReward)}", Options(pendingReward), AfterReward);
+            var k = pendingReward;
+            ui?.ShowRewardPick($"스테이지 보상 — {RoomDoor.NameOf(pendingReward)}", Options(pendingReward), AfterReward, () => Options(k));
         }
 
         /// <summary>골드 · 시간의 조각 방: 고르기 없이 확정 지급. 양은 스테이지 진행도(챕터 · 스테이지)에 비례 (수치 임시)</summary>
@@ -604,7 +624,36 @@ namespace CatTang
             BuildStage(0, RewardKind.Gold);
         }
 
-        void OnPlayerDeath(Health h) { if (StoryRun.HandleDeath(this)) return; EndRun(false); }   // 판 1은 결과 창 없이 기절 연출
+        void OnPlayerDeath(Health h)
+        {
+            if (StoryRun.HandleDeath(this)) return;   // 판 1은 결과 창 없이 기절 연출
+            // 기억의 방 '한 번 더': 판마다 한 번, 체력 30%로 버팀 + 1.5초 무적
+            if (lastStandLeft && !runOver)
+            {
+                lastStandLeft = false;
+                h.hp = Mathf.Max(1f, h.maxHp * 0.3f);
+                StartCoroutine(LastStandFx(h));
+                return;
+            }
+            EndRun(false);
+        }
+
+        bool lastStandLeft;
+        /// <summary>기억의 방 '다시 뽑기' (판마다 1번) — GameUI 보상 창이 확인하고 씀</summary>
+        public bool RerollLeft;
+
+        IEnumerator LastStandFx(Health h)
+        {
+            h.invulnerable = true;
+            ui?.Toast("<color=#FFD54A>한 번 더 · 부활</color>");
+            if (Sfx.Has("e4_bell_2")) Sfx.Play("e4_bell_2", 0.8f, 0f);
+            FxBurst.Spawn(h.transform.position + Vector3.up * 0.9f, 2.4f, FxBurst.Kind.Shield, new Color(1f, 0.85f, 0.4f));
+            Time.timeScale = 0.35f;
+            yield return new WaitForSecondsRealtime(0.5f);
+            if (!runOver) Time.timeScale = 1f;
+            yield return new WaitForSecondsRealtime(1.0f);
+            if (h) h.invulnerable = false;
+        }
 
         /// <summary>이번 판에서 지금까지 얻은 시간의 조각 (기억 · 코스튬 보너스 포함) — 판이 끝날 때 받는 양</summary>
         public int ShardGainPreview => Mathf.RoundToInt(shardsThisRun * (1 + Meta.Stat("ShardGain") + PlayerController.CostumeStat("MemoryShardGainAdd")));

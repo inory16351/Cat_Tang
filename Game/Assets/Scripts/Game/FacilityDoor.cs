@@ -18,6 +18,7 @@ namespace CatTang
                 FindFirstObjectByType<GameUI>()?.Toast($"챕터 {Meta.FacilityUnlockChapter[(int)facility]} 보스를 넘으면 열림");
                 return;
             }
+            GuideArrow.Reached(transform);
             FindFirstObjectByType<GameUI>()?.OpenFacility(facility);
         }
 

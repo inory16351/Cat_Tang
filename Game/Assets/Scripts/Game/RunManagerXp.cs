@@ -62,7 +62,7 @@ namespace CatTang
             {
                 pendingLevels--;
                 levelUpOpen = false;
-            });
+            }, LevelUpOptions);
         }
 
         enum LvReward { Heal, Gold, Shard, Bullet, Gun, Armor, Op }
@@ -77,7 +77,8 @@ namespace CatTang
                 (LvReward.Bullet, 2.8f), (LvReward.Gun, 1.8f), (LvReward.Armor, 0.9f), (LvReward.Op, 2.6f),
             };
             var picks = new List<LvReward>();
-            while (picks.Count < 3 && pool.Count > 0)
+            int choices = Meta.HasTech(Meta.TechWiderChoice) ? 4 : 3;     // 기억의 방 '넓어진 선택'
+            while (picks.Count < choices && pool.Count > 0)
             {
                 float total = pool.Sum(x => x.w), r = Random.value * total;
                 int idx = 0;

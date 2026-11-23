@@ -38,6 +38,9 @@ namespace CatTang
     public class MemoryNodeDef
     {
         public int Id; public string Name, Stat; public float ValuePerLevel; public int MaxLevel, BaseCost; public string Desc;
+        // 기억의 방 갈래 트리 (2026-11-23 사용자 확정: 화력 · 생존 · 손재주 3갈래, 층은 장을 넘을 때마다 열림, 위층은 아래층 노드를 찍어야)
+        public string Branch; public int Floor, Req;                  // Req = 먼저 1단계 이상 찍어야 하는 노드 (0 = 아래층 아무거나 하나)
+        public bool IsTech => Stat == "Tech";                         // 기술 노드: 한 번 해금 (판의 규칙을 바꿈)
     }
 
     public class ChapterDef
@@ -106,7 +109,8 @@ namespace CatTang
                 MemoryNodes.Add(new MemoryNodeDef
                 {
                     Id = I(r, "Id"), Name = r["Name"], Stat = r["Stat"], ValuePerLevel = F(r, "ValuePerLevel"),
-                    MaxLevel = I(r, "MaxLevel"), BaseCost = I(r, "BaseCost"), Desc = r["Desc"]
+                    MaxLevel = I(r, "MaxLevel"), BaseCost = I(r, "BaseCost"), Desc = r["Desc"],
+                    Branch = r.TryGetValue("Branch", out var br) ? br : "", Floor = r.ContainsKey("Floor") ? I(r, "Floor") : 1, Req = r.ContainsKey("Req") ? I(r, "Req") : 0,
                 });
             foreach (var r in Read("TraitTier"))
                 TraitTiers.Add((I(r, "TraitId"), I(r, "Tier"), I(r, "EffectId")));

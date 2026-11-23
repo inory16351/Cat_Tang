@@ -403,7 +403,7 @@ namespace CatTang
         static readonly Dictionary<string, string> ExprId = new()
         {
             { "기본", "" }, { "두통", "ache" }, { "결의", "resolve" }, { "의문", "doubt" }, { "씩", "smirk" }, { "놀람", "shock" },
-            { "쓸쓸", "wistful" }, { "다정", "warm" }, { "엄숙", "solemn" },
+            { "쓸쓸", "wistful" }, { "다정", "warm" }, { "엄숙", "solemn" }, { "의미심장", "knowing" },
         };
         static Sprite Portrait(string who, string expr = null)
         {
@@ -770,10 +770,25 @@ namespace CatTang
         /// <summary>보상을 하나 고를 때마다 (판 2 튜토리얼이 들음)</summary>
         public static event System.Action RewardPicked;
 
-        public void ShowRewardPick(string title, List<RewardOption> options, System.Action onDone)
+        /// <param name="reroll">선택지를 새로 뽑는 함수 — 기억의 방 '다시 뽑기'를 해금했고 이번 판에 안 썼으면 '다시 뽑기' 버튼이 나옴</param>
+        public void ShowRewardPick(string title, List<RewardOption> options, System.Action onDone, System.Func<List<RewardOption>> reroll = null)
         {
             var done0 = onDone; onDone = () => { RewardPicked?.Invoke(); done0?.Invoke(); };
             var go = OpenScreen("RewardPick");
+            var rm = RunManager.Instance;
+            if (reroll != null && rm && rm.RerollLeft)
+            {
+                bool used = false;
+                UIKit.MakeButton("Reroll", go.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -430), new Vector2(380, 66), "다시 뽑기 (1회)", () =>
+                {
+                    if (used || !rm.RerollLeft) return;
+                    used = true; rm.RerollLeft = false;
+                    Sfx.Play("ui_click_1", 0.7f);
+                    CursorTip.Hide();
+                    CloseAll();
+                    ShowRewardPick(title, reroll(), done0);
+                }, 22);
+            }
             UIKit.Dim(go.transform, 0.78f);
             UIKit.Banner(title, go.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 330), 760);
             for (int i = 0; i < options.Count; i++)
@@ -878,7 +893,7 @@ namespace CatTang
             var t = UIKit.Label("Body", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(820, 300), 30, TextAnchor.MiddleCenter);
             string unlock = "";
             for (int f = 0; f < 4; f++)
-                if (Meta.FacilityUnlockChapter[f] > before && Meta.FacilityUnlockChapter[f] <= Meta.ChaptersCleared) unlock += $"\n<color=#FFD54A>마을에 '{Meta.FacilityName[f]}'이(가) 열렸다</color>";
+                if (Meta.FacilityUnlockChapter[f] > before && Meta.FacilityUnlockChapter[f] <= Meta.ChaptersCleared) unlock += $"\n<color=#FFD54A>{Meta.FacilityName[f]} 해금</color>";
             if (unlock != "") unlock = "\n" + unlock;
             string next = !all ? $"\n다음 판은 {Mathf.Min(Meta.ChapterCount, Meta.ChaptersCleared + 1)}장까지 갈 수 있다." : "";
             string pick = win && rm && !string.IsNullOrEmpty(rm.bossPick) ? $"\n최종 보상: <color=#FFD54A>{rm.bossPick}</color>" : "";
@@ -1096,22 +1111,154 @@ namespace CatTang
             return t;
         }
 
+        // 기억의 방 갈래 트리 (2026-11-23 사용자 확정): 화력 · 생존 · 손재주 3갈래 × 4층 (아래 1층 → 위 4층 = 기술 노드 ◆)
+        //   층 n = 장을 n개 넘으면 열림 · 위층은 이어진 아래 노드를 1단계 이상 찍어야 · 이어진 선은 아래 노드를 찍으면 금빛
+        // 2026-11-23 사용자: "노드 슬롯이랑 아이콘 제대로 이미지로 뽑아서 레이아웃 가시성 좋게" →
+        //   왼쪽 = 톱니 소켓(잠김 · 열림 · 금빛) 안에 노드 아이콘 + 이름 + 단계 눈금 / 오른쪽 = 고른 노드 설명 · 지금 → 다음 · 값 · 새기기
+        //   그림: Resources/UI/Memory/slot_locked · slot · slot_gold · tech_locked · tech · tech_gold · icon_<노드 Id> (원본 Art/ui_src/)
+        static readonly string[] MemoryBranches = { "화력", "생존", "손재주" };
+        static readonly Color[] BranchColor = { new(1f, 0.55f, 0.4f), new(0.55f, 0.85f, 0.55f), new(0.55f, 0.78f, 1f) };
+        static int memSel;
+        static Sprite MemSpr(string n) => UIKit.Spr("Memory/" + n);
+
         void MemoryContent(Transform content, System.Action redraw)
         {
-            int i = 0;
+            const float treeX = -170, colGap = 285, pairGap = 74, floorGap = 140, f1y = -225, slot = 92, techSlot = 112;
+            var pos = new Dictionary<int, Vector2>();
+            if (Tables.MemoryNodes.Find(x => x.Id == memSel) == null) memSel = Tables.MemoryNodes.Count > 0 ? Tables.MemoryNodes[0].Id : 0;
+            // 층 표시 (왼쪽): n층 · n장을 넘으면
+            for (int f = 1; f <= 4; f++)
+            {
+                bool open = Meta.FloorOpen(f);
+                var fl = UIKit.Label("Floor" + f, content, new Vector2(0.5f, 0.5f), new Vector2(-612, f1y + (f - 1) * floorGap), new Vector2(76, 60), 20, TextAnchor.MiddleCenter, true,
+                    open ? UIKit.Cream : new Color(0.6f, 0.55f, 0.5f));
+                fl.text = open ? $"{f}층" : $"{f}층\n<size=13>{f}장 클리어</size>";
+            }
+            for (int bi = 0; bi < MemoryBranches.Length; bi++)
+            {
+                var br = MemoryBranches[bi];
+                float cx = treeX + (bi - 1) * colGap;
+                var head = UIKit.Label("Branch" + bi, content, new Vector2(0.5f, 0.5f), new Vector2(cx, f1y + 3 * floorGap + 78), new Vector2(260, 34), 26, TextAnchor.MiddleCenter, true, BranchColor[bi]);
+                head.text = br;
+                for (int f = 1; f <= 4; f++)
+                {
+                    var row = Tables.MemoryNodes.FindAll(n => n.Branch == br && n.Floor == f);
+                    for (int k = 0; k < row.Count; k++)
+                        pos[row[k].Id] = new Vector2(cx + (row.Count == 1 ? 0 : (k == 0 ? -pairGap : pairGap)), f1y + (f - 1) * floorGap);
+                }
+            }
+            // 이음선 (소켓 뒤): 아래 노드를 찍었으면 금빛
             foreach (var n in Tables.MemoryNodes)
             {
+                if (n.Floor <= 1 || !pos.ContainsKey(n.Id)) continue;
+                foreach (var m in Tables.MemoryNodes)
+                {
+                    bool parent = n.Req > 0 ? m.Id == n.Req : m.Branch == n.Branch && m.Floor == n.Floor - 1;
+                    if (!parent || !pos.ContainsKey(m.Id)) continue;
+                    Vector2 a = pos[m.Id] + new Vector2(0, slot / 2 - 6), b = pos[n.Id] - new Vector2(0, (n.IsTech ? techSlot : slot) / 2 - 6);
+                    bool lit = Meta.Level(m.Id) >= 1;
+                    var line = UIKit.MakeRect("Link", content, new Vector2(0.5f, 0.5f), (a + b) / 2, new Vector2(lit ? 7 : 5, (b - a).magnitude)).gameObject.AddComponent<Image>();
+                    line.rectTransform.localRotation = Quaternion.FromToRotation(Vector3.up, b - a);
+                    line.color = lit ? new Color(1f, 0.8f, 0.28f, 1f) : new Color(0.35f, 0.3f, 0.3f, 0.75f);
+                    line.raycastTarget = false;
+                }
+            }
+            // 소켓 + 아이콘 + 이름 + 단계 눈금
+            foreach (var n in Tables.MemoryNodes)
+            {
+                if (!pos.TryGetValue(n.Id, out var at)) continue;
                 var node = n;
                 int lv = Meta.Level(n.Id);
-                bool avail = Meta.NodeAvailable(n);
-                var card = Card(content, "Node" + n.Id, new Vector2(-430 + (i % 3) * 430, 130 - (i / 3) * 300), new Vector2(400, 270));
-                CardText(card.transform, n.Name, new Vector2(0, -36), new Vector2(360, 40), 30, true);
-                CardText(card.transform, $"{lv} / {n.MaxLevel}\n{n.Desc}", new Vector2(0, -82), new Vector2(340, 90), 20, false);
-                string label = !avail ? "다음 장을 넘으면" : lv >= n.MaxLevel ? "최대" : $"새기기 ({Meta.CostOf(n)} 조각)";
-                var b = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(300, 70), label, () => { if (Meta.TryBuy(node)) { Sfx.Play("ui_buy", 0.85f, 0f); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 22);
-                UIKit.SetInteractable(b, avail && lv < n.MaxLevel && Meta.Shards >= Meta.CostOf(n));
-                i++;
+                bool avail = Meta.NodeAvailable(n), max = lv >= n.MaxLevel, sel = n.Id == memSel;
+                float size = n.IsTech ? techSlot : slot;
+                string state = !avail ? "_locked" : max ? "_gold" : "";
+                var sock = UIKit.MakeRect("Node" + n.Id, content, new Vector2(0.5f, 0.5f), at, new Vector2(size, size)).gameObject.AddComponent<Image>();
+                sock.sprite = MemSpr((n.IsTech ? "tech" : "slot") + state) ?? UIKit.Spr("slot_round"); sock.preserveAspect = true;
+                var btn = sock.gameObject.AddComponent<Button>();
+                btn.onClick.AddListener(() => { memSel = node.Id; Sfx.Play("ui_click_1", 0.5f); redraw(); });
+                var ic = UIKit.MakeRect("Icon", sock.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size * 0.58f, size * 0.58f)).gameObject.AddComponent<Image>();
+                ic.sprite = MemSpr("icon_" + n.Id); ic.preserveAspect = true; ic.raycastTarget = false;
+                ic.color = !avail ? new Color(0.35f, 0.33f, 0.35f, 0.8f) : lv == 0 ? new Color(0.75f, 0.72f, 0.7f, 0.9f) : Color.white;
+                if (!ic.sprite) ic.enabled = false;
+                if (sel)   // 고른 노드: 노란 테두리 고리
+                {
+                    var ring = UIKit.MakeRect("Sel", sock.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size + 18, size + 18)).gameObject.AddComponent<Image>();
+                    ring.sprite = UIKit.Spr("slot_round"); ring.color = new Color(1f, 0.85f, 0.3f, 0.9f); ring.raycastTarget = false; ring.transform.SetAsFirstSibling();
+                }
+                var nm = UIKit.Label("Name", content, new Vector2(0.5f, 0.5f), at + new Vector2(0, -size / 2 - 12), new Vector2(150, 24), 17, TextAnchor.MiddleCenter, true,
+                    avail ? UIKit.Cream : new Color(0.6f, 0.56f, 0.52f));
+                nm.text = n.Name; nm.raycastTarget = false;
+                if (!n.IsTech)   // 단계 눈금 ●●○
+                {
+                    var pip = UIKit.Label("Pips", content, new Vector2(0.5f, 0.5f), at + new Vector2(0, -size / 2 - 32), new Vector2(150, 18), 14, TextAnchor.MiddleCenter, false, new Color(1f, 0.82f, 0.35f));
+                    pip.text = new string('●', lv) + new string('○', n.MaxLevel - lv); pip.raycastTarget = false;
+                }
             }
+            MemoryDetail(content, redraw);
+        }
+
+        /// <summary>오른쪽 설명 판: 고른 노드 그림 · 이름 · 갈래/층 · 설명 · 지금 → 다음 · 조건 · 새기기 버튼 + 아래 합계</summary>
+        void MemoryDetail(Transform content, System.Action redraw)
+        {
+            var n = Tables.MemoryNodes.Find(x => x.Id == memSel);
+            var panel = Card(content, "Detail", new Vector2(440, 10), new Vector2(400, 560));
+            if (n == null) return;
+            var brown = new Color(0.3f, 0.18f, 0.1f);
+            int lv = Meta.Level(n.Id), bi = System.Array.IndexOf(MemoryBranches, n.Branch);
+            bool floorOpen = Meta.FloorOpen(n.Floor), reqMet = Meta.ReqMet(n), max = lv >= n.MaxLevel;
+            var big = UIKit.MakeRect("Big", panel.transform, new Vector2(0.5f, 1), new Vector2(0, -90), new Vector2(124, 124), new Vector2(0.5f, 0.5f)).gameObject.AddComponent<Image>();
+            big.sprite = MemSpr((n.IsTech ? "tech" : "slot") + (max ? "_gold" : "")) ?? UIKit.Spr("slot_round"); big.preserveAspect = true;
+            var bic = UIKit.MakeRect("Icon", big.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(78, 78)).gameObject.AddComponent<Image>();
+            bic.sprite = MemSpr("icon_" + n.Id); bic.preserveAspect = true; if (!bic.sprite) bic.enabled = false;
+            CardText(panel.transform, (n.IsTech ? "◆ " : "") + n.Name, new Vector2(0, -186), new Vector2(370, 40), 30, true);
+            var sub = CardText(panel.transform, $"{n.Branch} · {n.Floor}층" + (n.IsTech ? " · 기술" : ""), new Vector2(0, -226), new Vector2(370, 26), 17, false);
+            if (bi >= 0) sub.color = Color.Lerp(BranchColor[bi], brown, 0.55f);
+            // 2026-11-23 사용자: "현재 Lv / 다음 Lv / Lv UP, 단계마다 말고 현재 레벨의 수치로 표기"
+            if (n.IsTech)
+            {
+                CardText(panel.transform, n.Desc, new Vector2(0, -262), new Vector2(350, 70), 20, false);
+                CardText(panel.transform, max ? "<b>해금 완료</b>" : "<b>미해금</b>", new Vector2(0, -336), new Vector2(370, 30), 20, false);
+            }
+            else
+            {
+                string stat = StatLabel(n.Stat);
+                CardText(panel.transform, $"<b>현재 Lv {lv}</b> <size=15>/ {n.MaxLevel}</size>", new Vector2(0, -258), new Vector2(370, 30), 21, false);
+                CardText(panel.transform, lv > 0 ? $"{stat} <b>{Fmt(n, lv)}</b>" : $"{stat} <b>+0</b>", new Vector2(0, -288), new Vector2(370, 28), 19, false);
+                CardText(panel.transform, max ? "<color=#8D6E2F><b>MAX</b></color>" : $"<color=#2E7D32><b>다음 Lv {lv + 1}</b>   {stat} <b>{Fmt(n, lv + 1)}</b></color>", new Vector2(0, -326), new Vector2(370, 28), 19, false);
+            }
+            string why = !floorOpen ? $"{n.Floor}장 클리어 시 해금" : !reqMet ? $"선행: {ReqName(n)}" : "";
+            if (why != "") { var w = CardText(panel.transform, why, new Vector2(0, -372), new Vector2(370, 28), 18, true); w.color = new Color(0.65f, 0.2f, 0.1f); }
+            string label = !floorOpen || !reqMet ? "잠김" : max ? (n.IsTech ? "해금 완료" : "MAX") : n.IsTech ? $"해금  ({Meta.CostOf(n)} 조각)" : $"강화  ({Meta.CostOf(n)} 조각)";
+            var b = UIKit.MakeButton("Buy", panel.transform, new Vector2(0.5f, 0), new Vector2(0, 62), new Vector2(320, 76), label, () =>
+            {
+                if (Meta.TryBuy(n)) { Sfx.Play("ui_buy", 0.85f, 0f); if (n.IsTech) Toast($"<color=#FFD54A>◆ {n.Name}</color> — {n.Desc}"); redraw(); }
+                else Sfx.Play("ui_deny", 0.7f, 0f);
+            }, 24);
+            UIKit.SetInteractable(b, floorOpen && reqMet && !max && Meta.Shards >= Meta.CostOf(n));
+            // 합계 (설명 판 아래)
+            var sum = UIKit.Label("Sum", content, new Vector2(0.5f, 0.5f), new Vector2(440, -290), new Vector2(420, 40), 14, TextAnchor.MiddleCenter, false, UIKit.Cream);
+            sum.text = $"공격 +{Meta.Stat("DamageMul") * 100:0}% · 치명 +{Meta.Stat("CritChance") * 100:0}% · 치명피해 +{Meta.Stat("CritDamage") * 100:0}% · 열기 +{Meta.Stat("HeatGain") * 100:0}%\n" +
+                       $"체력 +{Meta.Stat("MaxHp"):0} · 방어 +{Meta.Stat("Defense"):0} · 회피 {Meta.Stat("DodgeCooldown") * 100:0}% · 이동 +{Meta.Stat("MoveSpeed") * 100:0}% · 장전 {Meta.Stat("ReloadTime") * 100:0}% · 발동 +{Meta.Stat("ProcChance") * 100:0}% · 조각 +{Meta.Stat("ShardGain") * 100:0}%";
+        }
+
+        static string StatLabel(string stat) => stat switch
+        {
+            "DamageMul" => "공격력", "CritChance" => "치명타 확률", "CritDamage" => "치명타 피해", "HeatGain" => "열기 획득",
+            "MaxHp" => "최대 체력", "DodgeCooldown" => "회피 재사용", "Defense" => "방어", "MoveSpeed" => "이동 속도",
+            "ShardGain" => "시간의 조각 획득", "ReloadTime" => "장전 시간", "ProcChance" => "효과 발동 확률", _ => stat,
+        };
+
+        static string ReqName(MemoryNodeDef n)
+        {
+            if (n.Req > 0) { var r = Tables.MemoryNodes.Find(x => x.Id == n.Req); return r != null ? r.Name + " Lv 1" : "하위 노드"; }
+            return $"{n.Branch} {n.Floor - 1}층 노드 1개";
+        }
+
+        /// <summary>노드 값 표기: 단계 lv일 때 합계 (체력 · 방어는 수, 나머지는 %)</summary>
+        static string Fmt(MemoryNodeDef n, int lv)
+        {
+            float v = n.ValuePerLevel * lv;
+            return n.Stat is "MaxHp" or "Defense" ? $"{(v >= 0 ? "+" : "")}{v:0}" : $"{(v >= 0 ? "+" : "")}{v * 100:0}%";
         }
 
         static string ItemName(int id) => Tables.Bullets.TryGetValue(id, out var b) ? b.Name : Tables.Guns.TryGetValue(id, out var g) ? g.Name : id.ToString();
@@ -1136,7 +1283,7 @@ namespace CatTang
                 CardText(card.transform, g.Name, new Vector2(0, -24), new Vector2(260, 30), 22, true);
                 string items = string.Join(" · ", g.Items.Take(6).Select(ItemName)) + (g.Items.Count > 6 ? $" 외 {g.Items.Count - 6}" : "");
                 CardText(card.transform, $"<size=13>{g.Desc}</size>\n{items}", new Vector2(0, -56), new Vector2(255, h - 110), 14, false);
-                string label = own ? "해금됨 ✓" : !avail ? $"{g.ReqChapter}장을 넘으면" : $"해금 {g.Cost} 조각";
+                string label = own ? "해금 완료" : !avail ? $"{g.ReqChapter}장 클리어 시" : $"해금 {g.Cost} 조각";
                 var b = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(240, 48), label,
                     () => { if (Meta.TryBuyGroup(g)) { Sfx.Play("ui_buy", 0.85f, 0f); Toast($"'{g.Name}' 해금 — 이제 판에서 나온다"); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 17);
                 UIKit.SetInteractable(b, !own && avail && Meta.Shards >= g.Cost);

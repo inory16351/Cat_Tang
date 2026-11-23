@@ -69,12 +69,29 @@ namespace CatTang
         }
 
         // ---------- 기억 (능력치 노드) ----------
-        public static int Level(int nodeId) => PlayerPrefs.GetInt(P + "memory." + nodeId, 0);
-        public static int CostOf(MemoryNodeDef n) => n.BaseCost * (Level(n.Id) + 1);
-
-        /// <summary>챕터를 넘을수록 찍을 수 있는 노드가 늘어남 (처음 3개, 한 장마다 +2)</summary>
-        public static int MemoryNodesOpen => 3 + 2 * ChaptersCleared;
-        public static bool NodeAvailable(MemoryNodeDef n) => Tables.MemoryNodes.IndexOf(n) < MemoryNodesOpen;
+        // 기억의 방 갈래 트리 (2026-11-23 사용자 확정): 화력 · 생존 · 손재주 3갈래 × 4층. 층 n은 장을 n개 넘으면 열림,
+        //   위층 노드는 아래층(Req 노드, 없으면 같은 갈래 아래층 아무거나)을 1단계 이상 찍어야. 다 찍으면 판 시작 전력 ~+35% + 기술 노드 4개
+        //   (기술 노드 = 생존 보험 · 보상 선택폭, 판의 규칙을 바꾸는 1회 해금)
+        public static int Level(int nodeId)
+        {
+            int lv = PlayerPrefs.GetInt(P + "memory." + nodeId, 0);
+            var n = Tables.MemoryNodes.Find(x => x.Id == nodeId);
+            return n != null ? Mathf.Min(lv, n.MaxLevel) : lv;            // 예전 저장(최대 5단계)은 새 최대 단계로 자름
+        }
+        public static int CostOf(MemoryNodeDef n) => n.IsTech ? n.BaseCost : n.BaseCost * (Level(n.Id) + 1);
+        public static bool FloorOpen(int floor) => ChaptersCleared >= floor;
+        public static bool ReqMet(MemoryNodeDef n)
+        {
+            if (n.Floor <= 1) return true;
+            if (n.Req > 0) return Level(n.Req) >= 1;
+            foreach (var m in Tables.MemoryNodes)
+                if (m.Branch == n.Branch && m.Floor == n.Floor - 1 && Level(m.Id) >= 1) return true;
+            return false;
+        }
+        public static bool NodeAvailable(MemoryNodeDef n) => FloorOpen(n.Floor) && ReqMet(n);
+        /// <summary>기술 노드를 해금했나 (7101 넓어진 선택 · 7102 한 번 더 · 7103 다시 뽑기 · 7104 보스의 선물)</summary>
+        public static bool HasTech(int id) => Level(id) >= 1;
+        public const int TechWiderChoice = 7101, TechLastStand = 7102, TechReroll = 7103, TechBossGift = 7104;
 
         public static bool TryBuy(MemoryNodeDef n)
         {
@@ -89,7 +106,7 @@ namespace CatTang
         {
             float sum = 0;
             foreach (var n in Tables.MemoryNodes)
-                if (n.Stat == stat) sum += n.ValuePerLevel * Level(n.Id);
+                if (!n.IsTech && n.Stat == stat) sum += n.ValuePerLevel * Level(n.Id);
             return sum;
         }
 

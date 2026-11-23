@@ -7,6 +7,6 @@ namespace CatTang
     /// <summary>마을의 챕터 문 (판 시작)</summary>
     public class ChapterGate : Interactable
     {
-        public override void Interact(PlayerController p) => FindFirstObjectByType<GameUI>()?.OpenChapterSelect();
+        public override void Interact(PlayerController p) { GuideArrow.Reached(transform); FindFirstObjectByType<GameUI>()?.OpenChapterSelect(); }
     }
 }
