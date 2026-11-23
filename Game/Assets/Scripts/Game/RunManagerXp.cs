@@ -22,6 +22,7 @@ namespace CatTang
         /// <summary>처치한 적에서 경험치 보석을 튀어나오게 함</summary>
         void DropXp(Enemy e)
         {
+            if (StoryCalm) return;                        // 판 1 튜토리얼: 싸워야 한다는 것만 (경험치 · 레벨 업 없음)
             int value = e.kind == Enemy.Kind.Boss ? (IsMidBossRoom ? 20 : 0) : e.elite ? 3 : 2;
             if (value <= 0) return;
             int orbs = Mathf.Min(value, 10);

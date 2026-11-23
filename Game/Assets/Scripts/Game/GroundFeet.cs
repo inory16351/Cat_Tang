@@ -24,8 +24,13 @@ namespace CatTang
         void LateUpdate()
         {
             if (++frames < 3) return;                     // 대기 자세가 실제로 돈 뒤
+            if (!anim) { enabled = false; return; }
+            // 2026-11-23 사용자: 일루시오 · 기로틴이 떠 있음 → 등장 연출이 처음에 몸을 숨기면(Hide) 이 순간 스킨이 다 꺼져 있어 못 재고 끝났음.
+            //  보이는 스킨이 하나도 없으면 다시 보일 때까지 기다렸다 잼 (최대 10초)
+            bool anyOn = false;
+            foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>()) if (smr.enabled && smr.sharedMesh) { anyOn = true; break; }
+            if (!anyOn && frames < 600) return;
             enabled = false;
-            if (!anim) return;
             var root = transform.parent ? transform.parent : transform;   // 적 뿌리 = 바닥 높이
             float low = float.MaxValue;
             var mesh = new Mesh();

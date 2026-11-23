@@ -19,7 +19,31 @@ namespace CatTang
         Text infoTitle, infoBody, lockText, goldText, tabDesc, tabStats;
         Image infoIcon;
         bool statsTab;
-        RectTransform root;
+        RectTransform root, infoRt;
+
+        // ---- 튜토리얼 안내가 비출 자리 (StoryHints) ----
+        /// <summary>오른쪽 설명 / 능력치 칸</summary>
+        public RectTransform InfoRect => infoRt;
+        /// <summary>탄환 시계 12칸</summary>
+        public RectTransform[] ClockRects => slotFrames.Values.Select(i => i.rectTransform).ToArray();
+        /// <summary>능력치 탭(특성 목록)으로 넘김</summary>
+        public void ShowStatsTab() { statsTab = true; Refresh(); }
+        /// <summary>설명 칸에 특별한 탄(조건 · 효과가 있는 탄) 하나를 띄움 — 실린더 우선, 없으면 보관함, 그것도 없으면 실린더의 아무 탄</summary>
+        public void ShowFeaturedBullet()
+        {
+            SlotWidget best = null; int bestScore = 0;
+            foreach (var w in widgets)
+            {
+                if (w.place != SlotPlace.Cylinder && w.place != SlotPlace.Storage) continue;
+                var it = ItemAt(w);
+                if (it == null || it.kind != ItemKind.Bullet) continue;
+                bool special = it.bullet.Trait1 != 0 || it.bullet.Effect1 != 0;
+                int score = (special ? 2 : 0) + (w.place == SlotPlace.Cylinder ? 1 : 0);
+                if (score > bestScore) { best = w; bestScore = score; }
+            }
+            statsTab = false;
+            if (best) ShowTip(best); else ShowTip(null);
+        }
         // 탄 강화 창
         GameObject enhance;
         SlotPlace enhPlace;
@@ -93,6 +117,7 @@ namespace CatTang
 
             // ---- 오른쪽: 설명 / 능력치 ----
             var info = UIKit.Panel("Info", P, new Vector2(0.5f, 0.5f), new Vector2(560, 10), new Vector2(520, 760), false, "tooltip", 1.6f);
+            infoRt = info.rectTransform;
             var I = info.transform;
             var tabA = UIKit.MakeButton("TabDesc", I, new Vector2(0.5f, 1), new Vector2(-118, -50), new Vector2(220, 64), "설명", () => { statsTab = false; Refresh(); }, 22);
             var tabB = UIKit.MakeButton("TabStats", I, new Vector2(0.5f, 1), new Vector2(118, -50), new Vector2(220, 64), "능력치", () => { statsTab = true; Refresh(); }, 22);
@@ -191,9 +216,47 @@ namespace CatTang
 
         GameUI Gui => FindFirstObjectByType<GameUI>();
 
+        /// <summary>전투 중에 옮기려 할 때: 경고 문구 + 거절음 + 잡은 탄이 도리질 (2026-11-23 사용자: 늘 띄워 두지 말고 옮기려 할 때만)</summary>
+        float denyAt = -9;
+        public void DenyEdit(SlotWidget w)
+        {
+            if (Time.unscaledTime - denyAt < 0.4f) return;
+            denyAt = Time.unscaledTime;
+            if (warnCo != null) StopCoroutine(warnCo);
+            warnCo = StartCoroutine(Warn("전투 중에는 교체할 수 없습니다"));   // 인벤토리 아래 도움말 줄에 (위쪽 알림은 제목 띠와 겹침)
+            Sfx.Play("ui_deny", 0.5f);
+            if (w && w.icon) StartCoroutine(Shake(w.icon.rectTransform));
+        }
+
+        Coroutine warnCo;
+        const string HelpText = "끌어놓기로 교체 · 탄을 클릭하면 탄 강화 창 · 활성화된 칸은 금빛";
+        System.Collections.IEnumerator Warn(string msg)
+        {
+            var rt = lockText.rectTransform;
+            lockText.text = msg; lockText.color = UIKit.Red;
+            lockText.fontSize = 24;
+            for (float t = 0; t < 0.18f; t += Time.unscaledDeltaTime) { rt.localScale = Vector3.one * Mathf.LerpUnclamped(1.3f, 1f, OutBack(t / 0.18f)); yield return null; }
+            rt.localScale = Vector3.one;
+            yield return new WaitForSecondsRealtime(1.6f);
+            for (float a = 1; a > 0; a -= Time.unscaledDeltaTime * 4) { lockText.color = new Color(UIKit.Red.r, UIKit.Red.g, UIKit.Red.b, a); yield return null; }
+            lockText.fontSize = 20; lockText.text = HelpText; lockText.color = UIKit.Muted;
+            warnCo = null;
+        }
+
+        System.Collections.IEnumerator Shake(RectTransform rt)
+        {
+            var home = rt.anchoredPosition;
+            for (float t = 0; t < 0.3f && rt; t += Time.unscaledDeltaTime)
+            {
+                rt.anchoredPosition = home + Vector2.right * Mathf.Sin(t * 60f) * 8f * (1 - t / 0.3f);
+                yield return null;
+            }
+            if (rt) rt.anchoredPosition = home;
+        }
+
         public void Move(SlotWidget src, SlotWidget dst)
         {
-            if (!CanEdit) return;
+            if (!CanEdit) { DenyEdit(src); return; }
             var a = ItemAt(src);
             if (a == null) return;
 
@@ -354,11 +417,16 @@ namespace CatTang
                 }
                 else if (label) Destroy(label.gameObject);
             }
+            int stagger = 0;
             for (int s = 1; s <= 12; s++)
             {
                 var b = rev.slots[s].bullet;
                 bool aw = rev.Awakened(s);
-                slotGlow[s].color = new Color(1f, 0.82f, 0.3f, aw ? 0.9f : 0f);
+                // 활성 상태가 바뀌면 연출 (처음 열 때는 그냥 표시)
+                if (awInit && lastAw.TryGetValue(s, out var was) && was != aw && b != null)
+                    StartCoroutine(aw ? Wake(s, 0.02f + stagger++ * 0.05f) : Sleep(s, 0.02f + stagger++ * 0.05f));   // 한 박자 쉬고 시작 (바로 시작하면 첫 칸이 끊김)
+                lastAw[s] = aw;
+                if (!animating.Contains(s)) ApplyAwake(s, aw, b != null);
                 slotFrames[s].color = b == null ? new Color(0.55f, 0.55f, 0.6f) : Color.white;
                 var pr = pipRoots[s];
                 for (int c = pr.childCount - 1; c >= 0; c--) Destroy(pr.GetChild(c).gameObject);
@@ -369,12 +437,161 @@ namespace CatTang
                     dot.color = k < rev.slots[s].ops.Count ? Color.white : new Color(1, 1, 1, 0.3f);
                 }
             }
-            lockText.text = CanEdit ? "끌어놓기로 교체 · 탄을 클릭하면 탄 강화 창 · 활성화된 칸은 금빛" : "전투 중에는 바꿀 수 없음 (보기만)";
-            lockText.color = CanEdit ? UIKit.Muted : UIKit.Red;
+            awInit = true;
+            if (warnCo == null) { lockText.text = HelpText; lockText.color = UIKit.Muted; }   // 전투 중 경고는 옮기려 할 때만 (DenyEdit → Warn)
             goldText.text = p.inv.gold.ToString();
             if (tabDesc) { tabDesc.color = statsTab ? UIKit.Muted : UIKit.Gold; tabStats.color = statsTab ? UIKit.Gold : UIKit.Muted; }
             if (statsTab) ShowStats();
             if (enhance) RefreshEnhance();
+        }
+
+        // ---------- 탄 활성화 · 비활성화 연출 (2026-11-23 사용자: 세피리아 아이템 활성화 · 비활성화처럼) ----------
+        readonly Dictionary<int, bool> lastAw = new();
+        readonly HashSet<int> animating = new();
+        bool awInit;
+        static readonly Color GlowGold = new(1f, 0.82f, 0.3f), Spark = new(1f, 0.88f, 0.35f), Ash = new(0.42f, 0.42f, 0.48f);
+        static readonly Color IconOff = new(0.6f, 0.6f, 0.66f);   // 비활성 탄: 살짝 회색으로 가라앉음
+
+        Image CylIcon(int s) { foreach (var w in widgets) if (w && w.place == SlotPlace.Cylinder && w.index == s) return w.icon; return null; }
+
+        void ApplyAwake(int s, bool aw, bool has)
+        {
+            slotGlow[s].color = new Color(GlowGold.r, GlowGold.g, GlowGold.b, aw ? 0.9f : 0f);
+            slotGlow[s].rectTransform.localScale = Vector3.one;
+            var ic = CylIcon(s);
+            if (ic && has) { ic.color = aw ? Color.white : IconOff; ic.rectTransform.localScale = Vector3.one; ic.rectTransform.localRotation = Quaternion.identity; }
+        }
+
+        static float OutBack(float u) { const float c = 2.2f; float v = u - 1; return 1 + (c + 1) * v * v * v + c * v * v; }
+        static float Out3(float u) { u = Mathf.Clamp01(u); return 1 - (1 - u) * (1 - u) * (1 - u); }
+
+        // 부드러운 빛 그림 (톱니 슬롯 그림을 쓰면 톱니가 커지는 것처럼 보임)
+        static Sprite softGlow, softRing;
+        static Sprite MakeRadial(System.Func<float, float> a)
+        {
+            const int N = 96;
+            var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float dx = (x + 0.5f) / N * 2 - 1, dy = (y + 0.5f) / N * 2 - 1;
+                    t.SetPixel(x, y, new Color(1, 1, 1, Mathf.Clamp01(a(Mathf.Sqrt(dx * dx + dy * dy)))));
+                }
+            t.Apply();
+            return Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f));
+        }
+        static Sprite SoftGlow() => softGlow ? softGlow : softGlow = MakeRadial(d => Mathf.Pow(Mathf.Clamp01(1 - d), 2.2f));
+        static Sprite SoftRing() => softRing ? softRing : softRing = MakeRadial(d => Mathf.Exp(-Mathf.Pow((d - 0.78f) / 0.09f, 2)));
+        static Image Soft(string n, Transform parent, Sprite sp, Vector2 at, float size)
+        {
+            var im = UIKit.MakeRect(n, parent, new Vector2(0.5f, 0.5f), at, Vector2.one * size).gameObject.AddComponent<Image>();
+            im.sprite = sp; im.raycastTarget = false;
+            return im;
+        }
+
+        /// <summary>불티 하나: from에서 vel로 날아가며 작아지고 사라짐 (gravity &gt; 0이면 아래로 떨어짐)</summary>
+        System.Collections.IEnumerator Ember(Transform parent, Vector2 from, Vector2 vel, float size, Color c, float life, float gravity)
+        {
+            var im = Soft("Ember", parent, SoftGlow(), from, size);
+            var rt = im.rectTransform;
+            for (float t = 0; t < life && im; t += Time.unscaledDeltaTime)
+            {
+                float u = t / life;
+                rt.anchoredPosition = from + vel * Out3(u) + Vector2.down * gravity * u * u;
+                rt.localScale = Vector3.one * (1 - u * 0.7f);
+                im.color = new Color(c.r, c.g, c.b, c.a * (1 - u * u));
+                yield return null;
+            }
+            if (im) Destroy(im.gameObject);
+        }
+
+        /// <summary>부드러운 빛 덩어리 / 고리: 크기 s0 → s1, 진하기 a(u) (rise = 위로 떠오름)</summary>
+        System.Collections.IEnumerator Bloom(Transform parent, Sprite sp, Vector2 at, float size, float s0, float s1, Color c, float life, float rise = 0, bool peakMid = false)
+        {
+            var im = Soft("Bloom", parent, sp, at, size);
+            for (float t = 0; t < life && im; t += Time.unscaledDeltaTime)
+            {
+                float u = t / life;
+                im.rectTransform.localScale = Vector3.one * Mathf.Lerp(s0, s1, Out3(u));
+                im.rectTransform.anchoredPosition = at + Vector2.up * rise * Out3(u);
+                float k = peakMid ? (u < 0.2f ? u / 0.2f : 1 - (u - 0.2f) / 0.8f) : 1 - u;
+                im.color = new Color(c.r, c.g, c.b, c.a * k);
+                yield return null;
+            }
+            if (im) Destroy(im.gameObject);
+        }
+
+        /// <summary>활성화: 칸 뒤로 빛이 번쩍 · 빛 고리가 퍼지고 · 탄이 튀어 오르고 · 빛 알갱이가 사방으로</summary>
+        System.Collections.IEnumerator Wake(int s, float delay)
+        {
+            animating.Add(s);
+            if (delay > 0) yield return new WaitForSecondsRealtime(delay);
+            var glow = slotGlow[s]; var ic = CylIcon(s);
+            var par = glow.transform.parent; var at = glow.rectTransform.anchoredPosition;
+            Sfx.Play("ui_buy", 0.55f);
+            StartCoroutine(Bloom(par, SoftGlow(), at, 190, 0.6f, 1.25f, new Color(1f, 0.93f, 0.6f, 0.85f), 0.38f, 0, true));   // 번쩍
+            StartCoroutine(Bloom(par, SoftRing(), at, 130, 0.7f, 2.0f, new Color(1f, 0.88f, 0.35f, 1f), 0.45f));                // 퍼지는 빛 고리
+            StartCoroutine(Bloom(par, SoftRing(), at, 130, 0.6f, 1.4f, new Color(1f, 0.97f, 0.8f, 0.8f), 0.3f));                // 안쪽 흰 고리
+            for (int k = 0; k < 10; k++)
+            {
+                float ang = (k / 10f + Random.Range(-0.03f, 0.03f)) * Mathf.PI * 2;
+                StartCoroutine(Ember(par, at, new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * Random.Range(80f, 125f), Random.Range(16f, 26f), Spark, Random.Range(0.35f, 0.55f), -20f));
+            }
+            const float T = 0.42f;
+            for (float t = 0; t < T; t += Time.unscaledDeltaTime)
+            {
+                float u = t / T;
+                glow.color = new Color(1f, 0.9f, 0.5f, Mathf.Clamp01(u < 0.2f ? u / 0.2f : 1 - (u - 0.2f) / 0.8f * 0.1f));
+                glow.rectTransform.localScale = Vector3.one * Mathf.Lerp(1.35f, 1f, Out3(u));
+                if (ic)
+                {
+                    ic.color = Color.Lerp(IconOff, Color.white, Out3(u * 3));
+                    ic.rectTransform.localScale = Vector3.one * (u < 0.3f ? Mathf.Lerp(1f, 1.4f, u / 0.3f) : Mathf.LerpUnclamped(1.4f, 1f, OutBack((u - 0.3f) / 0.7f)));
+                    ic.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(u * Mathf.PI * 3) * 10f * (1 - u));
+                }
+                yield return null;
+            }
+            animating.Remove(s);
+            ApplyAwake(s, p.rev.Awakened(s), p.rev.slots[s].bullet != null);
+        }
+
+        /// <summary>비활성화: 꺼지는 전구처럼 빛이 깜빡이다 꺼지고 · 탄이 부르르 떨며 회색으로 가라앉고 · 잿빛 연기 · 재가 떨어짐</summary>
+        System.Collections.IEnumerator Sleep(int s, float delay)
+        {
+            animating.Add(s);
+            if (delay > 0) yield return new WaitForSecondsRealtime(delay);
+            var glow = slotGlow[s]; var ic = CylIcon(s);
+            var par = glow.transform.parent; var at = glow.rectTransform.anchoredPosition;
+            Sfx.Play("ui_deny", 0.45f);
+            const float T = 0.55f;
+            bool puffed = false;
+            for (float t = 0; t < T; t += Time.unscaledDeltaTime)
+            {
+                float u = t / T;
+                // 깜빡: 켜짐 → 꺼짐 → 반쯤 켜짐 → 꺼짐 (0.3초 안에)
+                float fl = u < 0.08f ? 0.9f : u < 0.16f ? 0.1f : u < 0.26f ? 0.6f : u < 0.32f ? 0.05f : u < 0.4f ? 0.3f : 0f;
+                glow.color = new Color(GlowGold.r, GlowGold.g, GlowGold.b, fl);
+                glow.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, 0.85f, u);
+                if (!puffed && u >= 0.4f)
+                {
+                    puffed = true;   // 다 꺼지는 순간: 연기 피어오름 + 재가 떨어짐
+                    Sfx.Play("e4_tick_2", 0.35f);
+                    StartCoroutine(Bloom(par, SoftGlow(), at, 150, 0.6f, 1.5f, new Color(0.3f, 0.3f, 0.36f, 0.75f), 0.7f, 40f, true));
+                    StartCoroutine(Bloom(par, SoftRing(), at, 130, 1.5f, 0.85f, new Color(Ash.r, Ash.g, Ash.b, 0.8f), 0.3f));
+                    for (int k = 0; k < 9; k++)
+                        StartCoroutine(Ember(par, at + new Vector2(Random.Range(-34f, 34f), Random.Range(-10f, 24f)), new Vector2(Random.Range(-30f, 30f), Random.Range(10f, 30f)), Random.Range(12f, 20f), new Color(Ash.r, Ash.g, Ash.b, 0.95f), Random.Range(0.5f, 0.75f), 90f));
+                }
+                if (ic)
+                {
+                    float v = Out3(Mathf.Clamp01((u - 0.3f) / 0.4f));
+                    ic.color = Color.Lerp(Color.white, IconOff, v);
+                    ic.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(u * Mathf.PI * 11) * 8f * (1 - u));
+                    ic.rectTransform.localScale = new Vector3(Mathf.Lerp(1f, 1.08f, v * (1 - u)), Mathf.Lerp(1f, 0.8f, v * (1 - u) * 2), 1) * (u < 0.4f ? 1f : Mathf.Lerp(0.88f, 1f, Out3((u - 0.4f) / 0.6f)));   // 주저앉듯 눌림
+                }
+                yield return null;
+            }
+            animating.Remove(s);
+            ApplyAwake(s, p.rev.Awakened(s), p.rev.slots[s].bullet != null);
         }
 
         void RefreshEnhance()

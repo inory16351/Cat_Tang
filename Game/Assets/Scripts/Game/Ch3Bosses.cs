@@ -143,9 +143,11 @@ namespace CatTang
         Quaternion tailR, finLR, finRR, jawR;
         public float height, heightTarget, jawOpen, jawTarget, swim = 1f, roll, rollTarget;
         float t;
+        Vector3 basePos; Quaternion baseRot;     // 빌더가 Mesh에 넣어 둔 180° (머리가 +Z 앞) — 2026-11-23 사용자: 자꾸 뒷모습 → 매 프레임 덮어써서 사라지던 걸 지킴
 
         void Start()
         {
+            basePos = transform.localPosition; baseRot = transform.localRotation;
             foreach (var x in GetComponentsInChildren<Transform>(true))
             {
                 if (x.name.StartsWith("Tail")) tail = x;
@@ -165,8 +167,8 @@ namespace CatTang
             height = Mathf.MoveTowards(height, heightTarget, 9f * Time.deltaTime);
             jawOpen = Mathf.MoveTowards(jawOpen, jawTarget, 3f * Time.deltaTime);
             roll = Mathf.MoveTowards(roll, rollTarget, 60f * Time.deltaTime);
-            transform.localPosition = new Vector3(0, height + Mathf.Sin(t * 1.4f) * 0.25f, 0);
-            transform.localRotation = Quaternion.Euler(Mathf.Sin(t * 1.4f + 0.6f) * 3f, 0, roll);
+            transform.localPosition = basePos + Vector3.up * (height + Mathf.Sin(t * 1.4f) * 0.25f);   // 빌더가 맞춘 기본 높이(Hyper3D 모델은 원점이 몸 가운데) 위에 출렁임
+            transform.localRotation = Quaternion.Euler(Mathf.Sin(t * 1.4f + 0.6f) * 3f, 0, roll) * baseRot;
             if (tail) tail.localRotation = tailR * Quaternion.Euler(Mathf.Sin(t * 2.6f) * 16f, 0, 0);
             if (finL) finL.localRotation = finLR * Quaternion.Euler(0, 0, Mathf.Sin(t * 2.2f) * 14f);
             if (finR) finR.localRotation = finRR * Quaternion.Euler(0, 0, -Mathf.Sin(t * 2.2f) * 14f);

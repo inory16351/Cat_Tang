@@ -535,7 +535,9 @@ namespace CatTang.EditorTools
             ("Kit_Altar", 40f, 'w', "Altar"),
             // 보스 (blender_kit_ch3_bosses.py, 리깅 없음 — 이름 붙은 조각을 코드가 돌림): 신기루 마술사 4m · 거울 고래 길이 14m
             ("Kit_Ch3_Magician", 4.0f, 'h', "Ch3_Magician"),
-            ("Kit_Ch3_Whale", 14f, 'd', "Ch3_Whale"),
+            // 거울 고래 (2026-11-23 사용자: 블렌더 티가 많이 남 → Hyper3D로 다시): Codex 원화 Art/tripo_input/ch3_boss/whale_concept.png → Hyper3D Gen-2.5 High
+            //  한 덩어리 메시라 꼬리 · 지느러미 · 턱 조각은 없음 (WhaleAnim은 몸 전체 출렁임 · 기울기만). 머리가 이미 +Z라 돌리지 않음 (WhaleH = 0°)
+            ("Kit_Ch3_WhaleH", 14f, 'd', "Ch3_Whale"),
         };
 
         /// <summary>스테이지별 문 · 복도 · 문틀 + 보상 문만 다시 빌드 (1 · 2 · 3장, blender_kit_ch{1,2,3}_gates.py)</summary>
@@ -583,7 +585,7 @@ namespace CatTang.EditorTools
             {
                 int made = 0;
                 foreach (var k in Kit3)
-                    if (Build(k.name, k.size, 180f, k.fit, Kit3Dir, k.outName)) made++;
+                    if (Build(k.name, k.size, k.name == "Kit_Ch3_WhaleH" ? 0f : 180f, k.fit, Kit3Dir, k.outName)) made++;
                 GroundMat("Ground", "Assets/Art/Env/Ch3/ground_ch3.png");
                 GroundMat("GroundCloud", "Assets/Art/Env/Ch3/ground_ch3_cloud.png");
                 AssetDatabase.SaveAssets();
@@ -1717,14 +1719,17 @@ namespace CatTang.EditorTools
             if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", FlatFloor.Contains(name) ? 1f : 4f);   // 2026-11-16 사용자: 외곽선 두껍게 (납작한 바닥 조각은 판자 선이 지글거려 얇게)
             if (m.HasProperty("_RimStrength")) m.SetFloat("_RimStrength", 0.5f);
             // 배경 키트는 채도 · 밝기를 낮춤 (EnvTone), 캐릭터 · 하트 · 폭탄 · 화약통은 원래 색
-            bool env = name.StartsWith("Kit_") && !Pickups.Contains(name) && !(SrcDir == Ch5Src && (name.StartsWith("Kit_W_") || name.StartsWith("Kit_EP_") || name == "Kit_Ch5_MirrorPhantom"));
+            bool env = name.StartsWith("Kit_") && !Pickups.Contains(name) && name != "Kit_Ch3_WhaleH"   // Hyper3D 고래 보스는 원래 색 그대로
+                        && !(SrcDir == Ch5Src && (name.StartsWith("Kit_W_") || name.StartsWith("Kit_EP_") || name == "Kit_Ch5_MirrorPhantom"));
             if (m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", env ? EnvTone.Saturation : 1f); m.SetFloat("_Brightness", env ? EnvTone.Brightness : 1f); }
             // 적: 배경과 갈리게 살짝 진홍 외곽선 + 붉은 가장자리 빛 (2026-11-17 사용자: 적에게 살짝 배경선)
             if ((name.StartsWith("Ch1_") || name.StartsWith("Ch2_") || name.StartsWith("Ch3_")) && !name.EndsWith("_Merchant")) { EnemyEdge(m); EnemyPalette.ApplyCurrent(m); }
             if ((name.StartsWith("Ch4_") || name.StartsWith("Ch5_")) && !name.EndsWith("_Merchant")) EnemyEdge(m);   // 5장 적도 원래 색 그대로 + 빨간 바깥 테두리
             if (name == "Kit_Ch5_MirrorPhantom") EnemyEdge(m);   // 4장 적: 느와르 원래 색 그대로 + 빨간 바깥 테두리만   // 적 배색 2안 (차가운 한 계열). 상인은 적이 아님
             // 3장 블렌더 보스(마술사 · 고래): 적이라 빨간 바깥 테두리 (색은 이미 차가운 몬스터 색으로 뽑아 배색 치환은 안 함)
-            if (name == "Kit_Ch3_Magician" || name == "Kit_Ch3_Whale") EnemyEdge(m);
+            if (name == "Kit_Ch3_Magician" || name == "Kit_Ch3_Whale" || name == "Kit_Ch3_WhaleH") EnemyEdge(m);
+            // Hyper3D 고래: 파스텔 유리 원화 톤이 그늘에 묻혀 진한 자홍으로 보임 → 그늘을 밝고 옅게 (2026-11-23)
+            if (name == "Kit_Ch3_WhaleH") { m.SetColor("_ShadeColor", new Color(0.88f, 0.8f, 0.92f)); m.SetColor("_SecondShadeColor", new Color(0.7f, 0.6f, 0.78f)); }
             if ((name == "Kit_Heart" || name == "Kit_XpGem") && m.HasProperty("_Saturation")) { m.SetFloat("_Saturation", 1.15f); m.SetFloat("_Brightness", 1.12f); }   // 하트 · 경험치 보석은 더 선명하게
             if (name == "Kit_XpGem" && m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", 2.5f);   // 작은 물체라 외곽선을 얇게
             EditorUtility.SetDirty(m);

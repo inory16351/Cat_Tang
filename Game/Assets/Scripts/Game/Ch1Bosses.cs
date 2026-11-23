@@ -37,10 +37,14 @@ namespace CatTang
             return tm;
         }
 
-        public static IEnumerator Blast(Vector3 at, float radius, float delay, float dmg)
+        /// <param name="glint">공격 직전 주황 십자 예고 섬광 (잦은 잔폭발은 끔 — 2026-11-23 사용자: 십자가가 너무 많이 나옴)</param>
+        /// <param name="boom">터지는 순간 (시간 지연 돔이 번쩍)</param>
+        public static IEnumerator Blast(Vector3 at, float radius, float delay, float dmg, bool glint = true, System.Action boom = null)
         {
-            Telegraph.Ring(at, radius, delay, Telegraph.Danger);
+            var tele = Telegraph.Ring(at, radius, delay, Telegraph.Danger);
+            if (!glint && tele) tele.NoGlint();
             yield return new WaitForSeconds(delay);
+            boom?.Invoke();
             FxBurst.Spawn(at + Vector3.up * 0.3f, radius * 1.2f, FxBurst.Kind.Explosion);
             PropHit.Area(at, radius, dmg);
             var p = PlayerController.Instance;
@@ -427,28 +431,36 @@ namespace CatTang
         }
 
         // 시간 지연 구역: 반경 4m · 4초, 원 안에서 이속 · 공속 40% 감소, 그 안으로 탄이 쏟아짐
+        // 2026-11-23 사용자: 시간 지연인 걸 알 수 있게 돔(TimeDome)을 씌우고 그 안에서 폭발 (히오스 제라툴 궁처럼).
+        //  보스가 시계 구슬을 포물선으로 던짐(0.9초) → 그동안 바닥 예고 원 · 끝나기 직전 십자 예고 한 번 = 빠져나갈 틈
+        //  → 착지하며 돔이 스쿼시 · 스트레치로 펼쳐진 뒤부터 둔화 · 폭발 (잔폭발마다 십자 예고는 안 띄움)
+        const float ZoneR = 4f, ZoneTime = 4f;
         IEnumerator SlowZone()
         {
-            StartCoroutine(SlowZoneRun(P.transform.position));
+            var at = P.transform.position;
+            float flight = T(0.9f);
+            Telegraph.Ring(at, ZoneR, flight, new Color(0.6f, 0.45f, 1f));
+            var dome = TimeDome.Cast(transform.position + Vector3.up * 4.5f + transform.forward * 1.2f, at, ZoneR, flight, ZoneTime);
+            StartCoroutine(SlowZoneRun(at, flight + (dome ? dome.landTime : 0f), dome));
             yield return Wait(T(0.6f));
         }
 
-        IEnumerator SlowZoneRun(Vector3 at)
+        IEnumerator SlowZoneRun(Vector3 at, float delay, TimeDome dome)
         {
-            Telegraph.Ring(at, 4f, 4f, new Color(0.6f, 0.45f, 1f));
-            float end = Time.time + 4f, nextDrop = Time.time + 0.3f;
+            yield return new WaitForSeconds(delay);
+            float end = Time.time + ZoneTime, nextDrop = Time.time + 0.3f;
             while (Time.time < end && hp.Alive)
             {
                 var p = P;
-                if (p && p.health.Alive && Effects.Flat(p.transform.position - at).magnitude <= 4f)
+                if (p && p.health.Alive && Effects.Flat(p.transform.position - at).magnitude <= ZoneR)
                 {
                     p.health.ApplySlow(0.4f, 0.15f);
                     p.health.ApplyAttackSpeedDown(0.4f, 0.15f);
                 }
-                if (Time.time >= nextDrop)
+                if (Time.time >= nextDrop && Time.time < end - 0.5f)   // 마지막 폭발이 돔이 닫히기 전에 터지게
                 {
-                    var drop = at + Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * Random.Range(0f, 3.4f);
-                    StartCoroutine(BossFx.Blast(drop, 0.8f, 0.5f, 10f * self.chapterDmg));
+                    var drop = at + Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * Random.Range(0f, ZoneR - 0.6f);
+                    StartCoroutine(BossFx.Blast(drop, 0.8f, 0.5f, 10f * self.chapterDmg, false, dome ? dome.Pulse : null));
                     nextDrop = Time.time + 0.3f;
                 }
                 yield return null;

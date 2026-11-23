@@ -22,6 +22,10 @@ namespace CatTang
     public partial class RunManager : MonoBehaviour
     {
         public static RunManager Instance;
+        /// <summary>스토리 연출 중엔 방에 들어가도 웨이브를 부르지 않음 (StoryRun1)</summary>
+        public static bool StoryHold;
+        /// <summary>방을 비웠을 때 (스토리 · 튜토리얼이 들음)</summary>
+        public event System.Action RoomClearedEvent;
         public const int Stages = 4;
 
         public int chapter = 1;
@@ -77,6 +81,7 @@ namespace CatTang
             ui?.OnRunStart(player);
             Music.PlayFor("stage", chapter);
             BuildStage(0, RewardKind.Gold);
+            StoryRun.OnRunStart(this);                   // 판 1 오프닝 · 판 2 안내 (2026-11-23 스토리 기획서)
         }
 
         // ---------- 스테이지 ----------
@@ -179,7 +184,7 @@ namespace CatTang
         void Update()
         {
             TryLevelUp();                                                   // 쌓인 레벨 업이 있고 다른 창이 없으면 3택 창 (RunManagerXp)
-            if (runOver || layout == null || inCombat || stageDone) return;
+            if (runOver || layout == null || inCombat || stageDone || StoryHold) return;
             for (int i = 0; i < layout.rooms.Count; i++)
             {
                 var r = layout.rooms[i];
@@ -209,7 +214,11 @@ namespace CatTang
 
         IEnumerator SpawnSoon()
         {
+            var room = current;
             yield return new WaitForSeconds(0.3f);
+            // 2026-11-23: 기다리는 사이 스테이지가 새로 지어져 다른 방(보스방)에 들어가 있으면 그 방 웨이브를 또 부르지 않음
+            //  (보스가 두 번 나와 크로노 · 템포가 두 쌍이 됐음 — 등장 연출 녹화 도구가 방 입장 직후 스테이지를 바꿀 때)
+            if (room != current) yield break;
             yield return SpawnWave();
         }
 
@@ -306,6 +315,7 @@ namespace CatTang
         void RoomCleared()
         {
             inCombat = false;
+            RoomClearedEvent?.Invoke();
             current.cleared = true;
             foreach (var g in current.gates)
             {
@@ -465,10 +475,13 @@ namespace CatTang
         // 방을 비울 때마다 15%. 스테이지 1 · 2에서 한 번도 못 만났으면 스테이지 2 마지막 방(중간 보스 직전)에 확정.
         bool merchantHere;                               // 이번에 비운 방에 상인이 나왔는지 (토스트 겹침 방지)
 
+        /// <summary>판 1 튜토리얼 중: 경험치 · 상인 없이 전투만 (StoryRun1)</summary>
+        public bool StoryCalm => GetComponent<StoryRun1>();
+
         void TryMerchant(RoomBuilder.RoomInfo r, bool lastRoom)
         {
             merchantHere = false;
-            if (r == null || !r.root) return;
+            if (r == null || !r.root || StoryCalm) return;
             bool guarantee = !merchantSeen && stageIndex == 1 && lastRoom;
             if (!guarantee && Random.value >= 0.15f) return;
             SpawnMerchant(r);
@@ -576,6 +589,8 @@ namespace CatTang
         {
             Meta.MarkChapterCleared(chapter);
             shardsThisRun += 15 * chapter;
+            // 장을 처음 넘으면: 결과 창 대신 기절 → 꿈 → 마을 (2026-11-23 스토리 기획서)
+            if (chapter >= frontier && StoryRun.DreamPending(chapter)) { int gain = EndRunQuiet(); StartCoroutine(StoryRun.FaintAndDream(this, chapter, gain)); return; }
             if (chapter >= frontier) { EndRun(true); return; }
             // 다음 장으로 이어감: 체력 30% 회복 · 골드 · 빌드 그대로
             ui?.CloseAll();
@@ -589,7 +604,7 @@ namespace CatTang
             BuildStage(0, RewardKind.Gold);
         }
 
-        void OnPlayerDeath(Health h) => EndRun(false);
+        void OnPlayerDeath(Health h) { if (StoryRun.HandleDeath(this)) return; EndRun(false); }   // 판 1은 결과 창 없이 기절 연출
 
         /// <summary>이번 판에서 지금까지 얻은 시간의 조각 (기억 · 코스튬 보너스 포함) — 판이 끝날 때 받는 양</summary>
         public int ShardGainPreview => Mathf.RoundToInt(shardsThisRun * (1 + Meta.Stat("ShardGain") + PlayerController.CostumeStat("MemoryShardGainAdd")));
@@ -613,6 +628,18 @@ namespace CatTang
             Meta.Shards += gain;
             Meta.RunEnded();
             ui?.ShowResults(win, gain, chapter);
+        }
+
+        /// <summary>결과 창 없이 판을 끝냄 (꿈 연출로 이어질 때): 조각을 챙기고 얻은 양을 돌려줌</summary>
+        public int EndRunQuiet()
+        {
+            if (runOver) return 0;
+            runOver = true;
+            int gain = ShardGainPreview;
+            shardsThisRun = gain;
+            Meta.Shards += gain;
+            Meta.RunEnded();
+            return gain;
         }
 
         public static void ReturnToVillage()

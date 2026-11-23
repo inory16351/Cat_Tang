@@ -19,7 +19,8 @@ namespace CatTang
 
         public void OnBeginDrag(PointerEventData e)
         {
-            if (!owner.CanEdit || owner.ItemAt(this) == null) return;
+            if (owner.ItemAt(this) == null) return;
+            if (!owner.CanEdit) { owner.DenyEdit(this); return; }   // 전투 중: 옮기려는 순간에만 경고
             dragging = this;
             ghost = new GameObject("Ghost", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             ghost.transform.SetParent(owner.transform.root, false);

@@ -19,6 +19,7 @@ namespace CatTang
         Vertigo, HeroLow, HeroOrbit, QuickDraw, Portrait,
         BehindBoss, Profile, WormEye, HighOrbit,
         Duel,
+        ShotDown,
     }
     public enum IntroCut { Hard, Flash, Whip, Wipe }
     public enum IntroCard { Wanted, Melt, Board, Rail, Curtain, Shatter, NoirSlash, TwinSplit, Glitch, Dial }
@@ -52,12 +53,12 @@ namespace CatTang
 
         public static BossIntroDef Def(int chapter, bool mid) => (chapter, mid) switch
         {
-            // 1장 중간: 서부 대치 — 발밑 → 눈 클로즈업 → 단계 줌 + 회전 난사
+            // 1장 중간: 서부 대치 — 하늘에서 떨어짐 → 옆모습 장전 → 정면에서 카메라를 쏨, 맞은 카메라가 날아가 바닥에 떨어진 채 포스터
             (1, true) => new BossIntroDef
             {
                 id = "ch1_mid", entryUp = 9f, titleEn = "OUTLAW OF THE WASTELAND", nameEn = "WINDER JACK", titleKo = "황야의 무법자", nameKo = "와인더 잭",
                 accent = C("E39A3B"), accent2 = C("5A2A14"), card = IntroCard.Wanted,
-                shots = new[] { (IntroShot.Feet, 0.8f, IntroCut.Hard), (IntroShot.Profile, 0.7f, IntroCut.Hard), (IntroShot.Snap, 0.9f, IntroCut.Hard) },
+                shots = new[] { (IntroShot.Feet, 0.8f, IntroCut.Hard), (IntroShot.Profile, 0.7f, IntroCut.Hard), (IntroShot.ShotDown, 1.9f, IntroCut.Hard) },
                 beats = new[]
                 {
                     At(0, 0.0f, x => Telegraph.Ring(x.Feet, 1.6f, 0.5f, Telegraph.Danger)),                         // 떨어질 자리 표시
@@ -66,8 +67,12 @@ namespace CatTang
                                                                x.Ring(6, 1.2f, q => GunkataFx.Smoke(q, 1.2f, 1.1f)); StylizedFx.Shockwave(x.Feet, 3f, StylizedFx.Gold, 0.4f); }); }),
                     At(1, 0.0f, x => x.Act("Intro")),
                     At(1, 0.35f, x => x.Snd("reload", 0.8f)),
-                    At(2, 0.15f, x => { x.Snd("e_bow"); x.Snd("shot_1"); x.Shake(0.35f); x.Slow(0.5f); GunkataFx.MuzzleFlash(x.Chest + x.Fw * 1.2f, x.Fw, 2.2f); }),
-                    At(2, 0.45f, x => { x.Snd("shot_2"); GunkataFx.MuzzleFlash(x.Chest + x.Fw * 1.2f + x.Side * 0.6f, x.Fw, 2.2f); x.Shake(0.25f); }),
+                    // 정면 총격 → 카메라가 맞고 날아가 바닥에 떨어짐 (ShotDown)
+                    At(2, 0.0f, x => { x.Act("Snipe"); x.Snd("reload", 0.6f); }),
+                    At(2, BossIntro.ShotHit - 0.02f, x => { x.Snd("e_bow"); x.Snd("shot_1"); GunkataFx.MuzzleFlash(x.Chest + x.Fw * 1.2f, x.Fw, 2.6f);
+                                                            GunkataFx.Streak(x.Chest + x.Fw * 1.4f, x.Fw, 3f, 0.12f, new Color(1f, 0.85f, 0.5f), 60f); }),
+                    At(2, BossIntro.ShotHit, x => { x.Snd("shot_2", 0.7f); x.Snd("e_glass", 0.7f); x.Snd("dash", 0.7f); x.Flash(Color.white, 1f); x.Shake(0.6f); }),
+                    At(2, BossIntro.ShotLand, x => { x.Snd("e_slam_2", 0.8f); x.Shake(0.5f); GunkataFx.Smoke(x.CamPos - x.Fw * 0.7f + x.Side * 1.1f, 0.7f, 0.7f); }),   // 먼지는 옆으로 비켜서 (보스를 가리지 않게)
                 },
             },
             // 1장 보스: 녹아내리는 거인 — 틸트업 → 궤도 → 얼굴에서 확 빠지며 내려찍기
@@ -141,9 +146,9 @@ namespace CatTang
             // 3장 보스: 고래 — 부감 파문 → 수면 위로 솟구침 → 낮은 3/4 정면으로 파고듦
             (3, false) => new BossIntroDef
             {
-                id = "ch3_boss", titleEn = "MEMORY OF THE LAKE", nameEn = "MOBY GLASS", titleKo = "호수의 기억", nameKo = "모비 글래스", main = true, emerge = true,
+                id = "ch3_boss", titleEn = "MEMORY OF THE LAKE", nameEn = "MOBY GLASS", titleKo = "호수의 기억", nameKo = "모비 글래스", main = true, emerge = true, faceLeft = true,
                 accent = C("9AD4F2"), accent2 = C("16304A"), card = IntroCard.Shatter,
-                shots = new[] { (IntroShot.Top, 1.3f, IntroCut.Hard), (IntroShot.Rise, 1.5f, IntroCut.Whip), (IntroShot.HeroLow, 1.4f, IntroCut.Flash) },   // 끝 = 3/4 정면 (정면 그대로는 고래가 날개처럼만 보임)
+                shots = new[] { (IntroShot.Top, 1.3f, IntroCut.Hard), (IntroShot.Rise, 1.5f, IntroCut.Whip), (IntroShot.HeroLow, 1.4f, IntroCut.Flash) },   // 끝 = 머리 쪽 3/4 정면, 얼굴을 화면 왼쪽 1/3 (2026-11-23 사용자: 일러스트 옆에 앞얼굴)
                 beats = new[]
                 {
                     At(0, 0.15f, x => { x.Snd("e3b_song", 0.5f); ExtraFx.GroundWave(x.Feet, x.Radius + 2f, new Color(0.7f, 0.9f, 1f)); }),
@@ -290,6 +295,7 @@ namespace CatTang
         // 장면 기준
         Vector3 B, F, S;      // 보스 중심(발) · 보스 → 고양이 · 옆
         float H, R;           // 키 · 반지름
+        float Reach;          // 보스 중심에서 고양이 쪽 앞 끝까지 (긴 보스의 머리)
         float shakeAmt;
 
         IEnumerator Run(Enemy boss, BossIntroDef d)
@@ -381,6 +387,19 @@ namespace CatTang
             }
             H = Mathf.Clamp(H, 1.6f, 14f);
             R = Mathf.Clamp(R, 0.8f, 10f);
+            // 앞 끝까지 거리 (고양이 쪽 F 방향으로 모델이 얼마나 뻗었나): 긴 보스(고래)의 머리를 겨눌 때
+            Reach = R;
+            foreach (var e in targets)
+            {
+                if (!e) continue;
+                foreach (var r in e.GetComponentsInChildren<Renderer>())
+                {
+                    if (r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer) continue;
+                    var bb = r.bounds;
+                    float ext = Mathf.Abs(bb.extents.x * F.x) + Mathf.Abs(bb.extents.z * F.z);
+                    Reach = Mathf.Max(Reach, Vector3.Dot(Effects.Flat(bb.center - B), F) + ext);
+                }
+            }
         }
 
         void RestoreGround()
@@ -395,6 +414,9 @@ namespace CatTang
         public Vector3 Chest => B + Vector3.up * H * 0.55f;
         public Vector3 Head => B + Vector3.up * H * 0.85f;
         public Vector3 Fw => F;
+        public const float ShotHit = 0.36f;                 // ShotDown 컷에서 총알이 카메라에 맞는 때 (컷 진행도)
+        public const float ShotLand = 0.66f;                // ShotDown 컷에서 카메라가 바닥에 떨어지는 때
+        public Vector3 CamPos => cam ? cam.transform.position : B + F * 6f;
         public Vector3 Side => S;
         public float Size => H;
         public float Radius => R;
@@ -627,14 +649,14 @@ namespace CatTang
         static bool LowShot(IntroShot s) => s is IntroShot.LowRise or IntroShot.Top or IntroShot.Feet or IntroShot.Chase or IntroShot.ClockSweep
                                                  or IntroShot.Rise or IntroShot.LookUp or IntroShot.Push or IntroShot.OverShoulder
                                                  or IntroShot.HeroLow or IntroShot.HeroOrbit or IntroShot.QuickDraw or IntroShot.Vertigo or IntroShot.Portrait
-                                                 or IntroShot.BehindBoss or IntroShot.Profile or IntroShot.WormEye or IntroShot.Duel;
+                                                 or IntroShot.BehindBoss or IntroShot.Profile or IntroShot.WormEye or IntroShot.Duel or IntroShot.ShotDown;
 
         int subCut;   // 점프컷 · 끊김 컷의 지금 칸 (바뀌면 효과음)
 
         // 2026-11-22 사용자: "줌 · 달리 · 극단적 화각 변경 · 로우 앵글 · 가감속을 전체적으로 더" → 화각 폭을 넓히고(광각 ↔ 망원),
         // 궤도에도 달리인을 섞고, 움직이는 컷은 SpeedRamp(빠르게 → 느리게 → 빠르게)로 시간을 다시 매김
         static bool Ramped(IntroShot s) => s is not (IntroShot.JumpCut or IntroShot.Stutter or IntroShot.Snap or IntroShot.Crash or IntroShot.LookUp
-                                                    or IntroShot.HeroLow or IntroShot.QuickDraw);
+                                                    or IntroShot.HeroLow or IntroShot.QuickDraw or IntroShot.ShotDown);
         static float SpeedRamp(float u) => u + 0.55f * Mathf.Sin(2f * Mathf.PI * u) / (2f * Mathf.PI);   // 속도 1.55 → 0.45 → 1.55
 
         Pose Eval(IntroShot s, float u, int i)
@@ -777,13 +799,16 @@ namespace CatTang
                     float fov = 2f * Mathf.Atan(frame / (2f * d)) * Mathf.Rad2Deg;
                     return new Pose { pos = B + F * d + up * k * Mathf.Lerp(0.25f, 0.4f, e), look = B + up * k * 0.6f, up = up, fov = fov };
                 }
-                case IntroShot.HeroLow:        // 낮은 3/4 정면으로 확 당김 (고래처럼 정면이 납작한 보스용)
+                case IntroShot.HeroLow:        // 낮은 3/4 정면으로 확 당김 (고래처럼 앞뒤로 긴 보스용): 몸 가운데가 아니라 머리(앞 끝)를 겨눔
                 {
                     float e = Expo(Mathf.Clamp01(u / 0.5f)) * 0.85f + 0.15f * u;
-                    var dir = Quaternion.Euler(0, 38f * sg, 0) * F;
-                    var a = B + dir * (R + k * 2.5f) + up * 0.35f;
-                    var b = B + dir * (R + k * 1.7f) + up * k * 0.3f;
-                    return new Pose { pos = Vector3.Lerp(a, b, e), look = B + up * k * 0.6f, up = up, fov = Mathf.Lerp(66, 40, e) };
+                    var head = B + F * (Reach * 0.72f) + up * k * 0.5f;           // 앞 끝에서 조금 안쪽 = 눈 · 입 언저리
+                    var dir = Quaternion.Euler(0, 34f * sg, 0) * F;
+                    var a = head + dir * (k * 2.6f) - up * k * 0.3f;
+                    var b = head + dir * (k * 1.55f) - up * k * 0.15f;
+                    var pose = new Pose { pos = Vector3.Lerp(a, b, e), look = head, up = up, fov = Mathf.Lerp(66, 42, e) };
+                    if (def.faceLeft) ShiftLeft(ref pose, e);
+                    return pose;
                 }
                 case IntroShot.HeroOrbit:      // 허리 높이로 가까이 돌며 손(총) → 얼굴로 시선을 올림 (최고의 플레이식)
                 {
@@ -846,6 +871,46 @@ namespace CatTang
                     var head = B + up * k * 0.78f;
                     var right = Vector3.Cross(Vector3.up, (head - pos).normalized).normalized;
                     return new Pose { pos = pos, look = head + right * k * Mathf.Lerp(0.1f, 0.42f, e), up = up, fov = Mathf.Lerp(50, 32, e), roll = Mathf.Lerp(-8f, 0f, e) * sg };
+                }
+                // 2026-11-23 사용자: 와인더 잭 마지막 — 정면에서 총을 쏘면 카메라가 맞은 것처럼 빠르게 뒤로 날아가 바닥에 떨어지고 포스터
+                //  0 ~ ShotHit: 정면 눈높이로 살짝 다가가며 망원 (총구가 카메라를 봄) → 맞음
+                //  ~ 0.66: 뒤로 튕겨 날아감 (처음이 가장 빠름 · 위로 살짝 솟았다 떨어지는 포물선 · 하늘을 보며 한 바퀴 가까이 구름 · 광각으로 벌어짐)
+                //  ~ 0.76: 바닥에 쿵 → 한 번 튀었다 옆으로 누움 / 끝: 누운 채 멀리 선 보스를 봄 (렌즈가 천천히 초점을 잡듯 화각이 조금 좁아짐)
+                case IntroShot.ShotDown:
+                {
+                    float d = Mathf.Clamp(Effects.Flat(pp - B).magnitude * 0.3f, 2.4f, 3.6f);   // 너무 멀면 누운 화면에서 보스가 점처럼 작아짐
+                    var p0 = B + F * (R + k * 1.5f) + up * k * 0.58f;
+                    var gunLook = B + up * k * 0.55f;
+                    float gy = B.y + 0.16f;
+                    const float hitU = ShotHit, flyEnd = 0.66f, landEnd = 0.76f;
+                    if (u < hitU)
+                    {
+                        float e = EaseOut(u / hitU);
+                        return new Pose { pos = p0 - F * k * 0.3f * e, look = gunLook, up = up, fov = Mathf.Lerp(40, 30, e) };
+                    }
+                    var start = p0 - F * k * 0.3f;
+                    if (u < flyEnd)
+                    {
+                        float w = (u - hitU) / (flyEnd - hitU);
+                        float e = 1 - Mathf.Pow(1 - w, 2.2f);                                   // 맞는 순간이 가장 빠름
+                        var pos = start + F * d * e;
+                        pos.y = Mathf.Lerp(start.y, gy, w * w) + Mathf.Sin(Mathf.PI * w) * 1.1f;
+                        float pitch = Mathf.Sin(Mathf.PI * Mathf.Min(1, w * 1.2f)) * 55f;         // 하늘을 보며 날아감
+                        var dir = Quaternion.AngleAxis(-pitch, S) * -F;
+                        return new Pose { pos = pos, look = pos + dir, up = up, fov = Mathf.Lerp(30, 76, e), roll = -300f * e };
+                    }
+                    var rest = start + F * d; rest.y = gy;
+                    var lieLook = B + up * k * 0.4f;
+                    if (u < landEnd)
+                    {
+                        float w = (u - flyEnd) / (landEnd - flyEnd);
+                        var pos = rest + up * 0.28f * Mathf.Sin(Mathf.PI * w);                  // 한 번 튐
+                        return new Pose { pos = pos, look = Vector3.Lerp(pos - F, lieLook, EaseOut(w)), up = up, fov = Mathf.Lerp(76, 70, w), roll = Mathf.Lerp(-300f, -294f, EaseOut(w)) };
+                    }
+                    {
+                        float w = (u - landEnd) / (1 - landEnd);
+                        return new Pose { pos = rest, look = lieLook, up = up, fov = Mathf.Lerp(70, 36, EaseInOut(w)), roll = Mathf.Lerp(-294f, -292f, w) };
+                    }
                 }
                 default:                       // Crash: 정면에서 얼굴로 광각 → 망원으로 확 당김
                 {

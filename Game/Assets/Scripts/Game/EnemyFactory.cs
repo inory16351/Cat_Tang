@@ -570,6 +570,11 @@ namespace CatTang
                 e.GetComponent<Health>().RefreshRenderers();
                 EyeTrail.Attach(e);
                 if (hour) HeavyStep.Attach(e, 1.0f, 2.6f);   // 시침: 육중한 발걸음 흙먼지
+                // 무기 잔상 (2026-11-23 사용자: 스피드 강조) — 분침 템포의 세검은 붉게 · 더 촘촘히, 시침 크로노의 대검은 은빛
+                var ghost = hour ? WeaponGhost.Attach(e, "Greatsword", new Color(0.8f, 0.85f, 1f, 0.7f), 1.8f)
+                                 : WeaponGhost.Attach(e, "Rapier", new Color(1f, 0.22f, 0.28f, 0.8f), 1.3f);
+                if (ghost && !hour) { ghost.gap = 0.025f; ghost.minSpeed = 5f; }
+                if (!hour) MotionGhost.Attach(e, new Color(1f, 0.2f, 0.26f, 0.7f));   // 분침 템포: 몸 이동 잔상 (2026-11-23 사용자: 스피드 액션감)
                 if (hour)
                 {
                     // 시침 대검 (2026-11-20 사용자: 몸에 박혀 있음 → 낮게 비스듬히 든 하단 자세, 칼끝은 앞 오른쪽 바닥 근처). 휘두를 때 WeaponSwingRig가 칼을 직접 쥠

@@ -204,28 +204,146 @@ namespace CatTang.Dev
         }
 
         /// <summary>실제 게임 흐름(보스방 입장 → 연출)을 그대로 찍음: 장 보스방을 지은 뒤 seconds초 동안 저장</summary>
-        public static void RunReal(string folder, int ch, float seconds = 14f, float interval = 0.04f) =>
-            new GameObject("RealDemoRunner").AddComponent<IntroDemo>().StartCoroutine(RealSeq(folder, ch, seconds, interval));
+        public static void RunReal(string folder, int ch, float seconds = 14f, float interval = 0.04f, bool mid = false) =>
+            new GameObject("RealDemoRunner").AddComponent<IntroDemo>().StartCoroutine(RealSeq(folder, ch, seconds, interval, mid));
 
-        static IEnumerator RealSeq(string folder, int ch, float seconds, float interval)
+        /// <summary>보스 패턴 하나만 확인: 장 보스방을 짓고 보스를 세운 뒤(두뇌 끔) 패턴 코루틴(method 이름)을 불러 게임 화면 그대로 seconds초 녹화 → folder/pattern_&lt;method&gt;</summary>
+        public static void RunPattern(string folder, int ch, string method, float seconds = 8f, float interval = 0.05f) =>
+            new GameObject("RealDemoRunner").AddComponent<IntroDemo>().StartCoroutine(PatternSeq(folder, ch, method, seconds, interval));
+
+        static IEnumerator PatternSeq(string folder, int ch, string method, float seconds, float interval)
+        {
+            Time.timeScale = 1;
+            var rm = FindFirstObjectByType<RunManager>();
+            var player = PlayerController.Instance;
+            if (!rm || !player) yield break;
+            player.health.invulnerable = true; player.health.hp = player.health.maxHp;
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            rm.chapter = ch;
+            typeof(RunManager).GetProperty("Chapter")?.SetValue(rm, Tables.Chapter(ch));
+            typeof(RunManager).GetMethod("BuildStage", flags, null, new[] { typeof(int), typeof(RewardKind) }, null).Invoke(rm, new object[] { RunManager.Stages, RewardKind.Boss });
+            // 방에 들어간 걸로 쳐서 등장 연출 · 웨이브가 안 나오게 (같은 프레임, RunManager.Update 전에)
+            foreach (var r in rm.Layout.rooms) r.entered = true;
+            foreach (var old in FindObjectsByType<Enemy>(FindObjectsSortMode.None)) Destroy(old.gameObject);
+            yield return new WaitForSeconds(0.5f);
+            var at = player.transform.position + new Vector3(0, 0, 7f);
+            var e = EnemyFactory.Boss(rm.ClampToRoom(at, 4f), Tables.Chapter(ch));
+            yield return null;
+            // "Ch4MinuteBrain.Dash:3" = 그 두뇌를 가진 보스(쌍둥이 중 하나)의 패턴을 인수와 함께
+            foreach (var td in FindObjectsByType<TwinDirector>(FindObjectsSortMode.None)) Destroy(td.gameObject);
+            foreach (var o in FindObjectsByType<Enemy>(FindObjectsSortMode.None)) { o.enabled = false; foreach (var b in o.GetComponents<BossBrain>()) b.enabled = false; }
+            object[] args = null;
+            if (method.Contains(":")) { var sp = method.Split(':'); method = sp[0]; args = new object[] { int.Parse(sp[1]) }; }
+            BossBrain brain = e.GetComponent<BossBrain>();
+            if (method.Contains("."))
+            {
+                var sp = method.Split('.'); method = sp[1];
+                foreach (var o in FindObjectsByType<BossBrain>(FindObjectsSortMode.None)) if (o.GetType().Name == sp[0]) { brain = o; e = o.GetComponent<Enemy>(); }
+            }
+            e.transform.rotation = Quaternion.LookRotation(Effects.Flat(player.transform.position - e.transform.position));
+            string dir = System.IO.Path.Combine(folder, "pattern_" + brain.GetType().Name + "_" + method);
+            System.IO.Directory.CreateDirectory(dir);
+            var cap = new GameObject("IntroCap").AddComponent<IntroDemo>();
+            cap.StartCoroutine(Capture(dir, interval));
+            System.Reflection.MethodInfo m = null;   // 부모 클래스(Ch4TwinBrain 등)의 비공개 패턴도 찾게 위로 올라가며
+            for (var ty = brain.GetType(); m == null && ty != null; ty = ty.BaseType) m = ty.GetMethod(method, flags | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.DeclaredOnly);
+            if (m == null) { Debug.LogWarning("PatternDemo: 패턴 없음 " + method); Destroy(cap.gameObject); yield break; }
+            brain.StartCoroutine((IEnumerator)m.Invoke(brain, args));
+            yield return new WaitForSecondsRealtime(seconds);
+            Destroy(cap.gameObject);
+            foreach (var o in FindObjectsByType<Enemy>(FindObjectsSortMode.None)) Destroy(o.gameObject);
+            Debug.Log("PatternDemo DONE");
+        }
+
+        /// <summary>
+        /// 긴 연출 녹화 (스토리 몽타주 · 꿈): 화면을 960x540으로 줄여 JPG로 바로 저장 (메모리에 쌓지 않음 → 몇 분도 가능).
+        /// 파일 이름에 실제 시각(ms) — docs 쪽 enc.py가 그 간격대로 MP4로 묶음. stop()을 부르면 멈춤
+        /// </summary>
+        public static System.Action Record(string dir, float interval = 1f / 15f)
+        {
+            System.IO.Directory.CreateDirectory(dir);
+            var go = new GameObject("StoryRecorder"); DontDestroyOnLoad(go);
+            var me = go.AddComponent<IntroDemo>();
+            bool on = true;
+            me.StartCoroutine(RecordRun(dir, interval, () => on));
+            return () => { on = false; if (go) Destroy(go, 1f); };
+        }
+
+        static IEnumerator RecordRun(string dir, float interval, System.Func<bool> on)
+        {
+            var rt = new RenderTexture(960, 540, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);   // 캡처 값은 이미 sRGB → 변환 없이 그대로 (리니어 프로젝트에서 두 번 밝아지던 문제)
+            var small = new Texture2D(960, 540, TextureFormat.RGB24, false);
+            float t0 = Time.realtimeSinceStartup, next = 0; int i = 0;
+            while (on())
+            {
+                yield return new WaitForEndOfFrame();
+                float now = Time.realtimeSinceStartup - t0;
+                if (now < next) continue;
+                next = now + interval;
+                var full = ScreenCapture.CaptureScreenshotAsTexture();
+                Graphics.Blit(full, rt);
+                Destroy(full);
+                var prev = RenderTexture.active; RenderTexture.active = rt;
+                small.ReadPixels(new Rect(0, 0, 960, 540), 0, 0); small.Apply();
+                RenderTexture.active = prev;
+                var bytes = small.EncodeToJPG(88);
+                var path = System.IO.Path.Combine(dir, $"f{i++:0000}_{Mathf.RoundToInt(now * 1000):000000}.png");   // 이름은 .png지만 내용은 JPG (enc.py 규칙)
+                System.Threading.Tasks.Task.Run(() => System.IO.File.WriteAllBytes(path, bytes));
+            }
+            rt.Release(); Destroy(small);
+        }
+
+        /// <summary>여러 명을 차례로: "1m,1b,2m,..." (m = 중간 보스 8초 · b = 메인 보스 11초)</summary>
+        public static void RunRealAll(string folder, string list, float interval = 0.05f) =>
+            new GameObject("RealDemoRunner").AddComponent<IntroDemo>().StartCoroutine(RealAllSeq(folder, list, interval));
+
+        static IEnumerator RealAllSeq(string folder, string list, float interval)
+        {
+            foreach (var item in list.Split(','))
+            {
+                bool mid = item.EndsWith("m");
+                yield return RealSeq(folder, item[0] - '0', mid ? 8f : 11f, interval, mid);
+                yield return new WaitForSecondsRealtime(1f);   // 캡처 저장 (OnDestroy) 끝나고 다음
+            }
+            Debug.Log("RealDemo ALL DONE");
+        }
+
+        static IEnumerator RealSeq(string folder, int ch, float seconds, float interval, bool mid)
         {
             Time.timeScale = 1;
             var rm = FindFirstObjectByType<RunManager>();
             var player = PlayerController.Instance;
             if (!rm || !player) yield break;
             player.health.invulnerable = true;
+            player.health.hp = player.health.maxHp;
+            foreach (var old in FindObjectsByType<Enemy>(FindObjectsSortMode.None)) Destroy(old.gameObject);
+            foreach (var td in FindObjectsByType<TwinDirector>(FindObjectsSortMode.None)) Destroy(td.gameObject);
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
             rm.chapter = ch;
             typeof(RunManager).GetProperty("Chapter")?.SetValue(rm, Tables.Chapter(ch));
-            var build = typeof(RunManager).GetMethod("BuildStage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
-                null, new[] { typeof(int), typeof(RewardKind) }, null);
-            build.Invoke(rm, new object[] { RunManager.Stages, RewardKind.Boss });
-            string dir = System.IO.Path.Combine(folder, $"real_ch{ch}");
+            typeof(RunManager).GetField("midBossDone", flags)?.SetValue(rm, false);
+            var build = typeof(RunManager).GetMethod("BuildStage", flags, null, new[] { typeof(int), typeof(RewardKind) }, null);
+            build.Invoke(rm, new object[] { mid ? 1 : RunManager.Stages, mid ? RewardKind.Gold : RewardKind.Boss });
+            if (mid)
+            {
+                // 중간 보스 홀(스테이지 2 끝에 붙은 술집 · 대합실 · 극장 …): 입구 문 바로 안쪽에 세우면 방 입장 → 연출이 실제 흐름대로 돎
+                var layout = (RoomBuilder.StageLayout)typeof(RunManager).GetField("layout", flags).GetValue(rm);
+                var hall = layout.rooms.Find(r => r.midBoss);
+                if (hall == null) { Debug.LogWarning("RealDemo: 중간 보스 홀 없음 ch" + ch); yield break; }
+                var gp = hall.entranceGate ? hall.entranceGate.transform.position : hall.center - hall.farSide * (hall.size.y / 2);
+                var inward = Effects.Flat(hall.center - gp).normalized;
+                player.Teleport(gp + inward * 3.5f + Vector3.up * 0.3f);
+            }
+            string dir = System.IO.Path.Combine(folder, mid ? $"real_ch{ch}_mid" : $"real_ch{ch}");
             System.IO.Directory.CreateDirectory(dir);
             var cap = new GameObject("IntroCap").AddComponent<IntroDemo>();
             cap.StartCoroutine(Capture(dir, interval));
             yield return new WaitForSecondsRealtime(seconds);
             Destroy(cap.gameObject);
-            player.health.invulnerable = false;
+            // 다음 녹화 전에 남은 보스가 고양이를 쓰러뜨리지 않게: 적을 치우고 무적 유지, 체력 채움
+            foreach (var old in FindObjectsByType<Enemy>(FindObjectsSortMode.None)) Destroy(old.gameObject);
+            foreach (var td in FindObjectsByType<TwinDirector>(FindObjectsSortMode.None)) Destroy(td.gameObject);
+            player.health.hp = player.health.maxHp;
             Debug.Log("RealDemo DONE");
         }
 

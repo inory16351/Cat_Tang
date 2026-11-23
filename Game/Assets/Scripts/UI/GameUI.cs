@@ -37,6 +37,8 @@ namespace CatTang
         Coroutine toastCo;
         GameObject current;
         InventoryScreen inventory;
+        /// <summary>열려 있는 인벤토리 (튜토리얼이 Tab 유도 후 기다림)</summary>
+        public InventoryScreen InventoryUI => inventory;
 
         void Awake()
         {
@@ -303,7 +305,7 @@ namespace CatTang
             if (!player) player = PlayerController.Instance;
             if (!player) return;
             var kb = Keyboard.current;
-            if (kb != null)
+            if (kb != null && !StoryOverlay.HintOpen)            // 튜토리얼 안내가 떠 있으면 Tab · Esc로 화면이 닫히지 않게
             {
                 if (kb.tabKey.wasPressedThisFrame)
                 {
@@ -381,43 +383,218 @@ namespace CatTang
 
         // ---------- 대화 (마을 이야기, VillageStory) ----------
         /// <summary>화면 아래 대화 창: 이름 + 한 줄씩 (글자가 흘러나옴). E · 스페이스 · 엔터 · 클릭으로 넘김, 다 끝나면 done</summary>
+        /// <summary>개발용 (IntroDemo · 스토리 녹화): 대사 · 안내 창을 1.3초마다 자동으로 넘김</summary>
+        public static bool DevAutoAdvance;
+        static float devNext;
+
         public void Talk(string speaker, string[] lines, System.Action done)
         {
             var go = OpenScreen("Talk", false);
             StartCoroutine(TalkCo(go, speaker, lines, done));
         }
 
+        // 대화 일러스트 (2026-11-23 사용자: 니케처럼 대사창 옆에 일러스트, 대화 중엔 HUD 숨김). Resources/UI/Portraits/<id>.png (투명 배경)
+        static readonly Dictionary<string, string> PortraitId = new()
+        {
+            { "고양이", "cat" }, { "태엽 풀린 뻐꾸기", "cuckoo" }, { "모래시계 대장장이", "smith" }, { "실타래 재봉사", "tailor" }, { "빈 외투 보안관", "sheriff" }, { "괘종시계 문지기", "gatekeeper" },
+        };
+        static readonly Dictionary<string, Sprite> portraitCache = new();
+        // 표정 · 자세 (2026-11-23 사용자: 하데스풍으로 상황에 맞는 표정과 자세): "고양이#두통::대사" → Portraits/cat_ache.png (없으면 cat.png)
+        static readonly Dictionary<string, string> ExprId = new()
+        {
+            { "기본", "" }, { "두통", "ache" }, { "결의", "resolve" }, { "의문", "doubt" }, { "씩", "smirk" }, { "놀람", "shock" },
+            { "쓸쓸", "wistful" }, { "다정", "warm" }, { "엄숙", "solemn" },
+        };
+        static Sprite Portrait(string who, string expr = null)
+        {
+            if (string.IsNullOrEmpty(who) || !PortraitId.TryGetValue(who, out var id)) return null;
+            string key = id;
+            if (!string.IsNullOrEmpty(expr) && ExprId.TryGetValue(expr, out var e) && e != "") key = id + "_" + e;
+            if (portraitCache.TryGetValue(key, out var sp)) return sp;
+            var tex = Resources.Load<Texture2D>("UI/Portraits/" + key);
+            sp = tex ? Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0f)) : (key != id ? Portrait(who) : null);
+            portraitCache[key] = sp;
+            return sp;
+        }
+        /// <summary>"이름#표정::대사" → (이름, 표정, 대사). 화자 표시가 없으면 (fallback, null, 줄 전체)</summary>
+        static (string who, string expr, string line) ParseLine(string raw, string fallback)
+        {
+            int k = raw.IndexOf("::", System.StringComparison.Ordinal);
+            if (k <= 0) return (fallback, null, raw);
+            string head = raw.Substring(0, k), expr = null;
+            int h = head.IndexOf('#');
+            if (h > 0) { expr = head.Substring(h + 1); head = head.Substring(0, h); }
+            return (head, expr, raw.Substring(k + 2));
+        }
+        static string SpeakerOf(string raw, string fallback) => ParseLine(raw, fallback).who;
+
+        // 대사 전환 연출 (2026-11-23 사용자: "대사 전환도 연출 효과 넣어서 자연스럽게")
+        // 등장: 아래 어둠이 깔리고 일러스트가 양옆에서 미끄러져 들어오고 대사창이 살짝 튀어 오름
+        // 화자 교대: 이름표가 톡 튀고, 말하는 쪽이 앞으로 나서며(밝게 · 크게 · 살짝 뜀) 듣는 쪽은 물러남(어둡게 · 작게), 대사창이 화자 쪽으로 살짝 쏠림
+        // 표정 교체: 같은 자리에서 그림이 겹쳐 바뀜(0.18초) + 살짝 눌렸다 폄
+        // 감정 강조: 두통 = 흔들림 + 붉은 번쩍 · 놀람 = 확 당김 · 결의 = 앞으로 밀기 · 엄숙 = 배경이 더 어두워짐
+        // 퇴장: 일러스트가 양옆으로 빠지고 대사창이 내려가며 사라짐
+        class Slot
+        {
+            public RectTransform holder; public Image front, back; public bool left; public Vector2 home;
+            public float fade = 1f, hop, shake, push, squash, enter;
+        }
+
+        static float EaseOutBack(float t) { const float c = 1.6f; t -= 1; return 1 + (c + 1) * t * t * t + c * t * t; }
+
         IEnumerator TalkCo(GameObject go, string speaker, string[] lines, System.Action done)
         {
-            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(1320, 250), true);
-            var name = UIKit.Banner(speaker, panel.transform, new Vector2(0, 1), new Vector2(250, 6), 440);
-            var body = UIKit.Label("Line", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -14), new Vector2(1160, 140), 28, TextAnchor.MiddleLeft, false, UIKit.Cream);
-            var hint = UIKit.Label("Hint", panel.transform, new Vector2(1, 0), new Vector2(-110, 30), new Vector2(200, 30), 18, TextAnchor.MiddleRight, false, new Color(1, 1, 1, 0.55f));
+            bool hudWas = hudRoot && hudRoot.gameObject.activeSelf;
+            if (hudRoot) hudRoot.gameObject.SetActive(false);
+            // 아래쪽 어둠 (일러스트 · 대사창이 떠 보이게)
+            var shade = UIKit.Stretch("Shade", go.transform).gameObject.AddComponent<Image>();
+            shade.sprite = BottomShade(); shade.raycastTarget = false; shade.color = new Color(0.03f, 0.02f, 0.06f, 0);
+            // 일러스트 무대: 고양이는 왼쪽, 상대는 오른쪽 (그림이 각자 가운데를 보게 그림)
+            var who = new List<string>();
+            foreach (var l in lines) { var n = SpeakerOf(l, speaker); if (!who.Contains(n) && Portrait(n)) who.Add(n); }
+            who.Sort((a, b) => (b == "고양이").CompareTo(a == "고양이"));
+            var stage = new Dictionary<string, Slot>();
+            for (int i = 0; i < who.Count && i < 2; i++)
+            {
+                bool left = i == 0 && (who[i] == "고양이" || who.Count > 1);
+                var sl = new Slot { left = left, home = new Vector2(left ? 360 : -360, -30), enter = -0.08f * i };
+                sl.holder = UIKit.MakeRect("Portrait_" + i, go.transform, new Vector2(left ? 0 : 1, 0), sl.home, new Vector2(10, 10), new Vector2(0.5f, 0));
+                Image Make(string n) { var rt = UIKit.MakeRect(n, sl.holder, new Vector2(0.5f, 0), Vector2.zero, new Vector2(600, 820), new Vector2(0.5f, 0)); var im = rt.gameObject.AddComponent<Image>(); im.raycastTarget = false; im.preserveAspect = true; return im; }
+                sl.back = Make("Back"); sl.front = Make("Front");
+                SetSprite(sl.front, Portrait(who[i])); sl.back.color = new Color(1, 1, 1, 0);
+                stage[who[i]] = sl;
+            }
+            var panelImg = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(1320, 250), true);
+            var panel = panelImg.rectTransform;
+            var pg = panelImg.gameObject.AddComponent<CanvasGroup>(); pg.alpha = 0;
+            var name = UIKit.Banner(speaker, panel, new Vector2(0, 1), new Vector2(250, 6), 440);
+            var nameRt = name.transform.parent && name.transform.parent != panel ? (RectTransform)name.transform.parent : name.rectTransform;
+            var body = UIKit.Label("Line", panel, new Vector2(0.5f, 0.5f), new Vector2(0, -14), new Vector2(1160, 140), 28, TextAnchor.MiddleLeft, false, UIKit.Cream);
+            var hint = UIKit.Label("Hint", panel, new Vector2(1, 0), new Vector2(-110, 30), new Vector2(200, 30), 18, TextAnchor.MiddleRight, false, new Color(1, 1, 1, 0.55f));
             hint.text = "E · 클릭";
+            string active = null;
+            float shadeTarget = 0.72f, namePop = 0, lean = 0, leanTarget = 0, flash = 0, closing = -1;
+            var ache = new Color(1f, 0.55f, 0.55f);
+            // 매 프레임 무대 갱신 (등장 · 교대 · 강조 · 퇴장)
+            IEnumerator Animate()
+            {
+                float t0 = Time.unscaledTime;
+                while (go)
+                {
+                    float dt = Time.unscaledDeltaTime, t = Time.unscaledTime - t0;
+                    float open = Mathf.Clamp01(t / 0.35f), close = closing < 0 ? 0 : Mathf.Clamp01((Time.unscaledTime - closing) / 0.28f);
+                    shade.color = new Color(0.03f, 0.02f, 0.06f, Mathf.Lerp(shade.color.a, shadeTarget * open * (1 - close), dt * 8f));
+                    // 대사창: 아래에서 튀어 오름 → 화자 쪽으로 살짝 쏠림 → 퇴장 때 내려감
+                    float pu = Mathf.Clamp01((t - 0.06f) / 0.32f);
+                    lean = Mathf.Lerp(lean, leanTarget, dt * 9f);
+                    panel.anchoredPosition = new Vector2(lean, Mathf.Lerp(-120, 150, EaseOutBack(pu)) - 160 * close * close);
+                    pg.alpha = Mathf.Clamp01(pu * 2f) * (1 - close);
+                    namePop = Mathf.MoveTowards(namePop, 0, dt * 5.5f);
+                    float np = namePop > 0 ? 1 + Mathf.Sin(namePop * Mathf.PI) * 0.18f : 1;
+                    nameRt.localScale = new Vector3(np, np, 1);
+                    flash = Mathf.MoveTowards(flash, 0, dt * 3f);
+                    foreach (var kv in stage)
+                    {
+                        var sl = kv.Value; bool on = kv.Key == active;
+                        sl.enter += dt;
+                        float e = Mathf.Clamp01(sl.enter / 0.42f), ee = EaseOutBack(e);
+                        float off = (1 - ee) * 520 + close * close * 560;
+                        sl.hop = Mathf.MoveTowards(sl.hop, 0, dt * 3.2f);
+                        sl.shake = Mathf.MoveTowards(sl.shake, 0, dt * 2.2f);
+                        sl.push = Mathf.MoveTowards(sl.push, 0, dt * 3f);
+                        sl.squash = Mathf.MoveTowards(sl.squash, 0, dt * 6f);
+                        float hopY = Mathf.Sin(sl.hop * Mathf.PI) * 26f;
+                        var jit = sl.shake > 0 ? new Vector2(Mathf.Sin(Time.unscaledTime * 63f), Mathf.Sin(Time.unscaledTime * 51f)) * 10f * sl.shake : Vector2.zero;
+                        float stepIn = on ? 18f : -10f;                                   // 말하는 쪽은 가운데로 반 걸음
+                        sl.holder.anchoredPosition = sl.home + new Vector2((sl.left ? 1 : -1) * (stepIn - off), hopY + (on ? 0 : -14f)) + jit;
+                        float sc = (on ? 1f : 0.9f) + Mathf.Sin(sl.push * Mathf.PI) * 0.06f;
+                        var cur = sl.holder.localScale;
+                        float k = Mathf.Lerp(cur.x, sc, dt * 10f);
+                        sl.holder.localScale = new Vector3(k, k * (1 - 0.035f * Mathf.Sin(sl.squash * Mathf.PI)), 1);
+                        var tint = on ? Color.white : new Color(0.36f, 0.33f, 0.43f, 1f);
+                        if (on && flash > 0) tint = Color.Lerp(tint, ache, flash);
+                        float a = Mathf.Clamp01(e * 1.6f) * (1 - close);
+                        var c = Color.Lerp(sl.front.color, tint, dt * 9f); c.a = a;
+                        sl.front.color = c;
+                        sl.fade = Mathf.MoveTowards(sl.fade, 1, dt / 0.18f);           // 표정 교체: 뒤 그림이 사라지며 앞 그림이 드러남
+                        var bc = c; bc.a = a * (1 - sl.fade); sl.back.color = bc;
+                    }
+                    yield return null;
+                }
+            }
+            StartCoroutine(Animate());
             bool Next()
             {
+                if (DevAutoAdvance && Time.unscaledTime >= devNext) { devNext = Time.unscaledTime + 1.3f; return true; }   // 개발용: 연출 녹화 때 자동 넘김
                 var kb = Keyboard.current; var ms = Mouse.current;
                 return (kb != null && (kb.eKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) || (ms != null && ms.leftButton.wasPressedThisFrame);
             }
-            yield return null;
-            foreach (var line in lines)
+            void Finish() { if (hudRoot) hudRoot.gameObject.SetActive(hudWas); done?.Invoke(); }
+            yield return new WaitForSecondsRealtime(0.28f);
+            foreach (var raw in lines)
             {
+                // "이름#표정::대사" = 이 줄의 화자 · 표정 (2026-11-23 스토리 기획서)
+                var (whoNow, expr, line) = ParseLine(raw, speaker);
+                if (whoNow != active)
+                {
+                    namePop = 1f;
+                    if (active != null) Sfx.Play("ui_click_2", 0.35f, 0.08f, 1);
+                    if (stage.TryGetValue(whoNow, out var ns)) { ns.hop = 1f; leanTarget = ns.left ? -14f : 14f; }
+                }
+                name.text = whoNow;
+                active = whoNow;
+                shadeTarget = expr == "엄숙" ? 0.86f : 0.72f;
+                if (stage.TryGetValue(whoNow, out var sl))
+                {
+                    var sp = Portrait(whoNow, expr);
+                    if (sp && sl.front.sprite != sp)
+                    {
+                        sl.back.sprite = sl.front.sprite; sl.back.rectTransform.sizeDelta = sl.front.rectTransform.sizeDelta;
+                        SetSprite(sl.front, sp); sl.fade = 0; sl.squash = 1f;
+                    }
+                    if (expr == "두통") { sl.shake = 1f; flash = 0.8f; }
+                    else if (expr == "놀람") { sl.push = 1f; sl.shake = 0.4f; }
+                    else if (expr == "결의") sl.push = 1f;
+                }
+                // 글자가 흘러나옴 (줄 처음엔 살짝 비었다가 들어옴)
+                body.color = new Color(UIKit.Cream.r, UIKit.Cream.g, UIKit.Cream.b, 0);
                 int blip = -1;
                 for (float c = 0; c < line.Length; c += Time.unscaledDeltaTime * 42f)
                 {
-                    if (!go) { done?.Invoke(); yield break; }             // ESC로 닫힘
+                    if (!go) { Finish(); yield break; }             // ESC로 닫힘
+                    body.color = new Color(UIKit.Cream.r, UIKit.Cream.g, UIKit.Cream.b, Mathf.Min(1, body.color.a + Time.unscaledDeltaTime * 8f));
                     body.text = line.Substring(0, Mathf.Min(line.Length, (int)c + 1));
                     if ((int)c / 3 != blip) { blip = (int)c / 3; if (line[Mathf.Min(line.Length - 1, (int)c)] != ' ') Sfx.Play("talk", 0.4f, 0.12f, 1); }   // 글자 세 개마다 작은 소리
                     yield return null;
                     if (Next()) break;
                 }
-                body.text = line;
+                body.text = line; body.color = UIKit.Cream;
                 yield return null;
                 while (go && !Next()) { hint.color = new Color(1, 1, 1, 0.35f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f)); yield return null; }
-                if (!go) { done?.Invoke(); yield break; }
+                if (!go) { Finish(); yield break; }
             }
+            // 퇴장
+            closing = Time.unscaledTime;
+            yield return new WaitForSecondsRealtime(0.3f);
             if (current == go) CloseAll();
-            done?.Invoke();
+            Finish();
+        }
+
+        static void SetSprite(Image im, Sprite sp)
+        {
+            im.sprite = sp;
+            if (sp) im.rectTransform.sizeDelta = new Vector2(820f * sp.rect.width / sp.rect.height, 820f);
+        }
+
+        /// <summary>아래에서 위로 옅어지는 어둠 (대사창 · 일러스트 뒤)</summary>
+        static Sprite bottomShade;
+        static Sprite BottomShade()
+        {
+            if (bottomShade) return bottomShade;
+            var t = new Texture2D(4, 128, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            for (int y = 0; y < 128; y++) { float a = Mathf.Pow(1f - y / 127f, 1.6f); for (int x = 0; x < 4; x++) t.SetPixel(x, y, new Color(1, 1, 1, a)); }
+            t.Apply();
+            return bottomShade = Sprite.Create(t, new Rect(0, 0, 4, 128), new Vector2(0.5f, 0.5f));
         }
 
         public void Toast(string msg)
@@ -590,8 +767,12 @@ namespace CatTang
         }
 
         // ---------- 보상 고르기 ----------
+        /// <summary>보상을 하나 고를 때마다 (판 2 튜토리얼이 들음)</summary>
+        public static event System.Action RewardPicked;
+
         public void ShowRewardPick(string title, List<RewardOption> options, System.Action onDone)
         {
+            var done0 = onDone; onDone = () => { RewardPicked?.Invoke(); done0?.Invoke(); };
             var go = OpenScreen("RewardPick");
             UIKit.Dim(go.transform, 0.78f);
             UIKit.Banner(title, go.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 330), 760);

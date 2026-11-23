@@ -325,7 +325,7 @@ namespace CatTang
         {
             "Odd" => "홀수 시각", "Even" => "짝수 시각", "Exact" => $"{b.CondValue}시", "GreaterThan" => $"{b.CondValue}시 초과",
             "LessThan" => $"{b.CondValue}시 미만", "MultipleOf" => $"{b.CondValue}의 배수", "Negative" => "음수 시각",
-            "Zero" => "0시", "Prime" => "소수 시각", _ => b.CondType
+            "Zero" => "0시", "Prime" => "소수 시각", null or "" or "None" => "없음", _ => b.CondType
         };
     }
 
