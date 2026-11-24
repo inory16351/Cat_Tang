@@ -111,6 +111,11 @@ namespace CatTang
         public bool crumble;                      // 깨짐 방식: false = 바닥에 부딪혀 미끄러짐(물컵) · true = 금이 가며 무너져 아래로 쏟아짐(시계탑)
         public int breakCols = 4, breakRows = 5;
         public bool drops = true;                 // 물방울 조각
+        // 원테이크 (2026-11-24 사용자: 추적 장면은 끊김 없이 이어지는 애니메이션 · 카메라 무빙 원테이크)
+        public string[] cels;                     // 셀 순환: 이 레이어 그림이 진행에 따라 차례로 바뀜 (오려 낸 연속 동작)
+        public float[] celAt;                     // 셀마다 시작 진행(0~1). 없으면 고르게
+        public Vector3[] path;                    // 자체 이동 키 (진행, x, y) — 매끄러운 곡선 (Catmull-Rom)
+        public Vector2[] scaleKeys;               // 자체 크기 키 (진행, 배율)
     }
 
     public class MShot
@@ -136,6 +141,11 @@ namespace CatTang
         public MGrade grade;                      // 컷 전체 배색 (null = 원래 색)
         public MGrade tinGrade;                   // 전환 동안 빠져나가는 앞 장면이 이 배색으로 물들며 사라짐 (디졸브 · 물감 덮기 · 줌 · 휙)
         public (float u, float dur, MGrade g)[] flips;   // 컷 안에서 잠깐 배색이 뒤집힘 (u = 시작 진행, dur = 초) — 박자에 맞춰 음화 · 세피아로 번쩍
+        /// <summary>느린 셔터 (0~1, 2026-11-24 사용자: 꿈2 어둠 · POV 장면은 셔터 스피드를 낮춘 듯 — 뚝뚝 끊기는 셀이 연출로 자연스럽게):
+        /// 그 컷 동안 화면을 촘촘히 떠서 직전 화면을 이만큼 진하게 겹침(되먹임) → 셀이 바뀌거나 카메라가 흔들릴 때 앞 그림이 끌리며 번짐. 물감 · 조각 전환으로 안 바뀜</summary>
+        public float shutter;
+        public Vector4[] camPath;                 // 카메라 경로 키 (진행, pan x, pan y, 줌) — 원테이크: 멈춤 없이 곡선으로 이어짐 (있으면 pan · zoom 대신)
+        public Vector2[] rotPath;                 // 카메라 기울기 키 (진행, 도)
     }
 
     public class StoryMontage : MonoBehaviour
@@ -145,6 +155,7 @@ namespace CatTang
         Text placeholder;
         Material blurBase;
         readonly List<(Image im, MLayer l, Material m)> live = new();
+        readonly Dictionary<Image, Sprite[]> celSprites = new();
         float kick;                               // 박자 충격 흔들림 (빠르게 줄어듦)
 
         public static StoryMontage Create(Transform parent)
@@ -199,6 +210,7 @@ namespace CatTang
             foreach (Transform c in cam) Destroy(c.gameObject);
             foreach (var x in live) if (x.m) Destroy(x.m);
             live.Clear();
+            celSprites.Clear();
             breaks.Clear();
             back.color = s.tint;
             BuildCollage(s, folder);                  // 콜라주가 맨 뒤, 그 위에 레이어(오려 낸 대상 등)
@@ -218,6 +230,12 @@ namespace CatTang
                     var mat = blurBase ? new Material(blurBase) : null;
                     if (mat) im.material = mat;
                     live.Add((im, l, mat));
+                    if (l.cels != null && l.cels.Length > 0)
+                    {
+                        var arr = new Sprite[l.cels.Length];
+                        for (int ci = 0; ci < arr.Length; ci++) arr[ci] = Load(folder, l.cels[ci]) ?? sp;
+                        celSprites[im] = arr;
+                    }
                     if (l.breakAt >= 0) BuildBreak(im, sp.texture, l);
                 }
             placeholder.text = any ? "" : s.desc;
@@ -239,6 +257,24 @@ namespace CatTang
         }
 
         static float Ease(int mode, float u) => mode == 1 ? 1 - Mathf.Pow(1 - u, 4) : mode == 2 ? u : u * u * (3 - 2 * u);
+
+        /// <summary>키 (진행, 값…) 사이를 Catmull-Rom으로 — 키에서 멈추지 않고 이어지는 카메라 · 이동</summary>
+        static Vector3 Spline4(Vector4[] k, float u)
+        {
+            if (k.Length == 1 || u <= k[0].x) return new Vector3(k[0].y, k[0].z, k[0].w);
+            if (u >= k[^1].x) return new Vector3(k[^1].y, k[^1].z, k[^1].w);
+            int i = 1; while (i < k.Length - 1 && u > k[i].x) i++;
+            Vector3 P(int n) { n = Mathf.Clamp(n, 0, k.Length - 1); return new Vector3(k[n].y, k[n].z, k[n].w); }
+            float t = (u - k[i - 1].x) / Mathf.Max(0.0001f, k[i].x - k[i - 1].x);
+            return CatRom(P(i - 2), P(i - 1), P(i), P(i + 1), t);
+        }
+        static Vector2 Spline3(Vector3[] k, float u)
+        {
+            var v = new Vector4[k.Length]; for (int i = 0; i < k.Length; i++) v[i] = new Vector4(k[i].x, k[i].y, k[i].z, 0);
+            var r = Spline4(v, u); return new Vector2(r.x, r.y);
+        }
+        static Vector3 CatRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t) =>
+            0.5f * (2f * p1 + (-p0 + p2) * t + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t * t + (-p0 + 3f * p1 - 3f * p2 + p3) * t * t * t);
 
         static float Keys(Vector2[] k, float u, float def)
         {
@@ -346,6 +382,7 @@ namespace CatTang
             float e = Ease(s.ease, u);
             var pan = Vector2.Lerp(s.pan0, s.pan1, e);
             float zoom = Mathf.Lerp(s.zoom0, s.zoom1, e);
+            if (s.camPath != null && s.camPath.Length > 0) { var cp = Spline4(s.camPath, u); pan = new Vector2(cp.x, cp.y); zoom = cp.z; }
             kick = Mathf.MoveTowards(kick, 0, Time.unscaledDeltaTime * 70f);
             float sh = s.shake + kick;
             var j = sh > 0 ? Random.insideUnitCircle * sh : Vector2.zero;
@@ -358,7 +395,8 @@ namespace CatTang
                                  Mathf.PerlinNoise(1.7f, T * 2.7f) - 0.5f + (Mathf.PerlinNoise(9f, T * 13f) - 0.5f) * 0.35f) * 2f * s.hand;
                 hr = (Mathf.PerlinNoise(T * 2.3f, 7.7f) - 0.5f) * 2f * s.hand * 0.12f;
             }
-            cam.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(s.rot0, s.rot1, e) + hr + (kick > 0 ? Random.Range(-0.08f, 0.08f) * kick : 0));
+            float camRot = s.rotPath != null && s.rotPath.Length > 0 ? Keys(s.rotPath, u, 0) : Mathf.Lerp(s.rot0, s.rot1, e);
+            cam.localRotation = Quaternion.Euler(0, 0, camRot + hr + (kick > 0 ? Random.Range(-0.08f, 0.08f) * kick : 0));
             cam.anchoredPosition = Vector2.zero;
             float dz = Mathf.Lerp(1f, s.dolly, e);
             foreach (var (im, l, m) in live)
@@ -367,9 +405,23 @@ namespace CatTang
                 var rt = im.rectTransform;
                 float le = l.wave > 0 ? Mathf.Sin(u * s.dur * l.wave * Mathf.PI * 2f) * (1 - l.waveDamp * u) : Motion(l.motion, u, e);
                 // 시차: 카메라 이동 · 줌을 depth만큼 (가까운 레이어일수록 많이 움직임)
-                float lz = Mathf.Lerp(l.z0, l.z1, e) * (1 + (zoom - 1) * l.depth);
+                if (celSprites.TryGetValue(im, out var cs))
+                {
+                    int ci = 0;
+                    if (l.celAt != null) { for (int q = 0; q < l.celAt.Length && q < cs.Length; q++) if (u >= l.celAt[q]) ci = q; }
+                    else ci = Mathf.Min(cs.Length - 1, Mathf.FloorToInt(u * cs.Length));
+                    if (cs[ci] && im.sprite != cs[ci])
+                    {
+                        im.sprite = cs[ci];
+                        float a2 = cs[ci].rect.width / cs[ci].rect.height;   // 셀마다 그림 비율 그대로 (2026-11-24 사용자: 비율 깨짐 금지)
+                        if (l.height > 0) rt.sizeDelta = new Vector2(l.height * a2, l.height);
+                        else rt.sizeDelta = (a2 > 1920f / 1080f ? new Vector2(1080 * a2, 1080) : new Vector2(1920, 1920 / a2)) * 1.12f;   // 화면 덮기도 비율 유지
+                    }
+                }
+                float lz = Mathf.Lerp(l.z0, l.z1, e) * (1 + (zoom - 1) * l.depth) * (l.scaleKeys != null ? Keys(l.scaleKeys, u, 1f) : 1f);
                 if (l.depth < 1f) lz *= Mathf.Pow(dz, Mathf.Clamp01((1f - l.depth) / 0.6f));   // 달리 줌: 배경만 늘어나거나 줄어듦
-                rt.anchoredPosition = l.at * lz + (pan + j) * l.depth + Vector2.LerpUnclamped(l.p0, l.p1, le);   // 부품 자리도 같이 커짐 (시곗바늘이 시계판 축에 붙어 있게)
+                rt.anchoredPosition = l.at * lz + (pan + j) * l.depth + Vector2.LerpUnclamped(l.p0, l.p1, le);
+                if (l.path != null && l.path.Length > 0) { var pp = Spline3(l.path, u); rt.anchoredPosition += new Vector2(pp.x, pp.y) * lz; }   // 부품 자리도 같이 커짐 (시곗바늘이 시계판 축에 붙어 있게)
                 if (l.motion == 2 && u >= 0.42f && u < 0.6f) rt.anchoredPosition += Random.insideUnitCircle * 4f;   // 바닥에 닿아 멈칫 떨림
                 rt.localScale = new Vector3(lz, lz, 1);
                 float r = l.tick > 0 ? Mathf.Lerp(l.r0, l.r1, Mathf.Floor(u * s.dur * l.tick) / Mathf.Max(1, s.dur * l.tick)) : Mathf.LerpUnclamped(l.r0, l.r1, le);
@@ -510,6 +562,7 @@ namespace CatTang
         Material[] stripGrade;
         Material glitchBlur;
         RawImage echoImg, splitR, splitC; readonly List<RawImage> strips = new();
+        float curShutter;
         RenderTexture rtA, rtB; bool fxOn, glitchSplit = true; float glitchLeft, glitchNext = 0.6f; int glitchCount = 7;
         Rect FlipRect(Rect r) => SystemInfo.graphicsUVStartsAtTop ? new Rect(r.x, r.y + r.height, r.width, -r.height) : r;
 
@@ -539,21 +592,22 @@ namespace CatTang
                 float now = Time.unscaledTime;
                 if (now >= nextGrab)
                 {
-                    nextGrab = now + 0.08f;
+                    nextGrab = now + (curShutter > 0 ? 0.025f : 0.08f);   // 느린 셔터: 촘촘히 떠서 끌림이 매끄럽게
                     (rtA, rtB) = (rtB, rtA);                           // rtB = 직전 화면 (잔상용) · rtA = 지금 화면
                     ScreenCapture.CaptureScreenshotIntoRenderTexture(rtA);
                 }
                 var full = FlipRect(new Rect(0, 0, 1, 1));
                 // 잔상
-                echoImg.enabled = echo > 0;
+                float ea = curShutter > 0 ? Mathf.Max(echo, curShutter) : echo;
+                echoImg.enabled = ea > 0;
                 echoImg.texture = rtB; echoImg.uvRect = full;
-                echoImg.color = new Color(1, 1, 1, echo);
-                echoImg.rectTransform.localScale = Vector3.one * 1.025f;
+                echoImg.color = new Color(1, 1, 1, ea);
+                echoImg.rectTransform.localScale = Vector3.one * (curShutter > 0 ? 1.004f : 1.025f);   // 느린 셔터는 제자리에 겹쳐 끌림만
                 // 글리치
                 // 무작위 글리치 (2026-11-23 사용자: "좀 더 무작위로 여러군데"): 잦고 짧은 잔떨림(1~3프레임) + 가끔 긴 찢김
                 //   종류: 띠(가로 전체) · 블록(화면 일부만 사각으로 어긋남) · 색 갈라짐은 절반 확률. 매번 다른 자리 · 다른 개수
                 glitchNext -= Time.unscaledDeltaTime;
-                if (glitch > 0 && glitchNext <= 0)
+                if (glitch > 0 && curShutter <= 0 && glitchNext <= 0)
                 {
                     bool big = Random.value < 0.35f;
                     glitchLeft = big ? Random.Range(0.12f, 0.26f) : Random.Range(0.03f, 0.08f);
@@ -637,6 +691,7 @@ namespace CatTang
         {
             root.gameObject.SetActive(true);
             fxOn = true; StartCoroutine(Fx());
+            Debug.Log($"[MontageStart] t={Time.realtimeSinceStartup:0.000}");
             var vigT = root.Find("Vignette"); if (vigT) vigT.GetComponent<RawImage>().color = new Color(1, 1, 1, vignette);
             Texture2D prev = null;
             // 물감 · 글리치 전환 섞기 (2026-11-23 사용자: "글리치랑 물감 트랜지션 섞는 건 2번째 스토리 전체적으로 전부 다")
@@ -648,7 +703,8 @@ namespace CatTang
             foreach (var s0 in shots)
             {
                 var s = s0;
-                if (mixTrans > 0 && s.dur >= 0.3f && prevDur >= 0.25f && (s.tin == MTrans.Cut || s.tin == MTrans.Dissolve || s.tin == MTrans.Zoom)
+                curShutter = s.shutter;
+                if (mixTrans > 0 && s.shutter <= 0 && s.dur >= 0.3f && prevDur >= 0.25f && (s.tin == MTrans.Cut || s.tin == MTrans.Dissolve || s.tin == MTrans.Zoom)
                     && mixRng.NextDouble() < mixTrans)
                 {
                     s.tin = mixPaint ? MTrans.Paint : MTrans.Mix;
@@ -692,17 +748,24 @@ namespace CatTang
                     while (s.cues != null && cue < s.cues.Length && u >= s.cues[cue].u)
                     {
                         var c = s.cues[cue++];
-                        if (sfx && !string.IsNullOrEmpty(c.sfx) && Sfx.Has(c.sfx)) Sfx.Play(c.sfx, 0.9f, 0f);
+                        // '!'로 시작하는 소리는 효과음을 끈 몽타주(꿈 · 오프닝)에서도 냄 (2026-11-24 사용자: 꿈2 추적 장면 총성 — 느린 셔터에 맞춰 늘인 소리)
+                        bool forced = !string.IsNullOrEmpty(c.sfx) && c.sfx[0] == '!';
+                        string cn = forced ? c.sfx.Substring(1) : c.sfx;
+                        if ((sfx || forced) && !string.IsNullOrEmpty(cn) && Sfx.Has(cn))
+                        {
+                            Sfx.Play(cn, forced ? 1f : 0.9f, 0f);
+                            if (forced) Debug.Log($"[MontageSfx] {cn} t={Time.realtimeSinceStartup:0.000}");   // 녹화 영상에 소리 입힐 때 시각 (frames_to_mp4)
+                        }
                         kick = Mathf.Max(kick, c.shake);
                         if (c.flash > 0) StartCoroutine(FlashIn(c.flash));
                         else if (c.flash < 0) StartCoroutine(InvertPulse(-c.flash));   // 음수 = 색 반전 번쩍
-                        if (glitch > 0 && c.shake >= glitchCueMin) Glitch(0.12f + c.shake * 0.006f);
+                        if (glitch > 0 && curShutter <= 0 && c.shake >= glitchCueMin) Glitch(0.12f + c.shake * 0.006f);   // 느린 셔터 컷(흑백 사투)은 색 글리치 없이
                     }
                     Pose(s, u);
                     yield return null;
                 }
             }
-            fxOn = false;
+            fxOn = false; curShutter = 0;
             if (prev) Destroy(prev);
             foreach (Transform c in cam) Destroy(c.gameObject);
             shards.Clear();

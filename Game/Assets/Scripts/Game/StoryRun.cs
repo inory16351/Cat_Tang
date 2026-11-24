@@ -23,7 +23,7 @@ namespace CatTang
         public static string PendingWake;
         // 장마다 다른 기절 · 깨어남 대사 (2026-11-24 사용자: 1장은 지금 대사, 2~5장은 사용자가 만들 때 적어 줌 → 그때까지 비워 둠 = 대사 없이 연출만)
         public static readonly string[] FaintLines = { "……또, 이 소리……", "", "", "", "" };
-        public static readonly string[] WakeLines = { "고양이#두통::젠장… 또 이상한 꿈을 꿨군…", "", "", "", "" };
+        public static readonly string[] WakeLines = { "고양이#두통::젠장… 또 이상한 꿈을 꿨군…", "고양이#두통::……또…꿈인가……", "", "", "" };   // 2장 (2026-11-24 사용자): 기절 대사 없음
         static string Of(string[] a, int chapter) => chapter >= 1 && chapter <= a.Length ? a[chapter - 1] : "";
 
         public static void OnRunStart(RunManager rm)

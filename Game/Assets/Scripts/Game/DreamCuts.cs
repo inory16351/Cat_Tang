@@ -14,9 +14,9 @@ using UnityEngine;
 
 namespace CatTang
 {
-    public static class DreamCuts
+    public static partial class DreamCuts
     {
-        public static MShot[] For(int chapter) => chapter == 1 ? Dream1 : null;
+        public static MShot[] For(int chapter) => chapter == 1 ? Dream1 : chapter == 2 ? Dream2 : null;
 
         static readonly Color Paper = new(0.93f, 0.9f, 0.84f);
         static readonly Vector2 O = Vector2.zero;

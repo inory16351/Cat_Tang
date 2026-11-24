@@ -303,6 +303,7 @@ namespace CatTang.Dev
             var rt = new RenderTexture(960, 540, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);   // 캡처 값은 이미 sRGB → 변환 없이 그대로 (리니어 프로젝트에서 두 번 밝아지던 문제)
             var small = new Texture2D(960, 540, TextureFormat.RGB24, false);
             float t0 = Time.realtimeSinceStartup, next = 0; int i = 0;
+            Debug.Log($"[RecordStart] t={t0:0.000}");   // 몽타주 효과음 · 곡을 영상에 맞춰 입힐 기준 (docs/tools/frames_to_mp4.py --log)
             while (on())
             {
                 yield return new WaitForEndOfFrame();
