@@ -1,9 +1,9 @@
 // 스토리 흐름 (2026-11-23 스토리 기획서 Ver01, docs/1159_스토리_기획서_20261123_정승운_Ver01.pptx)
-// - 판 1: 현실 몽타주 → 황야 거리에서 깨어남 "윽… 꿈인가…" → 몬스터 소환 "지금은 잠자리 같은 걸…" → 이동 · 사격 · 대시만 → 적이 몰려와 결국 쓰러짐 → 마을(뻐꾸기)
+// - 판 1: 오프닝(꿈1 수채화) → 황야 거리에서 깨어남 "윽… 꿈인가…" → 몬스터 소환 "지금은 잠자리 같은 걸…" → 이동 · 사격 · 대시만 → 적이 몰려와 결국 쓰러짐 → 마을(뻐꾸기)
 // - 판 2: 총알 시계(처음 쏠 때, HUD) · 시각 조건(첫 총탄을 얻으면 Tab 유도 → 인벤토리에서) · 불릿 파티(열기가 다 찼을 때, 고양이 독백)
 // - 시너지: 처음 켜지면 Tab 유도 → 인벤토리 능력치 탭에서 (2026-11-23 사용자: "시각 조건 같은 건 탭 누르게 유도한 다음 아이템 창 UI에서 설명")
 // - 장을 처음 넘으면: 클리어 → 기절 → 꿈(수채화 셀 애니메이션) → 마을에서 깨어남 (결과 창 대신)
-// 본 장면은 슬롯에 기록 (Meta.StorySeen): opening · tut1 · tut2 · dream1~5
+// 본 장면은 슬롯에 기록 (Meta.StorySeen): opening(= 꿈1) · tut1 · tut2 · dream1~5 (장 n 클리어 = 꿈 n+1, StoryRun.DreamOf)
 using System.Collections;
 using UnityEngine;
 
@@ -16,7 +16,9 @@ namespace CatTang
         public const string SynergyText = "같은 특성의 탄을 함께 장전하면 시너지가 생겨요.\n2 · 4 · 6발을 모을 때마다 효과가 한 단계씩 강해져요.\n지금 켜진 시너지는 이곳에서 확인할 수 있어요.";
         public static bool Run1 => Meta.FirstRunPending && !Meta.StorySeen(KeyTut1);          // 새 슬롯의 첫 판만 (이미 판을 돈 예전 저장은 건너뜀)
         public static bool Run2 => Meta.StorySeen(KeyTut1) && !Meta.StorySeen(KeyTut2);
-        public static bool DreamPending(int chapter) => chapter >= 1 && chapter <= Dreams.Length && !Meta.StorySeen("dream" + chapter);
+        // 꿈 배치 (2026-11-24 사용자): 꿈1 '멈춘 손' = 오프닝(현실 몽타주 대신) · 1장 클리어 = 꿈2 '불 꺼진 시계탑' · 2장 클리어 = 꿈3 (꿈3 이후 · 3장부터는 임시 — 스토리 맵으로 바뀔 예정)
+        public static int DreamOf(int chapter) => chapter + 1;
+        public static bool DreamPending(int chapter) { int n = DreamOf(chapter); return chapter >= 1 && n <= Dreams.Length && !Meta.StorySeen("dream" + n); }
         /// <summary>마을에서 깨어난 뒤 띄울 한 줄 (꿈을 보고 돌아오면 결과 창이 없으니 얻은 조각을 여기로)</summary>
         public static string PendingToast;
         /// <summary>꿈을 보고 마을에서 깨어남 → 그 장의 혼잣말(WakeLines) 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory). 빈 문자열 = 깨어남 없음</summary>
@@ -68,9 +70,10 @@ namespace CatTang
             ov.SetCaption("");
             Time.timeScale = 1f;
             Music.Duck(0f, 0.5f);
-            var d = Dreams[chapter - 1];
-            yield return ov.PlayDream(chapter, d.title, d.fragments, authored: DreamCuts.For(chapter));
-            Meta.MarkStory("dream" + chapter);
+            int n = DreamOf(chapter);
+            var d = Dreams[n - 1];
+            yield return ov.PlayDream(n, d.title, d.fragments, authored: DreamCuts.For(n));
+            Meta.MarkStory("dream" + n);
             PendingToast = $"시간의 조각 +{gain}";
             PendingWake = Of(WakeLines, chapter);
             CameraFollow.FocusOn(null, 0f);
@@ -321,10 +324,13 @@ namespace CatTang
             ov.SetBlack(1);
             if (p) p.InputLocked = true;
             yield return null;
-            // 1. 현실 몽타주
+            // 1. 오프닝 = 꿈1 '멈춘 손' (2026-11-24 사용자: 현실 몽타주 대신, 제목 카드 없음, 끝에 '삐' → 총성 → 암전 소리만)
+            //    현실 몽타주(PlayOpening · Story/Opening · story_opening)는 보관만 함
             if (!Meta.StorySeen(StoryRun.KeyOpening))
             {
-                yield return PlayOpening(ov);
+                var d1 = StoryRun.Dreams[0];
+                yield return ov.PlayDream(1, d1.title, d1.fragments, authored: DreamCuts.For(1), shotEnd: true);
+                Meta.MarkStory("dream1");
                 Meta.MarkStory(StoryRun.KeyOpening);
             }
             // 2. 깨어남: 쓰러진 고양이 옆 낮은 곳에서 플레이 시점으로 올라감

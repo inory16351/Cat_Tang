@@ -420,7 +420,7 @@ namespace CatTang
 
         // ---------- 꿈: 수채화 셀 애니메이션 ----------
         /// <summary>Resources/Story/Dreams/dream{n}/ 의 그림을 이름순으로 번지듯 겹쳐 넘김. 그림이 없으면 물감 번짐 + 기억 조각 설명 자리 표시</summary>
-        public IEnumerator PlayDream(int n, string title, string[] fragments, float each = 4.5f, MShot[] authored = null)
+        public IEnumerator PlayDream(int n, string title, string[] fragments, float each = 4.5f, MShot[] authored = null, bool shotEnd = false)
         {
             Clear();
             var frames = Resources.LoadAll<Texture2D>("Story/Dreams/dream" + n);   // 이름만 씀 (재생은 StoryMontage가 텍스처로)
@@ -490,6 +490,18 @@ namespace CatTang
                 placeholder.text = "";
             }
             // 꿈 제목 카드는 뺌 (2026-11-23 사용자: "멈춘 손 없애고") — 깨어나서 "젠장… 또 이상한 꿈을 꿨군…"으로 이어짐 (VillageStory)
+            if (shotEnd)
+            {
+                // 오프닝으로 틀 때 (2026-11-24 사용자): 늘어진 '삐' → 총성 한 발 → 암전 (그림 없이 소리만) → 판 1 깨어남
+                if (Sfx.Has("story_flatline")) Sfx.Play("story_flatline", 0.8f, 0f);
+                yield return FadeWhite(0, 1, 1.6f);
+                Sfx.Play("shot_1", 1f, 0f);
+                Clear();
+                SetWhite(0);
+                SetBlack(1);
+                yield return new WaitForSecondsRealtime(1.0f);
+                yield break;
+            }
             yield return FadeWhite(0, 1, 1.2f);
             Clear();
             SetBlack(1);
