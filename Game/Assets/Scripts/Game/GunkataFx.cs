@@ -694,7 +694,7 @@ namespace CatTang
             if (sets.TryGetValue(set, out var m) && (m.Length == 0 || m[0])) return m;   // 지난 판에 파괴된 재질이면 다시 만듦
             var sh = Shader.Find("CatTang/Sprite") ?? Shader.Find("Sprites/Default");   // URP 태그가 있어야 Vivid(후처리 뒤)에서도 그려짐
             var list = new System.Collections.Generic.List<Material>();
-            for (int i = 0; i < 32; i++)
+            for (int i = 0; i < 64; i++)   // 코스튬 모래바람 sand_full = 40장
             {
                 var t = Resources.Load<Texture2D>("FX/anim/" + set + "_" + i);
                 if (!t) break;

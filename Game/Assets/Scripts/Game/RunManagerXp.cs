@@ -74,7 +74,7 @@ namespace CatTang
             var pool = new List<(LvReward k, float w)>
             {
                 (LvReward.Heal, Mathf.Min(2.5f, 0.2f + 4f * missing)), (LvReward.Gold, 1.4f), (LvReward.Shard, 1.2f),
-                (LvReward.Bullet, 2.8f), (LvReward.Gun, 1.8f), (LvReward.Armor, 0.9f), (LvReward.Op, 2.6f),
+                (LvReward.Bullet, 2.8f), (LvReward.Gun, 1.8f), (LvReward.Armor, 0.9f), (LvReward.Op, 2.6f * (1 + PlayerController.CostumeStat("OpDropRateAdd"))),   // 코스튬 시계공의 앞치마: 연산 +30%
             };
             var picks = new List<LvReward>();
             int choices = Meta.HasTech(Meta.TechWiderChoice) ? 4 : 3;     // 기억의 방 '넓어진 선택'

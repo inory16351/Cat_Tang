@@ -51,7 +51,7 @@ namespace CatTang
 
     public class CostumeDef
     {
-        public int Id; public string Name, UnlockType; public int UnlockValue, Cost, Effect1, Effect2, Effect3; public string Desc;
+        public int Id; public string Name, UnlockType; public int UnlockValue, Cost, Effect1, Effect2, Effect3; public string ModelKey, Desc;
     }
 
     /// <summary>해금 묶음 (총포상 · 탄약 공방, 세피리아식): 조각으로 사면 Items가 드랍 · 상점 · 시작 총에 풀림. Cost 0 = 처음부터</summary>
@@ -125,7 +125,7 @@ namespace CatTang
                 Costumes[I(r, "Id")] = new CostumeDef
                 {
                     Id = I(r, "Id"), Name = r["Name"], UnlockType = r["UnlockType"], UnlockValue = I(r, "UnlockValue"), Cost = I(r, "Cost"),
-                    Effect1 = I(r, "Effect1"), Effect2 = I(r, "Effect2"), Effect3 = I(r, "Effect3"), Desc = r["Desc"]
+                    Effect1 = I(r, "Effect1"), Effect2 = I(r, "Effect2"), Effect3 = I(r, "Effect3"), ModelKey = r.TryGetValue("ModelKey", out var mk) ? mk : "", Desc = r["Desc"]
                 };
             foreach (var r in Read("Unlock"))
             {

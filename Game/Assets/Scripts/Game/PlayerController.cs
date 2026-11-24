@@ -90,9 +90,25 @@ namespace CatTang
             health.OnChanceDodge += ChanceDodge;
             health.OnDamaged += Hurt;
             Tables.Load();
+            WearCostumeModel();
             if (model) { poser = model.GetComponent<KataPoser>(); anim = model.GetComponentInChildren<Animator>(); }
             if (model) StartCoroutine(KeepVivid());
             if (!GetComponent<ReloadMotion>()) gameObject.AddComponent<ReloadMotion>();     // 스피드로더 장전 동작
+        }
+
+        /// <summary>입은 코스튬의 모델(Resources/Costumes/&lt;ModelKey&gt;, Hyper3D · CostumeModelBuilder)로 기본 모델을 바꿔 끼움. 없으면 기본 모델 그대로</summary>
+        void WearCostumeModel()
+        {
+            if (!model || !Tables.Costumes.TryGetValue(Meta.SelectedCostume, out var c) || string.IsNullOrEmpty(c.ModelKey)) return;
+            var pf = Resources.Load<GameObject>("Costumes/" + c.ModelKey);
+            if (!pf) return;
+            var m = Instantiate(pf, model.parent);
+            m.name = model.name;
+            m.transform.SetLocalPositionAndRotation(model.localPosition, model.localRotation);
+            m.transform.localScale = model.localScale;
+            model.gameObject.SetActive(false);
+            Destroy(model.gameObject);
+            model = m.transform;
         }
 
         // ---------- 능력치 ----------
@@ -111,14 +127,26 @@ namespace CatTang
         /// <summary>확률형 효과 발동률 배율</summary>
         public float ProcMul => 1 + Effects.GlobalPassive(this, "ProcChanceAdd") + Meta.Stat("ProcChance");
         public float MoveSpeedMul => Mathf.Max(0.3f, 1 + Effects.GlobalPassive(this, "MoveSpeedAdd") + Meta.Stat("MoveSpeed"));
-        public float DamageMul => 1 + Meta.Stat("DamageMul");
+        public float DamageMul => (1 + Meta.Stat("DamageMul")) * (1 + LowHpDamageBonus);
+        /// <summary>코스튬 노인의 잠옷: 체력이 CondValue% 미만이면 공격력 +Value (2026-11-24 확정: 40% · +30%)</summary>
+        public float LowHpDamageBonus
+        {
+            get
+            {
+                if (!health || !Tables.Costumes.TryGetValue(Meta.SelectedCostume, out var c)) return 0;
+                float v = 0;
+                foreach (var id in new[] { c.Effect1, c.Effect2, c.Effect3 })
+                    if (id != 0 && Tables.Effects.TryGetValue(id, out var e) && e.Type == "LowHpDamageAdd" && health.hp < health.maxHp * e.CondValue / 100f) v += e.Value;
+                return v;
+            }
+        }
         public float AttackSpeedBonus => CostumeStat("AttackSpeedAdd");
         public float ReloadTime
         {
             get
             {
                 float a = rev.rightGun != null ? rev.rightGun.ReloadTime : 1.2f, b = rev.leftGun != null ? rev.leftGun.ReloadTime : 1.2f;
-                return Mathf.Max(a, b) * (1 + Meta.Stat("ReloadTime"));
+                return Mathf.Max(a, b) * (1 + Meta.Stat("ReloadTime")) * (1 + CostumeStat("ReloadTimeAdd"));   // 코스튬 시계공의 앞치마: 장전 속도 -10%
             }
         }
         public float DashRechargeTime => dashRecharge * Mathf.Max(0.3f, 1 + Meta.Stat("DodgeCooldown") + Effects.GlobalPassive(this, "DodgeCooldown"));
@@ -157,6 +185,7 @@ namespace CatTang
                     if (e.Type == "GrantRandomOp") inv.Add(Item.Of(RandomOp()));
                 }
             health.ResetHp(MaxHp);
+            LowHpAura.Attach(this);                          // 코스튬 노인의 잠옷
             rev.next = rev.FirstSlot;
             rev.shotsThisCycle = 0;
             dashCharges = dashMax;
@@ -307,6 +336,7 @@ namespace CatTang
             {
                 if (e.Type == "InstantReload" && rev.reloading) FinishReload();
                 if (e.Type == "CritNextShots") critShots += Mathf.RoundToInt(e.Value);
+                if (e.Type == "ShadowStrike") ShadowStrike.Launch(this, ShotDamage(rev.next, out _) * e.Value);   // 코스튬 거울 망토: 그림자 잔상이 무작위 적을 벰
             }
         }
 
@@ -780,6 +810,7 @@ namespace CatTang
             if (crit) CameraFollow.Shake(0.07f);
             bool killed = !target.Alive;
             var en = target.GetComponent<Enemy>();
+            if (killed && rev.JudgeTime(s) <= 0) Meta.AddCount(Meta.CountLowJudgeKill);   // 코스튬 모래 순례자 로브 해금 조건
 
             var onHit = new List<EffectDef>(Effects.For(this, s, "OnHit"));
             // 추억 표식: 단계(2 · 4 · 6) 효과가 같이 켜져도 한 발에 하나만, 가장 높은 표식당 피해로 (예전엔 한 발에 2~3개 쌓였음)
@@ -817,6 +848,7 @@ namespace CatTang
                         Effects.AreaDamage(target.transform.position, 2f, dmg * e.Value);
                         target.ClearMarks();
                         break;
+                    case "SandVortex": SandVortex.Spawn(point, dmg * e.Value, e.Value2, Mathf.Max(0.5f, e.Duration)); break;   // 코스튬 모래 순례자 로브
                     case "Execute":
                         if (!target.Alive) break;
                         // 보스는 처형 대신 그 확률로 피해 +100% (기획서 9141/9142, 2026-11-18 전엔 보스도 즉사였음)
@@ -824,7 +856,12 @@ namespace CatTang
                         ExecutionFx.Rend(target.transform, target.IsBoss);
                         if (target.IsBoss) { target.TakeDamage(dmg * Mathf.Max(1f, e.Value)); break; }
                         Meta.AddCount(Meta.CountExecute);              // 코스튬 장의사 정장 해금 조건
-                        target.TakeDamage(target.hp + 1); foreach (var x in Effects.Global(this, "OnExecute")) if (x.Type == "HeatGain") rev.AddHeat(x.Value);
+                        target.TakeDamage(target.hp + 1);
+                        foreach (var x in Effects.Global(this, "OnExecute"))
+                        {
+                            if (x.Type == "HeatGain") rev.AddHeat(x.Value);
+                            if (x.Type == "Heal") { health.Heal(x.Value); CostumeFx.ExecuteHeal(target.transform.position, transform); }   // 코스튬 장의사 정장
+                        }
                         break;
                     case "DelayedDamage":
                         FxBurst.Spawn(target.transform.position + Vector3.up * 0.9f, e.Value2 > 0 ? e.Value2 * 1.4f : 1.6f, FxBurst.Kind.Converge, Color.white, Mathf.Max(0.2f, e.Duration));

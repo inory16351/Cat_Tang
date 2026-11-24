@@ -1040,6 +1040,30 @@ namespace CatTang
             }
             Redraw();
             scroll.verticalNormalizedPosition = 1f;
+            if (!Meta.StorySeen(FacTutKey(f))) StartCoroutine(FacilityTutorial(f, content));
+        }
+
+        // ---------- 시설 첫 설명 (2026-11-24 사용자: 기억의 방 · 의상실이 같이 열리니 먼저 들어간 곳에서 그 시설 설명) ----------
+        static string FacTutKey(Meta.Facility f) => "tut_fac_" + f;
+        readonly System.Collections.Generic.List<RectTransform> wardrobeCards = new();
+
+        System.Collections.IEnumerator FacilityTutorial(Meta.Facility f, RectTransform content)
+        {
+            var ov = StoryOverlay.I;
+            if (!ov) yield break;
+            yield return new WaitForSecondsRealtime(0.35f);
+            switch (f)
+            {
+                case Meta.Facility.MemoryRoom:
+                    yield return ov.HintAt("기억의 방", "시간의 조각으로 능력 강화\n더 강해진 기억으로 재도전", content);
+                    break;
+                case Meta.Facility.Wardrobe:
+                    var row = wardrobeCards.FindAll(c => c).GetRange(0, Mathf.Min(4, wardrobeCards.FindAll(c => c).Count)).ToArray();
+                    yield return ov.HintAt("의상실", "코스튬은 캐릭터에게 특별한 능력을 더해줍니다.\n새로운 의상을 통해 당신의 매력을 뽐내세요.", row.Length > 0 ? row : new[] { content });
+                    break;
+                default: yield break;
+            }
+            Meta.MarkStory(FacTutKey(f));
         }
 
         /// <summary>세로 스크롤 영역: 보이는 창(가림) + 내용 + 오른쪽 스크롤바(넘칠 때만). 반환 = 카드를 놓을 내용 (가운데 기준 좌표 그대로 씀)</summary>
@@ -1312,18 +1336,28 @@ namespace CatTang
         void WardrobeContent(Transform content, System.Action redraw)
         {
             int i = 0;
+            wardrobeCards.Clear();
             foreach (var c in Tables.Costumes.Values)
             {
                 var cos = c;
                 bool un = Meta.CostumeUnlocked(c.Id), met = Meta.CostumeCondMet(c);
                 var (now, goal) = Meta.CostumeProgress(c);
-                var card = Card(content, "Cos" + c.Id, new Vector2(-480 + (i % 4) * 320, 140 - (i / 4) * 320), new Vector2(300, 300));
-                CardText(card.transform, c.Name, new Vector2(0, -30), new Vector2(280, 36), 26, true);
+                // 카드 = 위 초상화(크롬 ChatGPT 그림 Resources/UI/Costumes/cos_<Id>, 2026-11-24) + 이름 · 효과 · 조건 · 버튼
+                var card = Card(content, "Cos" + c.Id, new Vector2(-480 + (i % 4) * 320, 70 - (i / 4) * 455), new Vector2(300, 440));
+                wardrobeCards.Add(card.rectTransform);
+                var pic = UIKit.Icon("UI/Costumes/cos_" + c.Id);
+                if (pic)
+                {
+                    var im = UIKit.MakeRect("Portrait", card.transform, new Vector2(0.5f, 1), new Vector2(0, -102), new Vector2(270, 180)).gameObject.AddComponent<Image>();
+                    im.sprite = pic; im.preserveAspect = true; im.raycastTarget = false;
+                    im.color = un ? Color.white : met ? new Color(0.7f, 0.66f, 0.62f) : new Color(0.16f, 0.13f, 0.13f);   // 안 연 옷 = 그림자 · 조건 채움 = 흐리게
+                }
+                CardText(card.transform, c.Name, new Vector2(0, -196), new Vector2(280, 36), 26, true);
                 string eff = string.Join("\n", new[] { c.Effect1, c.Effect2, c.Effect3 }.Where(x => x != 0).Select(x => Tables.Effects.TryGetValue(x, out var e) ? e.Desc : ""));
-                CardText(card.transform, eff == "" ? c.Desc : eff, new Vector2(0, -70), new Vector2(270, 100), 16, false);
+                CardText(card.transform, eff == "" ? c.Desc : eff, new Vector2(0, -232), new Vector2(270, 100), 16, false);
                 if (!un)
                     CardText(card.transform, $"<color={(met ? "#3F7A2E" : "#8A3A22")}>조건: {Meta.CostumeCondText(c)}{(goal > 1 ? $"  ({now}/{goal})" : met ? " ✓" : "")}</color>",
-                        new Vector2(0, -176), new Vector2(280, 30), 16, false);
+                        new Vector2(0, -334), new Vector2(280, 30), 16, false);
                 Button b;
                 if (!un) b = UIKit.MakeButton("Unlock", card.transform, new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(250, 60), met ? $"구매 {c.Cost} 조각" : "조건 미달성",
                     () => { if (Meta.TryUnlockCostume(cos)) { Sfx.Play("ui_buy", 0.85f, 0f); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 20);

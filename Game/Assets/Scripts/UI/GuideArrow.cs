@@ -1,6 +1,6 @@
 // 길 안내 화살표 (2026-11-23 사용자: "화면에 화살표로 전투 지역 문 표시하여 유도" · "여관 2층 기억의 방 해금 (화살표로 표기)")
 // 대상 머리 위에서 통통 튀는 노란 화살표 + 이름. 대상이 화면 밖이면 화면 가장자리에 붙어 그쪽을 가리킴.
-// 고양이가 대상 가까이(reach m) 가거나 Clear()를 부르면 사라짐. 한 번에 하나.
+// 고양이가 대상 가까이(reach m) 가거나 Clear()를 부르면 사라짐. 보통 한 번에 하나, keep이면 여러 개 (2026-11-24: 기억의 방 · 의상실 동시 해금)
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,28 +8,30 @@ namespace CatTang
 {
     public class GuideArrow : MonoBehaviour
     {
-        static GuideArrow inst;
+        static readonly System.Collections.Generic.List<GuideArrow> all = new();
         Transform target;
         float reach, height;
         RectTransform root, arrow, labelRt;
         Text label;
         Image img;
 
-        public static void Show(Transform target, string text, float height = 3.2f, float reach = 3f)
+        public static void Show(Transform target, string text, float height = 3.2f, float reach = 3f, bool keep = false)
         {
-            Clear();
+            if (!keep) Clear();
             if (!target) return;
             var go = new GameObject("GuideArrow");
-            inst = go.AddComponent<GuideArrow>();
+            var inst = go.AddComponent<GuideArrow>();
             inst.target = target; inst.height = height; inst.reach = reach;
             inst.Build(text);
+            all.Add(inst);
         }
 
-        public static void Clear() { if (inst) Destroy(inst.gameObject); inst = null; }
+        public static void Clear() { foreach (var a in all) if (a) Destroy(a.gameObject); all.Clear(); }
+        void Remove() { all.Remove(this); Destroy(gameObject); }
         /// <summary>그 대상을 썼으면(문 열기 · 시간의 문) 화살표 치움</summary>
-        public static void Reached(Transform t) { if (inst && inst.target == t) Clear(); }
+        public static void Reached(Transform t) { for (int i = all.Count - 1; i >= 0; i--) if (all[i] && all[i].target == t) all[i].Remove(); }
         bool wasFar;
-        public static bool Active => inst;
+        public static bool Active => all.Count > 0;
 
         void Build(string text)
         {
@@ -50,13 +52,13 @@ namespace CatTang
         {
             var p = PlayerController.Instance;
             var cam = Camera.main;
-            if (!target) { Clear(); return; }
+            if (!target) { Remove(); return; }
             // 가까이 가면 사라짐 — 단, 시작부터 가까이 있었으면(깨어난 자리 옆 문) 한 번 멀어졌다 돌아올 때만. 문 · 시간의 문을 쓰면 바로 사라짐(Reached)
             if (p)
             {
                 float d = Vector3.Distance(p.transform.position, target.position);
                 if (d > reach + 1.5f) wasFar = true;
-                if (wasFar && d < reach) { Clear(); return; }
+                if (wasFar && d < reach) { Remove(); return; }
             }
             if (!cam) return;
             // 대화 · 안내 창 중엔 숨김

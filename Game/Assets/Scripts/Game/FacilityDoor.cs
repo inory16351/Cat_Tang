@@ -19,7 +19,15 @@ namespace CatTang
                 return;
             }
             GuideArrow.Reached(transform);
-            FindFirstObjectByType<GameUI>()?.OpenFacility(facility);
+            var ui = FindFirstObjectByType<GameUI>();
+            if (!ui) return;
+            // 의상실을 처음 쓰면 재봉사 첫 대화 뒤에 열림 (2026-11-24 사용자)
+            if (facility == Meta.Facility.Wardrobe && !Meta.StorySeen(VillageStory.KeyTailorMeet))
+            {
+                ui.StartCoroutine(VillageStory.TailorMeet(ui, () => ui.OpenFacility(facility)));
+                return;
+            }
+            ui.OpenFacility(facility);
         }
 
         void Update()

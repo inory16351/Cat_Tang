@@ -475,6 +475,9 @@ namespace CatTang
             if (dead) return;
             dead = true;
             if (tele) tele.Kill();
+            // 코스튬 기억의 스카프 해금 조건: 특성 6단계 2개 이상인 채로 보스 처치
+            var pc = PlayerController.Instance;
+            if (health.IsBoss && pc && pc.rev != null) { int t6 = 0; foreach (var kv in pc.rev.TraitCounts()) if (pc.rev.TierOf(kv.Value) >= 6) t6++; if (t6 >= 2) Meta.AddCount(Meta.CountTier6Boss); }
             bool blew = kind == Kind.Bomber && selfDestruct;
             if (blew) GunkataFx.Explosion(transform.position, BomberRadius, true);   // 3D 자폭 폭발 (모래 먼지 · 파편)
             if (Mathf.Approximately(health.lastDamageWasDelayed, Time.time)) PlayerController.Instance?.DelayedKill(transform.position);

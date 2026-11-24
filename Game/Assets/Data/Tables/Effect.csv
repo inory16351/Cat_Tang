@@ -105,15 +105,19 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9317,Passive,None,0,1.0,OwnBullets,Homing,1,0.0,0.0,이 총의 탄이 가장 가까운 적을 따라감
 9401,Passive,None,0,1.0,Self,AttackSpeedAdd,0.15,0.0,0.0,연사 속도 +15%
 9402,Passive,None,0,1.0,Self,DamageTakenAdd,0.15,0.0,0.0,받는 피해 +15%
-9403,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.5,0.0,0.0,비활성화 공격력 +50%
-9404,Passive,None,0,1.0,Self,AwakenedDamageAdd,-0.1,0.0,0.0,활성화 공격력 -10%
+9403,OnExecute,None,0,1.0,Self,Heal,2,0.0,0.0,처형할 때마다 체력 2 회복
+9404,Passive,None,0,1.0,Self,ExecuteRangeAdd,0.2,0.0,0.0,처형 범위 +20%
 9405,RunStart,None,0,1.0,Self,GrantRandomOp,1,0.0,0.0,런 시작 때 무작위 연산 1개
 9406,Passive,None,0,1.0,Self,OpDropRateAdd,0.3,0.0,0.0,연산 드랍 +30%
-9407,Passive,None,0,1.0,AllBullets,Ricochet,1,0.0,0.0,모든 탄 1번 튕김
+9407,OnJustDodge,None,0,1.0,Self,ShadowStrike,3,0.0,0.0,극한 회피하면 범위 안 무작위 적 최대 3명에게 자객 잔상이 하나씩 나타나 벰
 9408,Passive,None,0,1.0,Self,MaxHpAdd,-0.2,0.0,0.0,최대 체력 -20%
-9409,Passive,JudgeAtMost,0,1.0,AllBullets,DamageAdd,0.25,0.0,0.0,판정 시각 0 이하 탄 공격력 +25%
+9409,OnHit,JudgeAtMost,0,1.0,HitTarget,SandVortex,0.6,0.3,2.0,판정 시각 0 이하 탄이 맞힌 자리에 모래 소용돌이 (둔화 + 지속 피해)
 9410,RunStart,None,0,1.0,Self,GrantBullet,1018,0.0,0.0,런 시작 때 '개기일식' 지급
 9411,Passive,None,0,1.0,Self,TraitThresholdReduce,1,0.0,0.0,특성 6단계가 5개로 켜짐
 9412,Passive,None,0,1.0,Self,MaxHpAdd,-0.15,0.0,0.0,최대 체력 -15%
-9413,Passive,None,0,1.0,Self,MemoryShardGainAdd,0.5,0.0,0.0,시간의 조각 획득 +50%
-9414,Passive,None,0,1.0,Self,DamageTakenAdd,0.2,0.0,0.0,받는 피해 +20%
+9413,Passive,None,40,1.0,Self,LowHpDamageAdd,0.3,0.0,0.0,체력 40% 미만이면 공격력 +30%
+9414,Passive,None,0,1.0,Self,MaxHpAdd,-0.3,0.0,0.0,최대 체력 -30%
+9415,Passive,None,0,1.0,Self,AwakenedDamageAdd,-0.1,0.0,0.0,활성화된 탄 공격력 -10%
+9416,Passive,None,0,1.0,Self,ReloadTimeAdd,0.1,0.0,0.0,탄 장전 속도 -10%
+9417,Passive,None,0,1.0,Self,JustDodgeWindowAdd,0.04,0.0,0.0,극한 회피 판정 범위 +50%
+9418,Passive,None,0,1.0,Self,DamageTakenAdd,0.1,0.0,0.0,받는 피해 +10%

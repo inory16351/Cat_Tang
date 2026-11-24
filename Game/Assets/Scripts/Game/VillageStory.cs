@@ -29,7 +29,7 @@ namespace CatTang
                 "고양이#결의::난… 이 마을을 벗어나야 해…",
                 "태엽 풀린 뻐꾸기#쓸쓸::…어째서? 같은 짓을 반복하는 거지?",
                 "태엽 풀린 뻐꾸기#다정::정 그렇다면 저쪽으로 나가 봐. 하고 나서 후회하는 게 아무것도 하지 않는 것보단 나을 테니…"),
-            // 장을 넘으면 기절해 꿈을 꾸고(StoryRun.Dreams) 깨어나 이 대화. 깨어남 혼잣말(StoryRun.WakeLine)이 첫 줄로 붙음
+            // 장을 넘으면 기절해 꿈을 꾸고(StoryRun.Dreams) 깨어나 이 대화. 깨어남 혼잣말(StoryRun.WakeLines, 장마다 다름)이 첫 줄로 붙음
             // 1장 → 꿈1 (2026-11-23 사용자 대사) → 끝나면 기억의 방 문을 비추고 화살표 + 안내 창
             new("ch1", 1, Cuckoo, false,
                 "태엽 풀린 뻐꾸기#쓸쓸::저런… 악몽을 꾼 모양이네… 그것보다 널 위해 방을 하나 마련해 두었으니 올라가 봐.",
@@ -42,10 +42,6 @@ namespace CatTang
                 "고양이#의문::그 탑을 알아?",
                 "알지. 종이 멈춘 뒤로는 아무도 올려다보지 않더군. 올려다보던 아이 하나만 빼고.",
                 "새는 모래로 탄을 부어 주지. 쓸 만한 탄이 생기면 공방에 걸어 두겠다."),
-            new("ch2_tailor", 2, Tailor, false,
-                "실이 아직 남았네요. 다행이에요.",
-                "하얀 복도 꿈이요? 불빛이 머리 위로 지나가는…… 저도 그 실을 잡아 본 적 있어요. 끝이 아주 하얬죠.",
-                "해진 옷은 기워 드릴게요. 해낸 일이 많을수록 고를 옷도 늘어나요."),
             // 3장 → 꿈3 '빗속의 플랫폼' (떠나는 기차 창에 비친 손 · 빗물 흐르는 병실 창 · '곧 올게')
             new("ch3", 3, Sheriff, true,
                 "내 얼굴은 필름과 함께 바랬어. 하지만 총은 아직 기억하지.",
@@ -112,15 +108,15 @@ namespace CatTang
             if (!ui || !p) { Destroy(gameObject); yield break; }
             if (!string.IsNullOrEmpty(StoryRun.PendingToast)) { ui.Toast(StoryRun.PendingToast); StoryRun.PendingToast = null; }   // 꿈을 보고 돌아옴 (결과 창 대신)
             // 꿈에서 깨어난 혼잣말 "젠장… 또 이상한 꿈을 꿨군…" (2026-11-23 사용자) → 이어질 대화가 있으면 그 첫 줄로 붙이고, 없으면 혼잣말만
-            bool wake = StoryRun.PendingWake;
-            StoryRun.PendingWake = false;
+            string wake = string.IsNullOrEmpty(StoryRun.PendingWake) ? null : StoryRun.PendingWake;
+            StoryRun.PendingWake = null;
             bool anyBeat = false;
             foreach (var b in Beats) if (Meta.ChaptersCleared >= b.chapter && !Meta.StorySeen(b.key)) anyBeat = true;
-            if (wake && !anyBeat)
+            if (wake != null && !anyBeat)
             {
                 p.InputLocked = true;
                 bool woke = false;
-                ui.Talk("고양이", new[] { StoryRun.WakeLine }, () => woke = true);
+                ui.Talk("고양이", new[] { wake }, () => woke = true);
                 while (!woke) yield return null;
             }
             System.Action arrowAfter = null;                                        // 조작이 풀린 뒤 띄울 길 안내 화살표
@@ -131,8 +127,8 @@ namespace CatTang
                 if (b.bridges)
                     foreach (var br in FindObjectsByType<IslandBridge>(FindObjectsSortMode.None))
                         if (br.reqChapter == b.chapter && br.Pending) yield return br.Reconnect();
-                yield return RunBeat(b, wake, ui, a => arrowAfter = a);
-                wake = false;
+                yield return RunBeat(b, wake, ui, a => arrowAfter += a);
+                wake = null;
                 Meta.MarkStory(b.key);
             }
             // 대화 없이 열린 다리가 남았으면 (예: 장을 한 번에 여러 개 넘음) 마저 이음
@@ -144,12 +140,12 @@ namespace CatTang
         }
 
         /// <summary>대화 한 묶음 + 그 뒤 연출(길 안내 · 해금 안내). 기록(MarkStory)은 부른 쪽에서</summary>
-        static IEnumerator RunBeat(Beat b, bool wake, GameUI ui, System.Action<System.Action> setArrow)
+        static IEnumerator RunBeat(Beat b, string wake, GameUI ui, System.Action<System.Action> setArrow)
         {
             var spot = GameObject.Find(SpotOf(b.speaker));                       // 말하는 NPC를 비춤
             if (spot) CameraFollow.FocusOn(spot.transform.position + Vector3.back * 1.5f, 0.8f);
             var lines = b.lines;
-            if (wake) { lines = new string[b.lines.Length + 1]; lines[0] = StoryRun.WakeLine; b.lines.CopyTo(lines, 1); }
+            if (wake != null) { lines = new string[b.lines.Length + 1]; lines[0] = wake; b.lines.CopyTo(lines, 1); }
             bool done = false;
             ui.Talk(b.speaker, lines, () => done = true);
             while (!done) yield return null;
@@ -161,17 +157,53 @@ namespace CatTang
                 var gate = FindFirstObjectByType<ChapterGate>();
                 if (gate) { yield return Look(gate.transform.position, 1.1f); setArrow(() => GuideArrow.Show(gate.transform, "시간의 문")); }
             }
-            // 1장 꿈 뒤: 여관 2층 기억의 방 해금 → 화살표 + 안내 (2026-11-23 사용자). 그 뒤 장의 튜토리얼 · 해금 연출은 아직 안 만듦(사용자)
+            // 1장 꿈 뒤 (2026-11-24 사용자): 기억의 방 해금 → 뻐꾸기 "손님이…" → 의상실 섬 다리 · 의상실 해금 → 화살표 둘.
+            //   시설 설명(튜토리얼)은 둘 중 먼저 들어간 곳에서 (GameUI.FacilityTutorial)
             if (b.key == "ch1")
             {
-                var door = DoorOf(Meta.Facility.MemoryRoom);
+                var mem = DoorOf(Meta.Facility.MemoryRoom);
                 yield return RevealFacility(ui, Meta.Facility.MemoryRoom);
-                if (door) setArrow(() => GuideArrow.Show(door.transform, "기억의 방"));
-                var ov = StoryOverlay.I;
-                if (ov) yield return ov.Hint("기억의 방", "시간의 조각으로 능력 강화\n더 강해진 기억으로 재도전", door ? ScreenFocus(door.transform.position + Vector3.up * 1.2f) : (Rect?)null);
+                var cuckoo = GameObject.Find(SpotOf(Cuckoo));
+                if (cuckoo) CameraFollow.FocusOn(cuckoo.transform.position + Vector3.back * 1.5f, 0.8f);
+                bool said = false;
+                ui.Talk(Cuckoo, new[] { "태엽 풀린 뻐꾸기#의미심장::아 그러고보니 손님이 온 모양이던데.....한번 찾아가봐." }, () => said = true);
+                while (!said) yield return null;
+                CameraFollow.FocusOn(null, 0f);
+                foreach (var br in FindObjectsByType<IslandBridge>(FindObjectsSortMode.None))
+                    if (br.reqChapter == 1 && br.Pending) yield return br.Reconnect();
+                var ward = DoorOf(Meta.Facility.Wardrobe);
+                yield return RevealFacility(ui, Meta.Facility.Wardrobe);
+                setArrow(() =>
+                {
+                    if (mem) GuideArrow.Show(mem.transform, "기억의 방", keep: true);
+                    if (ward) GuideArrow.Show(ward.transform, "의상실", keep: true);
+                });
                 CameraFollow.FocusOn(null, 0f);
                 yield return new WaitForSecondsRealtime(0.3f);
             }
+        }
+
+        /// <summary>의상실 문을 처음 쓸 때 재봉사 첫 대화 (2026-11-24 사용자 대사) → 끝나면 의상실 열림</summary>
+        public const string KeyTailorMeet = "tailor_meet";
+        public static IEnumerator TailorMeet(GameUI ui, System.Action then)
+        {
+            var p = PlayerController.Instance;
+            if (p) p.InputLocked = true;
+            var spot = GameObject.Find(SpotOf(Tailor));
+            if (spot) CameraFollow.FocusOn(spot.transform.position + Vector3.back * 1.5f, 0.8f);
+            bool done = false;
+            ui.Talk(Tailor, new[]
+            {
+                "아 어서와. 이번이 몇번째 만남인지는 모르겠지만....",
+                "고양이#의문::....난 그런 기억이 없는데",
+                "아 그런 모양이군. 하지만 그런건 이 곳에선 중요하지 않지.",
+                "아무튼 골라봐. 무법자에게도 패션은 언제나 중요한 법이지.",
+            }, () => done = true);
+            while (!done) yield return null;
+            Meta.MarkStory(KeyTailorMeet);
+            CameraFollow.FocusOn(null, 0f);
+            if (p) p.InputLocked = false;
+            then?.Invoke();
         }
 
         /// <summary>개발용: 대화 묶음을 기록 없이 재생 (저장 안 건드림). 플레이 중 마을에서 VillageStory.Preview("intro" | "ch1")</summary>
@@ -191,7 +223,7 @@ namespace CatTang
                 {
                     if (p) p.InputLocked = true;
                     System.Action arrow = null;
-                    yield return RunBeat(b, wake, ui, a => arrow = a);
+                    yield return RunBeat(b, wake ? StoryRun.WakeLines[0] : null, ui, a => arrow += a);
                     if (p) p.InputLocked = false;
                     arrow?.Invoke();
                 }

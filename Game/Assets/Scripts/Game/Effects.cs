@@ -93,7 +93,7 @@ namespace CatTang
                 case "TargetSlowed": return target && target.Slowed;
                 case "TargetTimeLocked": return target && target.TimeLocked;
                 case "TargetBoss": return target && target.IsBoss;
-                case "TargetHpBelow": return target && target.hp <= target.maxHp * e.CondValue / 100f;
+                case "TargetHpBelow": return target && target.hp <= target.maxHp * e.CondValue / 100f * (e.Type == "Execute" ? 1 + GlobalPassive(p, "ExecuteRangeAdd") : 1f);   // 코스튬 장의사 정장: 처형 범위 +20%
                 case "JudgeEven": return judge % 2 == 0;
                 case "JudgeNegative": return judge < 0;
                 case "JudgeOver": return judge > e.CondValue;

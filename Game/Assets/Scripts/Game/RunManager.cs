@@ -556,7 +556,7 @@ namespace CatTang
             if (stageIndex == Stages - 1) kinds.Add(RewardKind.Boss);
             else
             {
-                var pool = new List<(RewardKind k, float w)> { (RewardKind.Gold, 3), (RewardKind.Bullet, 3.2f), (RewardKind.Op, 2.5f), (RewardKind.Shard, 2), (RewardKind.Gun, 1.3f), (RewardKind.Armor, 1.8f) };
+                var pool = new List<(RewardKind k, float w)> { (RewardKind.Gold, 3), (RewardKind.Bullet, 3.2f), (RewardKind.Op, 2.5f * (1 + PlayerController.CostumeStat("OpDropRateAdd"))), (RewardKind.Shard, 2), (RewardKind.Gun, 1.3f), (RewardKind.Armor, 1.8f) };
                 int n = Random.value < 0.5f ? 2 : 3;
                 while (kinds.Count < n)
                 {

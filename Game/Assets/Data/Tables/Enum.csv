@@ -131,3 +131,11 @@ UnlockType,ExecuteCount,누적 처형 수
 UnlockType,JustDodgeCount,누적 극한 회피 수
 UnlockType,KillBoss,구역 Value 보스 처치
 UnlockType,TraitTier6,특성 6단계 달성 횟수
+UnlockType,LowJudgeKill,판정 시각 0 이하 탄으로 처치 수
+UnlockType,Tier6BossKill,특성 6단계 2개 이상으로 보스 처치 수
+EffectType,Heal,체력 Value 회복
+EffectType,ExecuteRangeAdd,처형 체력 기준 +Value (비율)
+EffectType,ReloadTimeAdd,장전 시간 +Value (비율)
+EffectType,ShadowStrike,그림자 잔상이 무작위 적에게 날아가 피해 (다음 탄 피해 × Value)
+EffectType,SandVortex,맞힌 자리에 모래 소용돌이 (초당 피해 = 탄 피해 × Value, 둔화 Value2, Duration초)
+EffectType,LowHpDamageAdd,체력이 CondValue% 미만이면 공격력 +Value

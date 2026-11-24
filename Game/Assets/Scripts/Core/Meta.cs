@@ -124,8 +124,8 @@ namespace CatTang
         public enum Facility { MemoryRoom, GunShop, AmmoWorkshop, Wardrobe }
         public static readonly string[] FacilityName = { "기억의 방", "총포상", "탄약 공방", "의상실" };
         public static readonly string[] FacilityNpc = { "태엽 풀린 뻐꾸기", "빈 외투 보안관", "모래시계 대장장이", "실타래 재봉사" };
-        // 2026-11-18 사용자: 장(맵)을 넘을 때마다 마을 섬 · NPC가 하나씩 열림 — 1장 = 기억의 방(노드 성장) · 2장 = 의상실 · 탄약 공방 · 3장 = 총포상
-        public static readonly int[] FacilityUnlockChapter = { 1, 3, 2, 2 };    // 그 챕터 보스를 넘으면 열림
+        // 2026-11-18 사용자: 장(맵)을 넘을 때마다 마을 섬 · NPC가 하나씩 열림 — 1장 = 기억의 방(노드 성장) · 의상실(2026-11-24 사용자: 2장 → 1장) · 2장 = 탄약 공방 · 3장 = 총포상
+        public static readonly int[] FacilityUnlockChapter = { 1, 3, 2, 1 };    // 그 챕터 보스를 넘으면 열림
         public static bool FacilityUnlocked(Facility f) => ChaptersCleared >= FacilityUnlockChapter[(int)f];
 
         // ---------- 마을 이야기 (본 대화 기록) ----------
@@ -169,7 +169,7 @@ namespace CatTang
         public static int Count(string key) => PlayerPrefs.GetInt(P + "count." + key, 0);
         /// <summary>판 도중 자주 불려서 저장(Save)은 판 끝 · 조각 변화 때 같이 됨</summary>
         public static void AddCount(string key, int n = 1) => PlayerPrefs.SetInt(P + "count." + key, Count(key) + n);
-        public const string CountExecute = "execute", CountJustDodge = "justdodge", CountTraitTier6 = "tier6";
+        public const string CountExecute = "execute", CountJustDodge = "justdodge", CountTraitTier6 = "tier6", CountLowJudgeKill = "lowjudgekill", CountTier6Boss = "tier6boss";
 
         // ---------- 의상실: 조건을 채우면 구매 ----------
         public static bool CostumeUnlocked(int id) => id == 4001 || PlayerPrefs.GetInt(P + "costume." + id, 0) == 1;
@@ -181,6 +181,8 @@ namespace CatTang
             "ExecuteCount" => (Mathf.Min(Count(CountExecute), c.UnlockValue), c.UnlockValue),
             "JustDodgeCount" => (Mathf.Min(Count(CountJustDodge), c.UnlockValue), c.UnlockValue),
             "TraitTier6" => (Mathf.Min(Count(CountTraitTier6), 1), 1),
+            "LowJudgeKill" => (Mathf.Min(Count(CountLowJudgeKill), c.UnlockValue), c.UnlockValue),
+            "Tier6BossKill" => (Mathf.Min(Count(CountTier6Boss), c.UnlockValue), c.UnlockValue),
             _ => (1, 1)
         };
         public static bool CostumeCondMet(CostumeDef c) { var (n, g) = CostumeProgress(c); return n >= g; }
@@ -192,6 +194,8 @@ namespace CatTang
             "ExecuteCount" => $"누적 처형 {c.UnlockValue}회",
             "JustDodgeCount" => $"누적 극한 회피 {c.UnlockValue}회",
             "TraitTier6" => "특성 6단계 1번 달성",
+            "LowJudgeKill" => $"판정 시각 0 이하 탄으로 처치 {c.UnlockValue}회",
+            "Tier6BossKill" => $"특성 6단계 2개 이상으로 보스 처치 {c.UnlockValue}회",
             _ => "처음부터"
         };
 

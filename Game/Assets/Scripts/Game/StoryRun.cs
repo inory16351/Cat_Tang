@@ -19,9 +19,12 @@ namespace CatTang
         public static bool DreamPending(int chapter) => chapter >= 1 && chapter <= Dreams.Length && !Meta.StorySeen("dream" + chapter);
         /// <summary>마을에서 깨어난 뒤 띄울 한 줄 (꿈을 보고 돌아오면 결과 창이 없으니 얻은 조각을 여기로)</summary>
         public static string PendingToast;
-        /// <summary>꿈을 보고 마을에서 깨어남 → 고양이 혼잣말 "젠장… 또 이상한 꿈을 꿨군…" 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory)</summary>
-        public static bool PendingWake;
-        public const string WakeLine = "고양이#두통::젠장… 또 이상한 꿈을 꿨군…";
+        /// <summary>꿈을 보고 마을에서 깨어남 → 그 장의 혼잣말(WakeLines) 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory). 빈 문자열 = 깨어남 없음</summary>
+        public static string PendingWake;
+        // 장마다 다른 기절 · 깨어남 대사 (2026-11-24 사용자: 1장은 지금 대사, 2~5장은 사용자가 만들 때 적어 줌 → 그때까지 비워 둠 = 대사 없이 연출만)
+        public static readonly string[] FaintLines = { "……또, 이 소리……", "", "", "", "" };
+        public static readonly string[] WakeLines = { "고양이#두통::젠장… 또 이상한 꿈을 꿨군…", "", "", "", "" };
+        static string Of(string[] a, int chapter) => chapter >= 1 && chapter <= a.Length ? a[chapter - 1] : "";
 
         public static void OnRunStart(RunManager rm)
         {
@@ -57,7 +60,7 @@ namespace CatTang
             Time.timeScale = 0.3f;
             Music.Duck(0.2f, 0.8f);
             yield return new WaitForSecondsRealtime(0.8f);
-            ov.SetCaption("……또, 이 소리……");
+            ov.SetCaption(Of(FaintLines, chapter));
             yield return ov.Headache(0.85f, 1.6f);
             if (Sfx.Has("story_flatline")) Sfx.Play("story_flatline", 0.8f, 0f);
             CameraFollow.FocusOn(p ? p.transform.position : (Vector3?)null, 0.6f);
@@ -69,7 +72,7 @@ namespace CatTang
             yield return ov.PlayDream(chapter, d.title, d.fragments, authored: DreamCuts.For(chapter));
             Meta.MarkStory("dream" + chapter);
             PendingToast = $"시간의 조각 +{gain}";
-            PendingWake = true;
+            PendingWake = Of(WakeLines, chapter);
             CameraFollow.FocusOn(null, 0f);
             ov.RevealAfterLoad(0.8f, 1.2f);
             RunManager.ReturnToVillage();
