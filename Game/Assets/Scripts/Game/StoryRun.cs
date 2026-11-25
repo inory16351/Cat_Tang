@@ -16,16 +16,22 @@ namespace CatTang
         public const string SynergyText = "같은 특성의 탄을 함께 장전하면 시너지가 생겨요.\n2 · 4 · 6발을 모을 때마다 효과가 한 단계씩 강해져요.\n지금 켜진 시너지는 이곳에서 확인할 수 있어요.";
         public static bool Run1 => Meta.FirstRunPending && !Meta.StorySeen(KeyTut1);          // 새 슬롯의 첫 판만 (이미 판을 돈 예전 저장은 건너뜀)
         public static bool Run2 => Meta.StorySeen(KeyTut1) && !Meta.StorySeen(KeyTut2);
-        // 꿈 배치 (2026-11-24 사용자): 꿈1 '멈춘 손' = 오프닝(현실 몽타주 대신) · 1장 클리어 = 꿈2 '불 꺼진 시계탑' · 2장 클리어 = 꿈3 (꿈3 이후 · 3장부터는 임시 — 스토리 맵으로 바뀔 예정)
+        // 꿈 배치 (2026-11-24 사용자): 꿈1 '멈춘 손' = 오프닝(현실 몽타주 대신) · 1장 클리어 = 꿈2 '불 꺼진 시계탑' · 2장 클리어 = 꿈 없이 블랙아웃 (2026-11-25) · 3장부터는 임시 — 스토리 맵으로 바뀔 예정
         public static int DreamOf(int chapter) => chapter + 1;
-        public static bool DreamPending(int chapter) { int n = DreamOf(chapter); return chapter >= 1 && n <= Dreams.Length && !Meta.StorySeen("dream" + n); }
+        public static bool DreamPending(int chapter) { int n = DreamOf(chapter); return chapter >= 1 && chapter != 2 && n <= Dreams.Length && !Meta.StorySeen("dream" + n); }
+        // 2026-11-25 사용자: 2장 클리어 = 꿈 없음, 기절 → 블랙아웃 → 깨어남만 (2장 이야기는 스토리 맵 '배웅하던 승강장'이 맡음)
+        public const string KeyBlackout2 = "blackout2";
+        static bool Blackout(int chapter) => chapter == 2;
+        /// <summary>장을 처음 넘어서 기절 연출(꿈 또는 블랙아웃)이 남았는지</summary>
+        public static bool FaintPending(int chapter) => Blackout(chapter) ? !Meta.StorySeen(KeyBlackout2) : DreamPending(chapter);
         /// <summary>마을에서 깨어난 뒤 띄울 한 줄 (꿈을 보고 돌아오면 결과 창이 없으니 얻은 조각을 여기로)</summary>
         public static string PendingToast;
         /// <summary>꿈을 보고 마을에서 깨어남 → 그 장의 혼잣말(WakeLines) 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory). 빈 문자열 = 깨어남 없음</summary>
         public static string PendingWake;
         // 장마다 다른 기절 · 깨어남 대사 (2026-11-24 사용자: 1장은 지금 대사, 2~5장은 사용자가 만들 때 적어 줌 → 그때까지 비워 둠 = 대사 없이 연출만)
         public static readonly string[] FaintLines = { "......또, 이 소리......", "", "", "", "" };
-        public static readonly string[] WakeLines = { "고양이#두통::젠장... 또 이상한 꿈을 꿨군...", "고양이#두통::......또...꿈인가......", "", "", "" };   // 2장 (2026-11-24 사용자): 기절 대사 없음
+        // 2장 (2026-11-25 사용자): 기절 대사 없음 · 깨어남 첫 줄 — 이어지는 대화는 VillageStory "ch2"
+        public static readonly string[] WakeLines = { "고양이#두통::젠장... 또 이상한 꿈을 꿨군...", "고양이#두통::윽...머리가...! 어떤 일이 일어난거지...", "", "", "" };
         static string Of(string[] a, int chapter) => chapter >= 1 && chapter <= a.Length ? a[chapter - 1] : "";
 
         public static void OnRunStart(RunManager rm)
@@ -66,6 +72,23 @@ namespace CatTang
             yield return ov.Headache(0.85f, 1.6f);
             if (Sfx.Has("story_flatline")) Sfx.Play("story_flatline", 0.8f, 0f);
             CameraFollow.FocusOn(p ? p.transform.position : (Vector3?)null, 0.6f);
+            if (Blackout(chapter))
+            {
+                // 블랙아웃: 하얗게 바래는 대신 검게 꺼짐 → 심장 소리만 잠깐 → 마을
+                yield return ov.FadeBlack(0, 1, 1.1f);
+                ov.SetCaption("");
+                Time.timeScale = 1f;
+                Music.Duck(0f, 0.5f);
+                if (Sfx.Has("story_heartbeat")) Sfx.Play("story_heartbeat", 0.7f, 0f);
+                yield return new WaitForSecondsRealtime(2.2f);
+                Meta.MarkStory(KeyBlackout2);
+                PendingToast = $"시간의 조각 +{gain}";
+                PendingWake = Of(WakeLines, chapter);
+                CameraFollow.FocusOn(null, 0f);
+                ov.RevealAfterLoad(0.8f, 1.2f);
+                RunManager.ReturnToVillage();
+                yield break;
+            }
             yield return ov.FadeWhite(0, 1, 1.4f);
             ov.SetCaption("");
             Time.timeScale = 1f;

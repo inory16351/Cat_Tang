@@ -99,7 +99,7 @@ namespace CatTang
         /// <summary>상태에 맞게 바늘 · 물건 · 반딧불을 맞춤</summary>
         public void Refresh()
         {
-            SetBroken(Active);
+            SetBroken(Active || Ch2Quest.ClockStopped);   // 2장 클리어 뒤 다시 멈춤 (Ch2Quest)
             foreach (var m in GetComponentsInChildren<MementoPickup>(true)) m.gameObject.SetActive(Active && Started && !Got(m.id));
             foreach (var f in GetComponentsInChildren<FireflyTrail>(true)) f.gameObject.SetActive(Active && Started && !Got(f.id));
         }
@@ -111,7 +111,7 @@ namespace CatTang
             if (orbitFloat) { orbitFloat.spin = on ? 0f : baseSpin; orbitFloat.tilt = on ? 5f : 1.2f; }
             if (trail) trail.emitting = !on;
             if (sand) { if (on) sand.Stop(true, ParticleSystemStopBehavior.StopEmitting); else if (!sand.isPlaying) sand.Play(); }
-            int want = on ? Items.Length - FixedCount : 0;
+            int want = on ? (Active ? Items.Length - FixedCount : 0) + Ch2Quest.ShardsLeft : 0;
             while (shards.Count > want) { var s = shards[shards.Count - 1]; shards.RemoveAt(shards.Count - 1); if (s) Destroy(s); }
             var prefab = Resources.Load<GameObject>("Kit/Village/ClockShards");
             while (on && shards.Count < want && prefab)
@@ -131,7 +131,7 @@ namespace CatTang
             if (!droop) return;
             // 고장: 바늘 끝이 아래로 처져 덜덜 떨림 (멈춘 채 가려다 못 감) · 고치면 수평으로 돌아옴
             float t = Time.time;
-            float target = broken ? -24f + 4f * (Items.Length - FixedCount - 3) * -1f : 0f;
+            float target = broken ? -24f + 4f * (shards.Count - 3) * -1f : 0f;
             droopNow = Mathf.Lerp(droopNow, target, Time.deltaTime * 3f);
             float shake = broken ? Mathf.Sin(t * 37f) * 1.1f + Mathf.Sin(t * 61f) * 0.6f : 0f;
             droop.localRotation = Quaternion.Euler(shake * 0.5f, 0, droopNow + shake);
@@ -221,7 +221,8 @@ namespace CatTang
             Busy = false;
         }
 
-        IEnumerator RepairStep()
+        /// <summary>떠 있던 조각 하나가 바늘로 돌아가 붙고 바늘이 한 칸 나아갔다 멈춤 (Ch2Quest도 씀)</summary>
+        public IEnumerator RepairStep()
         {
             if (!orbit) yield break;
             CameraFollow.FocusOn(orbit.position + Vector3.down * 2f, 0.9f);
@@ -259,7 +260,7 @@ namespace CatTang
             if (orbit) CameraFollow.FocusOn(orbit.position + Vector3.down * 2f, 0.85f);
             Sfx.Play("e4_tick_2", 1f, 0f);
             if (Sfx.Has("e4_bell")) Sfx.Play("e4_bell", 0.9f, 0f);
-            SetBroken(false);
+            SetBroken(Ch2Quest.ClockStopped);
             yield return new WaitForSecondsRealtime(1.5f);
             bool d = false;
             ui.Talk(Tailor, new[]
@@ -270,6 +271,19 @@ namespace CatTang
                 Tailor + "::글쎄. 그건 네가 제일 잘 알지 않을까.",
             }, () => d = true);
             while (!d) yield return null;
+            CameraFollow.FocusOn(null, 0f);
+        }
+
+        /// <summary>남은 조각 없이 바늘이 다시 돎 (종 · 모래 · 꼬리 다시 켜짐) — Ch2Quest 마지막</summary>
+        public IEnumerator SpinAgain()
+        {
+            if (orbit) CameraFollow.FocusOn(orbit.position + Vector3.down * 2f, 0.85f);
+            yield return new WaitForSecondsRealtime(0.6f);
+            Sfx.Play("e4_tick_2", 1f, 0f);
+            if (Sfx.Has("e4_bell")) Sfx.Play("e4_bell", 0.9f, 0f);
+            if (orbit) FxBurst.Spawn(hand ? hand.position : orbit.position, 3f, FxBurst.Kind.Gold, new Color(1f, 0.85f, 0.4f));
+            SetBroken(Active || Ch2Quest.ClockStopped);
+            yield return new WaitForSecondsRealtime(1.6f);
             CameraFollow.FocusOn(null, 0f);
         }
 

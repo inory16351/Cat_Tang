@@ -906,7 +906,7 @@ namespace CatTang
             var t = UIKit.Label("Body", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(820, 300), 30, TextAnchor.MiddleCenter);
             string unlock = "";
             for (int f = 0; f < 4; f++)
-                if (Meta.FacilityUnlockChapter[f] > before && Meta.FacilityUnlockChapter[f] <= Meta.ChaptersCleared) unlock += $"\n<color=#FFD54A>{Meta.FacilityName[f]} 해금</color>";
+                if (Meta.FacilityUnlockChapter[f] > before && Meta.FacilityUnlockChapter[f] <= Meta.ChaptersCleared && Meta.FacilityQuestKey[f] == null) unlock += $"\n<color=#FFD54A>{Meta.FacilityName[f]} 해금</color>";
             if (unlock != "") unlock = "\n" + unlock;
             string next = !all ? $"\n다음 판은 {Mathf.Min(Meta.ChapterCount, Meta.ChaptersCleared + 1)}장까지 갈 수 있다." : "";
             string pick = win && rm && !string.IsNullOrEmpty(rm.bossPick) ? $"\n최종 보상: <color=#FFD54A>{rm.bossPick}</color>" : "";

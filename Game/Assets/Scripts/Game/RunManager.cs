@@ -308,6 +308,7 @@ namespace CatTang
             alive.RemoveAll(x => x == null);
             if (e && e.kind != Enemy.Kind.Boss) player.inv.gold += Random.Range(2, 5);
             if (e && (e.kind != Enemy.Kind.Boss || IsMidBossRoom)) HeartPickup.TryDrop(e, e.kind == Enemy.Kind.Boss);   // 하트: 일반 2% · 강화형 3% · 중간 보스 확정
+            if (e && e.kind == Enemy.Kind.Boss && IsMidBossRoom) Ch2Quest.TryDropSand(e.transform.position);          // 2장 클리어 뒤 첫 중간 보스: 흐르는 모래 확정 (Ch2Quest)
             if (e) DropXp(e);                                                                           // 경험치 보석 (RunManagerXp)
             if (!inCombat || alive.Count > 0 || spawning) return;
             if (wavesLeft > 0) { StartCoroutine(SpawnWave()); return; }
@@ -632,7 +633,7 @@ namespace CatTang
             Meta.MarkChapterCleared(chapter);
             shardsThisRun += 15 * chapter;
             // 장을 처음 넘으면: 결과 창 대신 기절 → 꿈 → 마을 (2026-11-23 스토리 기획서)
-            if (chapter >= frontier && StoryRun.DreamPending(chapter)) { int gain = EndRunQuiet(); StartCoroutine(StoryRun.FaintAndDream(this, chapter, gain)); return; }
+            if (chapter >= frontier && StoryRun.FaintPending(chapter)) { int gain = EndRunQuiet(); StartCoroutine(StoryRun.FaintAndDream(this, chapter, gain)); return; }
             if (chapter >= frontier) { EndRun(true); return; }
             // 다음 장으로 이어감: 체력 30% 회복 · 골드 · 빌드 그대로
             ui?.CloseAll();

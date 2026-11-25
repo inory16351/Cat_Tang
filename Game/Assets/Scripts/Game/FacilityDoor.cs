@@ -12,6 +12,14 @@ namespace CatTang
         public override bool Available => true;
         public override void Interact(PlayerController p)
         {
+            // 2장 퀘스트 (2026-11-25): 대장장이 대화 · 모래 건네기 → 탄약 공방 / 보안관 결투 → 총포상
+            if (Ch2Quest.Handles(facility))
+            {
+                GuideArrow.Reached(transform);
+                var qui = FindFirstObjectByType<GameUI>();
+                if (qui) qui.StartCoroutine(Ch2Quest.Door(qui, facility));
+                return;
+            }
             if (!Meta.FacilityUnlocked(facility))
             {
                 Sfx.Play("ui_deny", 0.7f, 0f);

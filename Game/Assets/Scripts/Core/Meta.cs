@@ -125,12 +125,17 @@ namespace CatTang
         public static readonly string[] FacilityName = { "기억의 방", "총포상", "탄약 공방", "의상실" };
         public static readonly string[] FacilityNpc = { "태엽 풀린 뻐꾸기", "빈 외투 보안관", "모래시계 대장장이", "실타래 재봉사" };
         // 2026-11-18 사용자: 장(맵)을 넘을 때마다 마을 섬 · NPC가 하나씩 열림 — 1장 = 기억의 방(노드 성장) · 의상실(2026-11-24 사용자: 2장 → 1장) · 2장 = 탄약 공방 · 3장 = 총포상
-        public static readonly int[] FacilityUnlockChapter = { 1, 3, 2, 1 };    // 그 챕터 보스를 넘으면 열림
-        public static bool FacilityUnlocked(Facility f) => ChaptersCleared >= FacilityUnlockChapter[(int)f];
+        // 2026-11-25 사용자: 총포상 3장 → 2장. 탄약 공방 · 총포상은 장만 넘어선 안 열리고 2장 퀘스트(Ch2Quest)로 — 흐르는 모래를 대장장이에게 → 탄약 공방, 보안관 결투 → 총포상
+        public static readonly int[] FacilityUnlockChapter = { 1, 2, 2, 1 };    // 그 챕터 보스를 넘으면 열림 (퀘스트 시설은 + FacilityQuestKey)
+        public static readonly string[] FacilityQuestKey = { null, "q2_gun", "q2_ammo", null };
+        public static bool FacilityUnlocked(Facility f) => ChaptersCleared >= FacilityUnlockChapter[(int)f] && (FacilityQuestKey[(int)f] == null || StorySeen(FacilityQuestKey[(int)f]));
+        /// <summary>장은 넘었지만 퀘스트가 남아 잠긴 시설</summary>
+        public static bool FacilityQuestLocked(Facility f) => ChaptersCleared >= FacilityUnlockChapter[(int)f] && !FacilityUnlocked(f);
 
         // ---------- 마을 이야기 (본 대화 기록) ----------
         public static bool StorySeen(string key) => PlayerPrefs.GetInt(P + "story." + key, 0) == 1;
         public static void MarkStory(string key) { PlayerPrefs.SetInt(P + "story." + key, 1); Touch(); }
+        public static string StoryPrefKey(string key) => P + "story." + key;   // 개발용 기록 지우기
         /// <summary>이 슬롯에서 판을 한 번도 안 했음 → 새로 시작하면 마을을 거치지 않고 바로 1장 전투부터</summary>
         public static bool FirstRunPending => SlotRuns(ActiveSlot) == 0 && ChaptersCleared == 0;
 

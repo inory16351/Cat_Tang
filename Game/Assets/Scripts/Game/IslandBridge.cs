@@ -9,11 +9,12 @@ namespace CatTang
     public class IslandBridge : MonoBehaviour
     {
         public int reqChapter;                       // 이 장 보스를 넘으면 열림
+        public string reqStory;                      // + 이 이야기 기록이 있어야 열림 (빈 값 = 장만). 보안관 섬 = 대장장이가 보낸 뒤 (Ch2Quest)
         public GameObject whole, broken;             // 성한 다리 · 끊긴 다리 모델
         public Collider[] blockers;                  // 잠겼을 때 다리 입구를 막는 벽
         public GameObject[] revealOnOpen;            // 열리면 나타나는 것 (건너편 섬의 NPC)
 
-        public bool Open => Meta.ChaptersCleared >= reqChapter;
+        public bool Open => Meta.ChaptersCleared >= reqChapter && (string.IsNullOrEmpty(reqStory) || Meta.StorySeen(reqStory));
         string Key => "bridge." + name;
         /// <summary>열렸지만 아직 이어지는 연출을 안 봄 → VillageStory가 Reconnect를 부름</summary>
         public bool Pending => reqChapter > 0 && Open && !Meta.StorySeen(Key);      // 처음부터 열린 다리(문 섬)는 연출 없음

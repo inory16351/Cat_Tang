@@ -1,5 +1,5 @@
 // 마을 이야기 (2026-11-18 사용자 흐름): 첫 판(바로 1장 전투, StoryRun1) → 마을에서 깨어나 뻐꾸기와 대화 (대사 2026-11-23 스토리 기획서)
-//   → 1장 클리어: 기억의 방(노드 성장) → 2장 클리어: 탄약 공방 · 의상실 섬 다리가 이어지고 대장장이 · 재봉사 등장 → 3장 클리어: 총포상 섬 · 보안관
+//   → 1장 클리어: 기억의 방 · 의상실(재봉사) → 2장 클리어: 대장장이 섬 다리 → 퀘스트(Ch2Quest)로 탄약 공방 → 보안관 섬 · 결투 → 총포상
 // 깨어남 연출(VillageWake)이 끝난 뒤, 아직 안 본 장면을 순서대로. 본 장면은 슬롯에 기록(Meta.StorySeen)
 using System.Collections;
 using UnityEngine;
@@ -45,25 +45,19 @@ namespace CatTang
                 "태엽 풀린 뻐꾸기#쓸쓸::네가 쓰러진 뒤로 저렇게 멈춰 버렸어...",
                 "태엽 풀린 뻐꾸기#다정::다른 사람들을 만나서 방법을 알아봐.",
                 "태엽 풀린 뻐꾸기#다정::그리고 널 위해 방을 하나 마련해 두었으니 올라가 봐."),
-            // 2장 → [임시] 꿈3 자리 · 아래 대사는 예전 꿈2 기준 (2026-11-24 사용자: 꿈2 이후는 나중에 정함) — 예전 꿈2 '불 꺼진 시계탑' (노을 진 시계탑을 올려다보는 아이 · 천장 불빛이 지나가는 병원 복도 · 불 꺼진 문자판)
-            new("ch2_smith", 2, Smith, true,
-                "...모래가 다 새기 전에 왔군.",
-                "불 꺼진 시계탑 꿈을 꿨나.",
-                "얼굴에 모래처럼 묻어 있어.",
-                "고양이#의문::그 탑을 알아?",
-                "알지. 종이 멈춘 뒤로는 아무도 올려다보지 않더군.",
-                "올려다보던 아이 하나만 빼고.",
-                "새는 모래로 탄을 부어 주지.",
-                "쓸 만한 탄이 생기면 공방에 걸어 두겠다."),
-            // 3장 → 꿈3 '빗속의 플랫폼' (떠나는 기차 창에 비친 손 · 빗물 흐르는 병실 창 · '곧 올게')
-            new("ch3", 3, Sheriff, true,
-                "내 얼굴은 필름과 함께 바랬어.",
-                "하지만 총은 아직 기억하지.",
-                "빗속의 플랫폼이라.",
-                "'곧 올게'...... 그 말을 지킨 사람은 별로 못 봤네.",
-                "고양이#결의::지킬 거다. 누가 기다리고 있든.",
-                "총포상을 다시 연다.",
-                "시작할 때 쥘 총을 골라 두게."),
+            // 2장 클리어 (2026-11-25 사용자 대사): 꿈 없이 블랙아웃 → 깨어남(StoryRun.WakeLines 첫 줄) → 다시 멈춘 바늘 → 뻐꾸기
+            //   → 끝나면 대장장이 섬 다리가 이어지고 대장장이에게 화살표 (퀘스트 = Ch2Quest)
+            new("ch2", 2, Cuckoo, false,
+                "고양이#두통::난 분명... 그 기차역에 있었는데...",
+                "태엽 풀린 뻐꾸기#다정::일어났구나...멀리까지 간 모양이던데...",
+                "태엽 풀린 뻐꾸기#다정::그나저나 또 새로운 손님들이 찾아왔어.",
+                "태엽 풀린 뻐꾸기#다정::시계를 고칠 수 있을지도 몰라.",
+                "고양이#의문::(또 고장이 난건가? 무슨일인지 영문을 모르겠군)",
+                "태엽 풀린 뻐꾸기#쓸쓸::그렇게 의심스런 눈초리로 쳐다보진마",
+                "태엽 풀린 뻐꾸기#엄숙::결국 이 시계가 멈추는 이유는...",
+                "태엽 풀린 뻐꾸기#쓸쓸::아니야.. 차차 알게 되겠지",
+                "고양이::...."),
+            // 3장부터는 마을 퀘스트 없음 (2026-11-25 사용자: 보스 맵 전 스토리 맵만). 총포상 · 보안관은 2장 퀘스트 결투에서 열림
         };
 
         static string SpotOf(string speaker) => speaker switch
@@ -158,8 +152,8 @@ namespace CatTang
         /// <summary>대화 한 묶음 + 그 뒤 연출(길 안내 · 해금 안내). 기록(MarkStory)은 부른 쪽에서</summary>
         static IEnumerator RunBeat(Beat b, string wake, GameUI ui, System.Action<System.Action> setArrow)
         {
-            // 1장 꿈 뒤: 먼저 멈춘 광장 시곗바늘을 비춤 (ClockQuest가 고장 상태로 바꿔 둠)
-            if (b.key == "ch1") { var orb = GameObject.Find("ClockHand_Orbit"); if (orb) yield return Look(orb.transform.position + Vector3.down * 2.5f, 1.2f); }
+            // 1장 꿈 뒤 · 2장 블랙아웃 뒤: 먼저 멈춘 광장 시곗바늘을 비춤 (ClockQuest가 고장 상태로 바꿔 둠)
+            if (b.key == "ch1" || b.key == "ch2") { var orb = GameObject.Find("ClockHand_Orbit"); if (orb) yield return Look(orb.transform.position + Vector3.down * 2.5f, 1.2f); }
             var spot = GameObject.Find(SpotOf(b.speaker));                       // 말하는 NPC를 비춤
             if (spot) CameraFollow.FocusOn(spot.transform.position + Vector3.back * 1.5f, 0.8f);
             var lines = b.lines;
@@ -198,6 +192,15 @@ namespace CatTang
                 });
                 CameraFollow.FocusOn(null, 0f);
                 yield return new WaitForSecondsRealtime(0.3f);
+            }
+            // 2장 블랙아웃 뒤: "새로운 손님" = 대장장이 섬 다리가 이어짐 → 대장장이에게 화살표
+            if (b.key == "ch2")
+            {
+                foreach (var br in FindObjectsByType<IslandBridge>(FindObjectsSortMode.None))
+                    if (br.reqChapter == 2 && br.Pending) yield return br.Reconnect();
+                CameraFollow.FocusOn(null, 0f);
+                var smith = DoorOf(Meta.Facility.AmmoWorkshop);
+                if (smith) { yield return Look(smith.transform.position, 0.9f); setArrow(() => GuideArrow.Show(smith.transform, "대장장이", keep: true)); }
             }
         }
 

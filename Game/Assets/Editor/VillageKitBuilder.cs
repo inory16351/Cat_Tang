@@ -1087,12 +1087,12 @@ namespace CatTang.EditorTools
             V("Lamp", sI, new Vector3(6.5f, 0, -1.6f), 0);
             V("Fence", sI, new Vector3(-7.5f, 0, 4.5f), 60);
 
-            // 다리: 문 섬은 처음부터, 동 · 북동은 2장, 서는 3장 (건너편 NPC는 열릴 때 나타남)
+            // 다리: 문 섬은 처음부터, 북동(의상실)은 1장, 동(대장장이)은 2장, 서(보안관)는 2장 + 대장장이가 보낸 뒤 (건너편 NPC는 열릴 때 나타남)
             var bridges = Group("Bridges", town);
             Bridge(bridges, "Bridge_Gate", Center, GateIsle, 0);
             Bridge(bridges, "Bridge_Ammo", Center, AmmoIsle, Meta.FacilityUnlockChapter[(int)Meta.Facility.AmmoWorkshop], ammo.Find("NpcSpot_AmmoWorkshop").gameObject);
             Bridge(bridges, "Bridge_Wardrobe", Center, WardIsle, Meta.FacilityUnlockChapter[(int)Meta.Facility.Wardrobe], ward.Find("NpcSpot_Wardrobe").gameObject);
-            Bridge(bridges, "Bridge_Gun", Center, GunIsle, Meta.FacilityUnlockChapter[(int)Meta.Facility.GunShop], gun.Find("NpcSpot_GunShop").gameObject);
+            Bridge(bridges, "Bridge_Gun", Center, GunIsle, Meta.FacilityUnlockChapter[(int)Meta.Facility.GunShop], gun.Find("NpcSpot_GunShop").gameObject).reqStory = Ch2Quest.KeyAmmo;
 
             // 섬 둘레 허공에 뜬 조각 섬 · 부스러기 (깊이를 달리해 아래로 이어지는 허공 느낌)
             var floats = Group("FloatingIsles", town);
