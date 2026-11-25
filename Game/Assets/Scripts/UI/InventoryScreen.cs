@@ -44,6 +44,49 @@ namespace CatTang
             statsTab = false;
             if (best) ShowTip(best); else ShowTip(null);
         }
+
+        // ---- 연산 첫 등장 안내 (OpHints) ----
+        /// <summary>얻은 연산 하나를 설명 칸에 띄우고 그 칸을 돌려줌: 보관함의 연산 우선, 없으면 연산이 끼워진 실린더 칸</summary>
+        public RectTransform ShowFirstOp()
+        {
+            SlotWidget pick = null;
+            foreach (var w in widgets)
+                if (w && w.place == SlotPlace.Storage && ItemAt(w) is Item it && it.kind == ItemKind.Op) { pick = w; break; }
+            if (!pick)
+                foreach (var w in widgets)
+                    if (w && w.place == SlotPlace.Cylinder && p.rev.slots[w.index].ops.Count > 0) { pick = w; break; }
+            statsTab = false;
+            ShowTip(pick);
+            return pick ? (RectTransform)pick.transform : null;
+        }
+
+        /// <summary>안내용으로 '탄 강화' 창을 엶: 연산 칸이 있는 실린더 탄(연산이 이미 끼워졌으면 우선) → 보관함의 연산 칸 탄 → 1시 칸. 연 탄을 돌려줌</summary>
+        public BulletDef OpenEnhanceForTutorial()
+        {
+            SlotPlace place = SlotPlace.Cylinder; int idx = 1, best = -1;
+            for (int s = 1; s <= 12; s++)
+            {
+                var b = p.rev.slots[s].bullet;
+                if (b == null) continue;
+                int score = b.OpSlots > 0 ? 4 + (p.rev.slots[s].ops.Count > 0 ? 2 : 0) : 1;
+                if (score > best) { best = score; place = SlotPlace.Cylinder; idx = s; }
+            }
+            for (int i = 0; i < Inventory.StorageSize; i++)
+            {
+                var it = p.inv.storage[i];
+                if (it == null || it.kind != ItemKind.Bullet || it.bullet.OpSlots <= 0 || best >= 2) continue;
+                best = 2; place = SlotPlace.Storage; idx = i;
+            }
+            OpenEnhance(place, idx);
+            return EnhBullet;
+        }
+
+        /// <summary>'탄 강화' 창의 위 · 아래 연산 칸</summary>
+        public RectTransform[] EnhOpRects => enhOpFrames.Where(r => r).ToArray();
+        /// <summary>'탄 강화' 창의 판정 줄 (n시 칸 · 연산 = 판정 m시)</summary>
+        public RectTransform EnhJudgeRect => enhJudge ? enhJudge.rectTransform : null;
+        /// <summary>'탄 강화' 창의 활성화 미리보기 (제목 + 1~12 줄)</summary>
+        public RectTransform[] EnhHoursRects => new[] { enhHoursTitle, enhHours as RectTransform }.Where(r => r).ToArray();
         // 탄 강화 창
         GameObject enhance;
         SlotPlace enhPlace;
@@ -336,8 +379,10 @@ namespace CatTang
 
         // ---------- 탄 강화 창 ----------
         readonly List<SlotWidget> enhWidgets = new();
+        readonly List<RectTransform> enhOpFrames = new();
         Text enhJudge;
         Transform enhHours;
+        RectTransform enhHoursTitle;
 
         void OpenEnhance(SlotPlace place, int index)
         {
@@ -365,12 +410,15 @@ namespace CatTang
                 var fr = UIKit.Img("OpSlot" + k, P, "slot_round", new Vector2(0.5f, 0.5f), new Vector2(-140, 170 - k * 150), new Vector2(124, 124));
                 fr.raycastTarget = usable;
                 fr.color = usable ? Color.white : new Color(1, 1, 1, 0.25f);
+                enhOpFrames.Add(fr.rectTransform);
                 UIKit.Label("L", P, new Vector2(0.5f, 0.5f), new Vector2(-140, 245 - k * 150), new Vector2(200, 26), 18, TextAnchor.MiddleCenter, true, UIKit.Gold).text = k == 0 ? "위 (먼저 계산)" : "아래";
                 if (usable) enhWidgets.Add(AddWidget(fr.gameObject, SlotPlace.EnhanceOp, k, 80));
             }
             // 판정 미리보기
             enhJudge = UIKit.Label("Judge", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -170), new Vector2(560, 60), 24, TextAnchor.MiddleCenter, true, UIKit.Cream);
-            UIKit.Label("HoursTitle", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -225), new Vector2(560, 28), 18, TextAnchor.MiddleCenter, false, UIKit.Muted).text = "이 탄이 활성화되는 칸 (지금 연산 기준)";
+            var ht = UIKit.Label("HoursTitle", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -225), new Vector2(560, 28), 18, TextAnchor.MiddleCenter, false, UIKit.Muted);
+            ht.text = "이 탄이 활성화되는 칸 (지금 연산 기준)";
+            enhHoursTitle = ht.rectTransform;
             enhHours = UIKit.MakeRect("Hours", P, new Vector2(0.5f, 0.5f), new Vector2(-270, -270), new Vector2(560, 50));
             // 오른쪽: 보관 중인 연산
             UIKit.Label("OpsTitle", P, new Vector2(0.5f, 0.5f), new Vector2(330, 250), new Vector2(460, 36), 26, TextAnchor.MiddleCenter, true, UIKit.Gold).text = "보관함의 연산";
@@ -389,6 +437,7 @@ namespace CatTang
         {
             foreach (var w in enhWidgets) widgets.Remove(w);
             enhWidgets.Clear();
+            enhOpFrames.Clear();
             if (enhance) Destroy(enhance);
             enhance = null;
             Refresh();

@@ -1327,8 +1327,10 @@ namespace CatTang.EditorTools
             if (name.StartsWith("Kit_V_") && SrcDir == VillageSrc) VillageGlowMats(inst);
             if (name.StartsWith("Kit_S_") && SrcDir == StorySrc) { VillageGlowMats(inst); StoryShadowMats(inst); }
             if (name.StartsWith("Kit_P_") && SrcDir == StoryPlatformSrc) { VillageGlowMats(inst); StoryShadowMats(inst); }   // 스토리 맵 2 승강장
+            if (name.StartsWith("Kit_L_") && SrcDir == StoryLakeSrc) { VillageGlowMats(inst); StoryShadowMats(inst); }       // 스토리 맵 3 호숫가
+            if (name.StartsWith("Kit_Q_Old") && SrcDir == Ch3QuestSrc) StoryShadowMats(inst);                                 // 3장 퀘스트: 거울 속 노인 실루엣
             // 스토리 맵 그림자 인물: 유령처럼 떠다님 (2026-11-25 사용자, 1장 광장 · 2장 승강장)
-            if ((name.StartsWith("Kit_S_Shadow") || name.StartsWith("Kit_P_Shadow")) && !root.GetComponent<CatTang.ShadowFloat>()) root.AddComponent<CatTang.ShadowFloat>();
+            if ((name.StartsWith("Kit_S_Shadow") || name.StartsWith("Kit_P_Shadow") || (name.StartsWith("Kit_L_Shadow") && !name.EndsWith("Sit"))) && !root.GetComponent<CatTang.ShadowFloat>()) root.AddComponent<CatTang.ShadowFloat>();
             if (name.StartsWith("Kit_") && SrcDir == Ch5Src) Ch5GlowMats(inst);   // 5장: 금 균열 · 별빛 · 거울 · 자홍은 빛나는 단색
 
             // 폭발물: 주황 ↔ 노랑 맥동 바깥 테두리 (2026-11-17 사용자: 몬스터처럼 테두리로 터진다는 걸 알려 줌)

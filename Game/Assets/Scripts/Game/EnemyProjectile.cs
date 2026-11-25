@@ -1,4 +1,7 @@
 // Enemy projectiles use emissive Blender meshes, with separate glow and flight trails.
+// 가시성 (2026-11-25 사용자: 배경과 색이 비슷해 안 보이는 적 탄): 셰이더 CatTang/EnemyProjectile이
+// 밝은 심 + 어두운 잉크 테두리 + 적과 같은 빨간 바깥 테두리(렌더러 기능 CatTangOuterOutline)를 그림.
+// 재질은 공유 하나, 스타일별 테두리 축(_ShellAxis) · 심 밝기는 이미 쓰던 MaterialPropertyBlock에 한 번만 넣음 → 탄당 추가 오브젝트 · 재질 없음
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -80,8 +83,11 @@ namespace CatTang
         Vector2 haloSize;
         static Material coreMat, glowMat, trailMat, numeralMat;
         static readonly Mesh[] artMeshes = new Mesh[7];
+        /// <summary>스타일별 테두리 껍질 축: x = 축 선분 가운데 z, y = 선분 반길이 (메시 크기에서 구함, 바늘 탄은 길게 · 구슬은 0 = 한 점)</summary>
+        static readonly Vector4[] shellAxes = new Vector4[7];
         static readonly Dictionary<Color, Mesh> glowMeshes = new();
         static readonly int TintId = Shader.PropertyToID("_Tint"), PhaseId = Shader.PropertyToID("_Phase");
+        static readonly int ShellAxisId = Shader.PropertyToID("_ShellAxis"), CoreWhiteId = Shader.PropertyToID("_CoreWhite");
 
         static bool Ch3 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 3;
         public static bool Ch4 => RunManager.Instance && RunManager.Instance.Chapter != null && RunManager.Instance.Chapter.Id == 4;
@@ -96,13 +102,16 @@ namespace CatTang
             FxBurst.Spawn(at, size, FxBurst.Kind.Spark, c);
         }
 
-        static Color ColorOf(int chapter) => chapter switch
+        // 장별 탄 색 = 그 장 바닥의 반대 계열 (2026-11-25 사용자: 탄 색 자체가 배경에 묻히지 않게)
+        //  1장 주황 바닥 → 밝은 청록 · 2장 갈회색 바닥 → 라임 · 3장 밝은 라벤더 바닥 → 진한 주홍
+        //  4장 어두운 회색(느와르) → 밝은 빨강 · 5장 짙은 보라 → 금빛 노랑
+        internal static Color ColorOf(int chapter) => chapter switch
         {
-            1 => new Color(1f, 0.52f, 0.22f),
-            2 => new Color(1f, 0.67f, 0.28f),
-            3 => new Color(0.56f, 0.90f, 1f),
-            4 => BladeStreak.Ch4Base,
-            5 => Enemy.Ch5Magenta,
+            1 => new Color(0.55f, 1f, 1f),
+            2 => new Color(0.75f, 1f, 0.3f),
+            3 => new Color(0.85f, 0.2f, 0.05f),
+            4 => new Color(1f, 0.32f, 0.25f),
+            5 => new Color(1f, 0.85f, 0.3f),
             _ => new Color(1f, 0.28f, 0.42f),
         };
 
@@ -112,7 +121,21 @@ namespace CatTang
             if (artMeshes[index]) return artMeshes[index];
             var asset = Resources.Load<GameObject>("FX/EnemyProjectiles/" + style);
             var filter = asset ? asset.GetComponentInChildren<MeshFilter>() : null;
-            return artMeshes[index] = filter && filter.sharedMesh ? filter.sharedMesh : FxMeshes.Ball(0);
+            var mesh = artMeshes[index] = filter && filter.sharedMesh ? filter.sharedMesh : FxMeshes.Ball(0);
+            // 테두리 축: 길이(z) 반폭에서 굵기(x · y) 반폭을 뺀 만큼을 선분으로 → 긴 탄은 옆면 테두리가 고르고, 둥근 탄은 가운데 한 점에서 부풀림
+            var b = mesh.bounds;
+            shellAxes[index] = new Vector4(b.center.z, Mathf.Max(0f, b.extents.z - Mathf.Max(b.extents.x, b.extents.y)), 0f, 0f);
+            return mesh;
+        }
+
+        /// <summary>스타일별 테두리 축 · 심 밝기를 프로퍼티 블록에 넣음 (풀 탄은 만들 때 한 번, 이후 TintBody가 같은 블록을 다시 씀)</summary>
+        internal static void ShapeBody(Style style, MaterialPropertyBlock properties, int chapter = 0)
+        {
+            BodyMesh(style);
+            properties.SetVector(ShellAxisId, shellAxes[(int)style]);
+            // 숫자 탄: 흰 숫자가 판 위에 올라가니 판 가운데는 하얗게 날리지 않음
+            // 3장: 바닥이 밝아 흰 심이 탄을 연한 파스텔로 만듦 → 거의 빼고 진한 색 그대로
+            properties.SetFloat(CoreWhiteId, style == Style.Numeral ? 0.08f : chapter == 3 ? 0.04f : 0.32f);
         }
 
         internal static MeshRenderer BuildBody(Transform parent, Style style)
@@ -273,12 +296,14 @@ namespace CatTang
         {
             var style = (Style)(key[key.Length - 1] - '0');
             var root = new GameObject(key);
-            var color = ColorOf(key[key.Length - 3] - '0');
+            int chapter = key[key.Length - 3] - '0';
+            var color = ColorOf(chapter);   // 장별 탄 색 (정체성 유지, 대비는 셰이더 테두리가 맡음)
             var body = BuildBody(root.transform, style);
             var size = body.GetComponent<MeshFilter>().sharedMesh.bounds.size;
             float width = style == Style.Numeral ? size.x : Mathf.Max(size.x, size.y);
             float length = style == Style.Numeral ? size.y : size.z;
-            var halo = BuildGlow(root.transform, new Color(color.r, color.g, color.b, 0.76f));
+            // 더하기 광륜은 밝은 바닥(3장 거울빛 · 구름)에선 탄과 바닥을 같이 하얗게 날려 윤곽만 흐림 → 3장은 약하게
+            var halo = BuildGlow(root.transform, new Color(color.r, color.g, color.b, chapter == 3 ? 0.18f : 0.76f));
             TextMesh number = null;
 
             if (style == Style.Numeral)
@@ -310,6 +335,7 @@ namespace CatTang
             projectile.body = body.transform;
             projectile.bodyRenderer = body;
             projectile.bodyProperties = new MaterialPropertyBlock();
+            ShapeBody(style, projectile.bodyProperties, chapter);
             projectile.tint = color;
             projectile.halo = halo;
             projectile.haloSize = new Vector2(length * 1.55f, width * 2.25f);

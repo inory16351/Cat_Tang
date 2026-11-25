@@ -83,7 +83,9 @@ namespace CatTang
                 AimCursor.Create(this);                               // 조준 커서 '표적지'
             }
             BuildTop();
-            if (!village) TraitHud.Build(hudRoot, new Vector2(30, -262));     // 활성 특성 목록 (마우스 올리면 효과)
+            if (!village) traitHud = TraitHud.Build(hudRoot, new Vector2(30, -262));     // 활성 특성 목록 (마우스 올리면 효과)
+            if (hud) { var hr = hudRoot.Find("HUD"); if (hr) for (int i = 0; i < 3; i++) heatCells[i] = hr.Find("HeatCell" + (i + 1)) as RectTransform; }
+            ApplyGate();
             screens = UIKit.Stretch("Screens", root);
             toastText = UIKit.Label("Toast", root, new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1200, 60), 38, TextAnchor.MiddleCenter, true, UIKit.Gold);
         }
@@ -132,10 +134,79 @@ namespace CatTang
             return tex;
         }
 
+        // ---------- 튜토리얼 잠금 (TutorialGate): 안 배운 기능의 HUD는 숨기고, 배우는 순간 금빛 등장 연출 ----------
+        TraitHud traitHud;
+        Text help;
+        readonly RectTransform[] heatCells = new RectTransform[3];
+        readonly List<TutFeature> revealQueue = new();
+        string helpShown;
+        /// <summary>'총 스킬' 표시 (튜토리얼 안내가 비춤)</summary>
+        public RectTransform SkillRect => skillText ? skillText.rectTransform : null;
+
+        void OnEnable() => TutorialGate.Unlocked += QueueReveal;
+        void OnDisable() => TutorialGate.Unlocked -= QueueReveal;
+        void QueueReveal(TutFeature f) { if (!revealQueue.Contains(f)) revealQueue.Add(f); }
+
+        static void Show(GameObject g, bool on) { if (g && g.activeSelf != on) g.SetActive(on); }
+
+        void ApplyGate()
+        {
+            if (!village)
+            {
+                bool ult = TutorialGate.Open(TutFeature.Ultimate);
+                if (heatText) Show(heatText.gameObject, ult);
+                foreach (var c in heatCells) if (c) Show(c.gameObject, ult);
+                if (skillText) Show(skillText.gameObject, TutorialGate.Open(TutFeature.Skill));
+                if (nextText) Show(nextText.gameObject, TutorialGate.Open(TutFeature.Judge));
+                if (traitHud) Show(traitHud.gameObject, TutorialGate.Open(TutFeature.Synergy));
+            }
+            if (!help) return;
+            string h = HelpLine();
+            if (h != helpShown)
+            {
+                bool first = helpShown == null;
+                helpShown = help.text = h;
+                if (!first) StartCoroutine(TutorialGate.Reveal(help.rectTransform, false));
+            }
+        }
+
+        /// <summary>왼쪽 아래 조작 도움말: 배운 키만</summary>
+        string HelpLine()
+        {
+            bool tab = TutorialGate.Open(TutFeature.Inventory);
+            if (village) return "WASD 이동 · Space 대시 · E 들어가기" + (tab ? " · Tab 인벤토리" : "") + " · M 지도";
+            var mid = new List<string>();
+            if (TutorialGate.Open(TutFeature.Skill)) mid.Add("우클릭 총 스킬");
+            if (TutorialGate.Open(TutFeature.Ultimate)) mid.Add("Q 불릿 파티");
+            return "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\n" + (mid.Count > 0 ? string.Join(" · ", mid) + "\n" : "")
+                   + "E 상호작용" + (tab ? " · Tab 인벤토리" : "") + " · Esc 포기";
+        }
+
+        /// <summary>풀린 기능의 HUD 등장 연출: 인벤토리 같은 창이 닫히고 HUD가 보일 때 (대화 중이면 끝난 뒤)</summary>
+        void PlayReveals()
+        {
+            if (revealQueue.Count == 0 || ScreenOpen || !hudRoot || !hudRoot.gameObject.activeInHierarchy) return;
+            foreach (var f in revealQueue)
+            {
+                if (village) continue;
+                switch (f)
+                {
+                    case TutFeature.Ultimate:
+                        if (heatText) StartCoroutine(TutorialGate.Reveal(heatText.rectTransform));
+                        for (int i = 0; i < 3; i++) if (heatCells[i]) StartCoroutine(TutorialGate.Reveal(heatCells[i], false, 0.08f * i));
+                        break;
+                    case TutFeature.Skill: if (skillText) StartCoroutine(TutorialGate.Reveal(skillText.rectTransform)); break;
+                    case TutFeature.Judge: if (nextText) StartCoroutine(TutorialGate.Reveal(nextText.rectTransform)); break;
+                    case TutFeature.Synergy: if (traitHud) StartCoroutine(TutorialGate.Reveal((RectTransform)traitHud.transform)); break;
+                }
+            }
+            revealQueue.Clear();
+        }
+
         void UpdateHeatGlow()
         {
             if (!heatGlow) return;
-            bool ready = player && player.rev.heat >= Revolver.HeatMax && !player.UltimateActive;
+            bool ready = player && player.rev.heat >= Revolver.HeatMax && !player.UltimateActive && TutorialGate.Open(TutFeature.Ultimate);
             heatGlowA = Mathf.MoveTowards(heatGlowA, ready ? 1 : 0, Time.unscaledDeltaTime * (ready ? 3f : 5f));
             if (heatGlowA <= 0.001f) { if (heatGlow.enabled) heatGlow.enabled = false; return; }
             heatGlow.enabled = true;
@@ -277,8 +348,8 @@ namespace CatTang
             nextText = UIKit.Label("Next", hudRoot, new Vector2(0.5f, 0), new Vector2(0, 285 + up), new Vector2(1000, 36), 22, TextAnchor.MiddleCenter);
             heatText = UIKit.Label("Heat", hudRoot, new Vector2(0.5f, 0), new Vector2(390, 40 + up), new Vector2(260, 40), 26, TextAnchor.MiddleLeft, true, UIKit.Gold);
             skillText = UIKit.Label("Skill", hudRoot, new Vector2(1, 0), new Vector2(-30, 30), new Vector2(420, 130), 20, TextAnchor.LowerRight);
-            var help = UIKit.Label("Help", hudRoot, new Vector2(0, 0), new Vector2(26, 26), new Vector2(560, 150), 18, TextAnchor.LowerLeft, false, new Color(1, 1, 1, 0.55f));
-            help.text = village ? "WASD 이동 · Space 대시 · E 들어가기 · Tab 인벤토리 · M 지도" : "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시\n우클릭 총 스킬 · Q 불릿 파티\nE 상호작용 · Tab 인벤토리 · Esc 포기";
+            help = UIKit.Label("Help", hudRoot, new Vector2(0, 0), new Vector2(26, 26), new Vector2(560, 150), 18, TextAnchor.LowerLeft, false, new Color(1, 1, 1, 0.55f));
+            help.text = HelpLine();                                      // 배운 키만 (TutorialGate, ApplyGate가 바뀔 때마다 고침)
             // 상호작용 안내
             prompt = UIKit.Img("Prompt", hudRoot, "button", new Vector2(0.5f, 0), new Vector2(0, 340 + up), new Vector2(460, 84), true, 2.2f).gameObject;
             promptText = UIKit.Label("Text", prompt.transform, new Vector2(0.5f, 0.5f), new Vector2(0, 2), new Vector2(420, 60), 28, TextAnchor.MiddleCenter, true);
@@ -310,7 +381,7 @@ namespace CatTang
                 if (kb.tabKey.wasPressedThisFrame)
                 {
                     if (inventory) CloseAll();
-                    else if (!current) OpenInventory();
+                    else if (!current && TutorialGate.Open(TutFeature.Inventory)) OpenInventory();   // 튜토리얼에서 Tab을 배우기 전엔 무시
                 }
                 if (kb.escapeKey.wasPressedThisFrame && current && !resultsOpen) CloseAll();
                 else if (kb.escapeKey.wasPressedThisFrame && village && !current && !player.InputLocked && !leaving && !VillageMap.EscUsed) OpenVillageMenu();   // 깨어나는 중엔 안 열림
@@ -318,6 +389,8 @@ namespace CatTang
                          && player.health.Alive) OpenGiveUp();                 // 판 안: 전투 포기하고 마을로 갈지 묻기
             }
             UpdateDodge();
+            ApplyGate();
+            PlayReveals();
             UpdateHeatGlow();
             var h = player.health;
             float f = Mathf.Clamp01(h.hp / Mathf.Max(1, h.maxHp));

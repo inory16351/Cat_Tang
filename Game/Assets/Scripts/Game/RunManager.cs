@@ -92,6 +92,7 @@ namespace CatTang
 
         void BuildMidBoss()
         {
+            ClearDoorGuide();
             if (layout != null && layout.root) Destroy(layout.root.gameObject);
             foreach (var e in alive) if (e) Destroy(e.gameObject);
             alive.Clear();
@@ -116,6 +117,7 @@ namespace CatTang
         void BuildStage(int index, RewardKind reward, Vector3? attachOrigin)
         {
             IsMidBossRoom = false;
+            ClearDoorGuide();
             if (attachOrigin.HasValue) oldLayout = layout;
             else if (layout != null && layout.root) Destroy(layout.root.gameObject);
             foreach (var e in alive) if (e) Destroy(e.gameObject);
@@ -199,6 +201,7 @@ namespace CatTang
         void EnterRoom(int i)
         {
             if (oldLayout != null) { if (oldLayout.root) Destroy(oldLayout.root.gameObject); oldLayout = null; }   // 지나온 술집 · 스테이지 2 정리
+            ClearDoorGuide();                                             // 다음 방 안내는 그 방에 들어서면 지움
             current = layout.rooms[i];
             current.entered = true;
             roomIndex = i;
@@ -339,7 +342,12 @@ namespace CatTang
             }
             bool lastRoom = !layout.rooms.Any(r => !r.cleared && !r.midBoss);
             if (!IsMidBossRoom && !IsBossRoom) TryMerchant(current, lastRoom);
-            if (!lastRoom) { if (!merchantHere) ui?.Toast("다음 방으로"); return; }
+            if (!lastRoom)
+            {
+                if (!merchantHere) ui?.Toast("다음 방으로");
+                ShowNextRoomGuide();                                     // 다음 방 쪽 열린 문 안내 + 그 길을 막는 소품 부수기
+                return;
+            }
             stageDone = true;
             if (IsMidBossRoom)
             {
@@ -526,6 +534,7 @@ namespace CatTang
         {
             var cam = Camera.main;
             var pp = player ? player.transform.position : r.center;
+            var nextGates = NextRoomGates(r);
             float hx = r.size.x / 2 - 3.5f, hz = r.size.y / 2 - 3.5f;
             var cands = new List<Vector3>();
             for (float x = -hx; x <= hx + 0.01f; x += 2f) { cands.Add(new Vector3(x, 0, -hz)); cands.Add(new Vector3(x, 0, hz)); }
@@ -546,6 +555,14 @@ namespace CatTang
                 float d = Vector3.Distance(Effects.Flat(w), Effects.Flat(pp));
                 if (d < 4f) score += 300;                                    // 고양이 바로 옆에서 솟지 않게
                 score += Mathf.Abs(d - 7f);                                  // 7m 쯤이 가장 좋음
+                // 다음 방으로 가는 열린 문 앞 · 문 → 방 가운데 통로는 비움 (문 안내 · 길 트기와 안 겹치게)
+                foreach (var g in nextGates)
+                {
+                    var gp = Effects.Flat(g.transform.position); var fw = Effects.Flat(w);
+                    var seg = Effects.Flat(r.center) - gp;
+                    float u = seg.sqrMagnitude > 0.01f ? Mathf.Clamp01(Vector3.Dot(fw - gp, seg) / seg.sqrMagnitude) : 0f;
+                    if (Vector3.Distance(fw, gp) < DoorPathClear.DoorRadius + 1.5f || Vector3.Distance(fw, gp + seg * u) < DoorPathClear.LaneHalf + 2f) score += 500;
+                }
                 if (score < bestScore) { bestScore = score; best = c; }
             }
             return best;
@@ -566,10 +583,12 @@ namespace CatTang
                 }
             }
             var r = current;
+            if (r == null || !r.root) return;
             var fwd = r.farSide;
             var side = Vector3.Cross(Vector3.up, fwd).normalized;
             float depth = Mathf.Abs(fwd.z) > 0.5f ? r.size.y / 2 : r.size.x / 2;
             float span = (Mathf.Abs(fwd.z) > 0.5f ? r.size.x : r.size.y) - 8;
+            var doors = new List<Transform>();
             for (int i = 0; i < kinds.Count; i++)
             {
                 float t = kinds.Count == 1 ? 0 : -span / 2 + span * i / (kinds.Count - 1);
@@ -577,12 +596,73 @@ namespace CatTang
                 var d = RoomBuilder.Door(r.root, local, kinds[i]);
                 d.transform.localRotation = Quaternion.LookRotation(fwd);
                 d.prompt = kinds[i] == RewardKind.Boss ? "최종 보스에게" : RoomDoor.NameOf(kinds[i]) + " 스테이지로";
+                doors.Add(d.transform);
             }
+            DoorPathClear.Clear(r, doors);                                   // 문 둘레 · 문 → 방 가운데 통로를 막는 소품 · 엄폐물 · 떠다니는 잔해를 부숨
+            ShowDoorGuide(doors, kinds);
+        }
+
+        // ---------- 문 안내 (2026-11-25 사용자: 전투가 끝나면 화살표로 문 방향 안내) ----------
+        // 문마다 작은 화살표: 화면 안이면 문 아이콘 위에 작게, 화면 밖이면 가장자리 화살표 + 이름(여러 문이 다 밖이면 하나로 모아 '보상 문 N개').
+        // 문에 들어가거나 새 스테이지 · 중간 보스 방 · 스토리 맵으로 넘어가면 지움 (문이 지워져도 저절로 사라짐)
+        const string DoorGuideGroup = "RunDoors";
+
+        void ShowDoorGuide(List<Transform> doors, List<RewardKind> kinds)
+        {
+            GuideArrow.ClearGroup(DoorGuideGroup);
+            int n = doors.Count;
+            for (int i = 0; i < n; i++)
+            {
+                if (!doors[i]) continue;
+                string label = kinds[i] == RewardKind.Boss ? "최종 보스" : RoomDoor.NameOf(kinds[i]) + " 문";
+                GuideArrow.Marker(doors[i], label, DoorGuideGroup, $"보상 문 {n}개", 5f);   // 문 아이콘(4.1m) 위
+            }
+        }
+
+        static void ClearDoorGuide() => GuideArrow.ClearGroup(DoorGuideGroup);
+
+        /// <summary>이 방에서 아직 안 깬 다음 방으로 이어지는 나무 문들 (들어온 문 · 이미 깬 방 쪽 · 술집 입구 · 뒷문 제외)</summary>
+        List<GameObject> NextRoomGates(RoomBuilder.RoomInfo r)
+        {
+            var list = new List<GameObject>();
+            if (r == null || layout == null) return list;
+            foreach (var g in r.gates)
+            {
+                if (!g || g == r.entryGate || g == r.backGate || g == r.entranceGate) continue;
+                var dir = Effects.Flat(g.transform.position - r.center);
+                if (dir.sqrMagnitude < 0.01f) continue;
+                dir.Normalize();
+                // 문 너머 이웃 방: 문 쪽 방향에 있는 가장 가까운 방
+                RoomBuilder.RoomInfo next = null; float bestD = float.MaxValue;
+                foreach (var o in layout.rooms)
+                {
+                    if (o == r) continue;
+                    var to = Effects.Flat(o.center - r.center);
+                    float dist = to.magnitude;
+                    if (dist < 0.1f || Vector3.Dot(to / dist, dir) < 0.9f || dist >= bestD) continue;
+                    bestD = dist; next = o;
+                }
+                if (next != null && !next.cleared && !next.midBoss) list.Add(g);
+            }
+            return list;
+        }
+
+        /// <summary>중간 방을 비움: 다음 방으로 이어진 열린 문을 작은 화살표로 가리키고, 그 문 둘레 · 문 → 방 가운데 통로를 막는 소품을 부숨</summary>
+        void ShowNextRoomGuide()
+        {
+            ClearDoorGuide();
+            var gates = NextRoomGates(current);
+            if (gates.Count == 0 || current == null || !current.root) return;
+            var ts = gates.ConvertAll(g => g.transform);
+            DoorPathClear.Clear(current, ts);
+            if (StoryCalm) return;                                       // 판 1 튜토리얼: 방을 비우면 바로 몰려오는 연출이라 안내 없음
+            foreach (var t in ts) GuideArrow.Marker(t, "다음 방", DoorGuideGroup, "다음 방", 3.2f, 3f);
         }
 
         public void EnterDoor(RoomDoor d)
         {
             if (inCombat || runOver) return;
+            ClearDoorGuide();
             Sfx.Play("door", 0.8f);
             ui?.CloseAll();
             // 스테이지 2를 끝내고 문을 고르면 먼저 중간 보스 방 (고른 문의 보상은 스테이지 3으로 넘김)
@@ -616,12 +696,20 @@ namespace CatTang
                 StoryPlatform.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
                 return;
             }
+            // 처음 만나는 3장 보스 문: 기억 맵 '거울 같은 호숫가'를 한 번 거쳐 모비 글래스 방으로 (2026-11-25 사용자, StoryLake)
+            if (d.reward == RewardKind.Boss && StoryLake.Pending(chapter))
+            {
+                foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
+                StoryLake.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
+                return;
+            }
             BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward);
         }
 
         /// <summary>스토리 맵에 들어감: 판 방 판정 · 방 가두기를 멈춤 (보스 방을 지으면 다시 평소대로)</summary>
         public void EnterStoryMap()
         {
+            ClearDoorGuide();
             StoryHold = true;
             current = null;
             inCombat = false;

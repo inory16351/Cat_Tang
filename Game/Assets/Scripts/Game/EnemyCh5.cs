@@ -650,12 +650,12 @@ namespace CatTang
             var go = new GameObject("VoidLob");
             go.transform.position = from;
             var mesh = EnemyProjectile.BuildBody(go.transform, EnemyProjectile.Style.Orb);
-            EnemyProjectile.TintBody(mesh, Enemy.Ch5Magenta, new MaterialPropertyBlock());
+            EnemyProjectile.TintBody(mesh, EnemyProjectile.ColorOf(5), new MaterialPropertyBlock());
             var v = go.AddComponent<VoidLob>();
             v.from = from; v.to = to; v.flight = Mathf.Max(0.05f, flight); v.radius = radius; v.damage = damage;
             v.body = mesh.transform;
-            v.halo = EnemyProjectile.BuildGlow(go.transform, new Color(1f, 0.18f, 0.7f, 0.76f));
-            v.trail = EnemyProjectile.BuildTrail(go.transform, Enemy.Ch5Magenta, 0.34f, 0.19f);
+            v.halo = EnemyProjectile.BuildGlow(go.transform, EnemyProjectile.ColorOf(5) * new Color(1f, 1f, 1f, 0.76f));
+            v.trail = EnemyProjectile.BuildTrail(go.transform, EnemyProjectile.ColorOf(5), 0.34f, 0.19f);
             v.Pose();
             EffectShadowLight.Projectile(v.body, Enemy.Ch5Magenta, 0.23f);
         }

@@ -83,7 +83,7 @@ namespace CatTang
             refl.clearFlags = CameraClearFlags.SolidColor;
             refl.backgroundColor = new Color(0, 0, 0, 0);
             refl.depth = src.depth - 1;
-            refl.cullingMask = src.cullingMask & ~(1 << 5);      // UI 레이어 뺌
+            refl.cullingMask = (src.cullingMask | (1 << MirrorLayers.ReflectOnly)) & ~(1 << MirrorLayers.MainOnly) & ~(1 << 5);   // UI 레이어 뺌 · 반사에만 비치는 것(스토리 맵 3 끝의 그녀) 넣음
             refl.enabled = true;
 
             // 바닥 면 기준 반사 행렬

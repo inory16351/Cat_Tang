@@ -70,6 +70,7 @@ namespace CatTang
             var fxShader = Shader.Find("CatTang/FX");                 // 빌드에서 빠지면 null → 이펙트만 안 나오게 (예전엔 여기서 예외 → GameUI.Awake 중단)
             fxMat = fxShader ? new Material(fxShader) : null;
             SetHand(1, true);
+            MiniMapView.Create(parent);                                  // 오른쪽 아래 상시 미니맵 (MiniMapView.cs)
         }
 
         public void Bind(PlayerController p)

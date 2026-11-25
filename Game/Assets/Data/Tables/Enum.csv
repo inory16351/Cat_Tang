@@ -116,7 +116,7 @@ EffectType,DodgeCooldown,"대시 충전 시간 +Value (비율, 음수 = 빨라�
 OpType,Add,더하기
 OpType,Sub,빼기
 OpType,Mul,곱하기
-OpType,Div,"나누기 (반올림, .5는 0에서 먼 쪽)"
+OpType,Div,"나누기 (반올림, 음수는 절대값으로 처리)"
 SkillAction,BackstepShot,뒤로 도약하며 조준 방향으로 사격
 SkillAction,TurnShot,앞을 쏘고 홱 돌아 뒤를 쏨
 SkillAction,VaultShot,적을 뛰어넘으며 아래로 사격

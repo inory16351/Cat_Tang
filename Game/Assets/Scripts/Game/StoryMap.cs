@@ -70,6 +70,7 @@ namespace CatTang
             child = Spawn("ShadowChild", M("Child"));
             if (ov) yield return ov.FadeWhite(1, 0, 1.2f);
             Music.Duck(0f, 0.8f);
+            Music.Play(StoryBgm.For(1, "stage"));                      // 2026-11-25 사용자: 스토리 맵 전용 곡 (Gemini) — 맵 내내, 전투에서도
 
             yield return Say("고양이#의문::......여긴 어디지.",
                              "고양이#의문::분명... 난 문을 열고 들어왔는데...",
@@ -115,7 +116,7 @@ namespace CatTang
                              "고양이#결의::물러서 있어.",
                              "고양이#결의::이건 내가 상대하지.");
             p.InputLocked = false;
-            Music.PlayFor("stage", 1);
+            if (!StoryBgm.Has(1)) Music.PlayFor("stage", 1);
             yield return Wave(4);
             yield return Wave(5, trial: true);
             yield return TowerTick(3);

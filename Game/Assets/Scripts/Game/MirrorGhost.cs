@@ -13,7 +13,8 @@ namespace CatTang
         readonly Transform[] motes = new Transform[3];
         float nextDust;
 
-        public static void Apply(GameObject fig)
+        /// <param name="rings">발밑 원형 오라 (상인). 마을의 거울 속 고양이 NPC는 끔 → 대신 둘레를 도는 거울 조각 (2026-11-25 사용자: 바닥 원형 오라 안 어울림)</param>
+        public static void Apply(GameObject fig, bool rings = true)
         {
             var sh = Shader.Find("CatTang/MirrorGhost");
             if (sh)
@@ -35,7 +36,7 @@ namespace CatTang
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 }
             AttachMask(fig);
-            fig.AddComponent<MirrorGhost>().BuildAura();
+            fig.AddComponent<MirrorGhost>().BuildAura(rings);
         }
 
         static void AttachMask(GameObject fig)
@@ -55,20 +56,28 @@ namespace CatTang
             mask.transform.SetParent(head ? head : fig.transform, true);
         }
 
-        void BuildAura()
+        bool shardMotes;
+
+        void BuildAura(bool rings)
         {
-            var gold = Glow(new Color(1f, 0.82f, 0.45f, 0.55f), 1.2f);
-            var pink = Glow(new Color(1f, 0.72f, 0.88f, 0.35f), 0.8f);
-            ringA = Disc("AuraRingA", 1.9f, 0.03f, gold);
-            ringB = Disc("AuraRingB", 2.5f, 0.02f, pink);
+            shardMotes = !rings;
+            if (rings)
+            {
+                var gold = Glow(new Color(1f, 0.82f, 0.45f, 0.55f), 1.2f);
+                var pink = Glow(new Color(1f, 0.72f, 0.88f, 0.35f), 0.8f);
+                ringA = Disc("AuraRingA", 1.9f, 0.03f, gold);
+                ringB = Disc("AuraRingB", 2.5f, 0.02f, pink);
+            }
             for (int i = 0; i < motes.Length; i++)
             {
-                var m = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                // 상인: 빛 구슬 / 거울 고양이 NPC: 얇은 거울 조각 (하늘빛 반짝임, 천천히 돌며 몸을 비춤)
+                var m = GameObject.CreatePrimitive(shardMotes ? PrimitiveType.Cube : PrimitiveType.Sphere);
                 Destroy(m.GetComponent<Collider>());
-                m.name = "AuraMote" + i;
+                m.name = (shardMotes ? "MirrorShard" : "AuraMote") + i;
                 m.transform.SetParent(transform, false);
-                m.transform.localScale = Vector3.one * 0.16f;
-                m.GetComponent<Renderer>().sharedMaterial = Glow(new Color(1f, 0.95f, 0.75f, 0.95f), 0.6f);
+                float s = Mathf.Max(0.01f, transform.lossyScale.y);
+                m.transform.localScale = shardMotes ? new Vector3(0.16f, 0.26f, 0.02f) / s : Vector3.one * 0.16f;
+                m.GetComponent<Renderer>().sharedMaterial = shardMotes ? Glow(new Color(0.82f, 0.93f, 1f, 0.9f), 1.4f) : Glow(new Color(1f, 0.95f, 0.75f, 0.95f), 0.6f);
                 m.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 motes[i] = m.transform;
             }
@@ -108,6 +117,13 @@ namespace CatTang
             {
                 if (!motes[i]) continue;
                 float a = t * 1.4f + i * Mathf.PI * 2 / motes.Length;
+                if (shardMotes)
+                {
+                    float sa = t * 0.6f + i * Mathf.PI * 2 / motes.Length;
+                    motes[i].position = transform.position + new Vector3(Mathf.Cos(sa) * 0.95f, 1.2f + i * 0.4f + Mathf.Sin(t * 1.3f + i) * 0.12f, Mathf.Sin(sa) * 0.95f);
+                    motes[i].rotation = Quaternion.Euler(Mathf.Sin(t + i) * 25f, t * 70f + i * 120f, Mathf.Cos(t * 0.8f + i) * 20f);
+                    continue;
+                }
                 motes[i].position = transform.position + new Vector3(Mathf.Cos(a) * 1.1f, 1.0f + i * 0.55f + Mathf.Sin(t * 2f + i) * 0.15f, Mathf.Sin(a) * 1.1f);
             }
             if (t >= nextDust)

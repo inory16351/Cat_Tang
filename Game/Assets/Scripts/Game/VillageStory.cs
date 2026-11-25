@@ -57,8 +57,14 @@ namespace CatTang
                 "태엽 풀린 뻐꾸기#엄숙::결국 이 시계가 멈추는 이유는...",
                 "태엽 풀린 뻐꾸기#쓸쓸::아니야.. 차차 알게 되겠지",
                 "고양이::...."),
-            // 3장부터는 마을 퀘스트 없음 (2026-11-25 사용자: 보스 맵 전 스토리 맵만). 총포상 · 보안관은 2장 퀘스트 결투에서 열림
+            // 3장 클리어 (2026-11-25 사용자): 꿈 없이 블랙아웃 → 좌우가 뒤집힌 거울 마을에서 깨어남(깨어남 첫 줄 "...뭔가 이상해.")
+            //   → 물웅덩이 속 거울 고양이 → 틀린 곳 찾기 퀘스트 (Ch3Quest). 해금 없음. 4 · 5장 퀘스트는 그 장 만들 때 다시 정함
+            new("ch3", 3, "고양이", false,
+                "고양이#의문::여관이... 왼쪽에 있었던가?"),
         };
+
+        /// <summary>이 장면을 지금 틀 수 있는지 (3장은 거울 마을로 뒤집혀 들어왔을 때만 — 2장 퀘스트를 마친 뒤)</summary>
+        static bool Ready(Beat b) => Meta.ChaptersCleared >= b.chapter && !Meta.StorySeen(b.key) && (b.key != "ch3" || Ch3Quest.Flipped);
 
         static string SpotOf(string speaker) => speaker switch
         {
@@ -121,7 +127,7 @@ namespace CatTang
             string wake = string.IsNullOrEmpty(StoryRun.PendingWake) ? null : StoryRun.PendingWake;
             StoryRun.PendingWake = null;
             bool anyBeat = false;
-            foreach (var b in Beats) if (Meta.ChaptersCleared >= b.chapter && !Meta.StorySeen(b.key)) anyBeat = true;
+            foreach (var b in Beats) if (Ready(b)) anyBeat = true;
             if (wake != null && !anyBeat)
             {
                 p.InputLocked = true;
@@ -132,7 +138,7 @@ namespace CatTang
             System.Action arrowAfter = null;                                        // 조작이 풀린 뒤 띄울 길 안내 화살표
             foreach (var b in Beats)
             {
-                if (Meta.ChaptersCleared < b.chapter || Meta.StorySeen(b.key)) continue;
+                if (!Ready(b)) continue;
                 p.InputLocked = true;
                 if (b.bridges)
                     foreach (var br in FindObjectsByType<IslandBridge>(FindObjectsSortMode.None))
@@ -202,6 +208,8 @@ namespace CatTang
                 var smith = DoorOf(Meta.Facility.AmmoWorkshop);
                 if (smith) { yield return Look(smith.transform.position, 0.9f); setArrow(() => GuideArrow.Show(smith.transform, "대장장이", keep: true)); }
             }
+            // 3장 블랙아웃 뒤: 물웅덩이 속 거울 고양이 → 거울 틀린 곳 찾기 시작 (끝나면 섬 거울 넷에 화살표)
+            if (b.key == "ch3") yield return Ch3Quest.Intro(ui, setArrow);
         }
 
         /// <summary>의상실 문을 처음 쓸 때 재봉사 첫 대화 (2026-11-24 사용자 대사) → 끝나면 의상실 열림</summary>

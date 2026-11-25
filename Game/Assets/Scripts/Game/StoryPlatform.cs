@@ -74,6 +74,7 @@ namespace CatTang
             if (P) P.OnFired += OnPlayerFired;
             if (ov) yield return ov.FadeWhite(1, 0, 1.2f);
             Music.Duck(0f, 0.8f);
+            Music.Play(StoryBgm.For(2, "stage"));                      // 2026-11-25 사용자: 스토리 맵 전용 곡 (Gemini) — 맵 내내, 전투에서도
             if (Sfx.Has("st_rain")) rain = Sfx.Loop("st_rain", 0.55f);
 
             yield return Say("고양이#의문::....비?");                      // 2026-11-25 사용자: 1장 도착 대사를 되풀이하지 않고 이 한 줄만
@@ -127,7 +128,7 @@ namespace CatTang
             p.InputLocked = true;
             yield return Say("고양이#결의::...뭐든 상관없어. 이 기차는 아직 못 보낸다.");
             p.InputLocked = false;
-            Music.PlayFor("stage", 2);
+            if (!StoryBgm.Has(2)) Music.PlayFor("stage", 2);
             yield return Wave(4);
             yield return Wave(5, trial: true);
 

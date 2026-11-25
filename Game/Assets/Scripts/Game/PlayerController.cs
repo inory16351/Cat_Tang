@@ -267,8 +267,9 @@ namespace CatTang
             }
             else if (mouse.leftButton.isPressed && Time.time >= nextFireTime && !FireLocked) FireNext();
 
-            if (mouse.rightButton.wasPressedThisFrame && Time.time >= nextSkill) StartCoroutine(UseSkill());   // 새 총(랜턴 · 기관차)이면 그 총 스킬, 아니면 백스텝 샷 (PlayerSkills.cs)
-            if (kb.qKey.wasPressedThisFrame && rev.heat >= Revolver.HeatMax) StartCoroutine(BulletParty());
+            // 튜토리얼 동안 아직 안 배운 기능은 입력 무시 (TutorialGate — 안내하는 순간 풀림)
+            if (mouse.rightButton.wasPressedThisFrame && Time.time >= nextSkill && TutorialGate.Open(TutFeature.Skill)) StartCoroutine(UseSkill());   // 새 총(랜턴 · 기관차)이면 그 총 스킬, 아니면 백스텝 샷 (PlayerSkills.cs)
+            if (kb.qKey.wasPressedThisFrame && rev.heat >= Revolver.HeatMax && TutorialGate.Open(TutFeature.Ultimate)) StartCoroutine(BulletParty());
         }
 
         void UpdateFocus()

@@ -16,14 +16,16 @@ namespace CatTang
         public const string SynergyText = "같은 특성의 탄을 함께 장전하면 시너지가 생겨요.\n2 · 4 · 6발을 모을 때마다 효과가 한 단계씩 강해져요.\n지금 켜진 시너지는 이곳에서 확인할 수 있어요.";
         public static bool Run1 => Meta.FirstRunPending && !Meta.StorySeen(KeyTut1);          // 새 슬롯의 첫 판만 (이미 판을 돈 예전 저장은 건너뜀)
         public static bool Run2 => Meta.StorySeen(KeyTut1) && !Meta.StorySeen(KeyTut2);
-        // 꿈 배치 (2026-11-24 사용자): 꿈1 '멈춘 손' = 오프닝(현실 몽타주 대신) · 1장 클리어 = 꿈2 '불 꺼진 시계탑' · 2장 클리어 = 꿈 없이 블랙아웃 (2026-11-25) · 3장부터는 임시 — 스토리 맵으로 바뀔 예정
+        // 꿈 배치 (2026-11-24 사용자): 꿈1 '멈춘 손' = 오프닝(현실 몽타주 대신) · 1장 클리어 = 꿈2 '불 꺼진 시계탑' · 2 · 3장 클리어 = 꿈 없이 블랙아웃 (2026-11-25) · 4장부터는 임시
         public static int DreamOf(int chapter) => chapter + 1;
-        public static bool DreamPending(int chapter) { int n = DreamOf(chapter); return chapter >= 1 && chapter != 2 && n <= Dreams.Length && !Meta.StorySeen("dream" + n); }
+        public static bool DreamPending(int chapter) { int n = DreamOf(chapter); return chapter >= 1 && !Blackout(chapter) && n <= Dreams.Length && !Meta.StorySeen("dream" + n); }
         // 2026-11-25 사용자: 2장 클리어 = 꿈 없음, 기절 → 블랙아웃 → 깨어남만 (2장 이야기는 스토리 맵 '배웅하던 승강장'이 맡음)
-        public const string KeyBlackout2 = "blackout2";
-        static bool Blackout(int chapter) => chapter == 2;
+        // 2026-11-25 사용자: 3장 클리어도 꿈 몽타주 없이 블랙아웃 → 좌우가 뒤집힌 거울 마을에서 깨어남 (Ch3Quest, 3장 이야기는 스토리 맵 3 '거울 같은 호숫가')
+        public const string KeyBlackout2 = "blackout2", KeyBlackout3 = "blackout3";
+        static bool Blackout(int chapter) => chapter == 2 || chapter == 3;
+        static string BlackoutKey(int chapter) => chapter == 3 ? KeyBlackout3 : KeyBlackout2;
         /// <summary>장을 처음 넘어서 기절 연출(꿈 또는 블랙아웃)이 남았는지</summary>
-        public static bool FaintPending(int chapter) => Blackout(chapter) ? !Meta.StorySeen(KeyBlackout2) : DreamPending(chapter);
+        public static bool FaintPending(int chapter) => Blackout(chapter) ? !Meta.StorySeen(BlackoutKey(chapter)) : DreamPending(chapter);
         /// <summary>마을에서 깨어난 뒤 띄울 한 줄 (꿈을 보고 돌아오면 결과 창이 없으니 얻은 조각을 여기로)</summary>
         public static string PendingToast;
         /// <summary>꿈을 보고 마을에서 깨어남 → 그 장의 혼잣말(WakeLines) 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory). 빈 문자열 = 깨어남 없음</summary>
@@ -31,13 +33,15 @@ namespace CatTang
         // 장마다 다른 기절 · 깨어남 대사 (2026-11-24 사용자: 1장은 지금 대사, 2~5장은 사용자가 만들 때 적어 줌 → 그때까지 비워 둠 = 대사 없이 연출만)
         public static readonly string[] FaintLines = { "......또, 이 소리......", "", "", "", "" };
         // 2장 (2026-11-25 사용자): 기절 대사 없음 · 깨어남 첫 줄 — 이어지는 대화는 VillageStory "ch2"
-        public static readonly string[] WakeLines = { "고양이#두통::젠장... 또 이상한 꿈을 꿨군...", "고양이#두통::윽...머리가...! 어떤 일이 일어난거지...", "", "", "" };
+        // 3장 (2026-11-25 사용자): 깨어남 첫 줄 = "...뭔가 이상해." — 이어지는 대화는 VillageStory "ch3" → Ch3Quest.Intro
+        public static readonly string[] WakeLines = { "고양이#두통::젠장... 또 이상한 꿈을 꿨군...", "고양이#두통::윽...머리가...! 어떤 일이 일어난거지...", "고양이#의문::...뭔가 이상해.", "", "" };
         static string Of(string[] a, int chapter) => chapter >= 1 && chapter <= a.Length ? a[chapter - 1] : "";
 
         public static void OnRunStart(RunManager rm)
         {
             if (Run1) rm.gameObject.AddComponent<StoryRun1>();
             else if (Run2 || (Meta.StorySeen(KeyTut1) && !Meta.StorySeen(KeySynergy))) rm.gameObject.AddComponent<StoryHints>();   // 시너지는 켜질 때까지 판마다 기다림
+            if (!Run1 && !Meta.StorySeen(OpHints.Key)) rm.gameObject.AddComponent<OpHints>();                                        // 연산은 처음 얻을 때까지 판마다 기다림 (튜토리얼이 끝난 저장도)
         }
 
         /// <summary>판 1에선 쓰러져도 결과 창 없이 기절 연출 → 마을</summary>
@@ -81,7 +85,7 @@ namespace CatTang
                 Music.Duck(0f, 0.5f);
                 if (Sfx.Has("story_heartbeat")) Sfx.Play("story_heartbeat", 0.7f, 0f);
                 yield return new WaitForSecondsRealtime(2.2f);
-                Meta.MarkStory(KeyBlackout2);
+                Meta.MarkStory(BlackoutKey(chapter));
                 PendingToast = $"시간의 조각 +{gain}";
                 PendingWake = Of(WakeLines, chapter);
                 CameraFollow.FocusOn(null, 0f);
@@ -320,6 +324,7 @@ namespace CatTang
         {
             rm = GetComponent<RunManager>();
             RunManager.StoryHold = true;                 // 연출이 끝날 때까지 방에 들어가도 웨이브가 안 나옴
+            MiniMapView.Suppressed = true;               // 판 1은 방 하나 + 몰려오는 적뿐이라 미니맵을 숨겨 둠 (TutorialGate 표 참고)
             rm.RoomClearedEvent += OnRoomCleared;
         }
 
@@ -327,6 +332,7 @@ namespace CatTang
         {
             if (rm) rm.RoomClearedEvent -= OnRoomCleared;
             RunManager.StoryHold = false;
+            MiniMapView.Suppressed = false;
         }
 
         /// <summary>현실 몽타주: 잔상 + 글리치 · 효과음 없이 전용 곡 story_opening만, 재생 중 인게임 곡 멈춤 (2026-11-23 사용자)</summary>
@@ -463,7 +469,8 @@ namespace CatTang
     /// <summary>판 2 튜토리얼 (2026-11-23 사용자 문구 · 흐름): 총알 시계(HUD) → 시각 조건(Tab → 인벤토리, 두 장) · 불릿 파티는 고양이 독백 → 시너지(Tab → 인벤토리 능력치 탭)</summary>
     public class StoryHints : MonoBehaviour
     {
-        static bool busy;                                   // 안내 · 독백이 겹치지 않게
+        /// <summary>안내 · 독백이 겹치지 않게 (연산 안내 OpHints도 같이 씀)</summary>
+        public static bool busy;
         int bulletsAtStart;                                 // 판을 시작할 때 이미 가진 탄 (코스튬 지급 등) — 이보다 늘면 '총탄 획득'
 
         void OnDestroy() => busy = false;
@@ -487,9 +494,13 @@ namespace CatTang
             if (!Meta.StorySeen(StoryRun.KeyTut2)) yield return Basics(p);
         }
 
-        public const string KeyClock = "tut2_clock", KeyCond = "tut2_cond", KeyHeat = "tut2_heat";
+        public const string KeyClock = "tut2_clock", KeyCond = "tut2_cond", KeyHeat = "tut2_heat", KeySkill = "tut2_skill";
         // Tab 유도 문구 (2026-11-23 사용자 컨펌)
         public const string TabPrompt = "<color=#FFD54A>Tab</color> 키를 눌러 인벤토리를 여세요.";
+        // 총 스킬 안내 (2026-11-25 사용자 확정)
+        public const string SkillTitle = "백스텝 샷";
+        public const string SkillText = "우클릭하면 뒤로 물러나며 두 발을 쏴요.\n물러나는 순간에는 공격을 받지 않아요.\n한 번 쓰면 6초 뒤에 다시 쓸 수 있어요.";
+        public const string SkillPrompt = "<color=#FFD54A>우클릭</color>으로 백스텝 샷을 써 보세요.";
 
         IEnumerator Basics(PlayerController p)
         {
@@ -504,25 +515,31 @@ namespace CatTang
                 busy = false;
                 Meta.MarkStory(KeyClock);
             }
-            // 2 · 3은 따로 기다림 (Tab을 안 눌러도 열기 안내는 나옴)
-            bool condDone = Meta.StorySeen(KeyCond), heatDone = Meta.StorySeen(KeyHeat);
+            // 2 · 3 · 4는 따로 기다림 (Tab을 안 눌러도 열기 · 총 스킬 안내는 나옴)
+            bool condDone = Meta.StorySeen(KeyCond), heatDone = Meta.StorySeen(KeyHeat), skillDone = Meta.StorySeen(KeySkill);
             if (!condDone) StartCoroutine(Run(Cond(p), () => condDone = true));
             if (!heatDone) StartCoroutine(Run(Heat(p), () => heatDone = true));
-            while (!condDone || !heatDone) yield return null;
+            if (!skillDone) StartCoroutine(Run(Skill(p), () => skillDone = true));
+            while (!condDone || !heatDone || !skillDone) yield return null;
             Meta.MarkStory(StoryRun.KeyTut2);
         }
 
         static IEnumerator Run(IEnumerator body, System.Action done) { yield return body; done(); }
 
-        /// <summary>Tab을 누르게 유도 → 인벤토리가 열리면 그 화면 위에서 안내 (다른 안내와 겹치지 않게 차례를 기다림)</summary>
-        IEnumerator InInventory(System.Func<InventoryScreen, IEnumerator> body)
+        /// <summary>Tab을 누르게 유도 → 인벤토리가 열리면 그 화면 위에서 안내 (다른 안내와 겹치지 않게 차례를 기다림)
+        /// 처음 Tab 안내가 뜨는 순간 인벤토리(Tab)가 풀림 (TutorialGate)</summary>
+        public static IEnumerator InInventory(System.Func<InventoryScreen, IEnumerator> body)
         {
             var ov = StoryOverlay.I;
             var ui = FindFirstObjectByType<GameUI>();
             if (!ui) yield break;
             while (!ui.InventoryUI || busy)
             {
-                if (!busy) ov.SetCaption(ui.InventoryUI ? "" : TabPrompt);
+                if (!busy)
+                {
+                    if (!ui.InventoryUI) TutorialGate.Unlock(TutFeature.Inventory);
+                    ov.SetCaption(ui.InventoryUI ? "" : TabPrompt);
+                }
                 yield return null;
             }
             busy = true;
@@ -547,6 +564,7 @@ namespace CatTang
             inv.ShowFeaturedBullet();
             yield return ov.HintAt("시각 조건", "탄마다 활성화되는 시각 조건이 있습니다.\n조건을 만족시키면 총탄의 신비한 힘이 깨어납니다.", inv.ClockRects);
             if (inv) yield return ov.HintAt("시각 조건", "각 조건과 현재 적용된 시간은 이곳에서 확인 가능해요.\n조건을 활성화시켜 더욱 강력한 힘을\n적들에게 선보이세요.", inv.InfoRect);
+            TutorialGate.Unlock(TutFeature.Judge);           // HUD '다음 n시 · 판정 · 활성화' 줄 (인벤토리를 닫으면 등장)
         }
 
         /// <summary>3. 열기가 처음 다 차는 순간: 고양이 독백 → Q 안내(느린 시간) → 쓰고 나면 한마디</summary>
@@ -558,6 +576,7 @@ namespace CatTang
             ov.SetCaption("");
             var ui = FindFirstObjectByType<GameUI>();
             if (ui) { bool done = false; ui.Talk("고양이", new[] { "고양이#씩::흠, 지금이다.......", "고양이#씩::본때를 보여주지!" }, () => done = true); while (!done) yield return null; }
+            TutorialGate.Unlock(TutFeature.Ultimate);        // 숨겨 둔 열기 칸 · 'Q 불릿 파티!' · 가장자리 불길이 이때 등장, Q가 풀림
             float ts = Time.timeScale; Time.timeScale = 0.3f;
             ov.SetCaption("<color=#FFD54A>Q</color> 키를 누르세요.");
             while (!p.UltimateActive && p.rev.heat >= Revolver.HeatMax) yield return null;
@@ -588,6 +607,125 @@ namespace CatTang
         {
             inv.ShowStatsTab();
             yield return ov.HintAt("시너지", StoryRun.SynergyText, inv.InfoRect);
+            TutorialGate.Unlock(TutFeature.Synergy);         // 왼쪽 특성 목록 HUD (인벤토리를 닫으면 등장)
+        }
+
+        /// <summary>4. 총 스킬 (2026-11-25 새 안내 — 어디서도 안 가르치던 우클릭): 총알 시계 안내 뒤 적이 처음 가까이 붙으면
+        /// '총 스킬' 표시를 비추며 설명 → 느린 시간에서 우클릭 유도 (쓰거나 6초가 지나면 끝)</summary>
+        IEnumerator Skill(PlayerController p)
+        {
+            var ov = StoryOverlay.I;
+            while (!Meta.StorySeen(KeyClock) || busy || p.InputLocked || !p.health.Alive || !NearEnemy(p, 3.5f)) yield return null;
+            busy = true;
+            ov.SetCaption("");
+            TutorialGate.Unlock(TutFeature.Skill);           // '총 스킬' 표시가 등장하며 우클릭이 풀림
+            var ui = FindFirstObjectByType<GameUI>();
+            if (ui && ui.SkillRect) yield return ov.HintAt(SkillTitle, SkillText, ui.SkillRect);
+            else yield return ov.Hint(SkillTitle, SkillText);
+            Time.timeScale = 0.3f;
+            ov.SetCaption(SkillPrompt);
+            float t0 = Time.unscaledTime;
+            while (p && p.SkillCooldownLeft <= 0 && p.health.Alive && Time.unscaledTime - t0 < 6f) yield return null;
+            ov.SetCaption("");
+            if (Time.timeScale > 0f) Time.timeScale = 1f;   // 그사이 창이 열려 멈춰 있으면 창이 닫힐 때 풀림
+            busy = false;
+            Meta.MarkStory(KeySkill);
+        }
+
+        static bool NearEnemy(PlayerController p, float r)
+        {
+            var at = p.transform.position;
+            foreach (var e in Enemy.All)
+            {
+                if (!e || !e.health || !e.health.Alive) continue;
+                var d = e.transform.position - at; d.y = 0;
+                if (d.sqrMagnitude < r * r) return true;
+            }
+            return false;
+        }
+    }
+
+    /// <summary>연산 첫 등장 (2026-11-25): 처음 얻으면 Tab 유도 → 인벤토리에서 그 연산 → '탄 강화' 창을 열어 칸마다 비추며 판정 시각 계산을 설명.
+    /// 연산 보상 문이 처음 보이면 짧은 한 줄. 본 기록은 슬롯에 (tut_op · tut_op_door) — 튜토리얼이 끝난 저장에서도 처음 한 번</summary>
+    public class OpHints : MonoBehaviour
+    {
+        public const string Key = "tut_op", KeyDoor = "tut_op_door";
+
+        // 문구 (2026-11-25 사용자 확정). 규칙은 Revolver.cs (ApplyOps · JudgeTime · Awakened) 기준
+        public const string DoorText = "<color=#FFD54A>연산</color> 문: 탄의 판정 시각을 바꾸는 연산을 얻을 수 있어요.";
+        public const string Page1Title = "연산";
+        public const string Page1 = "새로 얻은 연산이에요.\n연산은 탄에 끼워 그 탄의 판정 시각을 바꿔요.\n탄을 클릭하면 열리는 '탄 강화' 창에서 끼울 수 있어요.";
+        public const string Page2Title = "판정 시각";
+        public const string Page2 = "판정 시각은 탄이 놓인 칸의 시각에서 시작해요.\n여기에 끼운 연산을 위 칸부터 차례로 계산해요.\n예) 3시 칸 · 위 ×2 · 아래 +1 → 3 × 2 + 1 = 7시\n순서를 바꾸면 (3 + 1) × 2 = 8시가 돼요.";
+        public const string Page2NoSlot = "\n<size=22>(기본 '탄환'에는 연산 칸이 없어요.)</size>";
+        public const string Page3Title = "계산 규칙";
+        public const string Page3 = "나누어떨어지지 않으면 반올림해요. 음수는 절대값으로 처리해요.\n예) 5시 칸 ÷2 → 2.5 → 3시 · 1시 칸 -2 ÷2 → -0.5 → -1시\n12를 넘거나 0 이하가 되어도 그대로 둬요. 예) 9시 칸 ×2 → 18시\n활성화된 옆 칸 탄의 '판정 +1'은 연산을 다 계산한 뒤에 더해요.";
+        public const string Page4Title = "활성화와 쏘는 순서";
+        public const string Page4 = "판정 시각이 자리 조건에 맞는 탄만 활성화되어\n특성과 고유 효과가 켜져요. 이 줄에서 미리 볼 수 있어요.\n연산은 쏘는 순서를 바꾸지 않아요. 탄은 늘 1시부터 12시까지 차례로 나가요.\n(사격 순서를 뒤집는 효과가 있으면 12시부터 1시까지)";
+
+        IEnumerator Start()
+        {
+            var p = PlayerController.Instance;
+            if (!p) yield break;
+            if (!Meta.StorySeen(KeyDoor)) StartCoroutine(DoorWatch(p));
+            var ui = FindFirstObjectByType<GameUI>();
+            // 처음 얻는 순간 (보상 · 상인 · 코스튬 지급): 보관함이나 실린더 칸에 연산이 생기면
+            while (!HasOp(p)) yield return new WaitForSecondsRealtime(0.25f);
+            // 보상 고르기 · 상점 창이 닫히고 조작할 수 있을 때 (이미 인벤토리를 열었으면 바로)
+            // 레벨 업이 연달아 열리면(창 닫힘 → 바로 다음 창) 그 사이에 뜨지 않게, 조작 가능한 상태가 0.4초 이어질 때까지 기다림
+            for (float calm = 0; calm < 0.4f; )
+            {
+                bool blocked = StoryHints.busy || !(ui && ui.InventoryUI) && (p.InputLocked || (ui && ui.ScreenOpen));
+                calm = blocked ? 0 : calm + Time.unscaledDeltaTime;
+                yield return null;
+            }
+            yield return StoryHints.InInventory(inv => Pages(StoryOverlay.I, inv));
+            Meta.MarkStory(Key);
+        }
+
+        static bool HasOp(PlayerController p)
+        {
+            foreach (var it in p.inv.storage) if (it != null && it.kind == ItemKind.Op) return true;
+            for (int i = 1; i <= 12; i++) if (p.rev.slots[i].ops.Count > 0) return true;
+            return false;
+        }
+
+        static IEnumerator Pages(StoryOverlay ov, InventoryScreen inv)
+        {
+            // 1. 인벤토리: 얻은 연산 칸 (설명 칸에 그 연산을 띄움)
+            var opRt = inv.ShowFirstOp();
+            yield return ov.HintAt(Page1Title, Page1, opRt ? opRt : inv.InfoRect);
+            if (!inv) yield break;
+            // 2~4. '탄 강화' 창을 열어 연산 칸 · 판정 줄 · 활성화 미리보기를 차례로
+            var b = inv.OpenEnhanceForTutorial();
+            yield return new WaitForSecondsRealtime(0.3f);
+            if (!inv) yield break;
+            var slots = new System.Collections.Generic.List<RectTransform>(inv.EnhOpRects) { inv.EnhJudgeRect };
+            yield return ov.HintAt(Page2Title, Page2 + (b != null && b.OpSlots == 0 ? Page2NoSlot : ""), slots.ToArray());
+            if (!inv) yield break;
+            yield return ov.HintAt(Page3Title, Page3, inv.EnhJudgeRect);
+            if (!inv) yield break;
+            yield return ov.HintAt(Page4Title, Page4, inv.EnhHoursRects);
+        }
+
+        /// <summary>연산 보상 문이 처음 보이면: 짧은 한 줄 (5초, 문이 사라지면 바로 걷힘). 그 전에 연산을 얻어 이미 배웠으면 생략</summary>
+        IEnumerator DoorWatch(PlayerController p)
+        {
+            while (!OpDoorShown() && !Meta.StorySeen(Key)) yield return new WaitForSecondsRealtime(0.4f);
+            Meta.MarkStory(KeyDoor);
+            if (Meta.StorySeen(Key)) yield break;
+            while (StoryHints.busy || p.InputLocked) yield return null;
+            var ov = StoryOverlay.I;
+            ov.SetCaption(DoorText);
+            float t0 = Time.unscaledTime;
+            while (Time.unscaledTime - t0 < 5f && OpDoorShown() && !StoryHints.busy) yield return null;
+            if (!StoryHints.busy) ov.SetCaption("");
+        }
+
+        static bool OpDoorShown()
+        {
+            foreach (var d in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) if (d && d.reward == RewardKind.Op && d.isActiveAndEnabled) return true;
+            return false;
         }
     }
 }

@@ -9,6 +9,7 @@ namespace CatTang
         {
             Tables.Load();
             Time.timeScale = 1f;
+            Ch3Quest.Setup();                                        // 3장 거울 마을: 들어올 때 뒤집을지 정함 (이름표 · 깨어남보다 먼저)
             var p = PlayerController.Instance;
             if (p)
             {
