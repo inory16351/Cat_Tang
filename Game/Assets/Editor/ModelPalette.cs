@@ -232,6 +232,73 @@ namespace CatTang.EditorTools
 
         // 메인 마을 (2026-11-18 사용자: 1장 키트 재활용 X, '소멸의 여로' 느낌 — 새벽에 사라져 가는 서부 마을, 허공에 뜬 큰 섬)
         // 물체는 따뜻하게(바랜 나무 · 놋쇠 · 금 · 크림 · 녹 · 새벽 장밋빛 칠), 차가운 색은 하늘 · 허공에만. 새벽 남색 조명 아래서도 칙칙하지 않게 밝게
+        // 스토리 맵 '어린 날 시계탑 광장' (blender_kit_story_plaza.py, 2026-11-25): 노을 — 따뜻한 살구 · 벽돌 · 금, 그림자는 짙은 보라
+        public static readonly Dictionary<string, Color> StoryPlaza = new()
+        {
+            { "wood", new Color(0.62f, 0.36f, 0.2f) },
+            { "wood_dark", new Color(0.34f, 0.18f, 0.12f) },
+            { "wood_light", new Color(0.9f, 0.66f, 0.4f) },
+            { "plank", new Color(0.76f, 0.5f, 0.3f) },
+            { "stone", new Color(0.96f, 0.76f, 0.6f) },
+            { "stone_dark", new Color(0.62f, 0.44f, 0.42f) },
+            { "cobble", new Color(0.9f, 0.64f, 0.5f) },
+            { "cobble_dark", new Color(0.7f, 0.44f, 0.4f) },
+            { "brick", new Color(0.82f, 0.4f, 0.3f) },
+            { "adobe", new Color(1f, 0.74f, 0.54f) },
+            { "adobe_light", new Color(1f, 0.88f, 0.72f) },
+            { "roof_shingle", new Color(0.56f, 0.26f, 0.34f) },
+            { "brass", new Color(0.9f, 0.62f, 0.28f) },
+            { "gold", new Color(1f, 0.8f, 0.3f) },
+            { "iron", new Color(0.3f, 0.22f, 0.28f) },
+            { "clock_face", new Color(1f, 0.95f, 0.82f) },
+            { "window_lit", new Color(1f, 0.8f, 0.42f) },
+            { "lantern_glow", new Color(1f, 0.74f, 0.32f) },
+            { "cloth_red", new Color(0.88f, 0.32f, 0.28f) },
+            { "cloth_cream", new Color(1f, 0.94f, 0.8f) },
+            { "paint_teal", new Color(0.3f, 0.62f, 0.6f) },
+            { "shadow", new Color(0.16f, 0.08f, 0.2f) },
+            { "shadow_rim", new Color(1f, 0.6f, 0.4f) },
+            { "hub", new Color(1f, 0.8f, 0.3f) },
+            { "glass", new Color(0.8f, 0.9f, 0.92f) },
+            { "rope", new Color(0.7f, 0.52f, 0.36f) },
+            { "rock", new Color(0.56f, 0.4f, 0.42f) },
+            { "earth", new Color(0.78f, 0.52f, 0.4f) },
+            { "grass_dry", new Color(0.88f, 0.72f, 0.46f) },
+        };
+
+        // 스토리 맵 2 '배웅하던 승강장' (2026-11-25): 비 오는 밤 — 푸른 돌 · 벽돌 + 호박색 가스등 · 금 장식. 밤이라도 바닥 · 벽은 밝게(가독성)
+        public static readonly Dictionary<string, Color> StoryPlatform = new()
+        {
+            { "stone", new Color(0.7f, 0.7f, 0.76f) },
+            { "stone_dark", new Color(0.46f, 0.46f, 0.56f) },
+            { "tile_light", new Color(0.8f, 0.79f, 0.82f) },
+            { "tile_dark", new Color(0.58f, 0.58f, 0.68f) },
+            { "cobble", new Color(0.64f, 0.63f, 0.7f) },
+            { "cobble_dark", new Color(0.48f, 0.47f, 0.56f) },
+            { "brick", new Color(0.74f, 0.44f, 0.44f) },
+            { "brick_dark", new Color(0.5f, 0.3f, 0.36f) },
+            { "wood", new Color(0.62f, 0.42f, 0.32f) },
+            { "wood_dark", new Color(0.36f, 0.24f, 0.22f) },
+            { "iron", new Color(0.3f, 0.3f, 0.4f) },
+            { "iron_dark", new Color(0.18f, 0.19f, 0.28f) },
+            { "brass", new Color(0.92f, 0.68f, 0.34f) },
+            { "gold", new Color(1f, 0.8f, 0.34f) },
+            { "rail_steel", new Color(0.74f, 0.76f, 0.82f) },
+            { "ballast", new Color(0.4f, 0.39f, 0.44f) },
+            { "clock_face", new Color(1f, 0.95f, 0.82f) },
+            { "window_lit", new Color(1f, 0.8f, 0.45f) },
+            { "lantern_glow", new Color(1f, 0.74f, 0.36f) },
+            { "glass", new Color(0.5f, 0.58f, 0.7f) },
+            { "puddle", new Color(0.5f, 0.56f, 0.7f) },
+            { "paint_cream", new Color(0.96f, 0.9f, 0.76f) },
+            { "paint_green", new Color(0.3f, 0.54f, 0.5f) },
+            { "poster", new Color(0.92f, 0.76f, 0.54f) },
+            { "scarf", new Color(0.9f, 0.28f, 0.28f) },
+            { "leather", new Color(0.55f, 0.34f, 0.24f) },
+            { "shadow", new Color(0.08f, 0.05f, 0.12f) },
+            { "shadow_rim", new Color(1f, 0.72f, 0.42f) },
+        };
+
         public static readonly Dictionary<string, Color> Village = new()
         {
             { "wood", new Color(0.66f, 0.42f, 0.26f) },

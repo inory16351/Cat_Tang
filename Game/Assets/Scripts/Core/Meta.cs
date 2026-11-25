@@ -162,8 +162,6 @@ namespace CatTang
         public static bool BulletUnlocked(int id) => id == 1000 || ItemUnlocked(id);
         public static bool GunUnlocked(int id) => id == 2001 || ItemUnlocked(id);
 
-        public static int StartGunRight { get => PlayerPrefs.GetInt(P + "startgun.r", 2001); set { PlayerPrefs.SetInt(P + "startgun.r", value); Touch(); } }
-        public static int StartGunLeft { get => PlayerPrefs.GetInt(P + "startgun.l", 2001); set { PlayerPrefs.SetInt(P + "startgun.l", value); Touch(); } }
 
         // ---------- 업적 카운터 (코스튬 해금 조건) ----------
         public static int Count(string key) => PlayerPrefs.GetInt(P + "count." + key, 0);

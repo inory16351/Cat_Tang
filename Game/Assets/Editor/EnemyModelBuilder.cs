@@ -1325,6 +1325,10 @@ namespace CatTang.EditorTools
             // 3장 키트: 거울면 · 수정 속 · 빛가루는 빛나는 단색
             if (name.StartsWith("Kit_") && SrcDir == Ch3Src) GlowMats(inst);
             if (name.StartsWith("Kit_V_") && SrcDir == VillageSrc) VillageGlowMats(inst);
+            if (name.StartsWith("Kit_S_") && SrcDir == StorySrc) { VillageGlowMats(inst); StoryShadowMats(inst); }
+            if (name.StartsWith("Kit_P_") && SrcDir == StoryPlatformSrc) { VillageGlowMats(inst); StoryShadowMats(inst); }   // 스토리 맵 2 승강장
+            // 스토리 맵 그림자 인물: 유령처럼 떠다님 (2026-11-25 사용자, 1장 광장 · 2장 승강장)
+            if ((name.StartsWith("Kit_S_Shadow") || name.StartsWith("Kit_P_Shadow")) && !root.GetComponent<CatTang.ShadowFloat>()) root.AddComponent<CatTang.ShadowFloat>();
             if (name.StartsWith("Kit_") && SrcDir == Ch5Src) Ch5GlowMats(inst);   // 5장: 금 균열 · 별빛 · 거울 · 자홍은 빛나는 단색
 
             // 폭발물: 주황 ↔ 노랑 맥동 바깥 테두리 (2026-11-17 사용자: 몬스터처럼 테두리로 터진다는 걸 알려 줌)

@@ -165,14 +165,10 @@ namespace CatTang
             return v;
         }
 
-        /// <summary>판 시작: 시작 총 · 코스튬 · 기본 탄 '탄환' 12발</summary>
+        /// <summary>판 시작: 양손 기본 총(2026-11-25 사용자: 시작 총 고르기 없앰) · 코스튬 · 기본 탄 '탄환' 12발</summary>
         public void SetupRun()
         {
-            rev = new Revolver
-            {
-                rightGun = Tables.Guns.TryGetValue(Meta.StartGunRight, out var g1) ? g1 : Tables.Guns[2001],
-                leftGun = Tables.Guns.TryGetValue(Meta.StartGunLeft, out var g2) ? g2 : Tables.Guns[2001]
-            };
+            rev = new Revolver { rightGun = Tables.Guns[2001], leftGun = Tables.Guns[2001] };
             inv = new Inventory();
             armorLevel = 0;
             var basic = Tables.Bullets.TryGetValue(1000, out var bb) ? bb : null;

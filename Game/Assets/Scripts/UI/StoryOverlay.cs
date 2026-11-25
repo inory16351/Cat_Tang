@@ -49,7 +49,7 @@ namespace CatTang
             white = Full("White", new Color(1, 1, 1, 0));
             caption = UIKit.Label("Caption", root, new Vector2(0.5f, 0), new Vector2(0, 400), new Vector2(1400, 80), 30, TextAnchor.MiddleCenter, false, UIKit.Cream);   // 총알 시계 HUD(아래 가운데) 위로 비킴
             blocker = Full("HintBlocker", new Color(0, 0, 0, 0));                 // 안내가 떠 있는 동안 아래 화면(인벤토리 등) 클릭을 막음
-            hintPanel = UIKit.Panel("Hint", root, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(980, 380), true);
+            hintPanel = UIKit.Panel("Hint", root, new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(980, 380), false);   // 2026-11-25 사용자: 아래 장식 없앰
             hintTitle = UIKit.Banner("", hintPanel.transform, new Vector2(0.5f, 1), new Vector2(0, 6), 520);
             hintBody = UIKit.Label("Body", hintPanel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(860, 220), 28, TextAnchor.MiddleCenter, false, UIKit.Cream);
             hintKey = UIKit.Label("Key", hintPanel.transform, new Vector2(0.5f, 0), new Vector2(0, 34), new Vector2(600, 40), 22, TextAnchor.MiddleCenter, false, new Color(1, 1, 1, 0.6f));

@@ -601,7 +601,29 @@ namespace CatTang
                 ui?.Toast("뒷문이 열렸다 — 뒷문 너머로");
                 return;
             }
+            // 처음 만나는 1장 보스 문: 꿈 맵 '어린 날 시계탑 광장'을 한 번 거쳐 보스 방으로 (2026-11-25 사용자, StoryMap)
+            if (d.reward == RewardKind.Boss && StoryMap.Pending(chapter))
+            {
+                foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
+                StoryMap.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
+                return;
+            }
+            // 처음 만나는 2장 보스 문: 기억 맵 '배웅하던 승강장'을 한 번 거쳐 로코모스 방으로 (2026-11-25 사용자, StoryPlatform)
+            if (d.reward == RewardKind.Boss && StoryPlatform.Pending(chapter))
+            {
+                foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
+                StoryPlatform.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
+                return;
+            }
             BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward);
+        }
+
+        /// <summary>스토리 맵에 들어감: 판 방 판정 · 방 가두기를 멈춤 (보스 방을 지으면 다시 평소대로)</summary>
+        public void EnterStoryMap()
+        {
+            StoryHold = true;
+            current = null;
+            inCombat = false;
         }
 
         // ---------- 끝 ----------

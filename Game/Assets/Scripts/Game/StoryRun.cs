@@ -24,8 +24,8 @@ namespace CatTang
         /// <summary>꿈을 보고 마을에서 깨어남 → 그 장의 혼잣말(WakeLines) 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory). 빈 문자열 = 깨어남 없음</summary>
         public static string PendingWake;
         // 장마다 다른 기절 · 깨어남 대사 (2026-11-24 사용자: 1장은 지금 대사, 2~5장은 사용자가 만들 때 적어 줌 → 그때까지 비워 둠 = 대사 없이 연출만)
-        public static readonly string[] FaintLines = { "……또, 이 소리……", "", "", "", "" };
-        public static readonly string[] WakeLines = { "고양이#두통::젠장… 또 이상한 꿈을 꿨군…", "고양이#두통::……또…꿈인가……", "", "", "" };   // 2장 (2026-11-24 사용자): 기절 대사 없음
+        public static readonly string[] FaintLines = { "......또, 이 소리......", "", "", "", "" };
+        public static readonly string[] WakeLines = { "고양이#두통::젠장... 또 이상한 꿈을 꿨군...", "고양이#두통::......또...꿈인가......", "", "", "" };   // 2장 (2026-11-24 사용자): 기절 대사 없음
         static string Of(string[] a, int chapter) => chapter >= 1 && chapter <= a.Length ? a[chapter - 1] : "";
 
         public static void OnRunStart(RunManager rm)
@@ -356,7 +356,7 @@ namespace CatTang
             }
             else yield return ov.FadeBlack(1, 0, 1f);
             StartCoroutine(ov.Headache(0.7f, 1.4f));
-            yield return Talk("고양이#두통::윽…… 꿈인가……. 머리가 아프군…….");
+            yield return Talk("고양이#두통::윽...... 꿈인가.......", "고양이#두통::머리가 아프군.......");
             // 3. 소환: 웨이브를 풀어 줌 → 적이 솟으면 대사
             Music.Duck(1f, 1f);
             RunManager.StoryHold = false;
@@ -364,7 +364,7 @@ namespace CatTang
             while (Enemy.All.Count == 0 && wait < 6f) { wait += Time.unscaledDeltaTime; yield return null; }
             yield return new WaitForSecondsRealtime(0.5f);
             Time.timeScale = 0f;
-            yield return Talk("고양이#결의::……지금은 잠자리 같은 걸 신경 쓸 때가 아니다. 우선 급한 불부터 해결하자고.");
+            yield return Talk("고양이#결의::......지금은 잠자리 같은 걸 신경 쓸 때가 아니다.", "고양이#결의::우선 급한 불부터 해결하자고.");
             Time.timeScale = 1f;
             if (p) p.InputLocked = false;
             ov.SetCaption(controls);
@@ -534,7 +534,7 @@ namespace CatTang
             busy = true;
             ov.SetCaption("");
             var ui = FindFirstObjectByType<GameUI>();
-            if (ui) { bool done = false; ui.Talk("고양이", new[] { "고양이#씩::흠, 지금이다……. 본때를 보여주지!" }, () => done = true); while (!done) yield return null; }
+            if (ui) { bool done = false; ui.Talk("고양이", new[] { "고양이#씩::흠, 지금이다.......", "고양이#씩::본때를 보여주지!" }, () => done = true); while (!done) yield return null; }
             float ts = Time.timeScale; Time.timeScale = 0.3f;
             ov.SetCaption("<color=#FFD54A>Q</color> 키를 누르세요.");
             while (!p.UltimateActive && p.rev.heat >= Revolver.HeatMax) yield return null;

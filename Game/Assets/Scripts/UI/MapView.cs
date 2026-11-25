@@ -85,6 +85,7 @@ namespace CatTang
         void Update()
         {
             var kb = Keyboard.current;
+            if (!open && RunManager.StoryHold) return;                       // 스토리 맵 · 연출 중엔 판 지도 안 엶
             if (kb != null && (kb.mKey.wasPressedThisFrame || (open && kb.escapeKey.wasPressedThisFrame))) Toggle(!open && kb.mKey.wasPressedThisFrame);
             if (!open) return;
             var rm = RunManager.Instance;

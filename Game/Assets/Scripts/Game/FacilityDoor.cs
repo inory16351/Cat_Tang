@@ -24,10 +24,23 @@ namespace CatTang
             // 의상실을 처음 쓰면 재봉사 첫 대화 뒤에 열림 (2026-11-24 사용자)
             if (facility == Meta.Facility.Wardrobe && !Meta.StorySeen(VillageStory.KeyTailorMeet))
             {
-                ui.StartCoroutine(VillageStory.TailorMeet(ui, () => ui.OpenFacility(facility)));
+                ui.StartCoroutine(VillageStory.TailorMeet(ui, () => ui.StartCoroutine(WardrobeQuest(ui))));
+                return;
+            }
+            // 시계바늘 수리 퀘스트 (2026-11-25): 재봉사가 퀘스트를 주고 · 들고 온 물건을 받은 뒤 의상실
+            if (facility == Meta.Facility.Wardrobe && ClockQuest.Active && (!ClockQuest.Started || ClockQuest.Carrying))
+            {
+                ui.StartCoroutine(WardrobeQuest(ui));
                 return;
             }
             ui.OpenFacility(facility);
+        }
+
+        System.Collections.IEnumerator WardrobeQuest(GameUI ui)
+        {
+            if (ClockQuest.Active && !ClockQuest.Started) yield return ClockQuest.StartQuest(ui);
+            else if (ClockQuest.Active && ClockQuest.Carrying) yield return ClockQuest.Deliver(ui);
+            else ui.OpenFacility(facility);
         }
 
         void Update()
