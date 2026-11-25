@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 namespace CatTang
 {
     [RequireComponent(typeof(CharacterController), typeof(Health))]
-    public class PlayerController : MonoBehaviour
+    public partial class PlayerController : MonoBehaviour
     {
         public static PlayerController Instance;
 
@@ -267,7 +267,7 @@ namespace CatTang
             }
             else if (mouse.leftButton.isPressed && Time.time >= nextFireTime && !FireLocked) FireNext();
 
-            if (mouse.rightButton.wasPressedThisFrame && Time.time >= nextSkill) StartCoroutine(BackstepShot());
+            if (mouse.rightButton.wasPressedThisFrame && Time.time >= nextSkill) StartCoroutine(UseSkill());   // 새 총(랜턴 · 기관차)이면 그 총 스킬, 아니면 백스텝 샷 (PlayerSkills.cs)
             if (kb.qKey.wasPressedThisFrame && rev.heat >= Revolver.HeatMax) StartCoroutine(BulletParty());
         }
 
@@ -555,6 +555,8 @@ namespace CatTang
             int judge = rev.JudgeTime(s);
             foreach (var e in Effects.For(this, s, "OnHit")) { if (e.Type == "Pierce") pierce += Mathf.RoundToInt(e.Value); if (e.Type == "Ricochet") ricochet += Mathf.RoundToInt(e.Value); if (e.Type == "RicochetByJudgeTime" && Mathf.Abs(judge) >= e.Value) ricochet += 1; }
             foreach (var e in Effects.For(this, s, "Passive")) if (e.Type == "Ricochet" && (!e.Borrowed || Effects.Roll(e))) ricochet += Mathf.RoundToInt(e.Value);
+            var train = ghost ? null : TrainOf(s);                                  // 마지막 기차: 모든 적 관통 · 관통마다 피해 성장 · 끝 공명 폭발 (PlayerSkills.cs)
+            if (train != null) pierce = 999;
             bool homing = Effects.Passive(this, s, "Homing") > 0;
             float range = gun != null ? gun.Range : 12f;
 
@@ -637,7 +639,7 @@ namespace CatTang
                     if (pierced >= pierce) { stopped = true; break; }
                     pierced++;
                     ExtraFx.Pierce(h.point, segDir, col);                              // 관통: 탄도 방향으로 뚫고 나가는 불꽃 꼬리 (2026-11-17)
-                    float grow = 1f;
+                    float grow = train != null ? 1 + train.Value : 1f;
                     foreach (var e in Effects.For(this, s, "OnPierce"))
                     {
                         if (e.Type == "PierceDamageGrowth") grow *= 1 + e.Value;
@@ -673,7 +675,7 @@ namespace CatTang
             var trailCol = trait != 0 ? GunkataFx.TraitColor(trait, col) : col;
             Color? halo2 = own != 0 && own != trait ? GunkataFx.TraitColor(own, col) : (Color?)null;
             float baseW = BulletLook.Width(b, awake);
-            float w0 = baseW * (ghost ? 0.7f : resonance ? 1.6f : 1f) * (boosted ? 1.55f : 1f);
+            float w0 = baseW * (ghost ? 0.7f : resonance ? 1.6f : 1f) * (boosted ? 1.55f : 1f) * (train != null ? 2.2f : 1f);
             if (boosted) trailCol = Color.Lerp(trailCol, Color.white, 0.45f);
             bool wide = resonance || boosted || (awake && b != null && b.Grade == "Legendary");
             for (int li = 0; li < legStart.Count; li++)
@@ -709,8 +711,18 @@ namespace CatTang
                 // 이번 사격에서 다른 특수 효과(관통 폭발 · 가둠 · 처형 · 치명타 · 지연 피해 등)가 터졌으면 연출 · 흔들림은 빼고 피해만
                 bool special = specialCount != specialMark;
                 GunkataFx.Flare(origin + dir * 0.5f, 1.8f, col);
-                if (hitSet.Count > 0) ResonanceBlast(end, 2f, dmg * 0.3f * (shotCrit ? CritDamage : 1f), col, !special);
-                if (!special) CameraFollow.Shake(b.Grade == "Legendary" ? 0.22f : b.Grade == "Epic" ? 0.16f : 0.1f);
+                // 2026-11-25: 반경 · 피해는 미련 특성 · 탄 · 랜턴 장판으로 늘고 둔화 · 원혼이 붙음 (PlayerSkills.Resonance)
+                if (train != null)
+                {
+                    // 마지막 기차: 맞았든 안 맞았든 끝에서 큰 공명 폭발 (기적 소리 고리)
+                    StartCoroutine(TrainRun(origin, end));
+                    if (!FxEffect.Spawn("FX_TrainEnd", end, Quaternion.LookRotation(Effects.Flat(dir).sqrMagnitude > 1e-4f ? Effects.Flat(dir).normalized : Vector3.forward), train.Value2 > 0 ? train.Value2 / 4f : 1f, col))
+                        GunkataFx.Explosion(end, train.Value2 > 0 ? train.Value2 : 4f, true, col);
+                    Resonance(s, end, dmg * (shotCrit ? CritDamage : 1f), col, false, train.Value2 > 0 ? train.Value2 : 4f);
+                    CameraFollow.Shake(0.3f);
+                }
+                else if (hitSet.Count > 0) Resonance(s, end, dmg * (shotCrit ? CritDamage : 1f), col, !special);
+                if (!special && train == null) CameraFollow.Shake(b.Grade == "Legendary" ? 0.22f : b.Grade == "Epic" ? 0.16f : 0.1f);
             }
 
             // 튕김: 맞은 자리에서 가장 가까운 다른 적으로
@@ -804,6 +816,9 @@ namespace CatTang
             if (crit) { GunkataFx.CritSkull(target.transform, point); specialCount++; }   // 치명타 = 해골 · 불꽃 (2026-11-18 사용자, 예전 종말 처형 연출)
             else GunkataFx.HitImpact(point, dir, col, false, GunkataFx.HitScale);
             if (crit) CameraFollow.Shake(0.07f);
+            if (crit)                                                                // 레일 위의 불꽃: 치명타 자리 폭발 (2026-11-25)
+                foreach (var e in Effects.For(this, s, "OnCrit"))
+                    if (e.Type == "Explosion" && Effects.Roll(e)) RailSpark(point, dir, e.Value2 > 0 ? e.Value2 : 2f, dmg * e.Value);
             bool killed = !target.Alive;
             var en = target.GetComponent<Enemy>();
             if (killed && rev.JudgeTime(s) <= 0) Meta.AddCount(Meta.CountLowJudgeKill);   // 코스튬 모래 순례자 로브 해금 조건
@@ -877,6 +892,7 @@ namespace CatTang
                         }
                         break;
                     case "TrailSilhouetteShot": StartCoroutine(TrailSilhouette(s, point, e.Value, Mathf.Max(0.3f, e.Duration))); break;
+                    case "LockTransfer": LockTransfer(target, e.Value > 0 ? e.Value : 4f, Mathf.Max(0.3f, e.Duration) * ctl); break;   // 환승역 (2026-11-25)
                 }
             }
             if (killed)
@@ -885,6 +901,8 @@ namespace CatTang
                     bool ok = e.Cond == "TargetTimeLocked" ? wasLocked : e.Cond == "KilledByDelayed" ? false : Effects.CondOk(e, this, s, null);
                     if (!ok || !Effects.Roll(e)) continue;
                     if (e.Type == "Explosion") Effects.Explosion(target.transform.position, e.Value2 > 0 ? e.Value2 : 2f, dmg * e.Value, col);
+                    if (e.Type == "SmokeRing") SmokeRing(target.transform.position, e.Value2 > 0 ? e.Value2 : 3f, dmg * e.Value);   // 연기 고리 (2026-11-25)
+                    if (e.Type == "DamageAdd" && e.Target == "NextBullet") nextShotDamageAdd += e.Value;
                     if (e.Type == "HeatGain") rev.AddHeat(e.Value);
                     if (e.Type == "PermanentDamageGrowth")
                     {

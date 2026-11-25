@@ -1310,21 +1310,136 @@ namespace CatTang
                 none.text = facility == "Gun" ? "지금 있는 총은 모두 손에 익었다 · 새 총은 아직 만드는 중" : "지금 있는 탄은 모두 손에 익었다 · 새 탄은 아직 빚는 중";
                 return;
             }
-            int cols = 4, rows = Mathf.Max(1, (groups.Count + cols - 1) / cols);
-            float h = Mathf.Min(300f, height / rows - 10f);
+            // 2026-11-25 사용자 "ui 레이아웃도 만들고": 묶음 = 큰 카드 2열 (앞으로 묶음이 늘면 아래로 줄이 늘고 스크롤)
+            //   카드 = 묶음 이름 · 한 줄 설명 / 안 아이템 (아이콘 + 이름 · 등급 · 조건 · 특성 · 고유 효과, 총은 스탯 · 우클릭 스킬) / 해금 버튼 (조각) · 해금 완료 도장
+            //   아이템 줄에 마우스를 올리면 전체 툴팁 (보상 카드와 같은 ItemTip)
+            const float CardW = 630f, CardH = 576f, Gap = 16f;
             for (int i = 0; i < groups.Count; i++)
             {
                 var g = groups[i];
                 bool own = Meta.GroupOwned(g), avail = Meta.GroupAvailable(g);
-                var card = Card(content, "Group" + g.Id, new Vector2(-480 + (i % cols) * 320, top - (i / cols) * (h + 10)), new Vector2(305, h));
-                CardText(card.transform, g.Name, new Vector2(0, -24), new Vector2(260, 30), 22, true);
-                string items = string.Join(" · ", g.Items.Take(6).Select(ItemName)) + (g.Items.Count > 6 ? $" 외 {g.Items.Count - 6}" : "");
-                CardText(card.transform, $"<size=13>{g.Desc}</size>\n{items}", new Vector2(0, -56), new Vector2(255, h - 110), 14, false);
-                string label = own ? "해금 완료" : !avail ? $"{g.ReqChapter}장 클리어 시" : $"해금 {g.Cost} 조각";
-                var b = UIKit.MakeButton("Buy", card.transform, new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(240, 48), label,
-                    () => { if (Meta.TryBuyGroup(g)) { Sfx.Play("ui_buy", 0.85f, 0f); Toast($"'{g.Name}' 해금 — 이제 판에서 나온다"); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 17);
-                UIKit.SetInteractable(b, !own && avail && Meta.Shards >= g.Cost);
+                float x = (i % 2 == 0 ? -1 : 1) * (CardW + Gap) / 2, y = 0 - (i / 2) * (CardH + Gap);
+                var card = Card(content, "Group" + g.Id, new Vector2(x, y), new Vector2(CardW, CardH));
+                if (own) card.color = new Color(1f, 0.96f, 0.82f);
+                var ct = card.transform;
+                BundleText(ct, g.Name, new Vector2(28, -20), new Vector2(CardW - 56, 40), 30, TextAnchor.UpperLeft, true, Ink);
+                BundleText(ct, g.Desc, new Vector2(30, -62), new Vector2(CardW - 60, 26), 17, TextAnchor.UpperLeft, false, InkSoft);
+                var rule = UIKit.MakeRect("Rule", ct, new Vector2(0, 1), new Vector2(24, -96), new Vector2(CardW - 48, 2)).gameObject.AddComponent<Image>();
+                rule.color = new Color(0.45f, 0.3f, 0.18f, 0.35f); rule.raycastTarget = false;
+                // 안 아이템
+                var bullets = g.Items.Where(id => Tables.Bullets.ContainsKey(id)).Select(id => Tables.Bullets[id]).ToList();
+                var guns = g.Items.Where(id => Tables.Guns.ContainsKey(id)).Select(id => Tables.Guns[id]).ToList();
+                float rowTop = -108f;
+                if (guns.Count == 1 && bullets.Count == 0) GunBlock(ct, guns[0], rowTop, CardW);
+                else
+                {
+                    int n = bullets.Count + guns.Count;
+                    float rowH = Mathf.Min(122f, (CardH - 108f - 96f) / Mathf.Max(1, n));
+                    int r = 0;
+                    foreach (var b in bullets) BulletRow(ct, b, rowTop - (r++) * rowH, rowH, CardW);
+                    foreach (var gn in guns) GunRow(ct, gn, rowTop - (r++) * rowH, rowH, CardW);
+                }
+                // 해금 버튼 / 도장
+                if (own)
+                {
+                    var stamp = BundleText(ct, "해금 완료 · 이제 판에서 나온다", new Vector2(0, -(CardH - 70)), new Vector2(CardW, 44), 24, TextAnchor.MiddleCenter, true, new Color(0.72f, 0.46f, 0.08f));
+                    stamp.rectTransform.anchoredPosition = new Vector2(0, -(CardH - 74));
+                }
+                else
+                {
+                    string label = !avail ? $"{g.ReqChapter}장 클리어 시" : $"해금  ·  시간의 조각 {g.Cost}";
+                    var bt = UIKit.MakeButton("Buy", ct, new Vector2(0.5f, 0), new Vector2(0, 46), new Vector2(330, 58), label,
+                        () => { if (Meta.TryBuyGroup(g)) { Sfx.Play("ui_buy", 0.85f, 0f); Toast($"'{g.Name}' 해금 — 이제 판에서 나온다"); redraw(); } else Sfx.Play("ui_deny", 0.7f, 0f); }, 21);
+                    UIKit.SetInteractable(bt, avail && Meta.Shards >= g.Cost);
+                    if (avail && Meta.Shards < g.Cost)
+                        BundleText(ct, $"조각이 {g.Cost - Meta.Shards}개 모자람", new Vector2(0, -(CardH - 22)), new Vector2(CardW, 20), 15, TextAnchor.MiddleCenter, false, InkSoft)
+                            .rectTransform.anchoredPosition = new Vector2(0, -(CardH - 20));
+                }
             }
+        }
+
+        static readonly Color Ink = new(0.3f, 0.18f, 0.1f), InkSoft = new(0.42f, 0.32f, 0.24f);
+
+        /// <summary>카드 안 글 (왼쪽 위 기준)</summary>
+        Text BundleText(Transform card, string text, Vector2 topLeft, Vector2 size, int fs, TextAnchor al, bool title, Color c)
+        {
+            var t = UIKit.Label("T", card, new Vector2(0, 1), topLeft, size, fs, al, title, c);
+            t.rectTransform.pivot = new Vector2(0, 1);
+            t.rectTransform.anchoredPosition = topLeft;
+            t.text = text;
+            foreach (var sh in t.GetComponents<Shadow>()) Destroy(sh);
+            return t;
+        }
+
+        static string Rgb(Color c) => ColorUtility.ToHtmlStringRGB(c);
+        static Color OnPaper(Color c) => Color.Lerp(c, Color.black, 0.28f);
+
+        Image BundleIcon(Transform card, Sprite spr, Vector2 topLeft, float size, string grade)
+        {
+            var back = UIKit.MakeRect("IconBack", card, new Vector2(0, 1), topLeft, new Vector2(size, size)).gameObject.AddComponent<Image>();
+            var gc = UIKit.GradeColor(grade);
+            back.color = new Color(gc.r, gc.g, gc.b, 0.16f);
+            back.raycastTarget = false;
+            var im = UIKit.MakeRect("Icon", back.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size - 8, size - 8)).gameObject.AddComponent<Image>();
+            im.sprite = spr; im.preserveAspect = true; im.raycastTarget = false;
+            if (!spr) im.color = new Color(gc.r, gc.g, gc.b, 0.5f);
+            return im;
+        }
+
+        /// <summary>아이템 줄 전체에 마우스 올리면 툴팁</summary>
+        void RowTip(Transform card, float top, float h, float w, Item it)
+        {
+            var hit = UIKit.MakeRect("Row", card, new Vector2(0, 1), new Vector2(16, top), new Vector2(w - 32, h - 4)).gameObject.AddComponent<Image>();
+            hit.color = new Color(0, 0, 0, 0);
+            CursorTip.Attach(hit.gameObject, () => UIKit.ItemTip(it));
+        }
+
+        void BulletRow(Transform card, BulletDef b, float top, float h, float w)
+        {
+            RowTip(card, top, h, w, Item.Of(b));
+            float icon = Mathf.Min(h - 10, 104);
+            BundleIcon(card, UIKit.BulletIcon(b), new Vector2(26, top - 4), icon, b.Grade);
+            float tx = 26 + icon + 16, tw = w - tx - 26;
+            var gc = OnPaper(UIKit.GradeColor(b.Grade));
+            BundleText(card, $"<color=#{Rgb(gc)}>{b.Name}</color>  <size=15><color=#{Rgb(InkSoft)}>{UIKit.GradeKo(b.Grade)} · 공격 {b.Damage} · {UIKit.CondKo(b)} · 연산 {b.OpSlots}칸</color></size>",
+                new Vector2(tx, top - 4), new Vector2(tw, 30), 22, TextAnchor.UpperLeft, true, Ink);
+            var traits = new List<string>();
+            foreach (var id in new[] { b.Trait1, b.Trait2 })
+                if (id != 0 && Tables.Traits.TryGetValue(id, out var tr)) traits.Add($"<color=#{Rgb(OnPaper(GunkataFx.TraitColor(id, Ink)))}>◆ {tr.Name}</color>");
+            BundleText(card, string.Join("   ", traits), new Vector2(tx, top - 36), new Vector2(tw, 22), 16, TextAnchor.UpperLeft, true, Ink);
+            var fx = new List<string>();
+            foreach (var id in new[] { b.Effect1, b.Effect2 }) if (id != 0 && Tables.Effects.TryGetValue(id, out var e)) fx.Add(e.Desc);
+            BundleText(card, string.Join(" · ", fx), new Vector2(tx, top - 60), new Vector2(tw, h - 66), 15, TextAnchor.UpperLeft, false, Ink);
+        }
+
+        static string SkillLine(GunDef g) => Tables.Skills.TryGetValue(g.SkillId, out var sk) && (sk.Action == "LanternField" || sk.Action == "SteamDash")
+            ? $"<b>우클릭 · {sk.Name}</b> (재사용 {sk.Cooldown:0}초)\n{sk.Desc}" : "우클릭 · 백스텝 샷";
+
+        static string GunStats(GunDef g) => $"공격 ×{g.DamageMul:0.00} · 연사 {1f / Mathf.Max(0.05f, g.FireInterval):0.0}발/초 · 장전 {g.ReloadTime:0.0}초 · 사거리 {g.Range:0}m"
+            + (g.CritChance > 0 ? $" · 치명 +{g.CritChance * 100:0}% / 피해 +{g.CritDamage * 100:0}%" : "");
+
+        void GunRow(Transform card, GunDef g, float top, float h, float w)
+        {
+            RowTip(card, top, h, w, Item.Of(g));
+            float icon = Mathf.Min(h - 10, 104);
+            BundleIcon(card, UIKit.GunIcon(g), new Vector2(26, top - 4), icon, g.Grade);
+            float tx = 26 + icon + 16, tw = w - tx - 26;
+            BundleText(card, $"<color=#{Rgb(OnPaper(UIKit.GradeColor(g.Grade)))}>{g.Name}</color>  <size=15><color=#{Rgb(InkSoft)}>{UIKit.GradeKo(g.Grade)} 총</color></size>",
+                new Vector2(tx, top - 4), new Vector2(tw, 30), 22, TextAnchor.UpperLeft, true, Ink);
+            BundleText(card, GunStats(g) + "\n" + SkillLine(g), new Vector2(tx, top - 36), new Vector2(tw, h - 40), 15, TextAnchor.UpperLeft, false, Ink);
+        }
+
+        /// <summary>총 한 자루 묶음: 큰 아이콘 + 이름 · 스탯 · 우클릭 스킬 · 설명</summary>
+        void GunBlock(Transform card, GunDef g, float top, float w)
+        {
+            RowTip(card, top, 360, w, Item.Of(g));
+            BundleIcon(card, UIKit.GunIcon(g), new Vector2((w - 230) / 2, top - 6), 230, g.Grade);
+            float ty = top - 248;
+            var gc = OnPaper(UIKit.GradeColor(g.Grade));
+            BundleText(card, $"<color=#{Rgb(gc)}>{UIKit.GradeKo(g.Grade)} 총</color>  <size=15><color=#{Rgb(InkSoft)}>{GunStats(g)}</color></size>",
+                new Vector2(28, ty), new Vector2(w - 56, 26), 18, TextAnchor.UpperCenter, true, Ink);
+            BundleText(card, SkillLine(g), new Vector2(40, ty - 32), new Vector2(w - 80, 66), 16, TextAnchor.UpperCenter, false, Ink);
+            BundleText(card, $"<i>{g.Desc}</i>", new Vector2(40, ty - 102), new Vector2(w - 80, 24), 15, TextAnchor.UpperCenter, false, InkSoft);
         }
 
         void WardrobeContent(Transform content, System.Action redraw)

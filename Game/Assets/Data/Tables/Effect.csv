@@ -24,9 +24,9 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9171,Passive,None,0,1.0,Self,ControlDurationAdd,0.2,0.0,0.0,정지 · 둔화 지속 +20%
 9172,Passive,None,0,1.0,Self,ControlDurationAdd,0.4,0.0,0.0,지속 +40%
 9173,Passive,None,0,1.0,Self,DamageVsStoppedAdd,1.0,0.0,0.0,정지된 적에게 주는 피해 2배
-9181,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.15,0.0,0.0,비활성화 탄 공격력 +15%
-9182,Passive,None,0,1.0,Self,UnawakenedDamageAdd,0.3,0.0,0.0,+30%
-9183,Passive,None,0,1.0,Self,UnawakenedTraitCount,1,0.0,0.0,비활성화 탄도 첫 번째 특성이 켜짐
+9181,Passive,None,0,1.0,Self,ResonanceDamageAdd,0.15,0.0,0.0,공명 범위 피해 30% → 45%
+9182,Passive,None,0,1.0,Self,ResonanceDamageAdd,0.3,0.0,0.0,공명 범위 피해 60%
+9183,Passive,None,0,1.0,Self,ResonanceWraith,1.0,3.0,0.6,공명 0.6초 뒤 그 자리에 푸른 원혼이 피어나 울림 (반경 3 · 공명 피해 100%)
 9201,OnHit,None,0,1.0,HitTarget,Knockback,0.5,0.0,0.0,맞은 적을 살짝 밀쳐냄
 9202,OnFire,None,0,1.0,Self,ExtraShot,1,0.3,0.0,옆으로 1발 더 (피해 30%)
 9203,OnHit,None,0,1.0,Self,Ricochet,1,0.0,0.0,1번 튕김
@@ -121,3 +121,13 @@ Id:int,Trigger:enum,Cond:enum,CondValue:int,Chance:float,Target:enum,Type:enum,V
 9416,Passive,None,0,1.0,Self,ReloadTimeAdd,0.1,0.0,0.0,탄 장전 속도 -10%
 9417,Passive,None,0,1.0,Self,JustDodgeWindowAdd,0.04,0.0,0.0,극한 회피 판정 범위 +50%
 9418,Passive,None,0,1.0,Self,DamageTakenAdd,0.1,0.0,0.0,받는 피해 +10%
+9184,Passive,None,0,1.0,Self,ResonanceRadiusAdd,0.6,0.0,0.0,공명 반경 2 → 2.6
+9263,OnHit,None,0,1.0,HitTarget,Slow,0.3,0.0,2.0,"둔화 30%, 2초"
+9264,Passive,None,0,1.0,Self,ResonanceVsSlowedAdd,0.3,0.0,0.0,둔화된 적에게 공명 피해 +30%
+9265,OnHit,TargetTimeLocked,0,1.0,HitTarget,LockTransfer,4.0,0.0,1.0,시간에 갇힌 적을 맞히면 가둠이 반경 4 안 다른 적에게 1초 옮겨 붙음
+9266,Passive,None,0,1.0,AllBullets,ResonanceSlow,0.4,0.0,1.5,"활성화된 모든 탄의 공명에 둔화 40%, 1.5초"
+9267,Passive,None,0,1.0,AllBullets,ResonanceRadiusAdd,1.0,0.0,0.0,공명 반경 +1
+9268,OnCrit,None,0,1.0,Area,Explosion,0.5,2.0,0.0,"치명타가 터지면 그 자리 폭발 (피해 50%, 반경 2)"
+9269,OnKill,None,0,1.0,Area,SmokeRing,0.8,3.0,0.0,"처치하면 연기 고리 폭발 (피해 80%, 반경 3)"
+9270,OnKill,None,0,1.0,NextBullet,DamageAdd,0.3,0.0,0.0,다음 탄 피해 +30%
+9271,Passive,None,0,1.0,Self,TrainShot,0.2,4.0,0.0,"기차처럼 직선으로 돌진하는 굵은 탄: 모든 적 관통, 관통할 때마다 피해 +20%, 끝에서 반경 4 공명 폭발"

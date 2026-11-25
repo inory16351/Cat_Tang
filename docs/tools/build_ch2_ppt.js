@@ -4,19 +4,25 @@
 // Ver02 (2026-11-17): Ver01 pptx에서 손으로 고친 문구를 이 생성기에 옮기고, 구현으로 확정된 값(빨간불 · 출발 시각 · 레일 돌진 ·
 //   객차 회전 · 지나가는 열차 · 전용 모션)을 반영
 // Ver03 (2026-11-18): 패턴 고르기를 모든 보스 공통 '거리에 맞는 패턴 + 거리 무관 패턴 동일 확률'로, 보스 경기장 지름 24m → 32m (원형 경계 · 새 바닥)
+// Ver04 (2026-11-25): Ver03 pptx에서 손으로 고친 문구를 옮기고, 07 '클리어 퀘스트' 섹션 추가 (블랙아웃 → 대장장이 · 흐르는 모래 → 탄약 공방 →
+//   보안관 결투 → 총포상 · 해금 묶음). 근거: Game/Assets/Scripts/Game/Ch2Quest.cs · VillageStory.cs "ch2" · StoryRun.WakeLines (대사 확정본),
+//   Art/tools/specs/ch2_unlock_spec.md (묶음 값은 초안). 묶음 아이콘은 Game/Assets/Resources/Icons에서 읽기만 (없으면 자리 표시)
 const path = require("path");
+const fs = require("fs");
+const sizeOf = require("image-size");
 const L = require("./build_level_ppts.js");
 const { makeDeck, AUTHOR, BG, CARD, TXT, MUTED, GOLD, RED, TEAL, PURPLE, LAV, FLOOR, has } = L;
 
 const OUT_DIR = process.env.OUT_DIR || path.resolve(__dirname, "..");
-const VER = "Ver03";
-const FILE = `1159_2장_기획서_20261118_정승운_${VER}.pptx`;
+const VER = "Ver04";
+const FILE = `1159_2장_기획서_20261125_정승운_${VER}.pptx`;
+const ICONS = path.resolve(__dirname, "../../Game/Assets/Resources/Icons");
 const STEAM = "BFC9D1", COAL = "3A3440", AMBER = "E8B23A", GREEN = "4FA36B";
 
 function build() {
-  const SEC = ["2장 개요", "스테이지 구성", "일반 몬스터", "중간 보스", "보스", "수치 기획"];
+  const SEC = ["2장 개요", "스테이지 구성", "일반 몬스터", "중간 보스", "보스", "수치 기획", "클리어 퀘스트"];
   const D = makeDeck(`11:59 2장 기획서 ${VER}`, `11:59 / 2장 기획서: 멈춘 기차역 ${VER} / ${AUTHOR}`, SEC);
-  D.date = "2026.11.18"; D.sep = " / ";
+  D.date = "2026.11.25"; D.sep = " / ";
   const { pres, text, card, bullets, picture, caption, chip, arrow, content } = D;
   const BGIMG = has("ch2/ch2_bg.jpg") ? "ch2/ch2_bg.jpg" : "05_zone1_western.png";
   const infoRows = (s, rows, fs = 12) => rows.forEach((r, i) => {
@@ -31,7 +37,7 @@ function build() {
     for (let k = 0; k <= Math.floor(w / 0.15); k++) D.line(s, x + k * 0.15, y - 0.11, 0, 0.22, "5C4E40", { width: 1 });
   };
 
-  const cv = D.cover(BGIMG, "2장 기획서", "멈춘 기차역 / 중간 보스 / 보스 상세", "Ver 03");
+  const cv = D.cover(BGIMG, "2장 기획서", "정지된 기차역 / 중간 보스 / 보스 상세", `Ver ${VER.slice(3)}`);
   cv.addNotes("공통 규칙(챕터 구조 / 전투방 / 보스 세 박자 / 수치 기준)은 공통 레벨 디자인 기획서를 따름. 방 크기 / 웨이브 / 보상 / 방 사이 문 규칙은 1장과 같음");
   D.toc(has("ch2/ch2_boss.jpg") ? "ch2/ch2_boss.jpg" : BGIMG);
 
@@ -88,7 +94,7 @@ function build() {
     const s = content(2, "쏘면 다시 흐르는 시간: 오브젝트");
     const W = 2.92, H = 3.15;
     const objs = [
-      ["멈춘 증기 밸브", "쏘면 멈춘 시간이 풀려 정면으로 증기 분출", "승강장 / 기관고 · 방마다 2~3개\n0.5초 뒤 6m × 폭 1.5m · 1.5초\n피해 적 40 / 고양이 15", (bx, by, sz) => {
+      ["멈춘 증기 밸브", "피격 시 멈춘 시간이 풀려 정면으로 증기 분출", "승강장 / 기관고 · 방마다 2~3개\n0.5초 뒤 6m × 폭 1.5m · 1.5초\n피해 적 40 / 고양이 15", (bx, by, sz) => {
         const cy = by + sz / 2;
         D.circle(s, bx + 0.3, cy, 0.17, "6B6F78", { line: STEAM });
         D.rect(s, bx + 0.48, cy - 0.17, sz - 0.62, 0.34, STEAM, { tr: 40, line: STEAM });
@@ -105,14 +111,14 @@ function build() {
         D.circle(s, bx + sz - 0.32, cy, 0.42, RED, { tr: 60, line: RED, dash: "dash" });
         D.mob(s, bx + sz - 0.32, cy);
       }],
-      ["선로 위 광차", "쏘면 선로를 따라 질주하며 경로의 적을 들이받음", "야적장 / 기관고 · 1~2개\n12m/초 질주 → 끝에서 부서짐\n피해 적 50 / 고양이 15", (bx, by, sz) => {
+      ["선로 위 광차", "피격 시 선로를 따라 질주하며 경로의 적을 들이받음", "야적장 / 기관고 · 1~2개\n12m/초 질주 → 끝에서 부서짐\n피해 적 50 / 고양이 15", (bx, by, sz) => {
         const cy = by + sz / 2;
         rail(s, bx + 0.1, cy, sz - 0.2);
         D.rect(s, bx + 0.2, cy - 0.16, 0.36, 0.32, "8A6440", { line: TXT });
         D.arrow(s, bx + 0.62, cy, sz - 1.05, GOLD, { width: 2 });
         D.mob(s, bx + sz - 0.3, cy);
       }],
-      ["지나가는 열차", "멈춘 기관차 + 객차 3량이 풀려 28m/초로 선로를 훑고 지나감. 적도 피해, 선로 위 광차 · 짐도 발동", "야적장 / 승강장 / 기관고 · 선로 폭 3m\n입장 6초 뒤 첫 열차 · 이후 12초마다\n예고 1.5초 · 피해 적 60 / 고양이 20", (bx, by, sz) => {
+      ["지나가는 열차", "피격 시 기관차 + 객차 3량이 28m/초로 선로를 훑고 지나감.", "야적장 / 승강장 / 기관고 · 선로 폭 3m\n입장 6초 뒤 첫 열차 · 이후 12초마다\n예고 1.5초 · 피해 적 60 / 고양이 20", (bx, by, sz) => {
         const cy = by + sz / 2;
         D.rect(s, bx + 0.05, cy - 0.3, sz - 0.1, 0.6, AMBER, { tr: 70, line: AMBER });
         rail(s, bx + 0.05, cy, sz - 0.1);
@@ -265,18 +271,18 @@ function build() {
   {
     const s = content(4, "중간 보스 패턴");
     const W = 3.95, H = 2.45, X = [0.6, 4.68, 8.76], Y = [1.6, 4.24];
-    D.patternCard(s, X[0], Y[0], W, H, "신호봉 휘두르기", "신호봉을 크게 휘둘러 앞쪽 반원을 쓸어 냄", "예고 0.6초 / 전방 반원 3.5m\n피해 18", (bx, by, sz) => {
+    D.patternCard(s, X[0], Y[0], W, H, "신호봉 휘두르기", "신호봉을 크게 휘두르는 범위 공격", "예고 0.6초 / 전방 반원 3.5m\n피해 18", (bx, by, sz) => {
       const cx = bx + sz * 0.25, cy = by + sz / 2;
       D.pie(s, cx, cy, sz * 0.55, 270, 90, RED, { tr: 60 });
       D.boss(s, cx, cy, 0.15);
     }, "가까울 때");
-    D.patternCard(s, X[1], Y[0], W, H, "개찰 펀치", "짧게 세 번 돌진하며 펀치. 매번 방향을 다시 잡음", "3연타 / 각 3m / 0.4초 간격\n피해 15 (3연타 중 한 번만)", (bx, by, sz) => {
+    D.patternCard(s, X[1], Y[0], W, H, "개찰 펀치", "짧게 세 번 돌진하며 공격. 매 타격시 경로 전환", "3연타 / 각 3m / 0.4초 간격\n피해 15 (3연타 중 한 번만)", (bx, by, sz) => {
       const pts = [[0.2, 0.75], [0.45, 0.45], [0.65, 0.65], [0.85, 0.3]];
       for (let k = 0; k < 3; k++) D.line(s, bx + pts[k][0] * sz, by + pts[k][1] * sz, (pts[k + 1][0] - pts[k][0]) * sz, (pts[k + 1][1] - pts[k][1]) * sz, GOLD, { end: "triangle", width: 2 });
       pts.slice(1).forEach(([u, v]) => D.circle(s, bx + u * sz, by + v * sz, 0.15, RED, { tr: 55, line: RED }));
       D.boss(s, bx + pts[0][0] * sz, by + pts[0][1] * sz, 0.14);
     }, "가까울 때");
-    D.patternCard(s, X[2], Y[0], W, H, "시간표 탄막", "전광판 글자판이 뒤집히듯 가로 줄 탄이 차례로 날아옴. 줄마다 빈칸 한 곳", "4줄 / 빈칸 폭 약 2.2m / 0.6초 간격\n6m/초 / 피해 15", (bx, by, sz) => {
+    D.patternCard(s, X[2], Y[0], W, H, "시간표 탄막", "전광판 글자판이 뒤집히듯 탄막을 발사. 빈 공간을 통해 회피", "4줄 / 빈칸 폭 약 2.2m / 0.6초 간격\n6m/초 / 피해 15", (bx, by, sz) => {
       const gaps = [1, 4, 2, 5];
       gaps.forEach((g, r) => { for (let c = 0; c < 7; c++) if (c !== g) D.rect(s, bx + 0.12 + c * 0.2, by + 0.15 + r * 0.28, 0.15, 0.1, r === 0 ? GOLD : "FF8A80", { line: r === 0 ? GOLD : "FF8A80" }); });
       D.cat(s, bx + 0.12 + 5 * 0.2 + 0.07, by + sz - 0.18, 0.09);
@@ -338,7 +344,7 @@ function build() {
 
     const steps = [
       ["① 출발 준비", "헤드라이트 시계에 출발 시각(4~9시)과 남은 초가 뜨고 보스는 제자리에서 출발 준비. 연기 링 패턴만 사용"],
-      ["② 출발 시각 탄", "쏘거나 장전해 바늘을 출발 시각에 맞추면 시계 글자가 초록으로 바뀜. 그때 쏜 총탄을 보스 정면(±70°)에 명중"],
+      ["② 출발 시각 탄", "쏘거나 장전해 바늘을 출발 시각에 맞추면 시계 글자가 초록으로 변화. 그때 쏜 총탄을 보스 정면(±70°)에 명중"],
       ["③ 저지", "10초 안에 맞히면 출발 저지 → 보스 3초 기절. 빗나가면 장전해 다시 시도"],
     ];
     steps.forEach((st, i) => {
@@ -366,7 +372,7 @@ function build() {
     bullets(s, [
       "5초마다 굴뚝에서 연기 링 3겹 (0.6초 간격)",
       "겹마다 빈틈 한 곳(45°) / 다음 겹 빈틈은 같은 쪽으로 40~70° 밀림",
-      "4.5m/초 / 겹마다 피해 12 / 거리를 조절하며 빈틈 셋을 차례로 통과",
+      "4.5m/초 / 겹마다 피해 12 / 거리를 조절하며 빈틈을 차례로 통과하여 회피",
     ], { x: 0.85, y: 5.3, w: 5.0, h: 1.45, fontSize: 13.5, paraSpaceAfter: 3 });
 
     text(s, "2페이즈 (체력 50%)", { x: 6.3, y: 1.65, w: 5, h: 0.4, fontSize: 17, bold: true, color: GOLD });
@@ -397,7 +403,7 @@ function build() {
   {
     const s = content(5, "보스 패턴");
     const W = 3.95, H = 2.45, X = [0.6, 4.68, 8.76], Y = [1.6, 4.24];
-    D.patternCard(s, X[0], Y[0], W, H, "연결봉 휘두르기", "바퀴 연결봉을 양쪽으로 휘둘러 양옆을 쓸어 냄. 앞뒤만 안전", "양옆 부채꼴 100° / 6m\n예고 0.8초 / 피해 22", (bx, by, sz) => {
+    D.patternCard(s, X[0], Y[0], W, H, "연결봉 휘두르기", "바퀴 연결봉을 양쪽으로 휘둘러 양옆을 범위 공격.", "양옆 부채꼴 100° / 6m\n예고 0.8초 / 피해 22", (bx, by, sz) => {
       const cx = bx + sz / 2, cy = by + sz / 2;
       D.pie(s, cx, cy, sz * 0.46, 310, 50, RED, { tr: 55 });
       D.pie(s, cx, cy, sz * 0.46, 130, 230, RED, { tr: 55 });
@@ -412,7 +418,7 @@ function build() {
       D.cat(s, cx + sz * 0.2, cy - 0.05, 0.08);
       D.boss(s, cx, cy, 0.12);
     }, "가까울 때");
-    D.patternCard(s, X[2], Y[0], W, H, "레일 돌진", "+자 선로 중 고양이와 가까운 줄 끝으로 미끄러져 간 뒤, 선로가 빛나고 일직선 돌진", "예고 1초 / 16m/초 / 피해 25\n끝에서 1.5초 멈춤 (2페이즈 2연속)", (bx, by, sz) => {
+    D.patternCard(s, X[2], Y[0], W, H, "레일 돌진", "+자 선로 중 고양이와 가까운 줄 끝으로 미끄러져 이동 후, 선로가 빛나고 일직선 돌진", "예고 1초 / 16m/초 / 피해 25\n끝에서 1.5초 멈춤 (2페이즈 2연속)", (bx, by, sz) => {
       const cy = by + sz / 2;
       D.rect(s, bx + 0.05, cy - 0.2, sz - 0.1, 0.4, AMBER, { tr: 65, line: AMBER });
       rail(s, bx + 0.05, cy, sz - 0.1);
@@ -424,7 +430,7 @@ function build() {
       [[0, 0], [-0.45, -0.35], [0.45, -0.3], [-0.4, 0.4], [0.42, 0.38]].forEach(([dx, dy]) => D.circle(s, cx + dx, cy + dy, 0.2, "B5622E", { tr: 40, line: AMBER }));
       D.cat(s, cx + 0.05, cy + 0.02, 0.08);
     }, "멀 때");
-    D.patternCard(s, X[1], Y[1], W, H, "객차 회전", "뒤따르던 객차 4량이 경기장 외곽을 돌며 원형 범위 피해. 가장자리에서 안쪽으로 몰아냄", "반경 약 15m / 한 바퀴 6초 / 피해 20\n(객차마다 1초에 한 번) / 1페이즈만", (bx, by, sz) => {
+    D.patternCard(s, X[1], Y[1], W, H, "객차 회전", "뒤따르던 객차 4량이 경기장 외곽을 돌며 원형 범위 피해. 가장자리에서 안쪽으로 이동 유도 및 제한", "반경 약 15m / 한 바퀴 6초 / 피해 20\n(객차마다 1초에 한 번) / 1페이즈만", (bx, by, sz) => {
       const cx = bx + sz / 2, cy = by + sz / 2, R = sz * 0.4;
       D.circle(s, cx, cy, R + 0.12, RED, { tr: 70, line: RED });
       D.circle(s, cx, cy, R - 0.12, FLOOR, { line: FLOOR });
@@ -473,6 +479,199 @@ function build() {
     text(s, "중간 보스 2520 = 20 × 3.5 × 60초 × 0.6  /  보스 4860 = 20 × 4.5 × 90초 × 0.6", { x: 0.6, y: 6.4, w: 9.3, h: 0.4, fontSize: 13, bold: true });
   }
 
+  // 07 클리어 퀘스트 (2026-11-25 확정 · 구현: Ch2Quest.cs · 대사는 코드의 확정본 그대로)
+  pres.addSection({ title: SEC[6] });
+  const SMITH = "모래시계 대장장이", SHERIFF = "빈 외투 보안관", CUCKOO = "태엽 풀린 뻐꾸기";
+  const WHO = { "고양이": GOLD, [CUCKOO]: TEAL, [SMITH]: AMBER, [SHERIFF]: "C9A27A" };
+  const SHORT = { [CUCKOO]: "뻐꾸기", [SMITH]: "대장장이", [SHERIFF]: "보안관" };
+  // 대사: [화자, 글] 목록. 화자는 색 · 굵게, 글은 본문 색
+  const say = (s, lines, o) => text(s, lines.map(([who, t], i) => [
+    { text: (SHORT[who] || who) + "  ", options: { bold: true, color: WHO[who] || MUTED, fontSize: (o.fontSize || 12) - 1 } },
+    { text: t, options: { color: TXT, breakLine: i < lines.length - 1 } },
+  ]).flat(), { fontSize: 12, paraSpaceAfter: 4, lineSpacingMultiple: 1.05, ...o });
+  const portrait = (s, file, x, y, w, h, label) => { card(s, x, y, w, h, "C9C6CF"); picture(s, file, x + 0.08, y + 0.08, w - 0.16, h - 0.16, label, "contain"); };
+  const step = (s, x, y, w, h, n, title, desc, fill, tag) => {
+    card(s, x, y, w, h, fill);
+    D.circle(s, x + 0.32, y + 0.33, 0.19, GOLD, { line: GOLD });
+    text(s, String(n), { x: x + 0.13, y: y + 0.14, w: 0.38, h: 0.38, fontSize: 13, bold: true, color: BG, align: "center", valign: "middle" });
+    text(s, title, { x: x + 0.62, y: y + 0.12, w: w - 0.7, h: 0.42, fontSize: 14.5, bold: true, color: GOLD, valign: "middle" });
+    text(s, desc, { x: x + 0.2, y: y + 0.62, w: w - 0.35, h: h - 1.0, fontSize: 11.5, lineSpacingMultiple: 1.1 });
+    if (tag) D.chip(s, tag, x + w - 0.95, y + h - 0.4, 0.8, PURPLE, TXT, { size: 9, h: 0.26 });
+  };
+  {
+    const s = content(7, "블랙아웃에서 다시 도는 바늘까지");
+    const steps = [
+      ["블랙아웃", "2장 보스 처치 뒤 꿈 없이 기절 → 암전", "판 안"],
+      ["깨어남", "마을에서 깨어나 뻐꾸기와 대화", "마을"],
+      ["바늘이 다시 멈춤", "광장 시곗바늘 정지 / 바늘 둘레에 조각 2개", "마을"],
+      ["대장장이의 부탁", "대장장이 섬 다리 연결 / 흐르는 모래를 구해 와 달라는 부탁", "마을"],
+      ["흐르는 모래", "다음 판 첫 중간 보스가 확정으로 떨어뜨림 / 주우면 죽어도 유지", "판 안"],
+      ["탄약 공방 해금", "모래 전달 → 조각 하나가 바늘로 / 탄약 공방 열림", "마을"],
+      ["보안관 결투", "보안관 섬 다리 연결 / 종이 울리면 먼저 뽑기", "마을"],
+      ["총포상 해금", "마지막 조각 → 바늘이 다시 돎 / 총포상 열림", "마을"],
+    ];
+    const W = 2.88, H = 1.6, GX = 0.19;
+    steps.forEach((st, i) => {
+      const r = Math.floor(i / 4), c = i % 4, x = 0.6 + c * (W + GX), y = 1.6 + r * (H + 0.55);
+      step(s, x, y, W, H, i + 1, st[0], st[1], st[2] === "판 안" ? "3A2436" : CARD, st[2]);
+      if (c < 3) arrow(s, x + W + 0.02, y + H / 2, GX - 0.04, GOLD);
+    });
+    // 1줄 끝 → 2줄 처음
+    const x4 = 0.6 + 3 * (W + GX) + W / 2, x5 = 0.6 + W / 2, yA = 1.6 + H;
+    D.line(s, x4, yA, 0, 0.27, GOLD, { width: 2 });
+    D.line(s, x4, yA + 0.27, x5 - x4, 0, GOLD, { width: 2 });
+    D.line(s, x5, yA + 0.27, 0, 0.28, GOLD, { width: 2, end: "triangle" });
+    card(s, 0.6, 5.95, 12.1, 0.88, PURPLE);
+    text(s, [
+      { text: "규칙  ", options: { bold: true, color: GOLD } },
+      { text: "2장 클리어 = 꿈 연출 없음 / 퀘스트 순서 = 탄 → 총 / 해금 때는 묶음을 살 수 있다는 안내만 (첫 묶음 무료 없음 / 조각 지급 없음)", options: { breakLine: true } },
+      { text: "광장 시계는 대장장이 / 보안관 퀘스트로 나눠 고치고, 마지막에 바늘이 다시 돎", options: { color: MUTED, fontSize: 12 } },
+    ], { x: 0.85, y: 5.95, w: 11.7, h: 0.88, fontSize: 13, valign: "middle", paraSpaceAfter: 2 });
+    s.addNotes("판 안 = 전투 판에서 일어나는 단계, 마을 = 마을 섬에서 일어나는 단계. 해금 기록 키: 탄약 공방 q2_ammo / 총포상 q2_gun. 2장 보스 문 앞 스토리 맵 2(배웅하던 승강장)는 이 퀘스트와 별개");
+  }
+  {
+    const s = content(7, "블랙아웃과 깨어남");
+    portrait(s, "village/cuckoo.png", 0.6, 1.6, 3.2, 3.45, CUCKOO);
+    caption(s, CUCKOO, 0.6, 5.12, 3.2, { align: "center" });
+    bullets(s, [
+      { t: "연출 순서", b: true, c: GOLD },
+      "2장 보스 처치 → 기절 → 암전 (기절 대사 없음)",
+      "마을에서 깨어남 → 멈춘 광장 시곗바늘을 먼저 비춤",
+      "뻐꾸기 대화 → 대장장이 섬 다리 연결 → 대장장이에게 화살표",
+    ], { x: 0.6, y: 5.45, w: 3.3, h: 1.45, fontSize: 11, paraSpaceAfter: 2 });
+    card(s, 4.1, 1.6, 8.6, 5.25);
+    text(s, "깨어남 대화", { x: 4.35, y: 1.72, w: 4, h: 0.4, fontSize: 15, bold: true, color: GOLD });
+    say(s, [
+      ["고양이", "윽...머리가...! 어떤 일이 일어난거지..."],
+      ["고양이", "난 분명... 그 기차역에 있었는데..."],
+      [CUCKOO, "일어났구나...멀리까지 간 모양이던데..."],
+      [CUCKOO, "그나저나 또 새로운 손님들이 찾아왔어."],
+      [CUCKOO, "시계를 고칠 수 있을지도 몰라."],
+      ["고양이", "(또 고장이 난건가? 무슨일인지 영문을 모르겠군)"],
+      [CUCKOO, "그렇게 의심스런 눈초리로 쳐다보진마"],
+      [CUCKOO, "결국 이 시계가 멈추는 이유는..."],
+      [CUCKOO, "아니야.. 차차 알게 되겠지"],
+      ["고양이", "...."],
+    ], { x: 4.35, y: 2.25, w: 8.1, h: 4.5, fontSize: 15, paraSpaceAfter: 10 });
+  }
+  {
+    const s = content(7, "대장장이: 흐르는 모래와 탄약 공방");
+    portrait(s, "village/hourglass.png", 0.6, 1.6, 2.7, 2.91, SMITH);
+    caption(s, SMITH, 0.6, 4.58, 2.7, { align: "center" });
+    card(s, 0.6, 4.95, 2.7, 1.9, "3A2436");
+    text(s, "흐르는 모래", { x: 0.78, y: 5.03, w: 2.4, h: 0.35, fontSize: 13, bold: true, color: AMBER });
+    bullets(s, [
+      "부탁을 들은 뒤 판의 첫 중간 보스가 확정 드랍",
+      "부탁 전에는 드랍 없음",
+      "주우면 바로 기록 / 판에서 죽어도 유지",
+    ], { x: 0.78, y: 5.4, w: 2.42, h: 1.4, fontSize: 10.5, paraSpaceAfter: 2 });
+    // 부탁
+    card(s, 3.5, 1.6, 4.5, 5.25);
+    text(s, "① 첫 방문: 부탁", { x: 3.72, y: 1.72, w: 4, h: 0.38, fontSize: 14.5, bold: true, color: GOLD });
+    say(s, [
+      [SMITH, "...모래가 다 새기 전에 왔군."],
+      ["고양이", "광장 시계가 또 멈췄어."],
+      [SMITH, "알고 있다. 시계 속 모래가 말라 버렸어."],
+      [SMITH, "흐르는 모래가 있어야 바늘이 다시 간다."],
+      [SMITH, "시간의 문 너머, 처음 길을 막아서는 큰 놈이 그걸 품고 있지."],
+      [SMITH, "가져오면 바늘을 채워 주마. 남는 모래로는 탄도 부어 주고."],
+    ], { x: 3.72, y: 2.2, w: 4.1, h: 3.1, fontSize: 12.5, paraSpaceAfter: 6 });
+    text(s, [
+      { text: "안내  ", options: { bold: true, color: GOLD } }, { text: "다음 판 첫 중간 보스에게서 흐르는 모래를 얻어 오자", options: { breakLine: true } },
+      { text: "다시 말 걸면  ", options: { bold: true, color: MUTED } }, { text: "\"흐르는 모래는?\" / \"시간의 문 너머, 처음 길을 막아서는 큰 놈이다.\"", options: { color: MUTED } },
+    ], { x: 3.72, y: 5.5, w: 4.1, h: 1.25, fontSize: 11, paraSpaceAfter: 4, valign: "bottom" });
+    // 전달
+    card(s, 8.2, 1.6, 4.5, 5.25, PURPLE);
+    text(s, "② 모래를 가져옴: 탄약 공방", { x: 8.42, y: 1.72, w: 4.1, h: 0.38, fontSize: 14.5, bold: true, color: GOLD });
+    say(s, [
+      [SMITH, "가져왔군."],
+      [SMITH, "...그래, 이 모래다."],
+      [SMITH, "아직 따뜻하군. 누군가 오래 쥐고 있던 모래야."],
+    ], { x: 8.42, y: 2.2, w: 4.1, h: 1.1, fontSize: 12.5, paraSpaceAfter: 6 });
+    D.chip(s, "조각 하나 → 바늘 / 탄약 공방 해금", 8.42, 3.4, 4.05, AMBER, BG, { size: 11, h: 0.34 });
+    say(s, [
+      [SMITH, "바늘 한쪽은 채웠다. 나머지는 내 손으론 안 돼."],
+      [SMITH, "서쪽 섬의 보안관을 찾아가."],
+      [SMITH, "그 친구는 말보다 총으로 이야기하지."],
+      [SMITH, "공방도 다시 열었다. 새 탄을 부으려면 조각을 가져와."],
+    ], { x: 8.42, y: 3.92, w: 4.1, h: 2.2, fontSize: 12.5, paraSpaceAfter: 6 });
+    text(s, "→ 보안관 섬 다리 연결 / 보안관에게 화살표", { x: 8.42, y: 6.3, w: 4.1, h: 0.4, fontSize: 11, color: MUTED });
+    s.addNotes("해금 알림: '탄약 공방 해금 — 시간의 조각으로 새 총탄 묶음을 살 수 있다'. 모래 모델 = 작은 모래시계 + 호박색 빛, 다가가면(4m) 빨려 와 주워짐");
+  }
+  {
+    const s = content(7, "보안관 결투와 총포상");
+    portrait(s, "village/sheriff.png", 0.6, 1.6, 2.7, 2.91, SHERIFF);
+    caption(s, SHERIFF, 0.6, 4.58, 2.7, { align: "center" });
+    // 결투 전
+    card(s, 3.5, 1.6, 4.5, 2.5);
+    text(s, "① 결투 신청", { x: 3.72, y: 1.72, w: 4, h: 0.38, fontSize: 14.5, bold: true, color: GOLD });
+    say(s, [
+      [SHERIFF, "대장장이가 보냈나."],
+      [SHERIFF, "내 얼굴은 필름과 함께 바랬어. 하지만 총은 아직 기억하지."],
+      [SHERIFF, "바늘을 움직이고 싶다면, 한 번 겨뤄 보세."],
+      [SHERIFF, "종이 울리면 뽑게. 먼저 뽑으면 처음부터야."],
+    ], { x: 3.72, y: 2.2, w: 4.1, h: 1.85, fontSize: 12, paraSpaceAfter: 5 });
+    // 결투 규칙
+    card(s, 3.5, 4.3, 4.5, 2.55, "3A2436");
+    text(s, "② 결투 (연출 위주)", { x: 3.72, y: 4.4, w: 4, h: 0.38, fontSize: 14.5, bold: true, color: AMBER });
+    bullets(s, [
+      "7m 떨어져 마주 섬 / 째깍 소리 2~4.4초 뒤 종 + 섬광 + '지금!'",
+      "종 뒤 1.3초 안에 좌클릭 = 승리 (슬로 / 보안관 외투가 휘청)",
+      "일찍 쏘면 \"...성급하군. 다시.\" / 늦으면 보안관이 먼저 쏨 \"느려. 한 번 더.\"",
+      "패널티 없음 / 이길 때까지 다시",
+    ], { x: 3.72, y: 4.85, w: 4.15, h: 1.95, fontSize: 11, paraSpaceAfter: 3 });
+    // 이긴 뒤
+    card(s, 8.2, 1.6, 4.5, 5.25, PURPLE);
+    text(s, "③ 이긴 뒤: 총포상", { x: 8.42, y: 1.72, w: 4.1, h: 0.38, fontSize: 14.5, bold: true, color: GOLD });
+    say(s, [
+      [SHERIFF, "......좋은 손이야."],
+      [SHERIFF, "떠나는 기차를 붙잡으려던 그 손이군."],
+      ["고양이", "......어떻게 그걸."],
+      [SHERIFF, "총포상을 다시 열지. 바늘도 이제 돌 거야."],
+    ], { x: 8.42, y: 2.2, w: 4.1, h: 1.9, fontSize: 12.5, paraSpaceAfter: 6 });
+    D.chip(s, "마지막 조각 → 바늘이 다시 돎", 8.42, 4.25, 4.05, GOLD, BG, { size: 11, h: 0.34 });
+    D.chip(s, "총포상 해금", 8.42, 4.72, 4.05, AMBER, BG, { size: 11, h: 0.34 });
+    text(s, "해금 알림: '총포상 해금 — 시간의 조각으로 새 총 묶음을 살 수 있다'", { x: 8.42, y: 5.25, w: 4.1, h: 0.6, fontSize: 11, color: MUTED });
+  }
+  {
+    const s = content(7, "해금 묶음: 탄약 공방 / 총포상");
+    text(s, [
+      { text: "묶음을 시간의 조각으로 사면 그 묶음의 탄 / 총이 판의 드랍 / 상점에 등장 (세피리아식)", options: { breakLine: true } },
+      { text: "기존 탄 / 총은 처음부터 해금 / 시작 총 고르기 없음 (판 시작 = 양손 기본 총)" },
+    ], { x: 0.6, y: 1.42, w: 12.1, h: 0.55, fontSize: 12, color: MUTED, paraSpaceAfter: 1 });
+    const GC = { 희귀: "4F8CE0", 영웅: "9B5DE5", 전설: "E0A63A" };
+    const icon = (x, y, sz, kind, id, col) => {
+      const f = path.join(ICONS, kind, `${kind.slice(0, -1)}_${id}.png`);
+      if (fs.existsSync(f)) {
+        const d = sizeOf(fs.readFileSync(f)), k = Math.min(sz / d.width, sz / d.height);
+        s.addImage({ path: f, x: x + (sz - d.width * k) / 2, y: y + (sz - d.height * k) / 2, w: d.width * k, h: d.height * k });
+      } else {
+        D.rect(s, x, y, sz, sz, FLOOR, { line: col, dash: "dash" });
+        text(s, "아이콘\n제작 중", { x, y, w: sz, h: sz, fontSize: 8, color: MUTED, align: "center", valign: "middle" });
+        console.warn("아이콘 없음:", f);
+      }
+    };
+    const bundle = (x, y, w, h, fac, name, kind, cost, items, kindIcon) => {
+      card(s, x, y, w, h);
+      text(s, fac, { x: x + 0.25, y: y + 0.12, w: 2.5, h: 0.3, fontSize: 11, color: MUTED });
+      text(s, [{ text: name, options: { bold: true, color: GOLD } }, { text: `  ${kind}`, options: { color: TXT, fontSize: 12 } }], { x: x + 0.25, y: y + 0.4, w: w - 1.9, h: 0.42, fontSize: 17 });
+      text(s, [{ text: `${cost} 조각`, options: { bold: true } }, { text: "  초안", options: { color: MUTED, fontSize: 9.5 } }], { x: x + w - 1.75, y: y + 0.4, w: 1.5, h: 0.42, fontSize: 15, align: "right" });
+      const iw = (w - 0.5) / items.length;
+      items.forEach(([id, nm, gr], k) => {
+        const ix = x + 0.25 + k * iw, sz = 0.92;
+        icon(ix + (iw - sz) / 2, y + 0.85, sz, kindIcon, id, GC[gr]);
+        text(s, [{ text: nm, options: { bold: true, color: GC[gr] } }, { text: `  ${gr}`, options: { color: MUTED, fontSize: 9.5 } }], { x: ix, y: y + 0.85 + sz + 0.06, w: iw, h: 0.3, fontSize: 11.5, align: "center" });
+      });
+    };
+    const BW = 5.95, BH = 2.2;
+    text(s, "탄약 공방", { x: 0.6, y: 2.02, w: 3, h: 0.3, fontSize: 13, bold: true, color: GOLD });
+    text(s, "총포상", { x: 6.75, y: 2.02, w: 3, h: 0.3, fontSize: 13, bold: true, color: GOLD });
+    bundle(0.6, 2.33, BW, BH, "묶음 1 / 탄 3발", "여정", "제어: 둔화 / 가둠", 60, [[1047, "연착", "희귀"], [1048, "환승역", "영웅"], [1049, "끝나지 않는 여정", "전설"]], "bullets");
+    bundle(0.6, 4.65, BW, BH, "묶음 2 / 탄 3발", "마무리", "화력: 관통 / 폭발", 80, [[1050, "레일 위의 불꽃", "희귀"], [1051, "연기 고리", "영웅"], [1052, "마지막 기차", "전설"]], "bullets");
+    bundle(6.75, 2.33, BW, BH, "묶음 3 / 총 1자루", "가스등 랜턴", "스킬 랜턴 던지기", 70, [[2009, "가스등 랜턴", "영웅"]], "guns");
+    bundle(6.75, 4.65, BW, BH, "묶음 4 / 총 1자루", "기관차", "스킬 증기 돌진", 80, [[2010, "기관차", "전설"]], "guns");
+    s.addNotes("묶음 값 60~80 조각은 초안. 이름 / 생김새만 2장 기억(비 오는 승강장 / 기차) 결, 기능은 스토리와 무관. 등급은 희귀~전설. 탄 / 총 상세는 총탄 기획서 Ver04 / 총 기획서 Ver03. 앞으로 장마다 묶음 확장");
+  }
   return pres.writeFile({ fileName: path.join(OUT_DIR, FILE) });
 }
 

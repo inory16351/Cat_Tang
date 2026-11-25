@@ -5,7 +5,7 @@
 //  - Hit: 지금 망각 타격(얼음 가시 박혔다 깨짐)에서 파란 불똥(BakedSpark)만 뺌
 //  - 1~5단계 IceLock: 가둠 순간 발밑에서 반투명 각진 얼음 덩어리(fx_ice_block)가 0.14초에 솟아 몸(모델 크기 그대로)을 덮음 → 갇힌 동안 유지 →
 //    풀리거나 죽으면 하얗게 번쩍하며 조각으로 깨짐
-//  - 6단계 IceBloom: 감옥 대신 가둠 순간 얼음 꽃잎(fx_ice_petal) 바깥 10장 · 안쪽 6장이 빙글 돌아가며 피어남 (꽃 그림은 바닥에 눕혀 깖) → 갇힌 동안 유지 →
+//  - 6단계 IceBloom: 감옥 대신 가둠 순간 블렌더로 구운 별 모양 얼음 수정 무더기(FX/IceBloom/fx_icebloom_0~2)가 땅에서 솟음 (2026-11-25, 전엔 꽃잎 16장 + 바닥 그림) → 갇힌 동안 유지 →
 //    풀리면 하얗게 차올라 번쩍(짧은 멈춤) 깨짐: 꽃잎이 각진 얼음 조각 · 유리 조각으로 터져 튀고, 흰 별 섬광 · 반짝임 · 서리 고리 세 겹 · 흔들림
 // 그림 + 3D (2026-11-18 사용자: 얼음도 Codex 그림이랑 합치는 방향으로): Codex 시트 cx_ice_lock(얼어붙는 순간 → 얼음 우리, 마지막 장은 갇힌 동안 유지) ·
 //   cx_ice_bloom(얼음 꽃 피어남 → 번쩍 깨짐 → 조각 · 반짝임)을 카메라를 보는 판으로 3D 위에 겹침 (docs/images/fx_src/prompts/ice_lock.txt · ice_bloom.txt → fx_sheet_cut.py)
@@ -344,11 +344,20 @@ namespace CatTang
         }
     }
 
-    /// <summary>6단계 가둠: 감옥 대신 얼음 꽃 (2026-11-18 사용자: 6단계부턴 아예 꽃으로) — 가둠 순간 피어 갇힌 동안 유지 → 풀리면 하얗게 차올라 크게 깨짐</summary>
+    /// <summary>6단계 가둠: 감옥 대신 얼음 꽃 (2026-11-18 사용자: 6단계부턴 아예 꽃으로) — 가둠 순간 피어 갇힌 동안 유지 → 풀리면 하얗게 차올라 크게 깨짐
+    /// 2026-11-25 사용자: "보스 땅 내려찍을 때 나오는 오브젝트처럼 블렌더로 저 모양으로 3D 구워서" → 바닥에 눕힌 별 그림 · 꽃잎 16장 대신
+    ///   블렌더로 구운 별 모양 얼음 수정 무더기(Resources/FX/IceBloom/fx_icebloom_0~2, Art/tools/blender_fx_icebloom.py)가 땅에서 솟음 (땅 솟음 Upheaval과 같은 방식). 깨짐 그림(4~7장)은 그대로</summary>
     public class IceBloom : MonoBehaviour
     {
-        class Petal { public Transform t; public MeshRenderer r; public MaterialPropertyBlock b; public float delay, len, tilt, yaw; }
-        readonly List<Petal> petals = new();
+        static GameObject[] src;
+        static Material frostMat, bodyMat, tipMat;
+        Transform cluster;
+        Renderer[] clusterR;
+        // 2026-11-25 사용자: "갑자기 생성 말고 얼음꽃 피어나듯이 얼어버리는 느낌으로 아래부터" → 수정 조각마다 밑동에서부터 차례로 자람
+        //   조각 이름 c_<지연ms>_<번호> (블렌더에서 안쪽 → 중간 → 바깥, 빙글 도는 차례), frost = 바닥 서리판 (가운데부터 번짐)
+        struct Grow { public Transform t; public Vector3 full; public float delay, len; }
+        readonly List<Grow> grows = new();
+        MaterialPropertyBlock mpb;
         Transform target;
         Health hp;
         MeshRenderer card;
@@ -356,8 +365,32 @@ namespace CatTang
         Vector3 ground, size, offset;
         float born, radius, minDur, releasedAt = -1f;
         bool broken;
-        const float Open = 0.24f, Charge = 0.1f;
+        const float Open = 0.58f, Charge = 0.1f;   // Open = 다 피는 데 걸리는 시간 (바깥 칼날 끝 0.38 + 자람 0.2)
         static readonly int ShallowId = Shader.PropertyToID("_Shallow"), DeepId = Shader.PropertyToID("_Deep");
+
+        static GameObject Src()
+        {
+            if (src == null)
+            {
+                src = new GameObject[3];
+                for (int i = 0; i < 3; i++) src[i] = Resources.Load<GameObject>("FX/IceBloom/fx_icebloom_" + i);
+                // 2026-11-25 사용자: "얼음 좀 반투명하게 해서 얼음 느낌" → 몸은 속이 비치게(알파 0.42) + 가장자리 흰 테 · 끝 결정면은 조금 더 차게(0.62) · 바닥 서리판은 옅게 비침(0.3)
+                var baseIce = OblivionFx.IceMat(false);
+                if (baseIce)
+                {
+                    bodyMat = new Material(baseIce) { name = "IceBloomBody" };
+                    bodyMat.SetFloat("_Alpha", 0.42f); bodyMat.SetColor("_Rim", Color.white); bodyMat.SetFloat("_OutlinePx", 1.8f);
+                    bodyMat.SetColor("_Tint", new Color(0.8f, 0.92f, 1f));
+                    tipMat = new Material(baseIce) { name = "IceBloomTip" };
+                    tipMat.SetFloat("_Alpha", 0.62f); tipMat.SetColor("_Rim", Color.white); tipMat.SetFloat("_OutlinePx", 1.8f);
+                    tipMat.SetColor("_Tint", new Color(0.95f, 0.99f, 1f));
+                    frostMat = new Material(baseIce) { name = "IceBloomFrost" };
+                    frostMat.SetFloat("_Alpha", 0.3f); frostMat.SetFloat("_OutlinePx", 0f);
+                    frostMat.SetColor("_Tint", new Color(0.85f, 0.97f, 1f));
+                }
+            }
+            return src[Random.Range(0, 3)];
+        }
 
         public void Begin(Transform t, float minimum)
         {
@@ -369,47 +402,46 @@ namespace CatTang
             offset = new Vector3(bb.center.x - t.position.x, 0, bb.center.z - t.position.z);
             ground = new Vector3(bb.center.x, t.position.y, bb.center.z);
             transform.position = ground;
-            var mesh = FxMeshes.Lib("fx_ice_petal");
-            float a0 = Random.Range(0f, 360f);
-            // 바깥 10장 (눕듯 벌어짐) · 안쪽 6장 (곧게 서서 몸을 감쌈), 빙글 돌아가는 차례로 피어남
-            for (int i = 0; i < 16; i++)
+            mpb = new MaterialPropertyBlock();
+            var pf = Src();
+            if (pf)
             {
-                bool outer = i < 10;
-                int k = outer ? i : i - 10;
-                int n = outer ? 10 : 6;
-                var p = new Petal
+                var go = Instantiate(pf, transform);
+                go.name = "Cluster";
+                cluster = go.transform;
+                cluster.localRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+                cluster.localScale = Vector3.one * radius;
+                foreach (Transform c in cluster)
                 {
-                    yaw = a0 + k * 360f / n + (outer ? 0f : 30f) + Random.Range(-6f, 6f),
-                    tilt = outer ? Random.Range(58f, 68f) : Random.Range(18f, 28f),
-                    len = outer ? radius * Random.Range(0.85f, 1f) : Mathf.Max(radius * 0.6f, size.y * Random.Range(0.75f, 0.9f)),
-                    delay = outer ? k * 0.014f : 0.05f + k * 0.012f,
-                };
-                var go = new GameObject("Petal");
-                go.transform.SetParent(transform, false);
-                go.transform.localPosition = Quaternion.Euler(0, p.yaw, 0) * Vector3.forward * w * (outer ? 0.45f : 0.42f);
-                go.transform.localRotation = Quaternion.Euler(0, p.yaw, 0) * Quaternion.Euler(p.tilt, 0, 0);   // +Y 꽃잎을 바깥(+Z) 쪽으로 기울임
-                go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                p.r = go.AddComponent<MeshRenderer>();
-                p.r.sharedMaterial = OblivionFx.IceMat(false);
-                p.r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                p.r.receiveShadows = false;
-                p.b = new MaterialPropertyBlock();
-                p.t = go.transform;
-                p.t.localScale = new Vector3(0.001f, 0.001f, 0.001f);
-                petals.Add(p);
+                    float d = 0f, len = 0.2f;
+                    if (c.name.StartsWith("frost")) { d = 0f; len = 0.42f; }
+                    else if (c.name.StartsWith("c_") && c.name.Length >= 6 && int.TryParse(c.name.Substring(2, 4), out int ms)) d = ms / 1000f;
+                    grows.Add(new Grow { t = c, full = c.localScale, delay = d + 0.03f, len = len });
+                    c.localScale = Vector3.zero;
+                }
+                clusterR = go.GetComponentsInChildren<Renderer>();
+                foreach (var r in clusterR)
+                {
+                    var ms = r.sharedMaterials;
+                    for (int i = 0; i < ms.Length; i++)
+                    {
+                        string n = ms[i] ? ms[i].name : "";
+                        ms[i] = n.Contains("Frost") ? frostMat : n.Contains("Tip") ? tipMat : bodyMat;
+                    }
+                    r.sharedMaterials = ms;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;   // 반투명 얼음이라 짙은 그림자 없음
+                    r.receiveShadows = false;
+                }
             }
             OblivionFx.Ring(ground, 9f, radius * 0.9f, 0.18f, new Color(0.85f, 0.96f, 1f), 0.3f);
-            card = OblivionFx.ImageCard(transform, "cx_ice_bloom", out cardFrames);
+            // 2026-11-25 사용자: "터질 때 이미지 나오는 것도 제거" → 깨짐 그림판(cx_ice_bloom) 안 씀, 3D 조각 · 섬광만
         }
 
-        /// <summary>꽃 그림은 바닥에 눕혀 깖 (몬스터가 꽃 한가운데 서 있게): 피어남 0~2장 → 갇힌 동안 2장 → 차오름 3장 → 깨짐 4~7장(0.36초)</summary>
+        /// <summary>(안 씀 — 2026-11-25 그림판 제거. card가 없으면 바로 돌아감)</summary>
         void PoseCard(float t)
         {
             if (!card) return;
-            int fi;
-            if (releasedAt < 0) fi = Mathf.Min(2, Mathf.FloorToInt(t / Open * 3f));
-            else if (!broken) fi = 3;
-            else fi = 4 + Mathf.FloorToInt((t - releasedAt - Charge) / 0.09f);
+            int fi = broken ? 4 + Mathf.FloorToInt((t - releasedAt - Charge) / 0.09f) : 99;
             card.enabled = fi < cardFrames.Length;
             if (!card.enabled) return;
             card.sharedMaterial = cardFrames[fi];
@@ -427,17 +459,22 @@ namespace CatTang
             PoseCard(t);
             if (broken) { if (t > releasedAt + Charge + 0.45f) Destroy(gameObject); return; }
             float charge = releasedAt < 0 ? 0f : Mathf.Clamp01((t - releasedAt) / Charge);
-            var shallow = Color.Lerp(new Color(0.86f, 0.97f, 1f), Color.white, charge * charge);
-            var deep = Color.Lerp(new Color(0.46f, 0.76f, 0.98f), new Color(0.75f, 0.92f, 1f), charge);
-            float shimmer = 1f + Mathf.Sin(t * 9f) * 0.015f;                                    // 갇힌 동안 살짝 반짝이며 숨 쉼
-            foreach (var p in petals)
+            if (cluster)
             {
-                float k = Mathf.Clamp01((t - p.delay) / 0.12f);
-                float g = 1f - (1f - k) * (1f - k) * (1f - k) + Mathf.Sin(Mathf.Clamp01((t - p.delay - 0.12f) / 0.1f) * Mathf.PI) * 0.06f;
-                float w = p.len * 0.55f;
-                p.t.localScale = new Vector3(w * Mathf.Max(0.001f, k), p.len * Mathf.Max(0.001f, g) * shimmer, w * Mathf.Max(0.001f, k));
-                p.b.SetColor(ShallowId, shallow); p.b.SetColor(DeepId, deep);
-                p.r.SetPropertyBlock(p.b);
+                // 얼어붙으며 피어남: 서리판이 가운데부터 번지고 → 수정이 안쪽부터 바깥으로 빙글 돌며 밑동에서 자라 오름(끝에 살짝 넘침)
+                //   → 갇힌 동안 살짝 반짝이며 숨 쉼 → 차오를 때 부풂
+                foreach (var g in grows)
+                {
+                    if (!g.t) continue;
+                    float x = Mathf.Clamp01((t - g.delay) / g.len);
+                    float k = x <= 0 ? 0f : 1f - Mathf.Pow(1f - x, 3f) + Mathf.Sin(x * Mathf.PI) * 0.08f;
+                    g.t.localScale = g.full * Mathf.Max(0.0001f, k);
+                }
+                float breathe = 1f + Mathf.Sin(t * 9f) * 0.015f + charge * 0.08f;
+                cluster.localScale = Vector3.one * radius * breathe;
+                mpb.SetColor(ShallowId, Color.Lerp(new Color(0.86f, 0.97f, 1f), Color.white, charge * charge));
+                mpb.SetColor(DeepId, Color.Lerp(new Color(0.46f, 0.76f, 0.98f), new Color(0.75f, 0.92f, 1f), charge));
+                foreach (var r in clusterR) if (r) r.SetPropertyBlock(mpb);
             }
             if (releasedAt >= 0 && t >= releasedAt + Charge) Break();
         }
@@ -448,20 +485,21 @@ namespace CatTang
             var s = IceShatter.Spawn(ground);
             string[] chunks = { "fx_ice_chunk_0", "fx_ice_chunk_1", "fx_ice_chunk_2" };
             string[] thin = { "fx_glass_0", "fx_glass_1", "fx_glass_2" };
-            // 꽃잎마다 길이를 따라 조각 3개 (각진 덩어리 2 + 얇은 조각 1)
-            foreach (var p in petals)
+            // 수정 무더기 자리에서 조각: 별 꼭짓점마다 바깥으로 각진 덩어리 2 + 얇은 조각 1, 안쪽 곧은 수정은 위로
+            int n = 14;
+            float a0 = Random.Range(0f, 360f);
+            for (int i = 0; i < n; i++)
             {
-                var up = p.t.up;
-                var outDir = new Vector3(up.x, 0, up.z).normalized;
+                var outDir = Quaternion.Euler(0, a0 + i * 360f / n, 0) * Vector3.forward;
                 for (int j = 0; j < 3; j++)
                 {
-                    var at = p.t.position + up * p.len * (0.25f + 0.3f * j);
+                    var at = ground + outDir * radius * (0.3f + 0.25f * j) + Vector3.up * radius * (0.35f - 0.1f * j);
                     var vel = outDir * Random.Range(5f, 10f) + Vector3.up * Random.Range(3f, 7f) + Random.insideUnitSphere * 1.5f;
-                    float sc = p.len * (j == 2 ? 0.22f : 0.3f) * Random.Range(0.8f, 1.2f);
+                    float sc = radius * (j == 2 ? 0.2f : 0.27f) * Random.Range(0.8f, 1.2f);
                     OblivionFx.Piece(s.transform, s.pieces, j == 2 ? thin[Random.Range(0, 3)] : chunks[Random.Range(0, 3)], at, vel, sc, Random.Range(0.65f, 0.95f));
                 }
-                Destroy(p.t.gameObject);
             }
+            if (cluster) Destroy(cluster.gameObject);
             OblivionFx.Burst(this, ground, radius, Mathf.Max(size.y, 1.2f));
             OblivionFx.Release(target);
         }

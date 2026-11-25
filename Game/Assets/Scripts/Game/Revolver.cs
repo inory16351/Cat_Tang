@@ -92,9 +92,13 @@ namespace CatTang
             }
         }
 
+        /// <summary>개발용 (시연 녹화): 기본 탄이 아닌 탄은 조건과 상관없이 활성화</summary>
+        public static bool DevAllAwake;
+
         public bool Awakened(int slot)
         {
             var b = slots[slot].bullet;
+            if (DevAllAwake && b != null && b.Id != 1000) return true;
             return b != null && Meets(b.CondType, b.CondValue, JudgeTime(slot));
         }
 

@@ -548,7 +548,7 @@ namespace CatTang
             3006 => new Color(1f, 0.68f, 0.22f),
             3007 => new Color(1f, 0.88f, 0.38f),
             3008 => new Color(0.3f, 0.95f, 0.85f),
-            3009 => new Color(0.95f, 0.5f, 0.32f),
+            3009 => new Color(0.44f, 0.49f, 1f),     // 미련 = 푸른 원혼빛 (2026-11-25 사용자, 예전 잿빛 주황)
             _ => fallback,
         };
 

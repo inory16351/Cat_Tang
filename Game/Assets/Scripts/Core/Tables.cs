@@ -55,6 +55,12 @@ namespace CatTang
     }
 
     /// <summary>해금 묶음 (총포상 · 탄약 공방, 세피리아식): 조각으로 사면 Items가 드랍 · 상점 · 시작 총에 풀림. Cost 0 = 처음부터</summary>
+    /// <summary>총 스킬 (우클릭). 지금은 새 총(랜턴 던지기 · 증기 돌진)만 표대로 쓰고, 나머지 총은 백스텝 샷 (2026-11-25)</summary>
+    public class SkillDef
+    {
+        public int Id; public string Name, Action; public float Cooldown, Value, Value2, Duration; public string Desc;
+    }
+
     public class UnlockGroupDef
     {
         public int Id; public string Facility, Name; public int Cost, ReqChapter; public List<int> Items = new(); public string Desc;
@@ -67,6 +73,7 @@ namespace CatTang
         public static readonly Dictionary<int, CostumeDef> Costumes = new();
         public static readonly Dictionary<int, BulletDef> Bullets = new();
         public static readonly Dictionary<int, GunDef> Guns = new();
+        public static readonly Dictionary<int, SkillDef> Skills = new();
         public static readonly Dictionary<int, EffectDef> Effects = new();
         public static readonly Dictionary<int, OpDef> Ops = new();
         public static readonly Dictionary<int, TraitDef> Traits = new();
@@ -126,6 +133,12 @@ namespace CatTang
                 {
                     Id = I(r, "Id"), Name = r["Name"], UnlockType = r["UnlockType"], UnlockValue = I(r, "UnlockValue"), Cost = I(r, "Cost"),
                     Effect1 = I(r, "Effect1"), Effect2 = I(r, "Effect2"), Effect3 = I(r, "Effect3"), ModelKey = r.TryGetValue("ModelKey", out var mk) ? mk : "", Desc = r["Desc"]
+                };
+            foreach (var r in Read("Skill"))
+                Skills[I(r, "Id")] = new SkillDef
+                {
+                    Id = I(r, "Id"), Name = r["Name"], Action = r["Action"], Cooldown = F(r, "Cooldown"), Value = F(r, "Value"),
+                    Value2 = F(r, "Value2"), Duration = F(r, "Duration"), Desc = r["Desc"]
                 };
             foreach (var r in Read("Unlock"))
             {

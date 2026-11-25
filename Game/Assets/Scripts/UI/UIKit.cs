@@ -222,6 +222,9 @@ namespace CatTang
                     lines.Add("");
                     lines.Add($"<color=#FFD54A>오른손 (홀수 칸)</color>  {HandEffectLine(g, true)}");
                     lines.Add($"<color=#7FCBFF>왼손 (짝수 칸)</color>  {HandEffectLine(g, false)}");
+                    // 새 총 스킬 (2026-11-25: 랜턴 던지기 · 증기 돌진 — 나머지 총은 백스텝 샷)
+                    if (Tables.Skills.TryGetValue(g.SkillId, out var sk) && (sk.Action == "LanternField" || sk.Action == "SteamDash"))
+                    { lines.Add(""); lines.Add($"<color=#FFD54A>우클릭 · {sk.Name}</color>  <size=16><color={Dim}>재사용 {sk.Cooldown:0}초</color></size>"); lines.Add(sk.Desc); }
                     var p = PlayerController.Instance;
                     if (p && p.rev != null)
                     {
