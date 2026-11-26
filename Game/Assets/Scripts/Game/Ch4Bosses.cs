@@ -38,13 +38,14 @@ namespace CatTang
                 if (!model) yield break;
                 var j = new Vector3(Random.Range(-amp, amp), Random.Range(-amp, amp) * 0.4f, Random.Range(-amp, amp));
                 model.localPosition = basePos + j;
-                Show(model, Random.value > 0.25f);
+                Show(model, Random.value > 0.25f * GameSettings.FlashScale);   // 번쩍임 줄이기: 깜빡임 덜 (2026-11-26)
                 if (t >= next)
                 {
                     next = t + 0.05f;
                     var side = model.parent ? model.parent.right : Vector3.right;
-                    Afterimage.SpawnAt(model, model.position + side * Random.Range(0.15f, 0.45f), Red, 0.12f);
-                    Afterimage.SpawnAt(model, model.position - side * Random.Range(0.15f, 0.45f), Cyan, 0.12f);
+                    var r = Red; r.a *= GameSettings.FlashScale; var cy = Cyan; cy.a *= GameSettings.FlashScale;   // 번쩍임 줄이기: 장식 글리치만 옅게 (예고 잔상 Ghost는 그대로)
+                    Afterimage.SpawnAt(model, model.position + side * Random.Range(0.15f, 0.45f), r, 0.12f);
+                    Afterimage.SpawnAt(model, model.position - side * Random.Range(0.15f, 0.45f), cy, 0.12f);
                 }
                 yield return null;
             }
@@ -366,8 +367,8 @@ namespace CatTang
             if (!p) yield break;
             int n = Random.Range(2, 12);
             BossFx.Toast($"판결의 수 — 0이 될 때 발사 시각을 {n}시로 맞춰라!");
-            var tag = Label(p.transform, new Vector3(0, 3.2f, 0), n.ToString(), new Color(1f, 0.25f, 0.25f), 1.4f);
-            var count = Label(transform, new Vector3(0, 5.2f, 0), "5", Color.white, 1.2f);
+            var tag = Label(p.transform, new Vector3(0, 3.2f, 0), n.ToString(), new Color(1f, 0.25f, 0.25f), 1.4f, BigLabel.Frame.Mark);
+            var count = Label(transform, new Vector3(0, 5.2f, 0), "5", Color.white, 1.2f, BigLabel.Frame.Timer);
             for (int s = 5; s > 0; s--)
             {
                 if (count) count.text = s.ToString();
@@ -410,7 +411,7 @@ namespace CatTang
                 Ch3Fx.Prim(PrimitiveType.Sphere, "Weight", go.transform, Vector3.up * 1.1f, Vector3.one * 1.6f, new Color(0.25f, 0.25f, 0.28f));
                 var h = Ch3Fx.Target(go, 0.9f, 2f);
                 weightHour[h] = hours[i];
-                Label(go.transform, new Vector3(0, 2.6f, 0), hours[i].ToString(), new Color(1f, 0.85f, 0.4f), 1.2f);
+                Label(go.transform, new Vector3(0, 2.6f, 0), hours[i].ToString(), new Color(1f, 0.85f, 0.4f), 1.2f, BigLabel.Frame.Hour);
                 anchors.Add(a); axes.Add(Quaternion.Euler(0, Random.Range(0f, 180f), 0) * Vector3.right); bodies.Add(go.transform); phases.Add(Random.Range(0f, 6.28f));
             }
             float start = Time.time, end = start + WeightTime;

@@ -309,7 +309,7 @@ namespace CatTang
         {
             alive.Remove(e);
             alive.RemoveAll(x => x == null);
-            if (e && e.kind != Enemy.Kind.Boss) player.inv.gold += Random.Range(2, 5);
+            if (e && e.kind != Enemy.Kind.Boss && !StoryHold) player.inv.gold += Random.Range(2, 5);        // 스토리 맵에선 골드 없음 (2026-11-26 사용자)
             if (e && (e.kind != Enemy.Kind.Boss || IsMidBossRoom)) HeartPickup.TryDrop(e, e.kind == Enemy.Kind.Boss);   // 하트: 일반 2% · 강화형 3% · 중간 보스 확정
             if (e && e.kind == Enemy.Kind.Boss && IsMidBossRoom) Ch2Quest.TryDropSand(e.transform.position);          // 2장 클리어 뒤 첫 중간 보스: 흐르는 모래 확정 (Ch2Quest)
             if (e) DropXp(e);                                                                           // 경험치 보석 (RunManagerXp)
@@ -526,7 +526,7 @@ namespace CatTang
             m.radius = 2.8f;
             m.Restock(player);
             go.AddComponent<EdgeMarker>().Init("UI/coin");                 // 화면 밖이면 가장자리 화살표
-            ui?.Toast(chapter >= 4 ? "오르골이 울리며 상인이 나타났다 (E)" : chapter >= 3 ? "거울 너머에 상인이 나타났다 (E)" : "상인이 나타났다 (E)");
+            ui?.Toast((chapter >= 4 ? "오르골이 울리며 상인이 나타났다" : chapter >= 3 ? "거울 너머에 상인이 나타났다" : "상인이 나타났다") + $" ({KeyBinds.Name(Act.Interact)})");
         }
 
         /// <summary>상인 자리: 방 벽을 따라 3.5m 안쪽 후보 중 화면 안 · 고양이와 4~10m · 막힌 곳 · 소품과 안 겹치는 곳 (없으면 조건을 풀어 가장 가까운 곳). 반환 = 방 기준 위치</summary>
@@ -701,6 +701,20 @@ namespace CatTang
             {
                 foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
                 StoryLake.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
+                return;
+            }
+            // 처음 만나는 4장 보스 문: 기억 맵 '시계를 멈춘 공방'을 한 번 거쳐 크로노 & 템포 방으로 (2026-11-25 사용자, StoryWorkshop)
+            if (d.reward == RewardKind.Boss && StoryWorkshop.Pending(chapter))
+            {
+                foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
+                StoryWorkshop.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
+                return;
+            }
+            // 처음 만나는 5장 보스 문: 기억 맵 '11:59의 병실'을 한 번 거쳐 시간의 주인 방으로 (2026-11-26 사용자, StoryWard)
+            if (d.reward == RewardKind.Boss && StoryWard.Pending(chapter))
+            {
+                foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
+                StoryWard.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
                 return;
             }
             BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward);

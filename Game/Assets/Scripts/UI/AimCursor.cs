@@ -73,6 +73,50 @@ namespace CatTang
                 instance.img.sprite = spr;
                 var sh = g.AddComponent<Shadow>(); sh.effectColor = new Color(0.05f, 0.03f, 0.08f, 0.55f); sh.effectDistance = new Vector2(2, -3);
             }
+            instance.BuildCross(g.transform);
+            GameSettings.Changed += instance.ApplyStyle;
+            instance.ApplyStyle();
+        }
+
+        // 환경설정 조준선 모양 · 크기 (2026-11-26): 0 기본형(쐐기 + 마름모) · 1 십자(가는 선 4개, 가운데 비움) · 2 점(가운데 마름모만)
+        RectTransform cross;
+        readonly System.Collections.Generic.List<Image> crossBars = new();
+        int style;
+        float sizeMul = 1f;
+
+        /// <summary>십자 모양: 검은 테 막대 → 반전 막대 → 밝히기 막대 (기본형과 같은 반전 규칙)</summary>
+        void BuildCross(Transform parent)
+        {
+            cross = UIKit.MakeRect("Cross", (RectTransform)parent, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.one * Size);
+            const float Gap = 9f, Len = 22f, Thick = 4f, Rim = 2f;
+            void Bars(float extra, Material mat, Color col)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    bool h = i % 2 == 0; float s = i < 2 ? 1 : -1;
+                    var pos = (h ? new Vector2(s, 0) : new Vector2(0, s)) * (Gap + Len * 0.5f);
+                    var size = h ? new Vector2(Len + extra * 2, Thick + extra * 2) : new Vector2(Thick + extra * 2, Len + extra * 2);
+                    var b = UIKit.MakeRect("Bar", cross, new Vector2(0.5f, 0.5f), pos, size).gameObject.AddComponent<Image>();
+                    b.raycastTarget = false; b.color = col; if (mat) b.material = mat;
+                    if (mat) crossBars.Add(b);
+                }
+            }
+            Bars(Rim, null, new Color(0.05f, 0.03f, 0.08f, 1f));
+            Bars(0, invertMat, Color.white);
+            if (boostMat) Bars(0, boostMat, Color.white);
+            if (!invertMat) Bars(0, null, new Color(1f, 0.95f, 0.85f, 1f));   // 반전 재질이 없으면 밝은 막대
+        }
+
+        void ApplyStyle()
+        {
+            style = GameSettings.CursorStyle;
+            sizeMul = GameSettings.CursorSize;
+            bool wedge = style == 0 || (style == 2 && !dot);           // 점 그림이 없으면 기본형으로
+            img.enabled = wedge;
+            if (boost) boost.enabled = wedge;
+            if (edge) edge.enabled = wedge;
+            if (dot) dot.enabled = style != 1;
+            if (cross) cross.gameObject.SetActive(style == 1);
         }
 
         /// <summary>커서 위에 겹치는 층 (같은 크기, 그림 · 재질만 다름)</summary>
@@ -103,6 +147,7 @@ namespace CatTang
         void OnDestroy()
         {
             if (bound) bound.OnFired -= Fired;
+            GameSettings.Changed -= ApplyStyle;
             Cursor.visible = true;
         }
 
@@ -126,7 +171,7 @@ namespace CatTang
             bool reloading = p.rev != null && p.rev.reloading;
             spin += (reloading ? 220f : 0f) * dt;
             if (!reloading) spin = Mathf.MoveTowardsAngle(spin, 0, dt * 400f);
-            rt.localScale = Vector3.one * (1f + 0.28f * kick * kick);
+            rt.localScale = Vector3.one * (1f + 0.28f * kick * kick) * sizeMul;   // 환경설정 조준선 크기 (2026-11-26)
             rt.localRotation = Quaternion.Euler(0, 0, kickRoll * kick - spin);
             // 사거리 (2026-11-18 사용자: 총마다 사거리가 달라짐): 커서가 다음 총의 사거리 밖이면 커서를 흐리게 하고,
             // 조준 방향의 사거리 끝 자리에 작은 빨간 점을 찍어 탄이 거기까지만 간다는 걸 보여 줌
@@ -137,6 +182,7 @@ namespace CatTang
             if (boost) boost.color = a;
             if (edge) edge.color = a;
             if (dot) dot.color = a;
+            foreach (var b in crossBars) b.color = a;
             RangeMark(p, outOfRange);
         }
 

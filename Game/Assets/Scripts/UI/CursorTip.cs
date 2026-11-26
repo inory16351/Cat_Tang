@@ -33,7 +33,7 @@ namespace CatTang
         /// <summary>go에 마우스를 올리면 make()로 만든 내용을 커서 옆에 띄움</summary>
         public static void Attach(GameObject go, Func<TipContent> make)
         {
-            var h = go.GetComponent<CursorTipTarget>() ?? go.AddComponent<CursorTipTarget>();
+            if (!go.TryGetComponent<CursorTipTarget>(out var h)) h = go.AddComponent<CursorTipTarget>();
             h.make = make;
             var g = go.GetComponent<Graphic>();
             if (g) g.raycastTarget = true;

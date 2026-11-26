@@ -26,6 +26,7 @@ namespace CatTang
                 sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 sc.referenceResolution = new Vector2(1920, 1080);
                 sc.matchWidthOrHeight = 1f;
+                UiScaleFollow.Add(sc);   // 환경설정 UI 크기 (2026-11-26)
             }
             root = new GameObject("Edge_" + name, typeof(RectTransform)).GetComponent<RectTransform>();
             root.SetParent(canvas.transform, false);
@@ -43,7 +44,7 @@ namespace CatTang
             else
             {
                 // 화살표 그림이 아직 없을 때: 글자 삼각형
-                var t = arrow.gameObject.AddComponent<Text>();
+                var t = arrow.gameObject.AddComponent<LText>();
                 t.text = "▶"; t.font = UIKit.BodyBold; t.fontSize = 64; t.alignment = TextAnchor.MiddleRight;
                 t.color = UIKit.Gold; t.raycastTarget = false;
                 arrow.gameObject.AddComponent<Outline>().effectColor = new Color(0.1f, 0.07f, 0.13f);

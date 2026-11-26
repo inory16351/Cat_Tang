@@ -21,6 +21,7 @@ namespace CatTang
         float scale;
         Vector2 worldMin;
         GameUI ui;
+        Text hint;
 
         static readonly Color Ground = new(0.918f, 0.467f, 0.149f);          // 판 지도의 방 판 흙빛과 같게
         static readonly Color Rim = new(0.32f, 0.18f, 0.12f, 0.95f);
@@ -39,7 +40,8 @@ namespace CatTang
             sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             sc.referenceResolution = new Vector2(1920, 1080);
             sc.matchWidthOrHeight = 1f;
-            var dim = UIKit.Stretch("Dim", (RectTransform)go.transform).gameObject.AddComponent<Image>();
+            UiScaleFollow.Add(sc);   // 환경설정 UI 크기 (2026-11-26)
+            var dim =UIKit.Stretch("Dim", (RectTransform)go.transform).gameObject.AddComponent<Image>();
             dim.color = new Color(0, 0, 0, 0.72f);
             dim.raycastTarget = false;
             panel = Rect("Panel", (RectTransform)go.transform, new Vector2(1560, 1030));
@@ -51,8 +53,8 @@ namespace CatTang
             content.anchoredPosition = new Vector2(0, -24);
             var title = UIKit.Label("Title", panel, new Vector2(0.5f, 1f), new Vector2(0, -95), new Vector2(900, 60), 40, TextAnchor.MiddleCenter, true, Ink);
             title.text = "마을";
-            var hint = UIKit.Label("Hint", panel, new Vector2(0.5f, 0f), new Vector2(0, 70), new Vector2(900, 40), 24, TextAnchor.MiddleCenter, false, new Color(0.45f, 0.3f, 0.2f));
-            hint.text = "M · 닫기";
+            hint = UIKit.Label("Hint", panel, new Vector2(0.5f, 0f), new Vector2(0, 70), new Vector2(900, 40), 24, TextAnchor.MiddleCenter, false, new Color(0.45f, 0.3f, 0.2f));
+            hint.text = KeyBinds.Name(Act.Map) + " · 닫기";
             canvas.gameObject.SetActive(false);
             IsOpen = false;
         }
@@ -65,11 +67,11 @@ namespace CatTang
             if (kb == null) return;
             if (IsOpen)
             {
-                if (kb.mKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame) Show(false);
+                if (KeyBinds.Down(Act.Map) || (kb.escapeKey.wasPressedThisFrame && !KeyBinds.EscConsumed)) Show(false);
                 else Refresh();
                 return;
             }
-            if (!kb.mKey.wasPressedThisFrame) return;
+            if (!KeyBinds.Down(Act.Map)) return;                             // 단축키 설정 (기본 M)
             ui ??= FindFirstObjectByType<GameUI>();
             var p = PlayerController.Instance;
             if ((ui && ui.ScreenOpen) || (p && p.InputLocked)) return;            // 시설 창 · 메뉴 · 대화 · 깨어나는 중
@@ -79,6 +81,7 @@ namespace CatTang
         void Show(bool on)
         {
             IsOpen = on;
+            if (on && hint) hint.text = KeyBinds.Name(Act.Map) + " · 닫기";     // 키를 바꿨을 수 있음
             canvas.gameObject.SetActive(on);
             if (on) { Build(); Refresh(); Sfx.Play("ui_click", 0.6f, 0f); }
             else closedFrame = Time.frameCount;

@@ -37,7 +37,8 @@ namespace CatTang
         void Snap() { var p = PlayerController.Instance; if (p) transform.position = p.transform.position + offset * zoom; }
 
         /// <summary>화면 흔들림 (세기, 0.15초)</summary>
-        public static void Shake(float amount) { shake = Mathf.Max(amount, Time.unscaledTime < shakeUntil ? shake : 0); shakeUntil = Time.unscaledTime + 0.15f; }
+        public static void Shake(float amount) { amount *= GameSettings.ShakeScale;   // 환경설정 흔들림 세기 (2026-11-26)
+            shake = Mathf.Max(amount, Time.unscaledTime < shakeUntil ? shake : 0); shakeUntil = Time.unscaledTime + 0.15f; }
 
         void LateUpdate()
         {

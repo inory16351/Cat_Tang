@@ -93,7 +93,7 @@ namespace CatTang
                     any = true;
                     float w = t < 0.04f ? t / 0.04f : t < dodgeHold ? 1f : 1f - Mathf.SmoothStep(0, 1, (t - dodgeHold) / Mathf.Max(0.01f, dodgeRecover));
                     dodge.vol.weight = Mathf.Clamp01(w);
-                    float flash = Mathf.Clamp01(1f - t / 0.12f);
+                    float flash = Mathf.Clamp01(1f - t / 0.12f) * GameSettings.FlashScale;   // 번쩍임 줄이기 (2026-11-26)
                     dodge.color.postExposure.Override(Mathf.Lerp(-0.15f, 1.3f, flash));
                     dodge.color.saturation.Override(Mathf.Lerp(-82f, -20f, flash));
                     dodge.color.contrast.Override(18f);
@@ -113,7 +113,7 @@ namespace CatTang
                     any = true;
                     float k = 1f - t / Life;                       // 1 → 0
                     float pop = Mathf.Clamp01(1f - t / 0.06f);     // 첫 0.06초 번쩍
-                    hit.vol.weight = Mathf.Clamp01(k * 1.4f) * hitPower;
+                    hit.vol.weight = Mathf.Clamp01(k * 1.4f) * hitPower * GameSettings.FlashScale;   // 번쩍임 줄이기 (2026-11-26)
                     hit.color.postExposure.Override(Mathf.Lerp(0f, 0.9f, pop));
                     hit.color.saturation.Override(-25f * k);
                     hit.color.colorFilter.Override(Color.Lerp(Color.white, new Color(1f, 0.82f, 0.82f), k));

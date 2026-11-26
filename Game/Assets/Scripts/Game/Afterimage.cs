@@ -23,6 +23,7 @@ namespace CatTang
         public static void Spawn(Transform model, Color c, float life = 0.35f, bool vivid = true)
         {
             if (!model) return;
+            c.a *= GameSettings.FlashScale;   // 번쩍임 줄이기: 이동 잔상 옅게 (2026-11-26)
             SpawnAt(model, model.position, model.rotation, c, life, vivid);
         }
 

@@ -17,6 +17,7 @@ Shader "CatTang/UIFlatFx"
         _Molten ("Molten Gold", Range(0, 1)) = 1
         _Bevel ("Top Bevel", Range(0, 1)) = 0.8
         _ShineEvery ("Shine Period (s)", Float) = 3.5
+        _ShineDur ("Shine Sweep Time (s, 0 = whole period)", Float) = 0
         _Hover ("Hover", Range(0, 1)) = 0
         _Seed ("Seed", Float) = 0
 
@@ -55,7 +56,7 @@ Shader "CatTang/UIFlatFx"
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
             fixed4 _Color;
-            float _Hatch, _HatchSpacing, _Shade, _Molten, _Bevel, _ShineEvery, _Hover, _Seed;
+            float _Hatch, _HatchSpacing, _Shade, _Molten, _Bevel, _ShineEvery, _ShineDur, _Hover, _Seed;
 
             v2f vert (appdata v)
             {
@@ -124,7 +125,9 @@ Shader "CatTang/UIFlatFx"
 
                 // 5) 빛 훑기 (금 부분만, 마우스 올리면 계속)
                 float period = max(0.5, _ShineEvery);
-                float ph = frac(t / period) * 2.2 - 0.6;
+                // _ShineDur > 0: 한 번 훑는 데 그만큼 걸리고 나머지는 쉼 (2026-11-26 사용자: 로고 광택이 너무 빠름)
+                float sweep = _ShineDur > 0 ? min(_ShineDur, period) : period;
+                float ph = saturate(frac(t / period) * period / sweep) * 2.2 - 0.6;
                 float band = saturate(1 - abs((i.uv.x + (1 - y) * 0.35) - ph) * 9);
                 float hoverBand = saturate(1 - abs(frac(i.uv.x * 0.8 - t * 0.9) - 0.5) * 6) * _Hover;
                 col += float3(1, 0.75, 0.35) * (band * 0.45 + hoverBand * 0.3) * gold;

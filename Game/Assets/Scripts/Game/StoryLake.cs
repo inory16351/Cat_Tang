@@ -29,10 +29,11 @@ namespace CatTang
         /// <summary>이번 문이 처음 만나는 3장 보스 문이면 스토리 맵 3</summary>
         public static bool Pending(int chapter) => chapter == 3 && !Meta.StorySeen(Key);
 
-        public static void Play(RunManager rm, System.Action done)
+        /// <summary>practice = 보스 패턴 연습 (StoryPractice): 대사 · 연출 없이 기믹만, 기록 안 함</summary>
+        public static void Play(RunManager rm, System.Action done, bool practice = false)
         {
             var sm = new GameObject("StoryLake").AddComponent<StoryLake>();
-            sm.rm = rm; sm.done = done;
+            sm.rm = rm; sm.done = done; sm.practice = practice;
         }
 
         RunManager rm;
@@ -49,6 +50,9 @@ namespace CatTang
         AudioSource amb;
         readonly List<Enemy> shadows = new();
         bool finished;
+        bool practice;                 // 보스 패턴 연습
+        StoryPractice pr;
+        ReflectedClock numerals;
         // 쏴서 맞히는 과녁 (시각이 맞아야 함)
         Health target; int needHour; bool targetHit;
         Telegraph targetRing;
@@ -67,7 +71,7 @@ namespace CatTang
             p.health.invulnerable = true;
             if (rm) rm.EnterStoryMap();
             Music.Duck(0.25f, 0.6f);
-            if (ov) { yield return ov.Headache(0.6f, 1.0f); yield return ov.FadeWhite(0, 1, 0.9f); }
+            if (ov) { if (!practice) yield return ov.Headache(0.6f, 1.0f); yield return ov.FadeWhite(0, 1, practice ? 0.35f : 0.9f); }
 
             var prefab = Resources.Load<GameObject>("Story/StoryLake");
             if (!prefab) { Debug.LogWarning("[StoryLake] Story/StoryLake 프리팹 없음 — 건너뜀"); yield return Finish(false); yield break; }
@@ -78,69 +82,87 @@ namespace CatTang
             young = Spawn("L_ShadowYoungL", M("Young"));
             woman = Spawn("L_ShadowWomanL", M("Woman"));
             if (P) P.OnFired += OnPlayerFired;
-            if (ov) yield return ov.FadeWhite(1, 0, 1.2f);
+            if (practice) pr = StoryPractice.Begin(this, Quit);
+            if (ov) yield return ov.FadeWhite(1, 0, practice ? 0.5f : 1.2f);
             Music.Duck(0f, 0.8f);
             Music.Play(StoryBgm.For(3, "stage"));                                // 전용 곡 (Gemini) — 맵 내내, 전투에서도
             if (Sfx.Has("st_lake")) amb = Sfx.Loop("st_lake", 0.5f);
 
-            yield return Say("고양이#의문::....눈부시군.", "고양이#의문::물이... 하늘을 그대로 비추고 있어.");
+            if (!practice) yield return Say("고양이#의문::....눈부시군.", "고양이#의문::물이... 하늘을 그대로 비추고 있어.");
             p.InputLocked = false;
             p.health.invulnerable = false;
 
             // ① 잔교 끝: 물에 비친 시각
             ui?.Toast("잔교 끝으로");
             yield return WaitNear(M("JettyEnd").position, 4.5f);
-            p.InputLocked = true;
-            CameraFollow.FocusOn(M("JettyEnd").position, 0.8f);
-            yield return Say(Young + "::시계가 안 보여. 해가 너무 밝아.",
-                             Woman + "::물을 봐. 거기 비쳐 있잖아.",
-                             Woman + "::대신 물에 비친 건 거꾸로야.");
-            CameraFollow.FocusOn(null, 0f);
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                CameraFollow.FocusOn(M("JettyEnd").position, 0.8f);
+                yield return Say(Young + "::시계가 안 보여. 해가 너무 밝아.",
+                                 Woman + "::물을 봐. 거기 비쳐 있잖아.",
+                                 Woman + "::대신 물에 비친 건 거꾸로야.");
+                CameraFollow.FocusOn(null, 0f);
+                p.InputLocked = false;
+            }
             for (int i = 0; i < ClockReal.Length;)
             {
                 bool ok = false;
                 yield return ReflectedTime(ClockReal[i], r => ok = r);
                 if (!p || !p.health.Alive) yield break;
                 if (!ok) { ui?.Toast("물에 비친 건 거꾸로 — 다시"); yield return new WaitForSeconds(1f); continue; }
-                p.InputLocked = true;
-                if (i == 0) yield return Say(Young + "::...풀렸다.", Woman + "::이번엔 조금 헷갈릴걸?");
-                else yield return Say(Young + "::...풀렸다.");
-                p.InputLocked = false;
+                if (!practice)
+                {
+                    p.InputLocked = true;
+                    if (i == 0) yield return Say(Young + "::...풀렸다.", Woman + "::이번엔 조금 헷갈릴걸?");
+                    else yield return Say(Young + "::...풀렸다.");
+                    p.InputLocked = false;
+                }
                 i++;
                 yield return new WaitForSeconds(0.6f);
             }
             StartCoroutine(BoatDrift());
 
             // ② 그녀의 물수제비
-            p.InputLocked = true;
-            CameraFollow.FocusOn(M("Throw").position, 0.8f);
-            yield return Say(Woman + "::내가 몇 번 튀기는지 세어 봐.");
-            CameraFollow.FocusOn(null, 0f);
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                CameraFollow.FocusOn(M("Throw").position, 0.8f);
+                yield return Say(Woman + "::내가 몇 번 튀기는지 세어 봐.");
+                CameraFollow.FocusOn(null, 0f);
+                p.InputLocked = false;
+            }
+            else ui?.Toast("물수제비 — 돌이 몇 번 튀는지 세어 보세요");
             for (int i = 0; i < SkipCount.Length;)
             {
                 bool ok = false;
                 yield return SkipStone(SkipCount[i], M(i == 0 ? "BuoyA" : "BuoyB"), r => ok = r);
                 if (!p || !p.health.Alive) yield break;
                 if (!ok) { ui?.Toast("다시 세어 보자"); yield return new WaitForSeconds(0.8f); continue; }
-                p.InputLocked = true;
-                if (i == 0) yield return Say(Young + "::세 번.", Woman + "::다음엔 더 멀리 갈 거야.");
-                else yield return Say(Woman + "::봐. 기다리면 다 돌아오잖아.", "고양이#의문::(기다리면... 돌아온다?)");
-                p.InputLocked = false;
+                if (!practice)
+                {
+                    p.InputLocked = true;
+                    if (i == 0) yield return Say(Young + "::세 번.", Woman + "::다음엔 더 멀리 갈 거야.");
+                    else yield return Say(Woman + "::봐. 기다리면 다 돌아오잖아.", "고양이#의문::(기다리면... 돌아온다?)");
+                    p.InputLocked = false;
+                }
                 i++;
                 yield return new WaitForSeconds(0.6f);
             }
 
             // ③ 해가 기울며 수면에 비친 그림자들이 일어섬
             StartCoroutine(SunGoesDown(70f));
-            p.InputLocked = true;
-            CameraFollow.FocusOn(M("Arena").position + Vector3.forward * 6f, 0.85f);
-            yield return Say("고양이#결의::...물에 비친 게 일어서고 있다.");
-            CameraFollow.FocusOn(null, 0f);
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                CameraFollow.FocusOn(M("Arena").position + Vector3.forward * 6f, 0.85f);
+                yield return Say("고양이#결의::...물에 비친 게 일어서고 있다.");
+                CameraFollow.FocusOn(null, 0f);
+                p.InputLocked = false;
+            }
             yield return Wave(4);
             yield return Wave(5, lilies: true);
+            if (practice) { yield return Finish(true); yield break; }   // 연습: 끝 연출 · 기록 없음
 
             // 끝: 저물녘 잔교 · 두 그림자 → 수면 → 청년만
             p.InputLocked = true;
@@ -205,7 +227,7 @@ namespace CatTang
             clock.transform.localScale = new Vector3(-1f, 1f, 1f);           // 좌우 반전 (12시 표시는 그대로 위)
             hand.localRotation = Quaternion.Euler(0, -shown * 30f, 0);
             clock.transform.SetParent(map, true);
-            var numerals = ReflectedClock.Show(at, 2.6f, 999f);
+            numerals = ReflectedClock.Show(at, 2.6f, 999f);
             Enemy.Fx3("MirrorFlash", at + Vector3.up * 0.3f, 1f);
             var ring = MakeTarget(M("Circle"));
             ui?.Toast($"물에 비친 시계는 좌우가 뒤집혀 있어요 — 실제 시각에 쏜 탄을 물 위 동그라미에 맞히세요");
@@ -214,6 +236,7 @@ namespace CatTang
             while (Time.time < end && !targetHit && p.health.Alive) yield return null;
             needHour = 0;
             if (numerals) numerals.Sink();
+            numerals = null;
             Destroy(clock, 0.4f);
             if (ring) Destroy(ring.gameObject);
             if (targetRing) { targetRing.Kill(); targetRing = null; }
@@ -449,10 +472,19 @@ namespace CatTang
             yield return Say("고양이#놀람::...어디 간 거지...?");
         }
 
+        /// <summary>연습 중 'Enter 길게': 하던 걸 멈추고 바로 보스 방으로</summary>
+        void Quit()
+        {
+            if (finished) return;
+            StopAllCoroutines();
+            StartCoroutine(Finish(true));
+        }
+
         IEnumerator Finish(bool ok)
         {
+            if (pr) pr.Stop();                                    // 연습: 체력 되돌림 · 표시 치움 (Enter 끝내기도 막음)
             var ov = StoryOverlay.I;
-            if (ok && ov) yield return ov.FadeWhite(0, 1, 1.1f);
+            if (ok && ov) yield return ov.FadeWhite(0, 1, practice ? 0.4f : 1.1f);
             CameraFollow.FocusOn(null, 0f);
             Cleanup();
             p.InputLocked = false;
@@ -461,7 +493,7 @@ namespace CatTang
             done?.Invoke();
             CameraFollow.SnapZoom(1f);
             Music.Duck(0f, 0.8f);
-            if (ok && ov) yield return ov.FadeWhite(1, 0, 0.9f);
+            if (ok && ov) yield return ov.FadeWhite(1, 0, practice ? 0.5f : 0.9f);
             Destroy(gameObject);
         }
 
@@ -469,6 +501,8 @@ namespace CatTang
         {
             if (P) P.OnFired -= OnPlayerFired;
             if (targetRing) { targetRing.Kill(); targetRing = null; }
+            if (numerals) { Destroy(numerals.gameObject); numerals = null; }
+            needHour = 0; lilyNum.Clear();
             foreach (var e in shadows) if (e) Destroy(e.gameObject);
             shadows.Clear();
             if (amb) { Sfx.StopLoop(amb, 0.6f); amb = null; }
@@ -504,6 +538,7 @@ namespace CatTang
 
         IEnumerator Say(params string[] lines)
         {
+            if (practice) yield break;                            // 연습: 대사 없음
             bool d = false;
             ui.Talk(Young, lines, () => d = true);
             while (!d) yield return null;

@@ -23,10 +23,11 @@ namespace CatTang
         /// <summary>이번 문이 처음 만나는 2장 보스 문이면 스토리 맵 2</summary>
         public static bool Pending(int chapter) => chapter == 2 && !Meta.StorySeen(Key);
 
-        public static void Play(RunManager rm, System.Action done)
+        /// <summary>practice = 보스 패턴 연습 (StoryPractice): 대사 · 연출 없이 기믹만, 기록 안 함</summary>
+        public static void Play(RunManager rm, System.Action done, bool practice = false)
         {
             var sm = new GameObject("StoryPlatform").AddComponent<StoryPlatform>();
-            sm.rm = rm; sm.done = done;
+            sm.rm = rm; sm.done = done; sm.practice = practice;
         }
 
         RunManager rm;
@@ -44,6 +45,9 @@ namespace CatTang
         AudioSource rain;
         readonly List<Enemy> shadows = new();
         bool finished;
+        bool practice;                 // 보스 패턴 연습
+        StoryPractice pr;
+        Telegraph spotRing;
         // 출발 시각
         int departHour; bool departOn, departHit;
 
@@ -59,7 +63,7 @@ namespace CatTang
             p.health.invulnerable = true;
             if (rm) rm.EnterStoryMap();                          // rm 없음 = 개발용 미리보기 (마을에서 바로)
             Music.Duck(0.25f, 0.6f);
-            if (ov) { yield return ov.Headache(0.6f, 1.0f); yield return ov.FadeWhite(0, 1, 0.9f); }
+            if (ov) { if (!practice) yield return ov.Headache(0.6f, 1.0f); yield return ov.FadeWhite(0, 1, practice ? 0.35f : 0.9f); }
 
             var prefab = Resources.Load<GameObject>("Story/StoryPlatform");
             if (!prefab) { Debug.LogWarning("[StoryPlatform] Story/StoryPlatform 프리팹 없음 — 건너뜀"); yield return Finish(false); yield break; }
@@ -72,44 +76,55 @@ namespace CatTang
             woman = Spawn("P_ShadowWoman", M("Woman"));
             MakeHeadlight();
             if (P) P.OnFired += OnPlayerFired;
-            if (ov) yield return ov.FadeWhite(1, 0, 1.2f);
+            if (practice) pr = StoryPractice.Begin(this, Quit);
+            if (ov) yield return ov.FadeWhite(1, 0, practice ? 0.5f : 1.2f);
             Music.Duck(0f, 0.8f);
             Music.Play(StoryBgm.For(2, "stage"));                      // 2026-11-25 사용자: 스토리 맵 전용 곡 (Gemini) — 맵 내내, 전투에서도
             if (Sfx.Has("st_rain")) rain = Sfx.Loop("st_rain", 0.55f);
 
-            yield return Say("고양이#의문::....비?");                      // 2026-11-25 사용자: 1장 도착 대사를 되풀이하지 않고 이 한 줄만
+            if (!practice) yield return Say("고양이#의문::....비?");                      // 2026-11-25 사용자: 1장 도착 대사를 되풀이하지 않고 이 한 줄만
             p.InputLocked = false;
             p.health.invulnerable = false;
 
             // ① 청년 그림자 → 연기 고리
             yield return WaitNear(M("Young").position, 4.5f);
-            p.InputLocked = true;
-            CameraFollow.FocusOn(M("Young").position, 0.8f);
-            yield return Say(Young + "::...아직 시간 있어.",
-                             Young + "::연기 사이로 지나가면 돼. 틈은 늘 있으니까.");
-            CameraFollow.FocusOn(null, 0f);
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                CameraFollow.FocusOn(M("Young").position, 0.8f);
+                yield return Say(Young + "::...아직 시간 있어.",
+                                 Young + "::연기 사이로 지나가면 돼. 틈은 늘 있으니까.");
+                CameraFollow.FocusOn(null, 0f);
+                p.InputLocked = false;
+            }
             ui?.Toast("연기 고리의 빈틈으로 빠져나가세요");
             yield return SmokeWalk(M("Window").position, 3.2f);
 
             // ② 창가: 여인 → 기적 → 출발 막기 두 번
-            p.InputLocked = true;
-            CameraFollow.FocusOn(M("Woman").position, 0.8f);
-            yield return Say(Woman + "::왔구나. 기차가 곧 떠나.",
-                             "고양이#의문::...나한테 하는 말인가?",
-                             Woman + "::곧 올게. 약속해.");
-            Snd("st_train_whistle", 1f);
-            yield return Jolt(0.5f);
+            if (!practice)
+            {
+                p.InputLocked = true;
+                CameraFollow.FocusOn(M("Woman").position, 0.8f);
+                yield return Say(Woman + "::왔구나. 기차가 곧 떠나.",
+                                 "고양이#의문::...나한테 하는 말인가?",
+                                 Woman + "::곧 올게. 약속해.");
+                Snd("st_train_whistle", 1f);
+                yield return Jolt(0.5f);
+            }
             if (young) StartCoroutine(Walk(young.transform, M("YoungFront"), 3.4f));
-            CameraFollow.FocusOn(M("YoungFront").position, 0.8f);
-            yield return new WaitForSeconds(0.9f);
-            yield return Say(Young + "::안 돼... 아직이야. 조금만 더.");
-            CameraFollow.FocusOn(null, 0f);
-            p.InputLocked = false;
-            var spot = Telegraph.Ring(M("ShootSpot").position + Vector3.up * 0.05f, 2.2f, 9999f, BossFx.Safe);
+            if (!practice)
+            {
+                CameraFollow.FocusOn(M("YoungFront").position, 0.8f);
+                yield return new WaitForSeconds(0.9f);
+                yield return Say(Young + "::안 돼... 아직이야. 조금만 더.");
+                CameraFollow.FocusOn(null, 0f);
+                p.InputLocked = false;
+            }
+            var spot = spotRing = Telegraph.Ring(M("ShootSpot").position + Vector3.up * 0.05f, 2.2f, 9999f, BossFx.Safe);
             ui?.Toast("기관차 앞으로 — 헤드라이트 시계가 가리키는 시각에 쏜 탄을 헤드라이트에 맞히세요");
             yield return WaitNear(M("ShootSpot").position, 6f);
             if (spot) spot.Kill();
+            spotRing = null;
             for (int ok = 0; ok < 2;)
             {
                 bool hit = false;
@@ -117,20 +132,27 @@ namespace CatTang
                 if (!p || !p.health.Alive) yield break;
                 if (!hit) { yield return new WaitForSeconds(1.2f); continue; }
                 ok++;
-                p.InputLocked = true;
-                if (ok == 1) yield return Say(Young + "::한 번만 더...");
-                else { CameraFollow.FocusOn(M("Woman").position, 0.7f); yield return Say(Woman + "::...억지로 붙잡지 마."); CameraFollow.FocusOn(null, 0f); }
-                p.InputLocked = false;
+                if (!practice)
+                {
+                    p.InputLocked = true;
+                    if (ok == 1) yield return Say(Young + "::한 번만 더...");
+                    else { CameraFollow.FocusOn(M("Woman").position, 0.7f); yield return Say(Woman + "::...억지로 붙잡지 마."); CameraFollow.FocusOn(null, 0f); }
+                    p.InputLocked = false;
+                }
                 yield return new WaitForSeconds(0.8f);
             }
 
             // ③ 그림자 승객
-            p.InputLocked = true;
-            yield return Say("고양이#결의::...뭐든 상관없어. 이 기차는 아직 못 보낸다.");
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                yield return Say("고양이#결의::...뭐든 상관없어. 이 기차는 아직 못 보낸다.");
+                p.InputLocked = false;
+            }
             if (!StoryBgm.Has(2)) Music.PlayFor("stage", 2);
             yield return Wave(4);
             yield return Wave(5, trial: true);
+            if (practice) { yield return Finish(true); yield break; }   // 연습: 끝 연출 · 기록 없음
 
             // 끝: 기차가 떠남 → 청년만 남음 → 하얗게
             p.InputLocked = true;
@@ -339,10 +361,19 @@ namespace CatTang
         }
 
         // ---------- 진행 ----------
+        /// <summary>연습 중 'Enter 길게': 하던 걸 멈추고 바로 보스 방으로</summary>
+        void Quit()
+        {
+            if (finished) return;
+            StopAllCoroutines();
+            StartCoroutine(Finish(true));
+        }
+
         IEnumerator Finish(bool ok)
         {
+            if (pr) pr.Stop();                                    // 연습: 체력 되돌림 · 표시 치움 (Enter 끝내기도 막음)
             var ov = StoryOverlay.I;
-            if (ok && ov) yield return ov.FadeWhite(0, 1, 1.1f);
+            if (ok && ov) yield return ov.FadeWhite(0, 1, practice ? 0.4f : 1.1f);
             CameraFollow.FocusOn(null, 0f);
             Cleanup();
             p.InputLocked = false;
@@ -351,13 +382,15 @@ namespace CatTang
             done?.Invoke();                                       // 보스 방을 지음 (플레이어 순간이동)
             CameraFollow.SnapZoom(1f);
             Music.Duck(0f, 0.8f);
-            if (ok && ov) yield return ov.FadeWhite(1, 0, 0.9f);
+            if (ok && ov) yield return ov.FadeWhite(1, 0, practice ? 0.5f : 0.9f);
             Destroy(gameObject);
         }
 
         void Cleanup()
         {
             if (P) P.OnFired -= OnPlayerFired;
+            if (spotRing) { spotRing.Kill(); spotRing = null; }
+            departOn = false;
             foreach (var e in shadows) if (e) Destroy(e.gameObject);
             shadows.Clear();
             foreach (var r in FindObjectsByType<SmokeRing>(FindObjectsSortMode.None)) Destroy(r.gameObject);
@@ -381,6 +414,7 @@ namespace CatTang
 
         IEnumerator Say(params string[] lines)
         {
+            if (practice) yield break;                            // 연습: 대사 없음
             bool d = false;
             ui.Talk(Young, lines, () => d = true);
             while (!d) yield return null;

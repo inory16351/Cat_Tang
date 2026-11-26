@@ -121,14 +121,14 @@ namespace CatTang
             bountyOn = true;
             var p = P;
             int mark = Random.Range(2, 5);
-            var tm = Label(p.transform, new Vector3(0, 2.9f, 0), mark.ToString(), new Color(1f, 0.85f, 0.3f), 1f);   // 화면 UI 배지 (크게)
+            var tm = Label(p.transform, new Vector3(0, 2.9f, 0), mark.ToString(), new Color(1f, 0.85f, 0.3f), 1f, BigLabel.Frame.Mark);   // 화면 UI 배지 (크게)
             BossFx.Toast($"현상금 표식 {mark} — 5초 뒤 발사 시각이 {mark}의 배수면 피해");
             float end = Time.time + BountyCount;
             while (Time.time < end && p && p.health.Alive && hp.Alive)
             {
                 int left = Mathf.CeilToInt(end - Time.time);
                 bool danger = p.rev.next % mark == 0;
-                tm.text = $"{mark}\n<size=46>{left}초</size>";
+                tm.text = mark.ToString(); tm.sub = $"{left}초";                 // 배지 안 = 표식 숫자만, 남은 초는 옆 작은 글 (2026-11-26 사용자: 두 줄이 배지 밖으로 넘침)
                 tm.color = danger ? new Color(1f, 0.35f, 0.25f) : new Color(1f, 0.85f, 0.3f);
                 yield return null;
             }
@@ -279,7 +279,7 @@ namespace CatTang
 
         void Start()
         {
-            face = Label(transform, new Vector3(0, 5.6f, 0), "", new Color(1f, 0.9f, 0.55f), 1.45f);   // 보스 얼굴 숫자 (크게)
+            face = Label(transform, new Vector3(0, 5.6f, 0), "", new Color(1f, 0.9f, 0.55f), 1.45f, BigLabel.Frame.Boss);   // 보스 얼굴 숫자 (크게)
         }
 
         // 느리게 걸어서 따라옴 (이속 3)
@@ -329,7 +329,7 @@ namespace CatTang
             float dialR = Mathf.Clamp(Mathf.Min(rs.x, rs.y) / 2f - 1.5f, 6f, 10f);
             Vector3 zone = FloorClock.HourPoint(c, dialR, hour);
             var dial = FloorClock.Show(c, dialR, hour, TrialTime);
-            BigLabel zoneMark = dial ? null : Label(null, zone + Vector3.up * 0.6f, hour.ToString(), BossFx.Safe, 0.9f);   // 그림이 없을 때: 예전처럼 원 위에 숫자
+            BigLabel zoneMark = dial ? null : Label(null, zone + Vector3.up * 0.6f, hour.ToString(), BossFx.Safe, 0.9f, BigLabel.Frame.Hour);   // 그림이 없을 때: 예전처럼 원 위에 숫자
             Telegraph.Ring(zone, 2f, TrialTime, BossFx.Safe);
             BossFx.Toast("시각 패턴 — 안전 지대의 시각에 발사 시각을 맞춰라");
             float end = Time.time + TrialTime;

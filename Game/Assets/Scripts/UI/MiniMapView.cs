@@ -15,6 +15,11 @@ namespace CatTang
     {
         /// <summary>튜토리얼 · 연출이 잠시 미니맵을 끄고 싶을 때 true</summary>
         public static bool Suppressed;
+        /// <summary>전투 중엔 반투명 (2026-11-26 사용자: 오른쪽 아래 보스 패턴 화살표 배지가 미니맵에 가려 안 보임) — BigLabel이 이때 미니맵 자리를 비킬 HUD로 안 셈</summary>
+        public static bool Faded => Instance && Instance.fade < 0.75f;
+        const float CombatAlpha = 0.4f;
+        CanvasGroup group;
+        float fade = 1f;
         public static MiniMapView Instance { get; private set; }
 
         // 기준 해상도(1920×1080, 높이 맞춤) 단위
@@ -74,6 +79,8 @@ namespace CatTang
         {
             root = rt; parentRt = parent;
             canvas = rt.gameObject.AddComponent<Canvas>();                 // 하위 캔버스: 점이 움직여도 HUD 전체를 다시 굽지 않게
+            group = rt.gameObject.AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false; group.interactable = false;
             // 틀: 놋쇠 리벳 칸 (인벤토리 칸과 같은 그림)
             var frame = UIKit.Img("Frame", rt, "slot", new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, true, 2.4f);
             Fill(frame.rectTransform, 0);
@@ -128,6 +135,8 @@ namespace CatTang
             var room = Visible(rm, p) ? PickRoom(rm, p.transform.position) : null;
             if (room == null) { if (canvas.enabled) canvas.enabled = false; return; }
             if (!canvas.enabled) canvas.enabled = true;
+            fade = Mathf.MoveTowards(fade, rm.inCombat ? CombatAlpha : 1f, Time.unscaledDeltaTime * 2.5f);   // 0.25초 정도로 스르르
+            if (group) group.alpha = fade;
 
             // 방 판 색 = 장별 바닥 색 (1장 주황 원본 · 2~5장은 같은 그림을 그 장 바닥 색으로 다시 칠한 것)
             if (rm.chapter != plateChapter)

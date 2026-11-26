@@ -587,7 +587,7 @@ namespace CatTang
             var hitClone = new HashSet<Health>();
             foreach (var cl in clones) { var hh = cl.h; hh.OnDamaged += _ => hitClone.Add(hh); }
             float end = Time.time + FindWindow;
-            BigLabel timer = Label(p.transform, new Vector3(0, 3.4f, 0), "", Ch3Fx.Pink, 1f);
+            BigLabel timer = Label(p.transform, new Vector3(0, 3.4f, 0), "", Ch3Fx.Pink, 1f, BigLabel.Frame.Timer);
             while (Time.time < end && hp.Alive && !realHit)
             {
                 if (timer) timer.text = Mathf.CeilToInt(end - Time.time).ToString();
@@ -955,7 +955,7 @@ namespace CatTang
             Ch3Fx.Prim(PrimitiveType.Cylinder, "Core", marker.transform, Vector3.up * 0.05f, new Vector3(1.6f, 0.03f, 1.6f), Ch3Fx.Gold, 1f);
             needHour = real; needHead = false; gimmickHit = false;
             Telegraph.Ring(at, 3f, 8f, Telegraph.Danger).NoGlint();
-            var timer = Label(marker.transform, new Vector3(0, 3f, 0), "8", Ch3Fx.Pink, 1.2f);
+            var timer = Label(marker.transform, new Vector3(0, 3f, 0), "8", Ch3Fx.Pink, 1.2f, BigLabel.Frame.Timer);
             float end = Time.time + 8f;
             while (Time.time < end && !gimmickHit && hp.Alive) { if (timer) timer.text = Mathf.CeilToInt(end - Time.time).ToString(); yield return null; }
             needHour = 0; needTarget = null;
@@ -1044,7 +1044,7 @@ namespace CatTang
                 if (!Ch3Fx.Model("MemoryShard", go.transform)) Ch3Fx.Prim(PrimitiveType.Capsule, "Shard", go.transform, Vector3.up * 1.2f, new Vector3(0.8f, 1f, 0.8f), new Color(1f, 0.78f, 0.86f));
                 var h = Ch3Fx.Target(go, 0.6f, 2.4f);
                 shardNum[h] = nums[k];
-                shardLabels.Add(Label(go.transform, new Vector3(0, 3.0f, 0), nums[k].ToString(), Ch3Fx.Gold, 1.1f));
+                shardLabels.Add(Label(go.transform, new Vector3(0, 3.0f, 0), nums[k].ToString(), Ch3Fx.Gold, 1.1f, BigLabel.Frame.Hour));
                 Enemy.Fx3("Stardust", at + Vector3.up, 0.8f);
                 k++;
             }

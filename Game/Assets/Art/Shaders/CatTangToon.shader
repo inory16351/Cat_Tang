@@ -11,6 +11,7 @@ Shader "CatTang/Toon"
     {
         [MainTexture] _BaseMap ("Base Map (손으로 칠한 텍스처)", 2D) = "white" {}
         [MainColor] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
+        _KeepColor ("Keep Color (전역 탈색 예외)", Range(0, 1)) = 0
         _Saturation ("Saturation (배경 톤 낮추기 < 1)", Range(0, 1.5)) = 1
         _Brightness ("Brightness (배경 톤 낮추기 < 1)", Range(0, 1.5)) = 1
         // 색 범위 치환 (적 배색): 원래 색상 범위(From ± Width)의 덜 선명한 몸 색만 목표 색상으로 돌림. 금속 금빛 · 선명한 진홍 포인트는 유지
@@ -99,12 +100,20 @@ Shader "CatTang/Toon"
             half _HitWhite;
             half4 _SwingGlow;
             float4 _SwingGlowStart, _SwingGlowEnd;
+            half _KeepColor;
         CBUFFER_END
 
         // 브롤 스타즈풍 시험 모드 스위치 (전역, Shader.SetGlobalFloat). 0 = 원래 모습
         float _CatTangBrawl;
         // 3장 거울 바닥 반사 카메라가 그리는 중 (MirrorReflection): 외곽선 껍질은 뒤집힌 시점에서 검은 덩어리가 되니 건너뜀
         float _CatTangMirrorPass;
+        // 전역 탈색 (스토리 맵 4: 시계를 멈출수록 색이 빠짐 → 11:59엔 흑백, Shader.SetGlobalFloat). 0 = 원래 색. _KeepColor = 1인 재질(빨간 숄)은 예외
+        float _CatTangDesat;
+        half3 Desat(half3 c)
+        {
+            half k = saturate(_CatTangDesat) * (1.0h - _KeepColor);
+            return lerp(c, dot(c, half3(0.299h, 0.587h, 0.114h)).xxx, k);
+        }
 
         half3 RgbToHsv(half3 c)
         {
@@ -263,6 +272,7 @@ Shader "CatTang/Toon"
                 color = max(0, lerp(lum.xxx, color, 1.06h));
                 color = SwingEmission(color, i.positionWS, dot(N, V));
                 color = lerp(color, half3(1.16h, 1.16h, 1.16h), _HitWhite);
+                color = Desat(color);
                 color = MixFog(color, i.fogFactor);
                 return half4(color, 1);
             }
@@ -320,6 +330,7 @@ Shader "CatTang/Toon"
 
                 color = SwingEmission(color, i.positionWS, dot(N, V));
                 color = lerp(color, half3(1.16h, 1.16h, 1.16h), _HitWhite);
+                color = Desat(color);
                 color = MixFog(color, i.fogFactor);
                 return half4(color, 1);
             }

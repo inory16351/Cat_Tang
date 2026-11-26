@@ -95,7 +95,7 @@ namespace CatTang
         IEnumerator RedLight()
         {
             var p = P;
-            if (!lamp) lamp = Label(transform, new Vector3(0, 4.9f, 0), "", Ch2Fx.Yellow, 1.5f);
+            if (!lamp) lamp = Label(transform, new Vector3(0, 4.9f, 0), "", Ch2Fx.Yellow, 1.5f, BigLabel.Frame.Boss);
             // 호루라기 + 노란불 1초
             if (self) self.Anim("Special");
             BossFx.Toast("호루라기 — 노란불! 곧 빨간불, 멈춰서 표 탄을 쏴 떨어뜨려라");
@@ -502,7 +502,7 @@ namespace CatTang
 
         void Start()
         {
-            clock = Label(transform, new Vector3(0, 7.2f, 0), "", new Color(1f, 0.92f, 0.6f), 1.5f);
+            clock = Label(transform, new Vector3(0, 7.2f, 0), "", new Color(1f, 0.92f, 0.6f), 1.5f, BigLabel.Frame.Boss);
             BuildCoaches();
             if (P) P.OnFired += OnPlayerFired;
         }
@@ -713,13 +713,13 @@ namespace CatTang
                 bool ready = p && p.rev.next == hour;
                 if (clock)
                 {
-                    clock.text = $"{hour}시\n<size=46>{left}초</size>";
+                    clock.text = hour.ToString(); clock.sub = $"{left}초";       // 배지 안 = 시각만, 남은 초는 옆 작은 글 (1장 현상금과 같은 문제)
                     clock.color = ready ? Ch2Fx.Green : new Color(1f, 0.92f, 0.6f);
                 }
                 yield return null;
             }
             departOn = false;
-            if (clock) clock.text = "";
+            if (clock) { clock.text = ""; clock.sub = ""; }
             if (!hp.Alive) yield break;
             if (departHit)
             {

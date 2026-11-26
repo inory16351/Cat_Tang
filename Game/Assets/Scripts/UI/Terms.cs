@@ -26,17 +26,22 @@ namespace CatTang
         static Dictionary<string, string> map;
         static Regex re;
 
+        static string builtFor;
         static void Ensure()
         {
-            if (re != null) return;
+            if (re != null && builtFor == Loc.Lang) return;
+            builtFor = Loc.Lang;
+            re = null;
             map = new Dictionary<string, string>();
-            foreach (var (n, d) in Fixed) map[n] = d;
+            // 다국어: 낱말 · 설명도 지금 언어로 (화면 글이 이미 번역된 뒤에 칠하므로)
+            foreach (var (n, d) in Fixed) map[Loc.T(n)] = Loc.T(d);
             foreach (var t in Tables.Traits.Values)
-                if (!string.IsNullOrEmpty(t.Name) && !map.ContainsKey(t.Name)) map[t.Name] = t.Desc;
+                if (!string.IsNullOrEmpty(t.Name) && !map.ContainsKey(Loc.T(t.Name))) map[Loc.T(t.Name)] = Loc.T(t.Desc);
             if (map.Count == 0) return;
-            // 긴 이름부터 (연산 슬롯 > 연산), 앞 글자가 한글이면 다른 낱말의 일부로 봄
+            // 긴 이름부터 (연산 슬롯 > 연산), 앞 글자가 한글이면 다른 낱말의 일부로 봄 (영어는 낱말 경계)
             var keys = map.Keys.OrderByDescending(k => k.Length).Select(Regex.Escape);
-            re = new Regex($"(?<![가-힣])(?:{string.Join("|", keys)})", RegexOptions.CultureInvariant);
+            re = Loc.Korean ? new Regex($"(?<![가-힣])(?:{string.Join("|", keys)})", RegexOptions.CultureInvariant)
+                            : new Regex($@"\b(?:{string.Join("|", keys)})\b", RegexOptions.CultureInvariant);
         }
 
         /// <summary>표가 다시 읽힌 뒤(특성 이름이 바뀜) 다시 만들게</summary>

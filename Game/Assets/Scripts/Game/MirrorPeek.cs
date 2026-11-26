@@ -16,8 +16,8 @@ namespace CatTang
         static bool Quit()
         {
             var kb = Keyboard.current; var m = Mouse.current;
-            return (kb != null && (kb.eKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame))
-                || (m != null && (m.leftButton.wasPressedThisFrame || m.rightButton.wasPressedThisFrame));
+            return KeyBinds.Down(Act.Interact) || KeyBinds.AnyMoveDown() || KeyBinds.Down(Act.Skill)     // 단축키 설정 (기본 E · WASD · 우클릭)
+                || (kb != null && kb.escapeKey.wasPressedThisFrame) || (m != null && (m.leftButton.wasPressedThisFrame || m.rightButton.wasPressedThisFrame));
         }
 
         IEnumerator Peek(PlayerController p)
@@ -27,7 +27,7 @@ namespace CatTang
             var c = view.GlassCenter;
             CameraFollow.FocusOn(c + Vector3.down * 1.2f + Vector3.back * 0.6f, 0.36f);
             var ov = StoryOverlay.I;
-            if (ov) ov.SetCaption("<size=26>E · 클릭  그만 보기</size>");
+            if (ov) ov.SetCaption($"<size=26>{KeyBinds.Name(Act.Interact)} · 클릭  그만 보기</size>");
             yield return null;
             float t = 0;
             while (t < 30f && !(t > 0.35f && Quit())) { t += Time.unscaledDeltaTime; yield return null; }

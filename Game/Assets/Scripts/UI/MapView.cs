@@ -20,6 +20,7 @@ namespace CatTang
         static int closedFrame = -1;
         /// <summary>이 프레임 Esc를 지도가 썼는지 (GameUI가 전투 포기 창을 안 열게)</summary>
         public static bool EscUsed => (live && live.open) || closedFrame == Time.frameCount;
+        Text hint;
         object builtFor;                       // 어떤 레이아웃으로 그렸는지 (바뀌면 다시 그림)
         float scale;
         Vector2 worldMin;
@@ -43,6 +44,7 @@ namespace CatTang
             sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             sc.referenceResolution = new Vector2(1920, 1080);
             sc.matchWidthOrHeight = 1f;
+            UiScaleFollow.Add(sc);   // 환경설정 UI 크기 (2026-11-26)
             // 어둡게 깔기
             var dim = UIKit.Stretch("Dim", (RectTransform)go.transform).gameObject.AddComponent<Image>();
             dim.color = new Color(0, 0, 0, 0.72f);
@@ -55,8 +57,8 @@ namespace CatTang
             content = Rect("Content", panel, new Vector2(1240, 760));
             content.anchoredPosition = new Vector2(0, -20);
             title = UIKit.Label("Title", panel, new Vector2(0.5f, 1f), new Vector2(0, -95), new Vector2(900, 60), 40, TextAnchor.MiddleCenter, true, new Color(0.35f, 0.2f, 0.12f));
-            var hint = UIKit.Label("Hint", panel, new Vector2(0.5f, 0f), new Vector2(0, 70), new Vector2(900, 40), 24, TextAnchor.MiddleCenter, false, new Color(0.45f, 0.3f, 0.2f));
-            hint.text = "M · 닫기";
+            hint = UIKit.Label("Hint", panel, new Vector2(0.5f, 0f), new Vector2(0, 70), new Vector2(900, 40), 24, TextAnchor.MiddleCenter, false, new Color(0.45f, 0.3f, 0.2f));
+            hint.text = KeyBinds.Name(Act.Map) + " · 닫기";
             canvas.gameObject.SetActive(false);
         }
 
@@ -86,7 +88,8 @@ namespace CatTang
         {
             var kb = Keyboard.current;
             if (!open && RunManager.StoryHold) return;                       // 스토리 맵 · 연출 중엔 판 지도 안 엶
-            if (kb != null && (kb.mKey.wasPressedThisFrame || (open && kb.escapeKey.wasPressedThisFrame))) Toggle(!open && kb.mKey.wasPressedThisFrame);
+            bool mDown = KeyBinds.Down(Act.Map);                                // 단축키 설정 (기본 M)
+            if (mDown || (open && kb != null && kb.escapeKey.wasPressedThisFrame && !KeyBinds.EscConsumed)) Toggle(!open && mDown);
             if (!open) return;
             var rm = RunManager.Instance;
             if (!rm || rm.Layout == null) return;
@@ -100,6 +103,7 @@ namespace CatTang
         {
             if (open && !on) closedFrame = Time.frameCount;
             open = on;
+            if (on && hint) hint.text = KeyBinds.Name(Act.Map) + " · 닫기";     // 키를 바꿨을 수 있음
             canvas.gameObject.SetActive(on);
             builtFor = null;                 // 열 때마다 새로 (문 · 방 상태 반영)
         }

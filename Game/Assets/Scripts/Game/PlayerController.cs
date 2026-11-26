@@ -1,5 +1,5 @@
 // 플레이어: WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시(최대 3칸, 1칸당 2초, 실루엣 잔상) · 우클릭 총 스킬
-// Q 불릿 파티(열기 3칸) · E 상호작용. 탄 · 총 · 특성 · 코스튬 효과는 Effects로 모아 발동.
+// Q 불릿 파티(열기 3칸) · E 상호작용 (괄호 밖 키는 기본값 — 실제 키는 KeyBinds, 환경설정 '조작'에서 바꿈). 탄 · 총 · 특성 · 코스튬 효과는 Effects로 모아 발동.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -197,6 +197,9 @@ namespace CatTang
             return null;
         }
 
+        /// <summary>떨어졌을 때 돌아올 자리 (마을 씬 밖 스토리 맵 — 엔딩 시계판). null = 방 가운데 / 원점</summary>
+        public static Vector3? FallBack;
+
         public void Teleport(Vector3 p)
         {
             cc.enabled = false;
@@ -214,7 +217,7 @@ namespace CatTang
             else dashTimer = 0;
 
             if (transform.position.y < -3f)
-                Teleport(RunManager.Instance ? RunManager.Instance.RoomCenter + Vector3.up * 0.3f : new Vector3(0, 0.3f, 0));
+                Teleport(FallBack ?? (RunManager.Instance ? RunManager.Instance.RoomCenter + Vector3.up * 0.3f : new Vector3(0, 0.3f, 0)));
 
             UpdateFocus();
             if (model)
@@ -243,7 +246,8 @@ namespace CatTang
                 }
             }
 
-            var mv = new Vector3((kb.dKey.isPressed ? 1 : 0) - (kb.aKey.isPressed ? 1 : 0), 0, (kb.wKey.isPressed ? 1 : 0) - (kb.sKey.isPressed ? 1 : 0));
+            var mv2 = KeyBinds.Move();                                        // 단축키 설정 (KeyBinds) — 기본 WASD
+            var mv = new Vector3(mv2.x, 0, mv2.y);
             if (mv.sqrMagnitude > 1) mv.Normalize();
             var faceDir = combatEnabled ? aimDir : (mv.sqrMagnitude > 0.01f ? mv : (model ? model.forward : aimDir));
             if (model && !ultimateActive && faceDir.sqrMagnitude > 0.001f) model.rotation = Quaternion.Slerp(model.rotation, Quaternion.LookRotation(faceDir), 20f * Time.deltaTime);
@@ -253,12 +257,12 @@ namespace CatTang
             if (!dashing)
             {
                 cc.Move((mv * moveSpeed * MoveSpeedMul * (ultimateActive ? UltMoveMul : 1f) + Vector3.down * 9f) * Time.deltaTime);
-                if (kb.spaceKey.wasPressedThisFrame && dashCharges >= 1)
+                if (KeyBinds.Down(Act.Dash) && dashCharges >= 1)
                     StartCoroutine(Dash(mv.sqrMagnitude > 0.01f ? mv.normalized : faceDir));
             }
             if (ultimateActive) return;          // 불릿 파티 중엔 이동 · 대시만 (사격은 궁이 알아서)
 
-            if (kb.eKey.wasPressedThisFrame && Focus) Focus.Interact(this);
+            if (KeyBinds.Down(Act.Interact) && Focus) Focus.Interact(this);
             if (!combatEnabled) return;
 
             if (rev.reloading)
@@ -268,8 +272,8 @@ namespace CatTang
             else if (mouse.leftButton.isPressed && Time.time >= nextFireTime && !FireLocked) FireNext();
 
             // 튜토리얼 동안 아직 안 배운 기능은 입력 무시 (TutorialGate — 안내하는 순간 풀림)
-            if (mouse.rightButton.wasPressedThisFrame && Time.time >= nextSkill && TutorialGate.Open(TutFeature.Skill)) StartCoroutine(UseSkill());   // 새 총(랜턴 · 기관차)이면 그 총 스킬, 아니면 백스텝 샷 (PlayerSkills.cs)
-            if (kb.qKey.wasPressedThisFrame && rev.heat >= Revolver.HeatMax && TutorialGate.Open(TutFeature.Ultimate)) StartCoroutine(BulletParty());
+            if (KeyBinds.Down(Act.Skill) && Time.time >= nextSkill && TutorialGate.Open(TutFeature.Skill)) StartCoroutine(UseSkill());   // 새 총(랜턴 · 기관차)이면 그 총 스킬, 아니면 백스텝 샷 (PlayerSkills.cs)
+            if (KeyBinds.Down(Act.BulletParty) && rev.heat >= Revolver.HeatMax && TutorialGate.Open(TutFeature.Ultimate)) StartCoroutine(BulletParty());
         }
 
         void UpdateFocus()

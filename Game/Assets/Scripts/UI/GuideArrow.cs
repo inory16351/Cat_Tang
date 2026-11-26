@@ -74,6 +74,7 @@ namespace CatTang
             canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 40;   // HUD 위 · 대화/안내 창 아래
             var sc = gameObject.AddComponent<CanvasScaler>();
             sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; sc.referenceResolution = new Vector2(1920, 1080); sc.matchWidthOrHeight = 0.5f;
+            UiScaleFollow.Add(sc);   // 환경설정 UI 크기 (2026-11-26)
             root = (RectTransform)transform;
             arrow = UIKit.MakeRect("Arrow", root, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(70, 70));
             img = arrow.gameObject.AddComponent<Image>(); img.sprite = ArrowSprite(); img.raycastTarget = false;

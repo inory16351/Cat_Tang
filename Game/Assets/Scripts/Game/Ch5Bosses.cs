@@ -16,7 +16,8 @@ namespace CatTang
     {
         public override float NearDist => 6f;
         public override float PatternGap => phase == 3 ? 0.75f : phase == 2 ? 1.0f : 1.1f;
-        public override string DisplayName => phase == 3 ? $"시간의 주인 · 마지막 {Mathf.CeilToInt(Mathf.Max(0, survive))}초"
+        // 3페이즈 60초 = 이야기 속 마지막 1분 (2026-11-26 사용자 확정): 11:59:00 → 12:00
+        public override string DisplayName => phase == 3 ? (survive <= 0f ? "시간의 주인 · 12:00" : $"시간의 주인 · 11:59:{Mathf.Clamp(Mathf.FloorToInt(SurviveTime - survive), 0, 59):00}")
                                                        : $"시간의 주인 · 남은 시간 {(int)(gauge / 60)}:{(int)(gauge % 60):00}";
 
         // ---------- 수치 (md) ----------
@@ -127,7 +128,7 @@ namespace CatTang
         {
             if (phase == 3) survive = Mathf.Min(SurviveTime, survive + sec * 0.3f);
             else gauge = Mathf.Max(0f, gauge - sec);
-            if (show && P) { var b = Label(null, P.transform.position + Vector3.up * 3f, $"-{sec:0}초", Magenta, 1.2f); if (b) Destroy(b.gameObject, 1.1f); }
+            if (show && P) BigLabel.Popup(P.transform.position + Vector3.up * 3f, $"-{sec:0}초", Magenta);   // 표적이 아닌 알림 → 배지 · 화살표 없이 떠오르는 글 (2026-11-26 사용자)
             Sfx.Play("e5b_time_cut", 0.7f);
             CameraFollow.Shake(0.08f);
         }
@@ -296,7 +297,7 @@ namespace CatTang
             needHour = h; gimmickHit = false;
             BossFx.Toast($"죽음의 시각 — {h}시 탄으로 얼굴 시계를 쏴라!");
             Sfx.Play("e5b_bell", 0.6f);
-            var lb = Label(transform, new Vector3(0, 7f, 0), Roman(h), Gold, 2.2f);
+            var lb = Label(transform, new Vector3(0, 7f, 0), Roman(h), Gold, 2.2f, BigLabel.Frame.Boss);
             var dome = StylizedFx.Dome(transform.position, 3.2f, 8f, StylizedFx.Gold);
             float end = Time.time + 8f;
             while (Time.time < end && !gimmickHit && hp.Alive) { if (lb) lb.text = $"{Roman(h)}  {Mathf.CeilToInt(end - Time.time)}"; yield return null; }
@@ -320,7 +321,8 @@ namespace CatTang
                 spots.Add(at);
                 var m = Own(new GameObject("Seal_" + nums[i]));
                 m.transform.position = at;
-                Label(m.transform, new Vector3(0, 1.6f, 0), $"{i + 1}. {Roman(nums[i])}", i == 0 ? Gold : new Color(0.75f, 0.75f, 0.85f), 1.4f);
+                var sc = i == 0 ? Gold : new Color(0.75f, 0.75f, 0.85f);
+                Label(m.transform, new Vector3(0, 1.6f, 0), Roman(nums[i]), sc, 1.2f, BigLabel.Frame.Hour)?.Corner((i + 1).ToString(), sc);   // 배지 안 = 로마 숫자만, 순서는 모서리 동그라미
                 marks.Add(m);
                 StylizedFx.Spawn("ring", at + Vector3.up * 0.05f, Quaternion.identity, Vector3.one * 1.6f, Vector3.one * 1.6f, 0.3f, StylizedFx.Gold, 40f, 15f, 0.05f);
             }
@@ -756,7 +758,7 @@ namespace CatTang
         public void Regain(float sec)
         {
             gauge = Mathf.Min(GaugeStart, gauge + sec);
-            if (P) { var b = Label(null, P.transform.position + Vector3.up * 3f, $"+{sec:0}초", Gold, 1.2f); if (b) Destroy(b.gameObject, 1.1f); }
+            if (P) BigLabel.Popup(P.transform.position + Vector3.up * 3f, $"+{sec:0}초", Gold);
         }
 
         void Win()

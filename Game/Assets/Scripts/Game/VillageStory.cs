@@ -61,10 +61,19 @@ namespace CatTang
             //   → 물웅덩이 속 거울 고양이 → 틀린 곳 찾기 퀘스트 (Ch3Quest). 해금 없음. 4 · 5장 퀘스트는 그 장 만들 때 다시 정함
             new("ch3", 3, "고양이", false,
                 "고양이#의문::여관이... 왼쪽에 있었던가?"),
+            // 4장 클리어 (2026-11-25 사용자 확정, 명세 ch4_story_spec.md 3): 꿈3 뒤 멈춘 마을에서 깨어남 → 거울 속 고양이 → 섬마다 멈춘 시계 (Ch4Quest).
+            //   깨어남 혼잣말 = StoryRun.WakeLines[3] (2026-11-26 사용자 확정, 두 줄) 뒤에 이 줄. 3장 퀘스트를 마친 뒤에만
+            new("ch4", 4, "고양이", false,
+                "고양이#의문::...아무것도 안 움직여."),
+            // 5장 클리어 (2026-11-26 사용자 확정): 꿈4 '마지막 장' 뒤 무너지는 마을 → 섬마다 작별 → 광장 · 총 내려놓기 → 12:00 → 병실 → 크레딧 (Ch5Ending).
+            //   기절 · 깨어남 대사 없음, 첫 줄 "...마을이... 녹고 있어."는 Ch5Ending이 띄움 (그래서 여기 대사는 비움)
+            new("ch5", 5, "고양이", false),
+            // 엔딩 뒤 처음 깨어남: 문지기가 승천 모드 입구를 엶 (내용은 따로 기획)
+            new("ascend", 5, "괘종시계 문지기", false),
         };
 
-        /// <summary>이 장면을 지금 틀 수 있는지 (3장은 거울 마을로 뒤집혀 들어왔을 때만 — 2장 퀘스트를 마친 뒤)</summary>
-        static bool Ready(Beat b) => Meta.ChaptersCleared >= b.chapter && !Meta.StorySeen(b.key) && (b.key != "ch3" || Ch3Quest.Flipped);
+        /// <summary>이 장면을 지금 틀 수 있는지 (3장은 거울 마을로 뒤집혀 들어왔을 때만 — 2장 퀘스트를 마친 뒤 · 4장은 3장 퀘스트를 마치고 멈춘 마을일 때만)</summary>
+        static bool Ready(Beat b) => Meta.ChaptersCleared >= b.chapter && !Meta.StorySeen(b.key) && (b.key != "ch3" || Ch3Quest.Flipped) && (b.key != "ch4" || Ch4Quest.Pending && Ch4Quest.I) && (b.key != "ch5" || Ch5Ending.Pending) && (b.key != "ascend" || Ch5Ending.AscendPending);
 
         static string SpotOf(string speaker) => speaker switch
         {
@@ -132,7 +141,7 @@ namespace CatTang
             {
                 p.InputLocked = true;
                 bool woke = false;
-                ui.Talk("고양이", new[] { wake }, () => woke = true);
+                ui.Talk("고양이", wake.Split('\n'), () => woke = true);
                 while (!woke) yield return null;
             }
             System.Action arrowAfter = null;                                        // 조작이 풀린 뒤 띄울 길 안내 화살표
@@ -158,12 +167,19 @@ namespace CatTang
         /// <summary>대화 한 묶음 + 그 뒤 연출(길 안내 · 해금 안내). 기록(MarkStory)은 부른 쪽에서</summary>
         static IEnumerator RunBeat(Beat b, string wake, GameUI ui, System.Action<System.Action> setArrow)
         {
+            // 5장 엔딩 · 승천 입구는 대사 묶음 없이 따로 (Ch5Ending)
+            if (b.key == "ch5") { yield return Ch5Ending.Run(ui); yield break; }
+            if (b.key == "ascend") { yield return Ch5Ending.Ascend(ui); yield break; }
             // 1장 꿈 뒤 · 2장 블랙아웃 뒤: 먼저 멈춘 광장 시곗바늘을 비춤 (ClockQuest가 고장 상태로 바꿔 둠)
             if (b.key == "ch1" || b.key == "ch2") { var orb = GameObject.Find("ClockHand_Orbit"); if (orb) yield return Look(orb.transform.position + Vector3.down * 2.5f, 1.2f); }
             var spot = GameObject.Find(SpotOf(b.speaker));                       // 말하는 NPC를 비춤
             if (spot) CameraFollow.FocusOn(spot.transform.position + Vector3.back * 1.5f, 0.8f);
             var lines = b.lines;
-            if (wake != null) { lines = new string[b.lines.Length + 1]; lines[0] = wake; b.lines.CopyTo(lines, 1); }
+            if (wake != null)                                                       // 깨어남 혼잣말이 여러 줄이면 줄바꿈 문자로 나눔 (4장: 두 줄)
+            {
+                var w = wake.Split('\n');
+                lines = new string[b.lines.Length + w.Length]; w.CopyTo(lines, 0); b.lines.CopyTo(lines, w.Length);
+            }
             bool done = false;
             ui.Talk(b.speaker, lines, () => done = true);
             while (!done) yield return null;
@@ -210,6 +226,8 @@ namespace CatTang
             }
             // 3장 블랙아웃 뒤: 물웅덩이 속 거울 고양이 → 거울 틀린 곳 찾기 시작 (끝나면 섬 거울 넷에 화살표)
             if (b.key == "ch3") yield return Ch3Quest.Intro(ui, setArrow);
+            // 4장 꿈3 뒤: 멈춘 마을 → 거울 속 고양이가 규칙을 알려 줌 (끝나면 섬 시계 넷에 화살표)
+            if (b.key == "ch4") yield return Ch4Quest.Intro(ui, setArrow);
         }
 
         /// <summary>의상실 문을 처음 쓸 때 재봉사 첫 대화 (2026-11-24 사용자 대사) → 끝나면 의상실 열림</summary>

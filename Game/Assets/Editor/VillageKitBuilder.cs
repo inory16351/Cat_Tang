@@ -72,7 +72,7 @@ namespace CatTang.EditorTools
         };
 
         /// <summary>NPC 자리에 프리팹을 세움 (프리팹이 아직 없으면 빈 자리로 둠). 이미 있던 모델은 지우고 다시</summary>
-        static void PlaceNpc(Transform spot)
+        internal static void PlaceNpc(Transform spot)
         {
             string n = NpcFor(spot.name);
             if (n == null) return;
@@ -102,7 +102,7 @@ namespace CatTang.EditorTools
             Debug.Log($"[Village] NPC 자리 {c}곳 갱신");
         }
 
-        static Transform Group(string name, Transform parent = null)
+        internal static Transform Group(string name, Transform parent = null)
         {
             var t = new GameObject(name).transform;
             if (parent) t.SetParent(parent, false);
@@ -118,7 +118,7 @@ namespace CatTang.EditorTools
         const string VKit = EnemyModelBuilder.VillageKitDir;
 
         // 섬 윤곽 = 타원 × 비대칭 물결(2 · 3 · 5겹) + 불룩한 곶 두 군데 (2026-11-18 사용자: 완전한 원형 말고 비대칭 도형으로 몽환적인 느낌). seed마다 모양이 다름
-        struct Isle { public string name; public Vector3 c; public float rx, rz; public int seed; public Isle(string n, Vector3 c, float rx, float rz, int seed) { name = n; this.c = c; this.rx = rx; this.rz = rz; this.seed = seed; } }
+        internal struct Isle { public string name; public Vector3 c; public float rx, rz; public int seed; public Isle(string n, Vector3 c, float rx, float rz, int seed) { name = n; this.c = c; this.rx = rx; this.rz = rz; this.seed = seed; } }
         static readonly Isle Center = new("Isle_Center", new Vector3(0, 0, 0), 17f, 15f, 11);
         static readonly Isle GateIsle = new("Isle_Gate", new Vector3(0, 0, -31), 10f, 8f, 23);
         static readonly Isle AmmoIsle = new("Isle_Ammo", new Vector3(34, 0, -3), 10f, 9f, 37);
@@ -149,7 +149,7 @@ namespace CatTang.EditorTools
             return p + p.normalized * pad;
         }
 
-        static GameObject V(string name, Transform parent, Vector3 pos, float yaw, float scale = 1f, bool collider = true)
+        internal static GameObject V(string name, Transform parent, Vector3 pos, float yaw, float scale = 1f, bool collider = true)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(VKit + name + ".prefab");
             if (!prefab) { Debug.LogWarning("[Village] 마을 키트 없음 " + name); return null; }
@@ -187,7 +187,7 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>섬 중심에서 dir 쪽 윤곽까지 거리 (타원 매개변수 각을 구해 같은 방향의 윤곽 점)</summary>
-        static float RimDist(Isle s, Vector3 dir) => ShapePoint(s, Mathf.Atan2(dir.x / s.rx, dir.z / s.rz)).magnitude;
+        internal static float RimDist(Isle s, Vector3 dir) => ShapePoint(s, Mathf.Atan2(dir.x / s.rx, dir.z / s.rz)).magnitude;
 
         /// <summary>타원 섬 윗면 (가운데 + 동심 고리 4겹), 흙 텍스처 8m 반복. 씬에 저장하려면 메시를 에셋으로</summary>
         /// <summary>섬 윗면 메시의 바깥 고리(마지막 seg개 정점)를 섬 로컬 (x, z)로 IsleOutline에 저장</summary>
@@ -282,7 +282,7 @@ namespace CatTang.EditorTools
         // ---------- 건물 위로 천천히 떠오르는 조각 (2026-11-18 사용자: 건물 위 벽돌 같은 조각은 파티클로 계속 올라가게, 천천히) ----------
         // 모델에 굳어 있던 떠 있는 조각은 지우고(blender_kit_village_buildings.py), 지붕 위 상자 영역에서 벽돌 · 판자 조각이 생겨
         // 천천히 돌며 떠오르다 작아져 사라짐 + 빛나는 모래 알갱이. 색 = 마을 배색(나무 · 놋쇠 · 금 · 크림 · 장밋빛)
-        static Material BitsMat(string name, Color c, string tex = null, bool additive = true)
+        internal static Material BitsMat(string name, Color c, string tex = null, bool additive = true)
         {
             string p = "Assets/Art/Env/Village/" + name + ".mat";
             var m = AssetDatabase.LoadAssetAtPath<Material>(p);
@@ -304,7 +304,7 @@ namespace CatTang.EditorTools
 
         /// <summary>건물 가장 높은 곳들(꼬인 굴뚝 꼭대기 · 지붕 끝 · 부서진 곳)에서 조각 · 빛 모래가 기둥처럼 하늘로 솟음 (2026-11-18 사용자: 몇 군데에서 파티클로 하늘로)
         /// 메시 정점 중 위쪽 30%에서 서로 가장 멀리 떨어진 count곳을 골라 좁은 원뿔 방출</summary>
-        static void RiseSpots(GameObject building, int count = 3)
+        internal static void RiseSpots(GameObject building, int count = 3)
         {
             if (!building) return;
             var t = building.transform;
@@ -401,7 +401,7 @@ namespace CatTang.EditorTools
             }
         }
 
-        static void RisingBits(GameObject building, float rate = 7f)
+        internal static void RisingBits(GameObject building, float rate = 7f)
         {
             if (!building) return;
             var rs = building.GetComponentsInChildren<Renderer>();
@@ -491,7 +491,7 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>섬 하나: 윗면 · 걷는 판정 · 바스러지는 가장자리 조각 · 가장자리 안쪽 보이지 않는 벽(다리 입구 gaps는 비움)</summary>
-        static Transform BuildIsle(Transform parent, Isle s, List<Vector3> gaps, System.Random rnd)
+        internal static Transform BuildIsle(Transform parent, Isle s, List<Vector3> gaps, System.Random rnd)
         {
             var root = Group(s.name, parent);
             root.localPosition = s.c;
@@ -691,7 +691,7 @@ namespace CatTang.EditorTools
         }
 
         // ---------- 몽환 · 부서진 시간 (2026-11-18 사용자: 바닥 파랗게 · 새벽 더 세게 · 곳곳에 몽환적 · 부서진 시간 오브젝트 · 바깥은 뒤집힌 밤하늘) ----------
-        static void Float(GameObject g, float bob, float period, float spin, float tilt = 2f)
+        internal static void Float(GameObject g, float bob, float period, float spin, float tilt = 2f)
         {
             if (!g) return;
             var f = g.GetComponent<DreamFloat>();
@@ -838,7 +838,7 @@ namespace CatTang.EditorTools
         }
 
         /// <summary>섬 위를 떠도는 몽환적인 빛가루 (푸른 · 금빛 반짝이가 천천히 떠오르다 사라짐)</summary>
-        static void IslandMotes(Transform isle, Isle s)
+        internal static void IslandMotes(Transform isle, Isle s)
         {
             var go = new GameObject("DreamMotes");
             go.transform.SetParent(isle, false);

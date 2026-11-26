@@ -163,9 +163,9 @@ namespace CatTang
         readonly List<GameObject> owned = new();
 
         /// <summary>BigLabel.Show와 같지만 보스가 사라질 때 같이 지움</summary>
-        protected BigLabel Label(Transform parent, Vector3 offset, string text, Color c, float size = 1f)
+        protected BigLabel Label(Transform parent, Vector3 offset, string text, Color c, float size = 1f, BigLabel.Frame frame = BigLabel.Frame.Plain)
         {
-            var b = BigLabel.Show(parent, offset, text, c, size);
+            var b = BigLabel.Show(parent, offset, text, c, size, frame);
             owned.RemoveAll(g => !g);
             if (b) owned.Add(b.gameObject);
             return b;

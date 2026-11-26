@@ -5,6 +5,8 @@
 // - 장을 처음 넘으면: 클리어 → 기절 → 꿈(수채화 셀 애니메이션) → 마을에서 깨어남 (결과 창 대신)
 // 본 장면은 슬롯에 기록 (Meta.StorySeen): opening(= 꿈1) · tut1 · tut2 · dream1~5 (장 n 클리어 = 꿈 n+1, StoryRun.DreamOf)
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CatTang
@@ -16,7 +18,9 @@ namespace CatTang
         public const string SynergyText = "같은 특성의 탄을 함께 장전하면 시너지가 생겨요.\n2 · 4 · 6발을 모을 때마다 효과가 한 단계씩 강해져요.\n지금 켜진 시너지는 이곳에서 확인할 수 있어요.";
         public static bool Run1 => Meta.FirstRunPending && !Meta.StorySeen(KeyTut1);          // 새 슬롯의 첫 판만 (이미 판을 돈 예전 저장은 건너뜀)
         public static bool Run2 => Meta.StorySeen(KeyTut1) && !Meta.StorySeen(KeyTut2);
-        // 꿈 배치 (2026-11-24 사용자): 꿈1 '멈춘 손' = 오프닝(현실 몽타주 대신) · 1장 클리어 = 꿈2 '불 꺼진 시계탑' · 2 · 3장 클리어 = 꿈 없이 블랙아웃 (2026-11-25) · 4장부터는 임시
+        // 꿈 배치 (2026-11-24 사용자): 꿈1 '멈춘 손' = 오프닝(현실 몽타주 대신) · 1장 클리어 = 꿈2 '불 꺼진 시계탑' · 2 · 3장 클리어 = 꿈 없이 블랙아웃 (2026-11-25)
+        //   · 4장 클리어 = 꿈3 '11:59의 기원' (내부 키 dream5 = DreamOf(4), 흑백 리노컷 + 빨강, DreamCuts3.cs · 곡 story_dream3)
+        //   · 5장 클리어 = 꿈4 '마지막 장' (내부 키 dream6 = DreamOf(5), 유화 임파스토, DreamCuts4.cs · 곡 story_dream4) → 마을 붕괴 엔딩 (Ch5Ending). 기절 · 깨어남 대사 없음 (2026-11-26 사용자)
         public static int DreamOf(int chapter) => chapter + 1;
         public static bool DreamPending(int chapter) { int n = DreamOf(chapter); return chapter >= 1 && !Blackout(chapter) && n <= Dreams.Length && !Meta.StorySeen("dream" + n); }
         // 2026-11-25 사용자: 2장 클리어 = 꿈 없음, 기절 → 블랙아웃 → 깨어남만 (2장 이야기는 스토리 맵 '배웅하던 승강장'이 맡음)
@@ -31,10 +35,10 @@ namespace CatTang
         /// <summary>꿈을 보고 마을에서 깨어남 → 그 장의 혼잣말(WakeLines) 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory). 빈 문자열 = 깨어남 없음</summary>
         public static string PendingWake;
         // 장마다 다른 기절 · 깨어남 대사 (2026-11-24 사용자: 1장은 지금 대사, 2~5장은 사용자가 만들 때 적어 줌 → 그때까지 비워 둠 = 대사 없이 연출만)
-        public static readonly string[] FaintLines = { "......또, 이 소리......", "", "", "", "" };
+        public static readonly string[] FaintLines = { "......또, 이 소리......", "", "", "......멈춰야... 해......", "" };   // 4장 (2026-11-26 사용자 확정)
         // 2장 (2026-11-25 사용자): 기절 대사 없음 · 깨어남 첫 줄 — 이어지는 대화는 VillageStory "ch2"
         // 3장 (2026-11-25 사용자): 깨어남 첫 줄 = "...뭔가 이상해." — 이어지는 대화는 VillageStory "ch3" → Ch3Quest.Intro
-        public static readonly string[] WakeLines = { "고양이#두통::젠장... 또 이상한 꿈을 꿨군...", "고양이#두통::윽...머리가...! 어떤 일이 일어난거지...", "고양이#의문::...뭔가 이상해.", "", "" };
+        public static readonly string[] WakeLines = { "고양이#두통::젠장... 또 이상한 꿈을 꿨군...", "고양이#두통::윽...머리가...! 어떤 일이 일어난거지...", "고양이#의문::...뭔가 이상해.", "고양이#의문::젠장... 이번엔 너무 조용하군.\n고양이#의문::...시계 소리가... 안 들려.", "" };   // 4장 = 두 줄 (2026-11-26 사용자 확정)
         static string Of(string[] a, int chapter) => chapter >= 1 && chapter <= a.Length ? a[chapter - 1] : "";
 
         public static void OnRunStart(RunManager rm)
@@ -60,7 +64,8 @@ namespace CatTang
             ("불 꺼진 시계탑", new[] { "노을 진 시골 시계탑을 올려다보는 아이", "천장 조명이 빠르게 지나가는 병원 복도", "불 꺼진 시계탑의 문자판" }),
             ("빗속의 플랫폼", new[] { "떠나는 기차 창에 비친 손", "빗물이 흐르는 병실 창", "'곧 올게'라는 먹먹한 목소리" }),
             ("호숫가의 목소리", new[] { "빛에 가려진 여인의 사진", "엎질러진 물이 거꾸로 컵으로 되돌아감", "똑, 똑 떨어지는 링거 방울" }),
-            ("11:59", new[] { "벽시계 두 바늘이 12시로 다가감", "흩어진 조각들이 한 병실로 모임", "노인의 손을 꼭 쥔 손" }),
+            ("11:59의 기원", new[] { "빨간 실이 풀리는 맞잡은 두 손", "진자를 붙잡아 멈추는 늙은 손", "11:59에서 붙잡힌 빨간 분침" }),   // 꿈3 (4장 클리어, 2026-11-25 사용자) — 컷은 DreamCuts3.cs
+            ("마지막 장", new[] { "마지막 장까지 넘어간 그림책", "총을 내려놓는 고양이", "빨간 숄의 그녀가 내민 손" }),   // 꿈4 (5장 클리어, 2026-11-26 사용자, 유화 임파스토) — 컷은 DreamCuts4.cs, 깨어나면 엔딩 Ch5Ending
         };
 
         public static IEnumerator FaintAndDream(RunManager rm, int chapter, int gain)
@@ -104,7 +109,13 @@ namespace CatTang
             PendingToast = $"시간의 조각 +{gain}";
             PendingWake = Of(WakeLines, chapter);
             CameraFollow.FocusOn(null, 0f);
-            ov.RevealAfterLoad(0.8f, 1.2f);
+            if (StoryInner.Pending)
+            {
+                // 5장: 꿈4가 11:59:59에서 하얗게 멈춘 채 내면 세계 맵으로 (2026-11-26 사용자) — 화면을 걷지 않음, 마을 깨어남은 내면 맵 뒤에
+                ov.SetBlack(0); ov.SetWhite(1);
+                StoryInner.EnterWhite = true;
+            }
+            else ov.RevealAfterLoad(0.8f, 1.2f);
             RunManager.ReturnToVillage();
         }
     }
@@ -491,6 +502,7 @@ namespace CatTang
             if (!p) yield break;
             bulletsAtStart = BulletCount(p);
             if (!Meta.StorySeen(StoryRun.KeySynergy)) StartCoroutine(SynergyWatch(p));
+            if (!Meta.StorySeen(KeyJudgeAdd)) StartCoroutine(JudgeAddWatch(p));
             if (!Meta.StorySeen(StoryRun.KeyTut2)) yield return Basics(p);
         }
 
@@ -526,19 +538,23 @@ namespace CatTang
 
         static IEnumerator Run(IEnumerator body, System.Action done) { yield return body; done(); }
 
+        static bool InCombat => RunManager.Instance && RunManager.Instance.inCombat;
+
         /// <summary>Tab을 누르게 유도 → 인벤토리가 열리면 그 화면 위에서 안내 (다른 안내와 겹치지 않게 차례를 기다림)
         /// 처음 Tab 안내가 뜨는 순간 인벤토리(Tab)가 풀림 (TutorialGate)</summary>
-        public static IEnumerator InInventory(System.Func<InventoryScreen, IEnumerator> body)
+        public static IEnumerator InInventory(System.Func<InventoryScreen, IEnumerator> body, bool needEdit = false)
         {
             var ov = StoryOverlay.I;
             var ui = FindFirstObjectByType<GameUI>();
             if (!ui) yield break;
-            while (!ui.InventoryUI || busy)
+            // needEdit: 직접 해 보기(끌어놓기)가 있는 안내 — 전투 중엔 옮길 수 없으니 전투가 끝난 뒤에 Tab을 유도 (2026-11-26 사용자: 유도한 조작을 해야만 넘어감)
+            while (!ui.InventoryUI || busy || (needEdit && InCombat))
             {
                 if (!busy)
                 {
-                    if (!ui.InventoryUI) TutorialGate.Unlock(TutFeature.Inventory);
-                    ov.SetCaption(ui.InventoryUI ? "" : TabPrompt);
+                    bool wait = needEdit && InCombat;
+                    if (!ui.InventoryUI && !wait) TutorialGate.Unlock(TutFeature.Inventory);
+                    ov.SetCaption(ui.InventoryUI || wait ? "" : TabPrompt);
                 }
                 yield return null;
             }
@@ -555,16 +571,107 @@ namespace CatTang
             var ov = StoryOverlay.I;
             while (BulletCount(p) <= bulletsAtStart) yield return new WaitForSecondsRealtime(0.2f);
             yield return new WaitForSecondsRealtime(0.3f);
-            yield return InInventory(inv => CondPages(ov, inv));
+            yield return InInventory(inv => CondPages(ov, inv), needEdit: true);
             Meta.MarkStory(KeyCond);
         }
 
+        // 판정 시각 안내 (2026-11-26 사용자 확정: 섹션을 나눠 한 쪽에 하나씩 · 실제 탄으로 예 · 직접 해 보기)
+        public const string CondT1 = "탄환 시계 · 1/4", CondP1 = "탄환 시계의 12칸은 각각 하나의 시각이에요.\n탄은 1시 칸부터 12시 칸까지 차례로 발사돼요.";
+        public const string CondT2 = "판정 시각 · 2/4", CondP2 = "탄이 놓인 칸의 시각이 그 탄의 '판정 시각'이에요.\n판정 시각이 탄의 시각 조건에 맞으면 탄이 활성화돼요.";
+        public const string CondLive = "지금 '{0}'은 {1}시 칸에 있어요 → 판정 시각 {2}시 · 조건 '{3}' → {4}";
+        public const string CondLiveStore = "지금 '{0}'은 보관함에 있어요 → 탄환 시계 칸에 넣어야 판정 시각이 생겨요. (조건 '{1}')";
+        public const string CondT3 = "직접 해 보기 · 3/4", CondTry = "'{0}'을 조건에 맞는 칸으로 끌어 옮겨 보세요.", CondDone = "활성화됐어요! 금빛 칸의 탄은 특성과 고유 효과가 켜져요.";
+        public const string CondT4 = "확인하는 곳 · 4/4", CondP4 = "탄에 마우스를 올리면 시각 조건과 지금 판정 시각을 볼 수 있어요.";
+
         static IEnumerator CondPages(StoryOverlay ov, InventoryScreen inv)
         {
+            var p = PlayerController.Instance;
             inv.ShowFeaturedBullet();
-            yield return ov.HintAt("시각 조건", "탄마다 활성화되는 시각 조건이 있습니다.\n조건을 만족시키면 총탄의 신비한 힘이 깨어납니다.", inv.ClockRects);
-            if (inv) yield return ov.HintAt("시각 조건", "각 조건과 현재 적용된 시간은 이곳에서 확인 가능해요.\n조건을 활성화시켜 더욱 강력한 힘을\n적들에게 선보이세요.", inv.InfoRect);
+            var fb = inv.FeaturedBullet;
+            bool hasCond = fb != null && !string.IsNullOrEmpty(fb.CondType) && fb.CondType != "None";
+            yield return ov.HintAt(CondT1, CondP1, inv.ClockRects);
+            if (!inv) yield break;
+            // 2/4: 판정 시각 — 지금 그 탄으로 예
+            string live = "";
+            if (hasCond)
+            {
+                int h = inv.FeaturedHour;
+                live = h > 0
+                    ? string.Format(CondLive, fb.Name, h, p.rev.JudgeTime(h), UIKit.CondKo(fb), p.rev.Awakened(h) ? "<color=#FFD54A>맞아요</color>" : "아직 안 맞아요")
+                    : string.Format(CondLiveStore, fb.Name, UIKit.CondKo(fb));
+            }
+            yield return ov.HintAt(CondT2, CondP2 + (live != "" ? "\n\n<size=24>" + live + "</size>" : ""), inv.FeaturedRect ? new[] { inv.FeaturedRect, inv.InfoRect } : new[] { inv.InfoRect });
+            if (!inv) yield break;
+            // 3/4: 직접 해 보기 — 조건에 맞는 칸으로 옮기면 활성화 (이미 맞으면 바로 '활성화됐어요', 전투 중 · 맞는 칸이 없으면 건너뜀)
+            if (hasCond)
+            {
+                int id = fb.Id;
+                if (AwakeHour(p, id) == 0 && inv.CanEdit)
+                {
+                    var hours = MatchingHours(p, fb);
+                    if (hours.Count > 0)
+                    {
+                        // 그 탄을 노란 칸으로 옮기는 것만 받음 · 창을 닫거나 다른 탄을 옮기면 거절 (활성화될 때까지 안 넘어감)
+                        inv.TutAllow = (src, dst) => { var it = inv.ItemAt(src); return it != null && it.kind == ItemKind.Bullet && it.bullet.Id == id && dst.place == SlotPlace.Cylinder && hours.Contains(dst.index); };
+                        yield return ov.TryAt(string.Format(CondTry, fb.Name),
+                            () => { var l = new List<RectTransform>(); foreach (var hh in hours) l.Add(inv ? inv.SlotRect(hh) : null); return l.ToArray(); },
+                            () => AwakeHour(p, id) > 0, () => inv && inv.isActiveAndEnabled);
+                        if (inv) inv.TutAllow = null;
+                    }
+                }
+                int aw = AwakeHour(p, id);
+                if (inv && aw > 0)
+                {
+                    yield return new WaitForSecondsRealtime(0.35f);   // 금빛으로 바뀌는 연출을 먼저 보여 줌
+                    yield return ov.HintAt(CondT3, CondDone, inv.SlotRect(aw));
+                }
+            }
+            if (inv) yield return ov.HintAt(CondT4, CondP4, inv.InfoRect);
             TutorialGate.Unlock(TutFeature.Judge);           // HUD '다음 n시 · 판정 · 활성화' 줄 (인벤토리를 닫으면 등장)
+        }
+
+        /// <summary>그 탄(id)이 활성화된 실린더 칸 (없으면 0)</summary>
+        static int AwakeHour(PlayerController p, int id)
+        {
+            for (int s = 1; s <= 12; s++) { var b = p.rev.slots[s].bullet; if (b != null && b.Id == id && p.rev.Awakened(s)) return s; }
+            return 0;
+        }
+
+        /// <summary>그 탄을 옮겨 놓으면 조건에 맞는 칸 (그 칸에 끼운 연산까지 계산)</summary>
+        static List<int> MatchingHours(PlayerController p, BulletDef b)
+        {
+            var l = new List<int>();
+            for (int h = 1; h <= 12; h++) if (Revolver.Meets(b.CondType, b.CondValue, Revolver.ApplyOps(h, p.rev.slots[h].ops))) l.Add(h);
+            return l;
+        }
+
+        // 판정 +N 탄을 처음 얻을 때 한 줄 (2026-11-26: 연산 안내에서 빼고 따로)
+        public const string KeyJudgeAdd = "tut_judge_add";
+        public const string JudgeAddText = "'{0}'이 활성화되면 양옆 칸 탄의 판정 시각이 +{1} 돼요. 연산을 다 계산한 다음에 더해져요.";
+
+        IEnumerator JudgeAddWatch(PlayerController p)
+        {
+            BulletDef found = null; int add = 0;
+            while (found == null)
+            {
+                foreach (var b in OwnedBullets(p))
+                    foreach (var id in new[] { b.Effect1, b.Effect2 })
+                        if (id != 0 && Tables.Effects.TryGetValue(id, out var e) && e.Type == "JudgeTimeAdd" && e.Target == "Neighbors") { found = b; add = Mathf.RoundToInt(e.Value); }
+                if (found == null) yield return new WaitForSecondsRealtime(0.5f);
+            }
+            while (busy || p.InputLocked) yield return null;
+            var ov = StoryOverlay.I;
+            ov.SetCaption(string.Format(JudgeAddText, found.Name, add));
+            Meta.MarkStory(KeyJudgeAdd);
+            float t0 = Time.unscaledTime;
+            while (Time.unscaledTime - t0 < 7f && !busy) yield return null;
+            if (!busy) ov.SetCaption("");
+        }
+
+        static IEnumerable<BulletDef> OwnedBullets(PlayerController p)
+        {
+            foreach (var it in p.inv.storage) if (it != null && it.kind == ItemKind.Bullet) yield return it.bullet;
+            for (int i = 1; i <= 12; i++) if (p.rev.slots[i].bullet != null) yield return p.rev.slots[i].bullet;
         }
 
         /// <summary>3. 열기가 처음 다 차는 순간: 고양이 독백 → Q 안내(느린 시간) → 쓰고 나면 한마디</summary>
@@ -651,17 +758,22 @@ namespace CatTang
     {
         public const string Key = "tut_op", KeyDoor = "tut_op_door";
 
-        // 문구 (2026-11-25 사용자 확정). 규칙은 Revolver.cs (ApplyOps · JudgeTime · Awakened) 기준
+        // 문구 (2026-11-26 사용자 확정: 섹션을 나눠 한 쪽에 하나씩 · 계산은 한 줄씩 · 직접 해 보기). 규칙은 Revolver.cs (ApplyOps · JudgeTime · Awakened) 기준
         public const string DoorText = "<color=#FFD54A>연산</color> 문: 탄의 판정 시각을 바꾸는 연산을 얻을 수 있어요.";
-        public const string Page1Title = "연산";
-        public const string Page1 = "새로 얻은 연산이에요.\n연산은 탄에 끼워 그 탄의 판정 시각을 바꿔요.\n탄을 클릭하면 열리는 '탄 강화' 창에서 끼울 수 있어요.";
-        public const string Page2Title = "판정 시각";
-        public const string Page2 = "판정 시각은 탄이 놓인 칸의 시각에서 시작해요.\n여기에 끼운 연산을 위 칸부터 차례로 계산해요.\n예) 3시 칸 · 위 ×2 · 아래 +1 → 3 × 2 + 1 = 7시\n순서를 바꾸면 (3 + 1) × 2 = 8시가 돼요.";
-        public const string Page2NoSlot = "\n<size=22>(기본 '탄환'에는 연산 칸이 없어요.)</size>";
-        public const string Page3Title = "계산 규칙";
-        public const string Page3 = "나누어떨어지지 않으면 반올림해요. 음수는 절대값으로 처리해요.\n예) 5시 칸 ÷2 → 2.5 → 3시 · 1시 칸 -2 ÷2 → -0.5 → -1시\n12를 넘거나 0 이하가 되어도 그대로 둬요. 예) 9시 칸 ×2 → 18시\n활성화된 옆 칸 탄의 '판정 +1'은 연산을 다 계산한 뒤에 더해요.";
-        public const string Page4Title = "활성화와 쏘는 순서";
-        public const string Page4 = "판정 시각이 자리 조건에 맞는 탄만 활성화되어\n특성과 고유 효과가 켜져요. 이 줄에서 미리 볼 수 있어요.\n연산은 쏘는 순서를 바꾸지 않아요. 탄은 늘 1시부터 12시까지 차례로 나가요.\n(사격 순서를 뒤집는 효과가 있으면 12시부터 1시까지)";
+        public const string Page1Title = "연산 · 1/6";
+        public const string Page1 = "연산은 탄에 끼워 판정 시각을 바꾸는 계산이에요.\n탄을 다른 칸으로 옮기지 않아도 조건을 맞출 수 있어요.";
+        public const string Page2Title = "끼우는 곳 · 2/6";
+        public const string Page2 = "탄을 클릭하면 '탄 강화' 창이 열려요.\n보관함의 연산을 이 칸으로 끌어 끼우면 돼요.";
+        public const string Page2NoSlot = "\n<size=22>기본 '탄환'에는 연산 칸이 없어요.</size>";
+        public const string Page3Title = "계산 순서 · 3/6";
+        public const string Page3 = "판정 시각은 칸의 시각에서 시작해서, 위 칸의 연산부터 차례로 계산해요.\n예) 3시 칸 → ×2 → 6 → +1 → 7시\n순서를 바꾸면 3 → +1 → 4 → ×2 → 8시가 돼요.";
+        public const string Page4Title = "계산 규칙 · 4/6";
+        public const string Page4 = "나누어떨어지지 않으면 반올림해요. 예) 5시 칸 ÷2 → 2.5 → 3시\n12를 넘거나 0 이하가 되어도 그대로 둬요. 예) 9시 칸 ×2 → 18시 · 1시 칸 −2 → −1시\n그래서 '음수 시각' 같은 조건도 맞출 수 있어요.";
+        public const string Page5Title = "미리 보기 · 5/6";
+        public const string Page5 = "이 줄은 지금 끼운 연산으로 이 탄이 활성화되는 칸을 보여 줘요.\n금빛 칸에 놓으면 활성화돼요.\n연산은 판정 시각만 바꿔요. 쏘는 순서는 그대로 1시부터 12시예요.";
+        public const string Page6Title = "직접 해 보기 · 6/6";
+        public const string Page6Try = "연산을 끼워 이 탄을 활성화해 보세요.";
+        public const string Page6Done = "활성화됐어요!";
 
         IEnumerator Start()
         {
@@ -679,7 +791,7 @@ namespace CatTang
                 calm = blocked ? 0 : calm + Time.unscaledDeltaTime;
                 yield return null;
             }
-            yield return StoryHints.InInventory(inv => Pages(StoryOverlay.I, inv));
+            yield return StoryHints.InInventory(inv => Pages(StoryOverlay.I, inv), needEdit: true);
             Meta.MarkStory(Key);
         }
 
@@ -692,20 +804,65 @@ namespace CatTang
 
         static IEnumerator Pages(StoryOverlay ov, InventoryScreen inv)
         {
+            var p = PlayerController.Instance;
             // 1. 인벤토리: 얻은 연산 칸 (설명 칸에 그 연산을 띄움)
             var opRt = inv.ShowFirstOp();
             yield return ov.HintAt(Page1Title, Page1, opRt ? opRt : inv.InfoRect);
             if (!inv) yield break;
-            // 2~4. '탄 강화' 창을 열어 연산 칸 · 판정 줄 · 활성화 미리보기를 차례로
-            var b = inv.OpenEnhanceForTutorial();
+            // 2~5. '탄 강화' 창을 열어 연산 칸 · 판정 줄 · 활성화 미리보기를 차례로
+            var b = inv.OpenEnhanceForTutorial((s, bb) => bb.OpSlots > 0 && !p.rev.Awakened(s) && Reachable(p, s, bb));   // 직접 해 보기로 활성화시킬 수 있는 탄을 먼저
             yield return new WaitForSecondsRealtime(0.3f);
             if (!inv) yield break;
-            var slots = new System.Collections.Generic.List<RectTransform>(inv.EnhOpRects) { inv.EnhJudgeRect };
-            yield return ov.HintAt(Page2Title, Page2 + (b != null && b.OpSlots == 0 ? Page2NoSlot : ""), slots.ToArray());
+            yield return ov.HintAt(Page2Title, Page2 + (b != null && b.OpSlots == 0 ? Page2NoSlot : ""), inv.EnhOpRects);
             if (!inv) yield break;
-            yield return ov.HintAt(Page3Title, Page3, inv.EnhJudgeRect);
+            yield return ov.HintAtSteps(Page3Title, Page3, inv.EnhJudgeRect);
             if (!inv) yield break;
-            yield return ov.HintAt(Page4Title, Page4, inv.EnhHoursRects);
+            yield return ov.HintAtSteps(Page4Title, Page4, inv.EnhJudgeRect);
+            if (!inv) yield break;
+            yield return ov.HintAt(Page5Title, Page5, inv.EnhHoursRects);
+            if (!inv) yield break;
+            // 6. 직접 해 보기: 실린더 탄 · 연산 칸이 있고 · 아직 비활성 · 가진 연산으로 맞출 수 있고 · 전투 중이 아닐 때만
+            int h = inv.EnhHour;
+            if (b == null || h == 0 || b.OpSlots <= 0 || p.rev.Awakened(h) || !inv.CanEdit || !Reachable(p, h, b)) yield break;
+            // 연산을 연산 칸에 끼우거나 · 칸끼리 순서를 바꾸거나 · 칸에서 보관함으로 떼는 것만 받음 (활성화될 때까지 안 넘어감)
+            inv.TutAllow = (src, dst) =>
+            {
+                var it = inv.ItemAt(src);
+                if (it == null || it.kind != ItemKind.Op) return false;
+                return dst.place == SlotPlace.EnhanceOp || (src.place == SlotPlace.EnhanceOp && dst.place == SlotPlace.EnhanceStore);
+            };
+            yield return ov.TryAt(Page6Try, () => inv ? inv.EnhOpRects.Concat(inv.EnhStoreOpRects).ToArray() : null,
+                                  () => p.rev.Awakened(h), () => inv && inv.isActiveAndEnabled && inv.EnhHour == h);
+            if (inv) inv.TutAllow = null;
+            if (inv && p.rev.Awakened(h))
+            {
+                yield return new WaitForSecondsRealtime(0.35f);
+                yield return ov.HintAt(Page6Title, Page6Done, inv.EnhHoursRects);
+            }
+        }
+
+        /// <summary>지금 가진 연산(보관함 + 그 칸에 끼운 것)을 연산 칸 수만큼 골라 순서대로 끼우면 그 칸에서 활성화될 수 있는지</summary>
+        static bool Reachable(PlayerController p, int h, BulletDef b)
+        {
+            var pool = new List<OpDef>(p.rev.slots[h].ops);
+            foreach (var it in p.inv.storage) if (it != null && it.kind == ItemKind.Op) pool.Add(it.op);
+            var used = new bool[pool.Count];
+            var seq = new List<OpDef>();
+            bool Try(int depth)
+            {
+                if (seq.Count > 0 && Revolver.Meets(b.CondType, b.CondValue, Revolver.ApplyOps(h, seq))) return true;
+                if (depth >= b.OpSlots) return false;
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    if (used[i]) continue;
+                    used[i] = true; seq.Add(pool[i]);
+                    bool ok = Try(depth + 1);
+                    seq.RemoveAt(seq.Count - 1); used[i] = false;
+                    if (ok) return true;
+                }
+                return false;
+            }
+            return Try(0);
         }
 
         /// <summary>연산 보상 문이 처음 보이면: 짧은 한 줄 (5초, 문이 사라지면 바로 걷힘). 그 전에 연산을 얻어 이미 배웠으면 생략</summary>

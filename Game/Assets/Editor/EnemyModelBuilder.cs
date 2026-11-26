@@ -646,7 +646,36 @@ namespace CatTang.EditorTools
             ("Kit_Deco_FloorDial", 6.0f, 'w', "Deco_FloorDial"),
             // 보스 경기장 은빛 거대 문자판 (2026-11-20, blender_kit_ch4_bossfloor.py)
             ("Kit_Ch4_BossFloor", 40f, 'w', "BossFloor"),
+            // 쌍둥이 보스 과녁 공중 톱니 (2026-11-26, blender_kit_ch4_floatgear.py): 세운 톱니, 앞면 = 카메라 쪽
+            ("Kit_FloatGear", 1.8f, 'h', "FloatGear"),
         };
+
+        [MenuItem("CatTang/4장 보스 바닥만 만들기")]
+        public static void BuildCh4BossFloor()
+        {
+            SrcDir = Ch4Src;
+            ModelPalette.Active = ModelPalette.Ch4;
+            try { Build("Kit_Ch4_BossFloor", 40f, 180f, 'w', Kit4Dir, "BossFloor"); AssetDatabase.SaveAssets(); }
+            finally { SrcDir = Ch1Src; ModelPalette.Active = ModelPalette.Ch1; }
+        }
+
+        [MenuItem("CatTang/4장 바닥 숫자만 만들기")]
+        public static void BuildCh4FloorNums()
+        {
+            SrcDir = Ch4Src;
+            ModelPalette.Active = ModelPalette.Ch4;
+            try { for (int n = 1; n <= 12; n++) Build("Kit_FloorNum_" + n, 2f, 180f, 'w', Kit4Dir, "FloorNum_" + n); AssetDatabase.SaveAssets(); }
+            finally { SrcDir = Ch1Src; ModelPalette.Active = ModelPalette.Ch1; }
+        }
+
+        [MenuItem("CatTang/4장 공중 톱니만 만들기")]
+        public static void BuildCh4FloatGear()
+        {
+            SrcDir = Ch4Src;
+            ModelPalette.Active = ModelPalette.Ch4;
+            try { Build("Kit_FloatGear", 1.8f, 180f, 'h', Kit4Dir, "FloatGear"); AssetDatabase.SaveAssets(); }
+            finally { SrcDir = Ch1Src; ModelPalette.Active = ModelPalette.Ch1; }
+        }
 
         [MenuItem("CatTang/4장 키트 만들기 (블렌더)")]
         public static void BuildCh4Kit()

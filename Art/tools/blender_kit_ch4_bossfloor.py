@@ -16,7 +16,7 @@ from mathutils import Matrix, Vector
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / 'Game/Assets/Art/Characters/Ch4/Kit_Ch4_BossFloor.fbx'
 PREVIEW = ROOT / 'Art/tools/specs/blender_kit_ch4_bossfloor_preview.png'
-ROLES = set('dial_face dial_silver dial_number dial_line dial_black'.split())
+ROLES = set('dial_face dial_silver dial_number dial_line dial_black red_dark red_lacquer'.split())   # 빨강 = 2026-11-26 시계 디테일 (바닥 숫자 칸과 같은 빨강)
 MATERIALS, PARTS = {}, []
 TAU = math.tau
 PALETTE = {
@@ -25,6 +25,8 @@ PALETTE = {
     'dial_number': (0.08, 0.08, 0.08),
     'dial_line':   (0.15, 0.14, 0.13),
     'dial_black':  (0.04, 0.04, 0.04),
+    'red_dark':    (0.42, 0.03, 0.05),
+    'red_lacquer': (0.78, 0.06, 0.08),
 }
 
 
@@ -230,6 +232,51 @@ def build_decorative_rings():
     ring('Deco ring 14m', 13.96, 14.04, 0.005, 0.02, 'dial_silver', n=48)
 
 
+def diamond(label, r, a, length, width, bottom, top, role):
+    """반지름 방향으로 긴 마름모 (a = 각도)"""
+    c, s_ = math.cos(a), math.sin(a)
+    cx, cy = r * c, r * s_
+    pts = [(cx + c * length / 2, cy + s_ * length / 2), (cx - s_ * width / 2, cy + c * width / 2),
+           (cx - c * length / 2, cy - s_ * length / 2), (cx + s_ * width / 2, cy - c * width / 2)]
+    return slab(label, pts, bottom, top, role)
+
+
+def build_clock_detail():
+    """2026-11-26 사용자: 경기장 바닥도 시계 디테일 더 (바닥 숫자 칸과 같은 결: 빨간 테 · 분 눈금 · 시 눈금 · 마름모).
+    게임 판정 자리(칸 숫자 반지름 11m · 칸 경계선)는 가리지 않게 얇고 낮게."""
+    # ① 바깥 테 안쪽 빨간 띠 + 검은 선
+    ring('Rim red band', 19.05, 19.5, 0.0, 0.02, 'red_dark', n=96)
+    ring('Rim red inner line', 18.9, 18.97, 0.0, 0.018, 'dial_line', n=96)
+    # ② 숫자 바깥 분 눈금 트랙 (17.4 ~ 18.4m): 두 줄 + 분 눈금 60 + 시 눈금 12(빨강) + 12/3/6/9 큰 마름모
+    ring('Minute track outer', 18.35, 18.42, 0.0, 0.018, 'dial_line', n=96)
+    ring('Minute track inner', 17.38, 17.45, 0.0, 0.018, 'dial_line', n=96)
+    for i in range(60):
+        a = clock_angle(i / 5)
+        if i % 15 == 0:
+            diamond(f'Cardinal_{i}', 17.9, a, 1.3, 0.55, 0.0, 0.03, 'red_lacquer')
+        elif i % 5 == 0:
+            cx, cy = polar(17.9, a)
+            box(f'HourTick_{i}', cx, cy, 0.9, 0.22, 0.0, 0.025, 'red_dark', a)
+        else:
+            cx, cy = polar(18.05, a)
+            box(f'MinTick_{i}', cx, cy, 0.5, 0.07, 0.0, 0.02, 'dial_line', a)
+    # ③ 숫자 안쪽 테 (14.6m) — 숫자 띠를 감쌈
+    ring('Numeral band inner line', 14.55, 14.62, 0.0, 0.018, 'dial_line', n=96)
+    # ④ 10m 장식 테: 은빛 선 위에 작은 마름모 48개 (기요셰 느낌)
+    for j in range(48):
+        diamond(f'Guilloche_{j}', 10.0, j * TAU / 48 + TAU / 96, 0.42, 0.18, 0.0, 0.022, 'dial_silver')
+    # ⑤ 가운데 햇살: 2.2 ~ 4.2m 가는 빛살 36개 + 안팎 테, 축 둘레 빨간 테
+    ring('Sunburst outer', 4.2, 4.27, 0.0, 0.018, 'dial_line', n=64)
+    ring('Sunburst inner', 2.13, 2.2, 0.0, 0.018, 'dial_line', n=64)
+    for j in range(36):
+        a = j * TAU / 36
+        length = 1.9 if j % 3 == 0 else 1.2
+        cx, cy = polar(2.25 + length / 2, a)
+        box(f'Ray_{j}', cx, cy, length, 0.05 if j % 3 else 0.09, 0.0, 0.016, 'dial_line', a)
+    ring('Hub red ring', 1.02, 1.35, 0.0, 0.03, 'red_dark', n=48)
+    ring('Hub black line', 1.35, 1.42, 0.0, 0.028, 'dial_black', n=48)
+
+
 def build():
     build_face()
     build_rim()
@@ -237,6 +284,7 @@ def build():
     build_lines()
     build_centre_hub()
     build_decorative_rings()
+    build_clock_detail()
 
 
 # ---------------------------------------------------------------------------
@@ -288,7 +336,7 @@ def finish():
 
     tc = triangles(obj)
     print(f'Triangle count: {tc}', flush=True)
-    assert tc <= 8000, f'Too many triangles: {tc}'
+    assert tc <= 16000, f'Too many triangles: {tc}'
     assert abs(min(v.co.z for v in obj.data.vertices)) < 0.01
     assert all(all(math.isfinite(c) for c in v.co) for v in obj.data.vertices)
     assert set(m.name for m in obj.data.materials) <= ROLES

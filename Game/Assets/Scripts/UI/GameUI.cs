@@ -51,6 +51,7 @@ namespace CatTang
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 1f;
+            UiScaleFollow.Add(scaler);   // 환경설정 UI 크기 (2026-11-26)
             root = (RectTransform)cgo.transform;
             if (FindFirstObjectByType<EventSystem>() == null)
                 new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
@@ -376,7 +377,8 @@ namespace CatTang
             if (!player) player = PlayerController.Instance;
             if (!player) return;
             var kb = Keyboard.current;
-            if (kb != null && !StoryOverlay.HintOpen)            // 튜토리얼 안내가 떠 있으면 Tab · Esc로 화면이 닫히지 않게
+            if (kb != null && inventory && inventory.TutLocked && (kb.tabKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame)) inventory.DenyTut(null);   // 튜토리얼 직접 해 보기 중엔 닫히지 않음
+            else if (kb != null && !StoryOverlay.HintOpen)       // 튜토리얼 안내가 떠 있으면 Tab · Esc로 화면이 닫히지 않게
             {
                 if (kb.tabKey.wasPressedThisFrame)
                 {
@@ -384,9 +386,9 @@ namespace CatTang
                     else if (!current && TutorialGate.Open(TutFeature.Inventory)) OpenInventory();   // 튜토리얼에서 Tab을 배우기 전엔 무시
                 }
                 if (kb.escapeKey.wasPressedThisFrame && current && !resultsOpen) CloseAll();
-                else if (kb.escapeKey.wasPressedThisFrame && village && !current && !player.InputLocked && !leaving && !VillageMap.EscUsed) OpenVillageMenu();   // 깨어나는 중엔 안 열림
+                else if (kb.escapeKey.wasPressedThisFrame && village && !current && !player.InputLocked && !leaving && !VillageMap.EscUsed) OpenPause();         // 깨어나는 중엔 안 열림 (2026-11-26 사용자: Esc = 게임 멈춤 + 환경설정)
                 else if (kb.escapeKey.wasPressedThisFrame && !village && !current && !resultsOpen && !player.InputLocked && !leaving && !MapView.EscUsed
-                         && player.health.Alive) OpenGiveUp();                 // 판 안: 전투 포기하고 마을로 갈지 묻기
+                         && player.health.Alive) OpenPause();                  // 판 안: 멈춤 + 환경설정 (전투 포기는 그 안의 버튼)
             }
             UpdateDodge();
             ApplyGate();
@@ -432,7 +434,7 @@ namespace CatTang
             var rm = RunManager.Instance;
             shardText.text = rm ? $"{Meta.Shards} <size=22>(+{rm.shardsThisRun})</size>" : Meta.Shards.ToString();
             roomText.text = rm ? (rm.IsBossRoom ? $"{rm.chapter}장 · {rm.Chapter?.BossName}" : rm.IsMidBossRoom ? $"{rm.chapter}장 · 중간 보스" : $"{rm.chapter}장 · 스테이지 {rm.stageIndex + 1}/{RunManager.Stages} · 방 {rm.roomIndex + 1}/{rm.RoomCount}") + (rm.inCombat ? "" : "  <color=#FFD54A>· 다음 방 · 문으로</color>")
-                                : "여관 앞 마을";
+                                : RoomOverride ?? "여관 앞 마을";
 
             var rev = player.rev;
             if (!village)
@@ -458,6 +460,8 @@ namespace CatTang
         /// <summary>화면 아래 대화 창: 이름 + 한 줄씩 (글자가 흘러나옴). E · 스페이스 · 엔터 · 클릭으로 넘김, 다 끝나면 done</summary>
         /// <summary>개발용 (IntroDemo · 스토리 녹화): 대사 · 안내 창을 1.3초마다 자동으로 넘김</summary>
         public static bool DevAutoAdvance;
+        /// <summary>마을 씬이지만 다른 곳에 있을 때 위 칸 이름 (내면 맵 = 빈칸). null이면 '여관 앞 마을'</summary>
+        public static string RoomOverride;
         static float devNext;
 
         /// <summary>대사창 밑면 높이 = 경험치 바 밑면과 같게 (2026-11-25 사용자: 대화창을 경험치 UI 자리까지 내림)</summary>
@@ -548,10 +552,14 @@ namespace CatTang
             var nameRt = name.transform.parent && name.transform.parent != panel ? (RectTransform)name.transform.parent : name.rectTransform;
             nameRt.pivot = new Vector2(0.5f, nameRt.pivot.y);
             // 일러스트 자리(화면 왼쪽 · 오른쪽 360px) → 창 기준 x. 창 너비 1320, 화면 1920 → 창 왼쪽 = 300
-            float NameX(string who) => stage.TryGetValue(who ?? "", out var s0) ? (s0.left ? 360f - 300f + 40f : 1920f - 360f - 300f - 40f) : 250f + 220f;
+            float W = root ? root.rect.width : 1920f, padL = (W - 1320f) * 0.5f;   // UI 크기로 캔버스 너비가 바뀌어도 명찰이 일러스트 밑에 (2026-11-26)
+            float NameX(string who) => stage.TryGetValue(who ?? "", out var s0) ? (s0.left ? 360f - padL + 40f : W - 360f - padL - 40f) : 250f + 220f;
             string firstWho = ParseLine(lines.Length > 0 ? lines[0] : "", speaker).who;
             float nameX = NameX(firstWho);
             nameRt.anchoredPosition = new Vector2(nameX, nameRt.anchoredPosition.y);
+            // 2026-11-25 사용자: 화자가 바뀔 때 명찰이 좌우로 미끄러지지 말고, 일러스트처럼 사라졌다가 새 자리에 생김
+            if (!nameRt.TryGetComponent<CanvasGroup>(out var nameCg)) nameCg = nameRt.gameObject.AddComponent<CanvasGroup>();   // ?? 는 Unity 가짜 null을 못 걸러서 안 됨
+            float nameSwap = -1f; string nameNext = null; const float NameSwapT = 0.26f;
             var body = UIKit.Label("Line", panel, new Vector2(0.5f, 0.5f), new Vector2(0, -14), new Vector2(1160, 140), 28, TextAnchor.MiddleLeft, false, UIKit.Cream);
             var hint = UIKit.Label("Hint", panel, new Vector2(1, 0), new Vector2(-110, 30), new Vector2(200, 30), 18, TextAnchor.MiddleRight, false, new Color(1, 1, 1, 0.55f));
             hint.text = "E · 클릭";
@@ -574,8 +582,20 @@ namespace CatTang
                     pg.alpha = Mathf.Clamp01(pu * 2f) * (1 - close);
                     namePop = Mathf.MoveTowards(namePop, 0, dt * 5.5f);
                     float np = namePop > 0 ? 1 + Mathf.Sin(namePop * Mathf.PI) * 0.18f : 1;
+                    float nameA = 1f;
+                    if (nameSwap >= 0)
+                    {
+                        float u = (Time.unscaledTime - nameSwap) / NameSwapT;
+                        if (u < 0.5f) { float k = u / 0.5f; nameA = 1 - k; np = Mathf.Lerp(1f, 0.7f, k); }          // 앞 화자 자리에서 오므라들며 사라짐
+                        else
+                        {
+                            if (nameNext != null) { name.text = nameNext; nameNext = null; nameRt.anchoredPosition = new Vector2(NameX(active ?? firstWho), nameRt.anchoredPosition.y); }
+                            float k = Mathf.Clamp01((u - 0.5f) / 0.5f); nameA = k; np = Mathf.LerpUnclamped(0.7f, 1f, EaseOutBack(k));   // 새 자리에서 톡 생김
+                            if (u >= 1f) nameSwap = -1f;
+                        }
+                    }
+                    nameCg.alpha = nameA;
                     nameRt.localScale = new Vector3(np, np, 1);
-                    nameRt.anchoredPosition = new Vector2(Mathf.Lerp(nameRt.anchoredPosition.x, NameX(active ?? firstWho), dt * 14f), nameRt.anchoredPosition.y);
                     flash = Mathf.MoveTowards(flash, 0, dt * 3f);
                     foreach (var kv in stage)
                     {
@@ -621,11 +641,12 @@ namespace CatTang
                 var (whoNow, expr, line) = ParseLine(raw, speaker);
                 if (whoNow != active)
                 {
-                    namePop = 1f;
+                    if (active != null) { nameSwap = Time.unscaledTime; nameNext = whoNow; }   // 사라졌다가 새 자리에 (글자는 바뀌는 순간에)
+                    else namePop = 1f;
                     if (active != null) Sfx.Play("ui_click_2", 0.35f, 0.08f, 1);
                     if (stage.TryGetValue(whoNow, out var ns)) { ns.hop = 1f; leanTarget = ns.left ? -14f : 14f; }
                 }
-                name.text = whoNow;
+                if (nameNext == null) name.text = whoNow;
                 active = whoNow;
                 shadeTarget = expr == "엄숙" ? 0.86f : 0.72f;
                 if (stage.TryGetValue(whoNow, out var sl))
@@ -636,7 +657,7 @@ namespace CatTang
                         sl.back.sprite = sl.front.sprite; sl.back.rectTransform.sizeDelta = sl.front.rectTransform.sizeDelta;
                         SetSprite(sl.front, sp); sl.fade = 0; sl.squash = 1f;
                     }
-                    if (expr == "두통") { sl.shake = 1f; flash = 0.8f; }
+                    if (expr == "두통") { sl.shake = 1f; flash = 0.8f * GameSettings.FlashScale; }   // 번쩍임 줄이기 (2026-11-26)
                     else if (expr == "놀람") { sl.push = 1f; sl.shake = 0.4f; }
                     else if (expr == "결의") sl.push = 1f;
                 }
@@ -644,7 +665,8 @@ namespace CatTang
                 body.color = new Color(UIKit.Cream.r, UIKit.Cream.g, UIKit.Cream.b, 0);
                 int blip = -1;
                 bool skip = false;                                    // 2026-11-25 사용자: 클릭하면 (글자가 흐르는 중이어도) 바로 다음 대사로
-                for (float c = 0; c < line.Length; c += Time.unscaledDeltaTime * 42f)
+                float rate = GameSettings.TextDelayScale > 0 ? 42f / GameSettings.TextDelayScale : 0f;   // 환경설정 글자 속도 (0 = 바로, 2026-11-26)
+                for (float c = rate > 0 ? 0 : line.Length; c < line.Length; c += Time.unscaledDeltaTime * rate)
                 {
                     if (!go) { Finish(); yield break; }             // ESC로 닫힘
                     body.color = new Color(UIKit.Cream.r, UIKit.Cream.g, UIKit.Cream.b, Mathf.Min(1, body.color.a + Time.unscaledDeltaTime * 8f));
@@ -656,7 +678,8 @@ namespace CatTang
                 body.text = line; body.color = UIKit.Cream;
                 if (skip) continue;
                 yield return null;
-                while (go && !Next()) { hint.color = new Color(1, 1, 1, 0.35f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f)); yield return null; }
+                float autoAt = Time.unscaledTime + 1.2f + 0.05f * line.Length;   // 환경설정 대사 자동 넘김 (2026-11-26)
+                while (go && !Next() && !(GameSettings.DialogueAuto && Time.unscaledTime >= autoAt)) { hint.color = new Color(1, 1, 1, 0.35f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f)); yield return null; }
                 if (!go) { Finish(); yield break; }
             }
             // 퇴장
@@ -997,20 +1020,29 @@ namespace CatTang
         bool leaving;
         static readonly Color Haze = new(0.78f, 0.74f, 0.8f);         // 로비 → 마을 때와 같은 라벤더 안개
 
-        public void OpenVillageMenu()
+        // ---------- Esc = 게임 멈춤 + 환경설정 (2026-11-26 사용자) ----------
+        // 판 · 마을 같은 창: 위 = 환경설정 4탭(로비 설정과 같음, SettingsUI), 아래 = 계속하기 + 마을이면 '메인 로비로' · 판이면 '전투 포기'(확인 창)
+        public void OpenPause()
         {
-            var go = OpenScreen("VillageMenu");
+            var go = OpenScreen("Pause");                                      // 게임 멈춤
             UIKit.Dim(go.transform);
-            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(640, 520), true);
-            UIKit.Banner("잠시 멈춤", panel.transform, new Vector2(0.5f, 1), new Vector2(0, 10), 440);
-            UIKit.CloseButton(panel.transform, CloseAll);
-            var info = UIKit.Label("Info", panel.transform, new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(540, 40), 22, TextAnchor.MiddleCenter, false, UIKit.Cream);
-            info.text = $"슬롯 {Meta.ActiveSlot}  ·  넘은 장 {Meta.ChaptersCleared}  ·  시간의 조각 {Meta.Shards}";
-            UIKit.MakeButton("Resume", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(400, 90), "계속하기", CloseAll, 30);
-            UIKit.MakeButton("Lobby", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(0, -120), new Vector2(400, 90), "메인 로비로", () => StartCoroutine(ToLobbyCo()), 30);
+            var panel = UIKit.Panel("Panel", go.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1180, 900), true);
+            var P = panel.transform;
+            UIKit.Banner("잠시 멈춤", P, new Vector2(0.5f, 1), new Vector2(0, 10), 440);
+            UIKit.CloseButton(P, CloseAll);
+            var head = UIKit.Label("Head", P, new Vector2(0.5f, 1), new Vector2(0, -112), new Vector2(800, 50), 34, TextAnchor.MiddleCenter, true, UIKit.Gold);
+            head.text = "환경설정";
+            var body = UIKit.MakeRect("Body", P, new Vector2(0.5f, 0.5f), new Vector2(0, 50), new Vector2(1060, 500));   // 4탭 (소리 · 화면 · 게임 · 조작)
+            SettingsUI.Build(body, 150f, 92f);
+            var info = UIKit.Label("Info", P, new Vector2(0.5f, 0), new Vector2(0, 205), new Vector2(1000, 34), 22, TextAnchor.MiddleCenter, false, UIKit.Muted);
+            var rm = RunManager.Instance;
+            info.text = village ? $"슬롯 {Meta.ActiveSlot}  ·  넘은 장 {Meta.ChaptersCleared}  ·  시간의 조각 {Meta.Shards}" : "";
+            UIKit.MakeButton("Resume", P, new Vector2(0.5f, 0), new Vector2(-220, 115), new Vector2(380, 90), "계속하기", CloseAll, 30);
+            if (village) UIKit.MakeButton("Lobby", P, new Vector2(0.5f, 0), new Vector2(220, 115), new Vector2(380, 90), "메인 로비로", () => StartCoroutine(ToLobbyCo()), 30);
+            else if (rm) UIKit.MakeButton("GiveUp", P, new Vector2(0.5f, 0), new Vector2(220, 115), new Vector2(380, 90), "전투 포기", OpenGiveUp, 30);
         }
 
-        // ---------- 판: ESC = 전투 포기 확인 (2026-11-19 사용자) ----------
+        // ---------- 판: 전투 포기 확인 (2026-11-19 사용자 · 2026-11-26부터 Esc 일시정지 창의 버튼으로) ----------
         // 예 = 판 끝(죽었을 때와 같은 처리), 이번 판에서 얻은 시간의 조각만 챙겨 마을로. 결과 창 없이 바로
         public void OpenGiveUp()
         {
@@ -1449,11 +1481,17 @@ namespace CatTang
 
         Image BundleIcon(Transform card, Sprite spr, Vector2 topLeft, float size, string grade)
         {
+            // 아이템 슬롯 (2026-11-25 사용자 "슬롯 좀 만들어서 넣어"): 놋쇠 리벳 슬롯 그림(UI/slot) + 안쪽 등급 색 빛 + 아이콘
             var back = UIKit.MakeRect("IconBack", card, new Vector2(0, 1), topLeft, new Vector2(size, size)).gameObject.AddComponent<Image>();
             var gc = UIKit.GradeColor(grade);
-            back.color = new Color(gc.r, gc.g, gc.b, 0.16f);
+            back.sprite = UIKit.Spr("slot");
+            back.color = back.sprite ? Color.white : new Color(gc.r, gc.g, gc.b, 0.16f);
             back.raycastTarget = false;
-            var im = UIKit.MakeRect("Icon", back.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size - 8, size - 8)).gameObject.AddComponent<Image>();
+            var glow = UIKit.MakeRect("Grade", back.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size * 0.7f, size * 0.7f)).gameObject.AddComponent<Image>();
+            glow.color = new Color(gc.r, gc.g, gc.b, 0.2f); glow.raycastTarget = false;   // 슬롯 안쪽 어두운 칸을 등급 색으로 살짝
+            if (!back.sprite) glow.enabled = false;
+            float pad = back.sprite ? size * 0.16f : 8f;
+            var im = UIKit.MakeRect("Icon", back.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size - pad * 2, size - pad * 2)).gameObject.AddComponent<Image>();
             im.sprite = spr; im.preserveAspect = true; im.raycastTarget = false;
             if (!spr) im.color = new Color(gc.r, gc.g, gc.b, 0.5f);
             return im;

@@ -384,7 +384,7 @@ namespace CatTang
             float zoom = Mathf.Lerp(s.zoom0, s.zoom1, e);
             if (s.camPath != null && s.camPath.Length > 0) { var cp = Spline4(s.camPath, u); pan = new Vector2(cp.x, cp.y); zoom = cp.z; }
             kick = Mathf.MoveTowards(kick, 0, Time.unscaledDeltaTime * 70f);
-            float sh = s.shake + kick;
+            float sh = (s.shake + kick) * GameSettings.ShakeScale;   // 환경설정 흔들림 세기 (2026-11-26)
             var j = sh > 0 ? Random.insideUnitCircle * sh : Vector2.zero;
             float hr = 0;
             if (s.hand > 0)
@@ -613,7 +613,7 @@ namespace CatTang
                     glitchLeft = big ? Random.Range(0.12f, 0.26f) : Random.Range(0.03f, 0.08f);
                     glitchSplit = Random.value < (big ? 0.8f : 0.4f);
                     glitchCount = big ? Random.Range(5, strips.Count + 1) : Random.Range(1, 4);
-                    glitchNext = Random.Range(0.25f, 1.1f) / glitch;
+                    glitchNext = Random.Range(0.25f, 1.1f) / (glitch * GameSettings.FlashScale);   // 번쩍임 줄이기: 글리치 덜 자주 (2026-11-26)
                 }
                 bool on = glitchLeft > 0;
                 glitchLeft -= Time.unscaledDeltaTime;
@@ -808,7 +808,7 @@ namespace CatTang
         IEnumerator FlashIn(float dur)
         {
             var w = UIKit.Stretch("Flash", root).gameObject.AddComponent<Image>(); w.raycastTarget = false;
-            for (float t = 0; t < dur; t += Time.unscaledDeltaTime) { w.color = new Color(1, 1, 1, 1 - t / dur); yield return null; }
+            for (float t = 0; t < dur; t += Time.unscaledDeltaTime) { w.color = new Color(1, 1, 1, (1 - t / dur) * GameSettings.FlashScale); yield return null; }   // 번쩍임 줄이기 (2026-11-26)
             Destroy(w.gameObject);
         }
 
@@ -840,7 +840,7 @@ namespace CatTang
             {
                 float u = t / dur;
                 bool on = u < 0.45f || (u > 0.6f && u < 0.72f);
-                w.color = new Color(1, 1, 1, on ? 1f - 0.25f * u : 0f);
+                w.color = new Color(1, 1, 1, on ? (1f - 0.25f * u) * GameSettings.FlashScale : 0f);   // 번쩍임 줄이기 (2026-11-26)
                 yield return null;
             }
             Destroy(w.gameObject); Destroy(mat);

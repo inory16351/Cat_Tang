@@ -483,9 +483,9 @@ namespace CatTang
         }
         public void Act(int idx, string anim) { if (idx < targets.Count && targets[idx]) targets[idx].Anim(anim); }
         public void Snd(string n, float vol = 0.9f) => Sfx.Play(n, vol, 0f);
-        public void Shake(float a) => shakeAmt = Mathf.Max(shakeAmt, a);
+        public void Shake(float a) => shakeAmt = Mathf.Max(shakeAmt, a * GameSettings.ShakeScale);   // 환경설정 흔들림 세기 (2026-11-26)
         public void Slow(float s) => Time.timeScale = s;
-        public void Flash(Color c, float a = 0.9f) { if (flash) StartCoroutine(FadeImg(flash, a, 0f, 0.18f, c)); }
+        public void Flash(Color c, float a = 0.9f) { if (flash) StartCoroutine(FadeImg(flash, a * GameSettings.FlashScale, 0f, 0.18f, c)); }   // 번쩍임 줄이기 (2026-11-26)
         public void Flicker(float d) => StartCoroutine(GlitchFlicker(d));
         /// <summary>보스를 안 보이게 / 다시 보이게 (연기 속 등장). 끝나면 Cleanup이 되돌림</summary>
         public void Hide(bool hide)
@@ -1096,11 +1096,11 @@ namespace CatTang
             var ol = cap.gameObject.AddComponent<Outline>(); ol.effectColor = new Color(1, 1, 1, 0.55f); ol.effectDistance = new Vector2(1.5f, -1.5f);
             skipFill = Rect("Fill", skipCap, Alpha(def.accent, 0.0f)).GetComponent<Image>(); skipFill.sprite = Rounded(); skipFill.type = Image.Type.Sliced;
             Full(skipFill.rectTransform);
-            var key = new GameObject("Key", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
+            var key = new GameObject("Key", typeof(RectTransform), typeof(LText)).GetComponent<Text>();
             key.transform.SetParent(skipCap, false); Full(key.rectTransform);
             key.font = UIKit.BodyBold ? UIKit.BodyBold : UIKit.Title; key.text = "SPACE"; key.fontSize = 22; key.alignment = TextAnchor.MiddleCenter; key.color = Color.white; key.raycastTarget = false;
             // 글자: 건너뛰기 + ▶▶
-            var lab = new GameObject("Label", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
+            var lab = new GameObject("Label", typeof(RectTransform), typeof(LText)).GetComponent<Text>();
             lab.transform.SetParent(skipRoot, false);
             var lr = lab.rectTransform; lr.anchorMin = lr.anchorMax = lr.pivot = new Vector2(1, 0.5f); lr.sizeDelta = new Vector2(220, 46); lr.anchoredPosition = new Vector2(-140, 0);
             lab.font = UIKit.Title; lab.text = "건너뛰기  ▶▶"; lab.fontSize = 26; lab.alignment = TextAnchor.MiddleRight; lab.color = new Color(1, 1, 1, 0.92f); lab.raycastTarget = false;

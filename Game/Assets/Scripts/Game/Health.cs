@@ -208,6 +208,7 @@ namespace CatTang
                 float pulse = Mathf.Repeat((1f - left) * 2.5f, 1f);
                 hurtK = (1f - Mathf.SmoothStep(0f, 1f, pulse * 1.8f)) * left * 0.38f;
             }
+            if (isPlayer) { hurtK *= GameSettings.FlashScale; flashK *= GameSettings.FlashScale; }   // 번쩍임 줄이기: 고양이 피격 번쩍 (2026-11-26)
             if (mpb == null || rends == null || matColors == null) RefreshRenderers();       // Awake 전에 불린 경우 (비활성으로 만들어진 오브젝트 등)
             bool locked = TimeLocked || GlobalStop, stunned = Time.time < stunUntil;
             float white = Mathf.Max(flashK, hurtK);

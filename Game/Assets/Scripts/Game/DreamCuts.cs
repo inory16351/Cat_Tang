@@ -16,7 +16,7 @@ namespace CatTang
 {
     public static partial class DreamCuts
     {
-        public static MShot[] For(int chapter) => chapter == 1 ? Dream1 : chapter == 2 ? Dream2 : null;
+        public static MShot[] For(int chapter) => chapter == 1 ? Dream1 : chapter == 2 ? Dream2 : chapter == 5 ? Dream5 : chapter == 6 ? Dream6 : chapter == 7 ? Ending7 : null;   // 6 = 꿈4 '마지막 장'(5장 클리어, DreamCuts4.cs) · 7 = 엔딩 병실(Ch5Ending) · 5 = 꿈3 '11:59의 기원' (4장 클리어, DreamCuts3.cs)
 
         static readonly Color Paper = new(0.93f, 0.9f, 0.84f);
         static readonly Vector2 O = Vector2.zero;

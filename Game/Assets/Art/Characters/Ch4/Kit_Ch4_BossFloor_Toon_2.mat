@@ -35,8 +35,10 @@ Material:
     - _HatchDensity: 28
     - _HatchStrength: 0
     - _HatchWidth: 0.28
+    - _HitWhite: 0
     - _InkStrength: 0
     - _InkWidth: 0
+    - _KeepColor: 0
     - _OuterOutlineWidth: 0
     - _OuterStencilRef: 0
     - _OutlineVertexAlpha: 0
@@ -55,12 +57,15 @@ Material:
     - _ShadeSoftness: 0.015
     - _ShadeThreshold: 0.45
     m_Colors:
-    - _BaseColor: {r: 0.7353569, g: 0.7353569, b: 0.7353569, a: 1}
+    - _BaseColor: {r: 0.05, g: 0.05, b: 0.06, a: 1}
     - _InkColor: {r: 0.11999995, g: 0.06999998, b: 0.13999996, a: 1}
     - _OuterOutlineColor: {r: 0.78, g: 0.06999998, b: 0.11999995, a: 1}
     - _OutlineColor: {r: 0.079999976, g: 0.049999982, b: 0.079999976, a: 1}
     - _RimColor: {r: 1, g: 0.78, b: 0.34999996, a: 1}
     - _SecondShadeColor: {r: 0.3, g: 0.3, b: 0.33, a: 1}
     - _ShadeColor: {r: 0.6, g: 0.6, b: 0.63, a: 1}
+    - _SwingGlow: {r: 0, g: 0, b: 0, a: 0}
+    - _SwingGlowEnd: {r: 0, g: 0, b: 0, a: 0}
+    - _SwingGlowStart: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

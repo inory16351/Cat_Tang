@@ -1,6 +1,7 @@
 // 스토리 연출 화면 (2026-11-23 스토리 기획서 Ver01): 오프닝 몽타주 · 꿈(수채화 셀 애니메이션) · 두통 · 하얀 번쩍임 · 튜토리얼 안내
 // 맨 위 캔버스 하나에 그림. 그림 자리는 Resources/Story/... — 그림이 아직 없으면 장면 설명을 흐리게 띄우는 자리 표시로 대신함 (그림은 크롬 ChatGPT로 만들 예정)
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -297,10 +298,48 @@ namespace CatTang
 
         /// <summary>튜토리얼 안내: 실제 UI(targets)를 비춤 — 인벤토리처럼 다른 화면 위에서도 씀</summary>
         public IEnumerator HintAt(string title, string body, params RectTransform[] targets) => Hint(title, body, FocusOf(10, targets));
+        /// <summary>HintAt과 같지만 본문을 한 줄씩 차례로 띄움 (계산 과정처럼 단계가 있는 설명, 클릭하면 한꺼번에)</summary>
+        public IEnumerator HintAtSteps(string title, string body, params RectTransform[] targets) => Hint(title, body, FocusOf(10, targets), true);
+
+        /// <summary>직접 해 보기: 시간 · 조작을 막지 않고 targets마다 노란 테두리를 맥동 + 아래 안내 줄.
+        /// done()이 참이 되거나 alive()가 거짓이 되면(창이 닫힘 등) 끝 — 끌어놓기 같은 실제 조작을 하게 둠</summary>
+        public IEnumerator TryAt(string caption, System.Func<RectTransform[]> targets, System.Func<bool> done, System.Func<bool> alive)
+        {
+            EnsureSpot();
+            SpotOff();
+            var bars = new List<Image>();
+            SetCaption(caption);
+            Sfx.Play("ui_click_1", 0.5f);
+            while (alive() && !done())
+            {
+                var ts = targets() ?? new RectTransform[0];
+                float a = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 6f);
+                int k = 0;
+                foreach (var t in ts)
+                {
+                    if (!t) continue;
+                    var f = FocusOf(6, t);
+                    while (bars.Count < k + 4) bars.Add(TopLeft("TryRing", Yellow, new Vector2(0, 1)));
+                    const float b = RingW;
+                    Box(bars[k], f.xMin - b, f.yMin - b, f.width + b * 2, b);
+                    Box(bars[k + 1], f.xMin - b, f.yMax, f.width + b * 2, b);
+                    Box(bars[k + 2], f.xMin - b, f.yMin, b, f.height);
+                    Box(bars[k + 3], f.xMax, f.yMin, b, f.height);
+                    for (int i = k; i < k + 4; i++) { bars[i].gameObject.SetActive(true); Alpha(bars[i], a); }
+                    k += 4;
+                }
+                for (int i = k; i < bars.Count; i++) bars[i].gameObject.SetActive(false);
+                yield return null;
+            }
+            SetCaption("");
+            foreach (var im in bars) if (im) Destroy(im.gameObject);
+        }
 
         /// <summary>튜토리얼 안내: 시간을 멈추고 창. focus = 설명하는 HUD 자리(1920×1080 기준, 왼쪽 위 원점) — 그곳만 밝히고 창은 비켜 섬. E · 클릭으로 닫힘</summary>
-        public IEnumerator Hint(string title, string body, Rect? focus = null)
+        public IEnumerator Hint(string title, string body, Rect? focus = null, bool reveal = false)
         {
+            var lines = reveal ? body.Split('\n') : null;
+            if (reveal) body = lines[0];
             float ts = Time.timeScale;
             Time.timeScale = 0f;
             var p = PlayerController.Instance; bool locked = p && p.InputLocked;
@@ -353,6 +392,16 @@ namespace CatTang
                 for (float t = 0; t < 0.18f; t += Time.unscaledDeltaTime) { dotB.rectTransform.sizeDelta = Vector2.one * Mathf.LerpUnclamped(6f, 22f, EaseOutBack(t / 0.18f)); yield return null; }
             }
             yield return new WaitForSecondsRealtime(0.2f);
+            // 한 줄씩: 0.6초마다 다음 줄 (클릭하면 남은 줄을 한꺼번에)
+            if (reveal)
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    bool skip = false;
+                    for (float t = 0; t < 0.6f; t += Time.unscaledDeltaTime) { if (Next()) { skip = true; break; } yield return null; }
+                    if (skip) { hintBody.text = string.Join("\n", lines); yield return null; break; }
+                    hintBody.text += "\n" + lines[i];
+                    Sfx.Play("e4_tick_1", 0.35f);
+                }
             while (!Next())
             {
                 float s = Mathf.Sin(Time.unscaledTime * 6f);
@@ -407,7 +456,7 @@ namespace CatTang
                 for (float t = 0; t < s.dur; t += Time.unscaledDeltaTime)
                 {
                     float u = Mathf.Clamp01(t / s.dur), e = u * u * (3 - 2 * u);
-                    var j = s.shake > 0 ? Random.insideUnitCircle * s.shake : Vector2.zero;
+                    var j = s.shake > 0 ? Random.insideUnitCircle * s.shake * GameSettings.ShakeScale : Vector2.zero;   // 환경설정 흔들림 세기 (2026-11-26)
                     shotRt.anchoredPosition = Vector2.Lerp(s.pan0, s.pan1, e) + j;
                     shotRt.localScale = Vector3.one * Mathf.Lerp(s.zoom0 <= 0 ? 1 : s.zoom0, s.zoom1 <= 0 ? 1 : s.zoom1, e);
                     shotRt.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(s.rot0, s.rot1, e));
@@ -436,7 +485,8 @@ namespace CatTang
                 mt.echo = 0.2f; mt.glitch = 0.6f; mt.glitchCueMin = 18f; mt.paintGlitch = true;   // 글리치 적당히 (2026-11-23 사용자: 너무 많음) mt.vignette = 0.35f;   // 물감 글리치 무작위 (2026-11-23 사용자)
                 mt.gradeChance = 0.35f; mt.gradeGlitch = 0.3f;                                    // 배색 변주: 디졸브 · 글리치 조각에 세피아 · 음화 · 청사진 무작위
                 mt.sfx = false; mt.mixTrans = 0.6f;                                                // 꿈 전체: 긴 컷 전환을 물감 덮기 ↔ 조각 섞기 + 글리치로 (2026-11-23 사용자)
-                Music.Story("story_dream" + n);
+                DreamCuts.Tune(n, mt);                                                             // 꿈마다 조정 (꿈3 리노컷: 무작위 배색 · 물감 글리치 끔)
+                Music.Story(DreamCuts.SongOf(n));                                                 // 꿈3(내부 dream5) = story_dream3
                 yield return mt.Play(authored, "Story/Dreams/dream" + n + "/");
                 Music.StoryEnd(1.2f);
                 mt.vignette = 1f; mt.paintGlitch = false; mt.glitch = 1f; mt.gradeChance = 0f; mt.gradeGlitch = 0f; mt.sfx = true; mt.mixTrans = 0f; mt.glitchCueMin = 14f;

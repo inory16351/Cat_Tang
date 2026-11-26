@@ -23,11 +23,12 @@ namespace CatTang
         /// <summary>이번 문이 처음 만나는 1장 보스 문이면 스토리 맵</summary>
         public static bool Pending(int chapter) => chapter == 1 && !Meta.StorySeen(Key);
 
-        public static void Play(RunManager rm, System.Action done)
+        /// <summary>practice = 보스 패턴 연습 (StoryPractice): 대사 · 연출 없이 기믹만, 기록 안 함</summary>
+        public static void Play(RunManager rm, System.Action done, bool practice = false)
         {
             var go = new GameObject("StoryMap");
             var sm = go.AddComponent<StoryMap>();
-            sm.rm = rm; sm.done = done;
+            sm.rm = rm; sm.done = done; sm.practice = practice;
         }
 
         RunManager rm;
@@ -41,6 +42,9 @@ namespace CatTang
         Color oldBg;
         readonly List<Enemy> shadows = new();
         bool finished;
+        bool practice;                 // 보스 패턴 연습
+        StoryPractice pr;
+        Telegraph matchRing;
 
         Transform M(string name) => map.Find("Marks/" + name);
         Transform G(string name) => map.Find("Geo/" + name);
@@ -55,7 +59,7 @@ namespace CatTang
             rm.EnterStoryMap();
             // 빨려 들어감: 두통 → 하얗게
             Music.Duck(0.25f, 0.6f);
-            if (ov) { yield return ov.Headache(0.6f, 1.0f); yield return ov.FadeWhite(0, 1, 0.9f); }
+            if (ov) { if (!practice) yield return ov.Headache(0.6f, 1.0f); yield return ov.FadeWhite(0, 1, practice ? 0.35f : 0.9f); }
 
             var prefab = Resources.Load<GameObject>("Story/StoryPlaza");
             if (!prefab) { Debug.LogWarning("[StoryMap] Story/StoryPlaza 프리팹 없음 — 건너뜀"); yield return Finish(false); yield break; }
@@ -68,11 +72,12 @@ namespace CatTang
             if (tw) { var hh = tw.Find("TowerHandH"); var hm = tw.Find("TowerHandM"); if (hh) hh.localRotation = Quaternion.Euler(0, 0, 30f); if (hm) hm.localRotation = Quaternion.Euler(0, 0, 6f); }
             CameraFollow.SnapZoom(1f);
             child = Spawn("ShadowChild", M("Child"));
-            if (ov) yield return ov.FadeWhite(1, 0, 1.2f);
+            if (practice) pr = StoryPractice.Begin(this, Quit);
+            if (ov) yield return ov.FadeWhite(1, 0, practice ? 0.5f : 1.2f);
             Music.Duck(0f, 0.8f);
             Music.Play(StoryBgm.For(1, "stage"));                      // 2026-11-25 사용자: 스토리 맵 전용 곡 (Gemini) — 맵 내내, 전투에서도
 
-            yield return Say("고양이#의문::......여긴 어디지.",
+            if (!practice) yield return Say("고양이#의문::......여긴 어디지.",
                              "고양이#의문::분명... 난 문을 열고 들어왔는데...",
                              "고양이#의문::노을...... 이렇게 따뜻한 색은 처음 보는군.");
             p.InputLocked = false;
@@ -80,30 +85,36 @@ namespace CatTang
 
             // ① 회중시계 (3시)
             yield return WaitNear(M("Watch").position, 4f);
-            p.InputLocked = true;
-            CameraFollow.FocusOn(M("Watch").position, 0.8f);
-            yield return Say(Child + "::시계 놀이 하자!",
-                             Child + "::이 시계, 세 시에 멈췄어.",
-                             Child + "::바늘이 가리키는 숫자에 서서, 똑같은 시각에 탕! 하는 거야.");
-            CameraFollow.FocusOn(null, 0f);
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                CameraFollow.FocusOn(M("Watch").position, 0.8f);
+                yield return Say(Child + "::시계 놀이 하자!",
+                                 Child + "::이 시계, 세 시에 멈췄어.",
+                                 Child + "::바늘이 가리키는 숫자에 서서, 똑같은 시각에 탕! 하는 거야.");
+                CameraFollow.FocusOn(null, 0f);
+                p.InputLocked = false;
+            }
             ui?.Toast("회중시계의 시각 — 바닥 문자판의 그 숫자에 서서, 발사 시각을 맞춰라");
             yield return Match(M("Dial1").position, Dial1R, 3, null);
             Sfx.Play("e4_tick_1", 0.9f, 0f);
-            yield return Say(Child + "::봐! 다시 간다!");
+            if (!practice) yield return Say(Child + "::봐! 다시 간다!");
             yield return OpenGate();
             if (child) StartCoroutine(Walk(child.transform, M("ChildPlaza"), 3.2f));
 
             // ② 광장 큰 문자판
             yield return WaitNear(M("Dial2").position, Dial2R + 1.5f);
-            p.InputLocked = true;
             adult = Spawn("ShadowAdult", M("Adult"));
-            CameraFollow.FocusOn(M("Adult").position, 0.8f);
-            yield return Say(Adult + "::얘야, 광장 시계는 혼자선 못 고쳐.",
-                             Adult + "::바늘을 잘 봐 두렴.",
-                             Adult + "::거리의 시계는 믿지 마라. 저건 늘 제멋대로니까.");
-            CameraFollow.FocusOn(null, 0f);
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                CameraFollow.FocusOn(M("Adult").position, 0.8f);
+                yield return Say(Adult + "::얘야, 광장 시계는 혼자선 못 고쳐.",
+                                 Adult + "::바늘을 잘 봐 두렴.",
+                                 Adult + "::거리의 시계는 믿지 마라. 저건 늘 제멋대로니까.");
+                CameraFollow.FocusOn(null, 0f);
+                p.InputLocked = false;
+            }
             int h2 = PickHour(3);
             yield return SpinHand(h2, 2.2f);
             ui?.Toast("바닥 바늘이 멈춘 숫자에 서서, 발사 시각을 맞춰라");
@@ -111,15 +122,19 @@ namespace CatTang
             yield return TowerTick(2);
 
             // ③ 그림자들
-            p.InputLocked = true;
-            yield return Say(Child + "::저 그림자들은 뭐야?",
-                             "고양이#결의::물러서 있어.",
-                             "고양이#결의::이건 내가 상대하지.");
-            p.InputLocked = false;
+            if (!practice)
+            {
+                p.InputLocked = true;
+                yield return Say(Child + "::저 그림자들은 뭐야?",
+                                 "고양이#결의::물러서 있어.",
+                                 "고양이#결의::이건 내가 상대하지.");
+                p.InputLocked = false;
+            }
             if (!StoryBgm.Has(1)) Music.PlayFor("stage", 1);
             yield return Wave(4);
             yield return Wave(5, trial: true);
             yield return TowerTick(3);
+            if (practice) { yield return Finish(true); yield break; }   // 연습: 끝 연출 · 기록 없음
 
             // 끝: 종 · 아이가 탑을 올려다봄 → 하얗게
             p.InputLocked = true;
@@ -134,10 +149,19 @@ namespace CatTang
         }
 
         // ---------- 진행 ----------
+        /// <summary>연습 중 'Enter 길게': 하던 걸 멈추고 바로 보스 방으로</summary>
+        void Quit()
+        {
+            if (finished) return;
+            StopAllCoroutines();
+            StartCoroutine(Finish(true));
+        }
+
         IEnumerator Finish(bool ok)
         {
+            if (pr) pr.Stop();                                    // 연습: 체력 되돌림 · 표시 치움 (Enter 끝내기도 막음)
             var ov = StoryOverlay.I;
-            if (ok && ov) yield return ov.FadeWhite(0, 1, 1.1f);
+            if (ok && ov) yield return ov.FadeWhite(0, 1, practice ? 0.4f : 1.1f);
             CameraFollow.FocusOn(null, 0f);
             Cleanup();
             p.InputLocked = false;
@@ -145,7 +169,7 @@ namespace CatTang
             finished = true;
             done?.Invoke();                                       // 보스 방을 지음 (플레이어 순간이동)
             CameraFollow.SnapZoom(1f);
-            if (ok && ov) yield return ov.FadeWhite(1, 0, 0.9f);
+            if (ok && ov) yield return ov.FadeWhite(1, 0, practice ? 0.5f : 0.9f);
             Destroy(gameObject);
         }
 
@@ -153,6 +177,7 @@ namespace CatTang
         {
             foreach (var e in shadows) if (e) Destroy(e.gameObject);
             shadows.Clear();
+            if (matchRing) { matchRing.Kill(); matchRing = null; }
             if (map) Destroy(map.gameObject);
             if (cam) { cam.clearFlags = oldFlags; cam.backgroundColor = oldBg; }
             RunManager.StoryHold = false;
@@ -167,6 +192,7 @@ namespace CatTang
 
         IEnumerator Say(params string[] lines)
         {
+            if (practice) yield break;                            // 연습: 대사 없음
             bool d = false;
             ui.Talk(Child, lines, () => d = true);
             while (!d) yield return null;
@@ -198,7 +224,7 @@ namespace CatTang
             var zone = HourPoint(dial, dialR, hour) + Vector3.up * 0.05f;
             float hold = 0, warnAt = -9;
             float end = dur.HasValue ? Time.time + dur.Value : float.MaxValue;
-            var ring = Telegraph.Ring(zone, ZoneR, dur ?? 9999f, BossFx.Safe);
+            var ring = matchRing = Telegraph.Ring(zone, ZoneR, dur ?? 9999f, BossFx.Safe);
             while (true)
             {
                 if (!p || !p.health.Alive) yield break;
@@ -215,11 +241,13 @@ namespace CatTang
                     p.health.TakeDamage(p.health.maxHp * 0.15f);
                     FxBurst.Spawn(p.transform.position + Vector3.up, 2f, FxBurst.Kind.Explosion);
                     ui?.Toast("시각을 놓쳤다 — 다시");
+                    matchRing = null;
                     yield break;
                 }
                 yield return null;
             }
             if (ring) ring.Kill();
+            matchRing = null;
             FxBurst.Spawn(zone + Vector3.up, 2.2f, FxBurst.Kind.Gold, new Color(1f, 0.85f, 0.35f));
             if (Sfx.Has("ui_buy")) Sfx.Play("ui_buy", 0.7f, 0f);
         }

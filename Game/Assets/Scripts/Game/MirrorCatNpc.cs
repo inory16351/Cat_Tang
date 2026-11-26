@@ -7,7 +7,12 @@ namespace CatTang
     public class MirrorCatNpc : Interactable
     {
         protected override void OnEnable() { base.OnEnable(); prompt = Ch3Quest.MirrorCat; radius = 2.8f; }
-        public override bool Available => !Ch3Quest.Busy && Meta.StorySeen(Ch3Quest.KeyIntro);
-        public override void Interact(PlayerController p) { if (Available && Ch3Quest.I) Ch3Quest.I.StartCoroutine(Ch3Quest.PuddleTalk(Ch3Quest.UIRef)); }
+        public override bool Available => !Ch3Quest.Busy && !Ch4Quest.Busy && Meta.StorySeen(Ch3Quest.KeyIntro);
+        public override void Interact(PlayerController p)
+        {
+            if (!Available) return;
+            if (Ch4Quest.InProgress && Ch4Quest.I) { Ch4Quest.I.StartCoroutine(Ch4Quest.CatHint(Ch3Quest.UIRef)); return; }   // 4장 멈춘 마을 동안은 그 힌트
+            if (Ch3Quest.I) Ch3Quest.I.StartCoroutine(Ch3Quest.PuddleTalk(Ch3Quest.UIRef));
+        }
     }
 }

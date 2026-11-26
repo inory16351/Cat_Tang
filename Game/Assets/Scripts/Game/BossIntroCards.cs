@@ -70,7 +70,7 @@ namespace CatTang
 
         Text Tx(Transform parent, string s, int size, Vector2 pos, Color c, TextAnchor a = TextAnchor.MiddleCenter, Font f = null, float w = 1400)
         {
-            var t = new GameObject("T", typeof(RectTransform), typeof(Text)).GetComponent<Text>();
+            var t = new GameObject("T", typeof(RectTransform), typeof(LText)).GetComponent<Text>();
             t.transform.SetParent(parent, false);
             t.font = f ? f : UIKit.Title;
             t.text = s; t.fontSize = size; t.alignment = a; t.color = c; t.raycastTarget = false;
@@ -180,7 +180,7 @@ namespace CatTang
         void Quake(float t, float at, float power)
         {
             float k = Mathf.Clamp01(1 - (t - at) / 0.18f);
-            freezeRoot.anchoredPosition = t >= at && k > 0 ? Random.insideUnitCircle * power * k : Vector2.zero;
+            freezeRoot.anchoredPosition = t >= at && k > 0 ? Random.insideUnitCircle * power * k * GameSettings.ShakeScale : Vector2.zero;   // 환경설정 흔들림 세기 (2026-11-26)
         }
 
         Image Dim(Color c) { var d = Img("Dim", card, Alpha(c, 0), Vector2.zero, Vector2.zero); Full(d.rectTransform); return d; }
@@ -625,7 +625,7 @@ namespace CatTang
                     {
                         b.rectTransform.anchoredPosition = new Vector2(Random.Range(-900f, 900f), Random.Range(-500f, 500f));
                         b.rectTransform.sizeDelta = new Vector2(Random.Range(80f, 500f), Random.Range(8f, 50f));
-                        b.color = Alpha(Random.value < 0.5f ? def.accent : def.accent2, Random.value < 0.4f ? 0.7f : 0f);
+                        b.color = Alpha(Random.value < 0.5f ? def.accent : def.accent2, Random.value < 0.4f ? 0.7f * GameSettings.FlashScale : 0f);   // 번쩍임 줄이기: 글리치 블록 (2026-11-26)
                     }
                 }
                 float k = Seg(t, 0.06f, 0.2f);

@@ -16,12 +16,13 @@ namespace CatTang
                 p.combatEnabled = false;
                 p.health.ResetHp(p.MaxHp);
                 FindFirstObjectByType<GameUI>()?.BindVillage(p);
-                VillageWake.Play(p);                                 // 연기 속에서 깨어남 (로비에서 · 판이 끝나고 들어올 때마다)
+                if (StoryInner.EnterWhite) { StoryInner.EnterWhite = false; StoryInner.FromDream = true; }   // 꿈4 뒤: 하얀 화면 그대로 내면 맵으로 (깨어남은 내면 맵이 끝난 뒤)
+                else VillageWake.Play(p);                            // 연기 속에서 깨어남 (로비에서 · 판이 끝나고 들어올 때마다)
                 VillageStory.Begin();                                // 깨어난 뒤 아직 안 본 이야기 (뻐꾸기 첫 대화 · 장마다 열리는 섬)
             }
             RefreshFacilityLabels();
             foreach (var g in FindObjectsByType<ChapterGate>(FindObjectsSortMode.None))
-                Interactable.WorldLabel(g.transform, $"시간의 문\n<size=40>다음: {Mathf.Min(Meta.ChaptersCleared + 1, Meta.ChapterCount)}장</size>", new Vector3(0, 8.3f, 0), 0.075f, UIKit.Gold);
+                Interactable.WorldLabel(g.transform, $"시간의 문\n<size=40>다음: {Mathf.Min(Meta.ChaptersCleared + 1, Meta.ChapterCount)}장</size>" + (Meta.StorySeen(Ch5Ending.KeyAscend) ? "\n<size=34>승천 (준비 중)</size>" : ""), new Vector3(0, 8.3f, 0), 0.075f, UIKit.Gold);
             if (!GetComponent<VillageMap>()) gameObject.AddComponent<VillageMap>();   // M 키 마을 지도
             Music.Play("bgm_village");
         }

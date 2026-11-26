@@ -164,6 +164,11 @@ namespace CatTang.EditorTools
             { "stone_dark", new Color(0.26f, 0.26f, 0.27f) },
             { "dial_face", new Color(0.97f, 0.97f, 0.95f) },
             { "dial_mark", new Color(0.04f, 0.04f, 0.05f) },
+            // 보스 경기장 문자판 (2026-11-26 사용자: 바닥 시계 디테일 살리기 — 전엔 배색표에 없어 선 · 숫자가 연회색 0.735로 흐렸음)
+            { "dial_line", new Color(0.22f, 0.22f, 0.24f) },
+            { "dial_number", new Color(0.1f, 0.1f, 0.11f) },
+            { "dial_black", new Color(0.05f, 0.05f, 0.06f) },
+            { "dial_silver", new Color(0.8f, 0.8f, 0.82f) },
             { "glass", new Color(0.86f, 0.88f, 0.9f) },
             { "starlight", Color.white },
             { "night_sky", new Color(0.02f, 0.02f, 0.03f) },

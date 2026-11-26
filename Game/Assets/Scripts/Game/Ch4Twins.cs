@@ -21,6 +21,7 @@ namespace CatTang
         string lastGimmick;
         int needHour; Health needTarget;                     // 순서 표적 판정
         readonly Dictionary<Health, int> gearHour = new();
+        readonly Dictionary<Health, FloatGear> floatOf = new();         // 과녁 → 공중 톱니 (맞으면 돌며 사라짐)
         readonly HashSet<Health> gearDone = new();
         readonly List<GameObject> spawned = new();
         public const float GimmickFirst = 20f, GimmickEvery = 20f, Stun = 4f;
@@ -111,7 +112,7 @@ namespace CatTang
             yield return lastGimmick == "seq" ? Sequence() : lastGimmick == "shuffle" ? Shuffled() : Gears();
             needHour = 0; needTarget = null;
             foreach (var g in spawned) if (g) Destroy(g);
-            spawned.Clear();
+            spawned.Clear(); floatOf.Clear();
             inGimmick = false;
             nextGimmick = Time.time + GimmickEvery;
         }
@@ -124,27 +125,19 @@ namespace CatTang
             if (p && p.health.Alive) p.health.TakeDamage(p.health.maxHp * frac);
         }
 
-        BigLabel Num(Vector3 at, int n, Color c, float size = 1.3f)
-        {
-            var go = new GameObject("Num_" + n);
-            go.transform.position = at;
-            spawned.Add(go);
-            return BigLabel.Show(go.transform, new Vector3(0, 0.6f, 0), n.ToString(), c, size);
-        }
-
         void OnPlayerFired(int slot, bool awake)
         {
             if (!inGimmick) return;
             if (needTarget && Time.time - needTarget.lastHitAt <= 0.001f)
             {
-                if (slot == needHour) needTarget = null;                               // 맞음 → 다음 표적
+                if (slot == needHour) { if (floatOf.TryGetValue(needTarget, out var fg) && fg) fg.Solve(); needTarget = null; }   // 맞음 → 다음 표적
                 else FxBurst.Spawn(needTarget.transform.position + Vector3.up * 1.2f, 0.8f, FxBurst.Kind.Spark, Color.white);   // 튕김
             }
             foreach (var kv in gearHour)
             {
                 var h = kv.Key;
                 if (!h || gearDone.Contains(h) || Time.time - h.lastHitAt > 0.001f) continue;
-                if (slot == kv.Value) { gearDone.Add(h); Sfx.Play("e4_clank", 0.8f, 0.05f, 2); FxBurst.Spawn(h.transform.position + Vector3.up, 1.4f, FxBurst.Kind.Spark, new Color(1f, 0.8f, 0.4f)); }
+                if (slot == kv.Value) { gearDone.Add(h); if (floatOf.TryGetValue(h, out var fg) && fg) fg.Solve(); }
                 else FxBurst.Spawn(h.transform.position + Vector3.up, 0.8f, FxBurst.Kind.Spark, Color.white);
             }
         }
@@ -175,13 +168,11 @@ namespace CatTang
             foreach (var h in hours)
             {
                 var at = C + new Vector3(Mathf.Sin(h * 30f * Mathf.Deg2Rad), 0, Mathf.Cos(h * 30f * Mathf.Deg2Rad)) * ringR;
-                var go = new GameObject("SeqTarget_" + h);
-                go.transform.position = at;
-                spawned.Add(go);
-                Ch3Fx.Prim(PrimitiveType.Cylinder, "Disc", go.transform, Vector3.up * 0.6f, new Vector3(1.4f, 0.6f, 1.4f), new Color(0.95f, 0.92f, 0.85f));
-                targets.Add(Ch3Fx.Target(go, 0.8f, 1.6f));
-                Num(at + Vector3.up * 1.6f, h, new Color(1f, 0.85f, 0.4f));
-                Telegraph.Ring(at, 1f, 0.6f, Telegraph.Aim);
+                // 2026-11-26 사용자: 배지만 뜨면 무엇을 맞히는지 모름 → 공중 톱니(블렌더) + 배지 아래 화살표, 맞으면 돌며 사라짐
+                var fg = FloatGear.Make(at, h, new Color(1f, 0.85f, 0.4f), out var th);
+                spawned.Add(fg.gameObject);
+                targets.Add(th); floatOf[th] = fg;
+                Telegraph.Ring(at, 1.1f, 0.6f, Telegraph.Aim);
                 Sfx.Play("e4_bell", 0.6f, 0f, 2);
                 yield return new WaitForSeconds(0.6f);
             }
@@ -191,7 +182,7 @@ namespace CatTang
             {
                 needHour = hours[done]; needTarget = targets[done];
                 while (needTarget && Time.time < end) yield return null;
-                if (!needTarget) { done++; FxBurst.Spawn(targets[done - 1].transform.position + Vector3.up, 1.6f, FxBurst.Kind.Gold, Color.white); targets[done - 1].gameObject.SetActive(false); }
+                if (!needTarget) done++;                                                // 톱니는 FloatGear.Solve가 돌리며 지움
             }
             needTarget = null;
             if (done >= n) { BossFx.Toast("성공 — 크로노 & 템포 기절!"); StunBoth(); yield return new WaitForSeconds(0.5f); }
@@ -216,8 +207,14 @@ namespace CatTang
             BossFx.Toast("뒤섞인 문자판 — 내 발사 시각 숫자 칸 위에 서 있어라!");
             float ringR = Ch4Kit.ArenaR * 0.55f;
             var nums = new List<int>(); for (int i = 1; i <= 12; i++) nums.Add(i);
-            var labels = new List<BigLabel>();
-            for (int k = 0; k < 12; k++) labels.Add(Num(SectorPos(k, ringR), nums[k], new Color(1f, 0.92f, 0.7f), 1.5f));
+            // 칸 숫자 = 바닥에 스스슥 새겨지는 블렌더 3D 숫자 (2026-11-26 사용자: 그림 배지는 바닥과 안 어울림). 12시 칸부터 시계 방향으로 차례로
+            var floorNums = new List<FloorNumeral>();
+            for (int k = 0; k < 12; k++)
+            {
+                var fn = FloorNumeral.Make(SectorPos(k, ringR), nums[k], 3.3f, k * 0.04f);   // 지름 3.3m (2026-11-26 사용자: 더 크게)
+                fn.transform.SetParent(transform, true);                                // 지휘가 사라지면 같이 (패턴 도중 끝나도 안 남음)
+                floorNums.Add(fn);
+            }
             for (int k = 0; k < 12; k++)                                                // 칸 경계
                 Telegraph.Lane(C, Quaternion.Euler(0, k * 30f + 15f, 0) * Vector3.forward, Ch4Kit.ArenaR - 1f, 0.12f, 8f, Telegraph.Aim).NoGlint();
             // 2초 동안 섞임 (숫자를 바꿔 쓰며 깜빡)
@@ -226,7 +223,8 @@ namespace CatTang
             {
                 int a = Random.Range(0, 12), b = Random.Range(0, 12);
                 (nums[a], nums[b]) = (nums[b], nums[a]);
-                for (int k = 0; k < 12; k++) if (labels[k]) labels[k].text = nums[k].ToString();
+                if (floorNums[a]) floorNums[a].SetNumber(nums[a]);
+                if (floorNums[b]) floorNums[b].SetNumber(nums[b]);
                 Sfx.Play("e4_tick", 0.35f, 0.2f, 2);
                 yield return new WaitForSeconds(0.12f);
             }
@@ -269,6 +267,7 @@ namespace CatTang
                 else { CameraFollow.Shake(0.25f); HurtFrac(0.35f); BossFx.Toast($"실패 — {stand}시 칸 (발사 시각 {p.rev.next}시)"); }
             }
             yield return new WaitForSeconds(0.6f);
+            for (int k = 0; k < floorNums.Count; k++) if (floorNums[k]) floorNums[k].Erase(k * 0.03f);   // 쓸려 지워짐
         }
 
         Vector3 SectorPos(int k, float r) => C + Quaternion.Euler(0, k * 30f, 0) * Vector3.forward * r;
@@ -291,15 +290,11 @@ namespace CatTang
                 bool ok = true; foreach (var o in placed) if ((o - at).magnitude < 4f) ok = false;
                 if (!ok) continue;
                 placed.Add(at);
-                var go = new GameObject("StopGear_" + hours[k]);
-                go.transform.position = at + Vector3.up * 6f;
-                spawned.Add(go);
-                var vis = Kit.Place(RunManager.Instance ? RunManager.Instance.Chapter : null, "GearFloor", go.transform, Vector3.zero, 0f, 0.28f, false);
-                if (!vis) Ch3Fx.Prim(PrimitiveType.Cylinder, "Gear", go.transform, Vector3.up * 0.5f, new Vector3(2.2f, 0.25f, 2.2f), new Color(0.8f, 0.78f, 0.74f));
-                var h = Ch3Fx.Target(go, 1.1f, 2f);
-                gearHour[h] = hours[k];
-                gearT.Add(go.transform);
-                BigLabel.Show(go.transform, new Vector3(0, 2.4f, 0), hours[k].ToString(), new Color(1f, 0.85f, 0.4f), 1.2f);
+                // 공중 톱니(블렌더) + 배지 아래 화살표 (2026-11-26 사용자), 맞는 시각 탄이면 돌며 사라짐
+                var fg = FloatGear.Make(at + Vector3.up * 6f, hours[k], new Color(1f, 0.85f, 0.4f), out var h);
+                spawned.Add(fg.gameObject);
+                gearHour[h] = hours[k]; floatOf[h] = fg;
+                gearT.Add(fg.transform);
                 k++;
             }
             // 내려옴
@@ -313,13 +308,12 @@ namespace CatTang
             float end = Time.time + 10f;
             while (Time.time < end && gearDone.Count < gearHour.Count)
             {
-                foreach (var kv in gearHour) if (kv.Key && gearDone.Contains(kv.Key)) kv.Key.transform.Rotate(0, 180f * Time.deltaTime, 0);
                 yield return null;
             }
             int left = gearHour.Count - gearDone.Count;
             if (left == 0) { BossFx.Toast("문자판이 멈췄다 — 크로노 & 템포 기절!"); StunBoth(); }
             else { CameraFollow.Shake(0.25f); HurtFrac(0.12f * left); }
-            gearHour.Clear(); gearDone.Clear();
+            gearHour.Clear(); gearDone.Clear(); floatOf.Clear();
             yield return new WaitForSeconds(0.5f);
         }
     }

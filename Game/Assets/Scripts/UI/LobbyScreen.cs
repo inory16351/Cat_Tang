@@ -28,7 +28,7 @@ namespace CatTang
         static readonly Color Haze = new(0.78f, 0.74f, 0.8f);
         static readonly Color Parchment = new(0.87f, 0.79f, 0.65f);
         static readonly Color Ember = new(1f, 0.62f, 0.22f);
-        const float TitleX = 470f, TitleY = -250f;
+        const float TitleX = 470f, TitleY = -135f;   // 2026-11-26 새 로고(세로로 김): 위 끝을 올려 메뉴 '새로 시작' 위에서 끝나게
         const float IntroLen = 8.2f;
         // 얼굴 클로즈업 → 줌 아웃 (2026-11-18 사용자: 옛 갱플랭크 로그인 화면처럼 고양이 얼굴부터 선이 그려지며 카메라가 뒤로 빠져 전체로)
         static readonly Vector2 Face = new((0.255f - 0.5f) * 1920f, (0.5f - 0.33f) * 1080f);   // key.png 속 고양이 얼굴 (ui_lobby_ink.py FACE와 같게)
@@ -83,6 +83,7 @@ namespace CatTang
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 0.5f;
+            UiScaleFollow.Add(scaler);   // 환경설정 UI 크기 (2026-11-26)
             root = (RectTransform)cgo.transform;
             if (FindFirstObjectByType<EventSystem>() == null)
                 new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
@@ -92,15 +93,16 @@ namespace CatTang
             BuildVignette();
 
             // 제목 타이포
-            title = UIKit.MakeRect("Title", root, new Vector2(0.5f, 1), new Vector2(TitleX, TitleY), new Vector2(700, 400));
+            title = UIKit.MakeRect("Title", root, new Vector2(0.5f, 1), new Vector2(TitleX, TitleY), new Vector2(578, 475));   // 폭 = 로고 비율(1124:925)에 맞춤 — 칸이 더 넓으면 preserveAspect가 그림을 왼쪽에 붙여 메뉴와 가운데가 어긋남 (2026-11-26 사용자)   // 2026-11-26 새 로고(시계 성문 + 고양이 실루엣)가 세로로 길어 높이 475 (위 끝 135 → 아래 끝 610, 메뉴 625)
             titleGroup = title.gameObject.AddComponent<CanvasGroup>();
             titleGroup.alpha = 0;
             if (L("title"))
             {
-                DropShadow(title, L("title"), new Vector2(14, -18), 0.7f, true);
+                DropShadow(title, L("title"), new Vector2(22, -8), 0.75f, true);   // 해(왼쪽 위 시계 뒤) 반대쪽으로 (2026-11-26 사용자: 로고 그림자를 화면에 맞춰)
                 var ti = UIKit.Stretch("Face", title).gameObject.AddComponent<Image>();
                 ti.sprite = L("title"); ti.preserveAspect = true; ti.raycastTarget = false;
-                ti.material = FxMat(0.45f, 0f, 2.6f);
+                ti.material = FxMat(0.45f, 0f, 8f);
+                if (ti.material) ti.material.SetFloat("_ShineDur", 4.5f);   // 광택은 4.5초에 걸쳐 천천히 훑고 3.5초 쉼 (2026-11-26 사용자: 너무 빠름)
             }
             else
             {
@@ -453,9 +455,7 @@ namespace CatTang
 
         void SettingsBody(RectTransform body)
         {
-            Slider(body, "전체 음량", 140, GameSettings.MasterVolume, v => GameSettings.MasterVolume = v);
-            Slider(body, "음악 음량", 50, GameSettings.MusicVolume, v => GameSettings.MusicVolume = v);
-            Toggle(body, "전체 화면", -40, GameSettings.Fullscreen, v => GameSettings.Fullscreen = v);
+            SettingsUI.Build(body);                                        // 4탭 소리 · 화면 · 게임 · 조작 (Esc 일시정지 창과 같이 씀)
         }
 
         /// <summary>게임 종료 확인 창 (2026-11-19 사용자: 로비 버튼 → '정말 종료하시겠습니까?' → 예 = 꺼짐). 패널 자리를 같이 써서 Esc · 바깥 클릭 = 닫기</summary>
@@ -493,40 +493,6 @@ namespace CatTang
 #endif
         }
 
-        void Slider(RectTransform body, string label, float y, float value, System.Action<float> set)
-        {
-            var lb = UIKit.Label("L", body, new Vector2(0.5f, 0.5f), new Vector2(-300, y), new Vector2(300, 50), 32, TextAnchor.MiddleLeft, true, UIKit.Cream);
-            lb.text = label;
-            var track = UIKit.MakeRect("Track", body, new Vector2(0.5f, 0.5f), new Vector2(160, y), new Vector2(520, 40));
-            var ti = track.gameObject.AddComponent<Image>();
-            if (L("slider_track")) { ti.sprite = L("slider_track"); ti.material = FxMat(0.4f); } else ti.color = new Color(0.2f, 0.12f, 0.1f);
-            var knob = UIKit.MakeRect("Knob", track, new Vector2(value, 0.5f), Vector2.zero, new Vector2(62, 62));
-            knob.pivot = new Vector2(0.5f, 0.5f);
-            var ki = knob.gameObject.AddComponent<Image>();
-            ki.raycastTarget = false;
-            if (L("slider_knob")) { ki.sprite = L("slider_knob"); ki.preserveAspect = true; ki.material = FxMat(0.3f); } else ki.color = UIKit.Gold;
-            var drag = track.gameObject.AddComponent<SliderDrag>();
-            drag.knob = knob; drag.onChange = set;
-        }
-
-        void Toggle(RectTransform body, string label, float y, bool value, System.Action<bool> set)
-        {
-            var lb = UIKit.Label("L", body, new Vector2(0.5f, 0.5f), new Vector2(-300, y), new Vector2(300, 50), 32, TextAnchor.MiddleLeft, true, UIKit.Cream);
-            lb.text = label;
-            bool on = value;
-            var rt = UIKit.MakeRect("Check", body, new Vector2(0.5f, 0.5f), new Vector2(-70, y), new Vector2(64, 64));
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            var img = rt.gameObject.AddComponent<Image>();
-            img.preserveAspect = true;
-            img.material = FxMat(0.4f);
-            void Draw() { var s = L(on ? "check_on" : "check_off"); if (s) img.sprite = s; else img.color = on ? UIKit.Gold : new Color(0.3f, 0.2f, 0.2f); }
-            Draw();
-            var b = rt.gameObject.AddComponent<Button>();
-            b.targetGraphic = img;
-            b.onClick.AddListener(() => { on = !on; set(on); Draw(); Sfx.Play("ui_click", 0.6f, 0.03f, 1); });
-            rt.gameObject.AddComponent<HoverScale>().amount = 1.12f;
-        }
-
         // ---------- 연출 ----------
         void Update()
         {
@@ -549,7 +515,7 @@ namespace CatTang
             {
                 float st = titleStamped ? Mathf.Clamp01((now - stampAt) / 0.28f) : 0;
                 titleGroup.alpha = titleStamped && !loading ? Mathf.Clamp01(st * 3f) : 0;
-                float shake = titleStamped ? Mathf.Exp(-(now - stampAt) * 9f) * 10f : 0;
+                float shake = titleStamped ? Mathf.Exp(-(now - stampAt) * 9f) * 10f * GameSettings.ShakeScale : 0;   // 환경설정 흔들림 세기 (2026-11-26)
                 if (shake > 0.2f) jitter = Random.insideUnitCircle * shake;
                 title.anchoredPosition = new Vector2(TitleX, TitleY + Mathf.Sin(now * 0.9f) * 4f) + jitter;
                 float tick = introDone ? Mathf.Exp(-(now % 1f) * 14f) * 0.018f : 0;
@@ -566,7 +532,7 @@ namespace CatTang
                 float ze = z < 1 ? 1 - Mathf.Pow(1 - Ease(z), 1.6f) : 1;
                 float sc = Mathf.Lerp(ZoomFrom, ZoomTo, ze) + (introDone ? Mathf.Sin(now * 0.12f) * 0.015f : 0);
                 art.localScale = Vector3.one * sc;
-                var focus = Vector2.Lerp(Face, Vector2.zero, ze);
+                var focus = Vector2.Lerp(Face / GameSettings.UiScale, Vector2.zero, ze);   // UI 크기로 캔버스가 줄면 얼굴 자리도 같이 (2026-11-26)
                 parallax = Vector2.Lerp(parallax, introDone ? -m * 22f : Vector2.zero, 4f * Time.unscaledDeltaTime);
                 art.anchoredPosition = -focus * sc + parallax + jitter * 0.5f;
             }

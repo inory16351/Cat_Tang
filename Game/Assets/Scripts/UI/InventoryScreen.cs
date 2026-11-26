@@ -43,7 +43,21 @@ namespace CatTang
             }
             statsTab = false;
             if (best) ShowTip(best); else ShowTip(null);
+            FeaturedRect = best ? (RectTransform)best.transform : null;
+            var fi = best ? ItemAt(best) : null;
+            FeaturedBullet = fi?.bullet;
+            FeaturedHour = best && best.place == SlotPlace.Cylinder ? best.index : 0;
         }
+        /// <summary>ShowFeaturedBullet이 고른 탄 · 그 칸 · 실린더 칸 시각(보관함이면 0) — 판정 시각 안내가 실제 탄으로 예를 듦</summary>
+        public RectTransform FeaturedRect { get; private set; }
+        public BulletDef FeaturedBullet { get; private set; }
+        public int FeaturedHour { get; private set; }
+        /// <summary>탄환 시계 h시 칸</summary>
+        public RectTransform SlotRect(int h) => slotFrames.TryGetValue(h, out var im) && im ? im.rectTransform : null;
+        /// <summary>'탄 강화' 창이 실린더 탄이면 그 칸 시각 (보관함 탄이면 0)</summary>
+        public int EnhHour => enhance && enhPlace == SlotPlace.Cylinder ? enhIndex : 0;
+        /// <summary>'탄 강화' 창 오른쪽 보관함에서 연산이 든 칸</summary>
+        public RectTransform[] EnhStoreOpRects => enhWidgets.Where(w => w && w.place == SlotPlace.EnhanceStore && ItemAt(w) is Item it && it.kind == ItemKind.Op).Select(w => (RectTransform)w.transform).ToArray();
 
         // ---- 연산 첫 등장 안내 (OpHints) ----
         /// <summary>얻은 연산 하나를 설명 칸에 띄우고 그 칸을 돌려줌: 보관함의 연산 우선, 없으면 연산이 끼워진 실린더 칸</summary>
@@ -61,7 +75,7 @@ namespace CatTang
         }
 
         /// <summary>안내용으로 '탄 강화' 창을 엶: 연산 칸이 있는 실린더 탄(연산이 이미 끼워졌으면 우선) → 보관함의 연산 칸 탄 → 1시 칸. 연 탄을 돌려줌</summary>
-        public BulletDef OpenEnhanceForTutorial()
+        public BulletDef OpenEnhanceForTutorial(System.Func<int, BulletDef, bool> prefer = null)
         {
             SlotPlace place = SlotPlace.Cylinder; int idx = 1, best = -1;
             for (int s = 1; s <= 12; s++)
@@ -69,6 +83,7 @@ namespace CatTang
                 var b = p.rev.slots[s].bullet;
                 if (b == null) continue;
                 int score = b.OpSlots > 0 ? 4 + (p.rev.slots[s].ops.Count > 0 ? 2 : 0) : 1;
+                if (prefer != null && prefer(s, b)) score += 10;                 // 직접 해 보기로 활성화시킬 수 있는 탄을 먼저
                 if (score > best) { best = score; place = SlotPlace.Cylinder; idx = s; }
             }
             for (int i = 0; i < Inventory.StorageSize; i++)
@@ -113,7 +128,7 @@ namespace CatTang
             var panel = UIKit.Panel("Panel", root, new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1760, 940), true);
             var P = panel.transform;
             UIKit.Banner("인벤토리", P, new Vector2(0.5f, 1), new Vector2(0, 10), 520);
-            UIKit.CloseButton(P, () => FindFirstObjectByType<GameUI>()?.CloseAll());
+            UIKit.CloseButton(P, () => { if (TutLocked) { DenyTut(null); return; } FindFirstObjectByType<GameUI>()?.CloseAll(); });
 
             // ---- 왼쪽: 탄환 시계 + 총 ----
             Section(P, "탄환 시계", new Vector2(-560, 340));
@@ -297,9 +312,26 @@ namespace CatTang
             if (rt) rt.anchoredPosition = home;
         }
 
+        // ---- 튜토리얼 '직접 해 보기' 잠금 (2026-11-26 사용자: 유도한 조작이 아니면 넘어가지 않게) ----
+        /// <summary>켜져 있으면 이 조건을 만족하는 끌어놓기만 받음 · 창 닫기 · 탄 강화 창 열고 닫기 막음</summary>
+        public System.Func<SlotWidget, SlotWidget, bool> TutAllow;
+        public bool TutLocked => TutAllow != null;
+        public const string TutDenyText = "노란 테두리로 표시된 곳에서 해 주세요";
+        /// <summary>유도한 조작이 아닐 때: 경고 문구 + 거절음 + 잡은 칸이 도리질</summary>
+        public void DenyTut(SlotWidget w)
+        {
+            if (Time.unscaledTime - denyAt < 0.4f) return;
+            denyAt = Time.unscaledTime;
+            if (warnCo != null) StopCoroutine(warnCo);
+            warnCo = StartCoroutine(Warn(TutDenyText));
+            Sfx.Play("ui_deny", 0.5f);
+            if (w && w.icon) StartCoroutine(Shake(w.icon.rectTransform));
+        }
+
         public void Move(SlotWidget src, SlotWidget dst)
         {
             if (!CanEdit) { DenyEdit(src); return; }
+            if (TutAllow != null && !TutAllow(src, dst)) { DenyTut(src); return; }
             var a = ItemAt(src);
             if (a == null) return;
 
@@ -371,6 +403,7 @@ namespace CatTang
 
         public void Click(SlotWidget w)
         {
+            if (TutLocked) { if (ItemAt(w) != null && w.place != SlotPlace.EnhanceOp && w.place != SlotPlace.EnhanceStore) DenyTut(w); return; }   // 직접 해 보기 중엔 다른 창을 열지 않음
             var it = ItemAt(w);
             if (it == null || it.kind != ItemKind.Bullet) return;
             if (w.place != SlotPlace.Cylinder && w.place != SlotPlace.Storage) return;
@@ -394,7 +427,7 @@ namespace CatTang
             var panel = UIKit.Panel("Panel", enhance.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1240, 760), true);
             var P = panel.transform;
             UIKit.Banner("탄 강화", P, new Vector2(0.5f, 1), new Vector2(0, 10), 460);
-            UIKit.CloseButton(P, CloseEnhance);
+            UIKit.CloseButton(P, () => { if (TutLocked) { DenyTut(null); return; } CloseEnhance(); });
             var b = EnhBullet;
             // 왼쪽: 탄 + 연산 칸 2개 (위 · 아래)
             var big = UIKit.Img("Bullet", P, "slot", new Vector2(0.5f, 0.5f), new Vector2(-400, 90), new Vector2(230, 230));

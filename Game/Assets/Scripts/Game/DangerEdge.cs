@@ -22,7 +22,7 @@ namespace CatTang
         float phase;
 
         /// <summary>폭발물에 붙임 (이미 있으면 그대로)</summary>
-        public static DangerEdge Add(GameObject go) => go.GetComponent<DangerEdge>() ?? go.AddComponent<DangerEdge>();
+        public static DangerEdge Add(GameObject go) => go.TryGetComponent<DangerEdge>(out var e) ? e : go.AddComponent<DangerEdge>();
 
         void Start()
         {
