@@ -155,7 +155,7 @@ namespace CatTang
             foreach (var (trait, tr, effect) in Tables.TraitTiers.Where(x => x.trait == hoverTrait).OrderBy(x => x.tier))
             {
                 string desc = Tables.Effects.TryGetValue(effect, out var e) ? e.Desc : "";
-                bool on = tier >= tr;
+                bool on = tier == tr;
                 lines.Add(on ? $"<color=#FFD54A><b>{tr - red}개</b>  {desc}</color>" : $"<color=#8C8696><b>{tr - red}개</b>  {desc}</color>");
             }
             int next = Tiers.Select(k => k - red).Where(k => k > n).DefaultIfEmpty(0).First();

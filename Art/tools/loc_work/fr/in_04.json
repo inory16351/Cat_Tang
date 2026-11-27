@@ -1,0 +1,2016 @@
+[
+ {
+  "id": 1000,
+  "ko": "<color=#{0}>{1} 총</color>  <size=15><color=#{2}>{3}</color></size>",
+  "en": "<color=#{0}>{1} Gun</color>  <size=15><color=#{2}>{3}</color></size>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1550"
+  ]
+ },
+ {
+  "id": 1001,
+  "ko": "<color={0}>조건: {1}{2}</color>",
+  "en": "<color={0}>Condition: {1}{2}</color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1579"
+  ]
+ },
+ {
+  "id": 1002,
+  "ko": "구매 {0} 조각",
+  "en": "Buy ({0} Shards)",
+  "src": [
+   "Scripts/UI/GameUI.cs:1582"
+  ]
+ },
+ {
+  "id": 1003,
+  "ko": "조건 미달성",
+  "en": "Not Met",
+  "src": [
+   "Scripts/UI/GameUI.cs:1582"
+  ]
+ },
+ {
+  "id": 1004,
+  "ko": "입는 중",
+  "en": "Wearing",
+  "src": [
+   "Scripts/UI/GameUI.cs:1584"
+  ]
+ },
+ {
+  "id": 1005,
+  "ko": "입기",
+  "en": "Wear",
+  "src": [
+   "Scripts/UI/GameUI.cs:1584"
+  ]
+ },
+ {
+  "id": 1006,
+  "ko": "준비",
+  "en": "Ready",
+  "src": [
+   "Scripts/UI/GameUI.cs:451"
+  ]
+ },
+ {
+  "id": 1007,
+  "ko": "공격력 +{0}",
+  "en": "ATK +{0}",
+  "src": [
+   "Scripts/UI/HudView.cs:226"
+  ]
+ },
+ {
+  "id": 1008,
+  "ko": "탄환 시계",
+  "en": "Bullet Clock",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:134",
+   "Scripts/UI/InventoryScreen.cs:738"
+  ]
+ },
+ {
+  "id": 1009,
+  "ko": "왼손 · 짝수",
+  "en": "Left · Even",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:154"
+  ]
+ },
+ {
+  "id": 1010,
+  "ko": "오른손 · 홀수",
+  "en": "Right · Odd",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:155"
+  ]
+ },
+ {
+  "id": 1011,
+  "ko": "보관함",
+  "en": "Storage",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:158"
+  ]
+ },
+ {
+  "id": 1012,
+  "ko": "끌어서 팔기",
+  "en": "Drag to Sell",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:171"
+  ]
+ },
+ {
+  "id": 1013,
+  "ko": "설명",
+  "en": "Info",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:180"
+  ]
+ },
+ {
+  "id": 1014,
+  "ko": "능력치",
+  "en": "Stats",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:181",
+   "Scripts/UI/InventoryScreen.cs:706"
+  ]
+ },
+ {
+  "id": 1015,
+  "ko": "전투 중에는 교체할 수 없습니다",
+  "en": "Can't swap during battle",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:284"
+  ]
+ },
+ {
+  "id": 1016,
+  "ko": "끌어놓기로 교체 · 탄을 클릭하면 탄 강화 창 · 활성화된 칸은 금빛",
+  "en": "Drag to swap · Click a bullet for Bullet Upgrade · Active slots glow gold",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:290"
+  ]
+ },
+ {
+  "id": 1017,
+  "ko": "노란 테두리로 표시된 곳에서 해 주세요",
+  "en": "Use the area outlined in yellow",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:319"
+  ]
+ },
+ {
+  "id": 1018,
+  "ko": "연산만 끼울 수 있음",
+  "en": "Only Operators fit here",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:352"
+  ]
+ },
+ {
+  "id": 1019,
+  "ko": "'{0}'의 연산 칸은 {1}개",
+  "en": "'{0}' has {1} Operator Slots",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:361"
+  ]
+ },
+ {
+  "id": 1020,
+  "ko": "빈 보관함 칸으로 끌어 놓기",
+  "en": "Drag to an empty Storage slot",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:369"
+  ]
+ },
+ {
+  "id": 1021,
+  "ko": "손에 든 총은 팔 수 없음",
+  "en": "Can't sell a gun in hand",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:379"
+  ]
+ },
+ {
+  "id": 1022,
+  "ko": "{0} 판매 +{1} 골드",
+  "en": "Sold {0} +{1} Gold",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:382"
+  ]
+ },
+ {
+  "id": 1023,
+  "ko": "연산 칸이 가득 참 — 탄을 클릭해 강화 창에서 바꾸기",
+  "en": "Operator Slots full — click the bullet to swap in the upgrade window",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:389"
+  ]
+ },
+ {
+  "id": 1024,
+  "ko": "총은 양손에만 든다 — 왼손 · 오른손 칸끼리 끌어 바꾸기",
+  "en": "Guns go in hands only — drag between the left and right hand slots to swap",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:396"
+  ]
+ },
+ {
+  "id": 1025,
+  "ko": "거기에는 놓을 수 없음",
+  "en": "Can't place that there",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:397"
+  ]
+ },
+ {
+  "id": 1026,
+  "ko": "손을 비울 수는 없음",
+  "en": "Can't leave a hand empty",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:398"
+  ]
+ },
+ {
+  "id": 1027,
+  "ko": "탄 강화",
+  "en": "Bullet Upgrade",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:429"
+  ]
+ },
+ {
+  "id": 1028,
+  "ko": "자리 조건: {0} · 연산 칸 {1}",
+  "en": "Hour condition: {0} · Operator Slots {1}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:439"
+  ]
+ },
+ {
+  "id": 1029,
+  "ko": "자리 조건: {0}",
+  "en": "Hour condition: {0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:439"
+  ]
+ },
+ {
+  "id": 1030,
+  "ko": "연산 칸 {0}",
+  "en": "Operator Slots {0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:439",
+   "Scripts/UI/InventoryScreen.cs:748"
+  ]
+ },
+ {
+  "id": 1031,
+  "ko": "위 (먼저 계산)",
+  "en": "Top (applied first)",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:447"
+  ]
+ },
+ {
+  "id": 1032,
+  "ko": "아래",
+  "en": "Bottom",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:447"
+  ]
+ },
+ {
+  "id": 1033,
+  "ko": "이 탄이 활성화되는 칸 (지금 연산 기준)",
+  "en": "Slots where this bullet activates (with current Operators)",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:453"
+  ]
+ },
+ {
+  "id": 1034,
+  "ko": "보관함의 연산",
+  "en": "Operators in Storage",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:457"
+  ]
+ },
+ {
+  "id": 1035,
+  "ko": "연산을 칸으로 끌어 끼우기 · 칸끼리 끌면 순서 바꾸기 · 칸의 연산을 빈 보관함으로 끌면 떼기",
+  "en": "Drag an Operator into a slot to fit it · drag between slots to reorder · drag one to an empty Storage slot to remove it",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:465"
+  ]
+ },
+ {
+  "id": 1036,
+  "ko": "{0}시 칸 · {1} = 판정 <b>{2}시</b>  {3}",
+  "en": "Slot {0} · {1} = Judgment Hour <b>{2}</b>  {3}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:689"
+  ]
+ },
+ {
+  "id": 1037,
+  "ko": "{0}시 칸",
+  "en": "Slot {0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:689"
+  ]
+ },
+ {
+  "id": 1038,
+  "ko": "{0} = 판정 <b>{1}시</b>  {2}",
+  "en": "{0} = Judgment Hour <b>{1}</b>  {2}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:689"
+  ]
+ },
+ {
+  "id": 1039,
+  "ko": "보관함의 탄 — 실린더에 놓으면 판정",
+  "en": "Bullet in Storage — place it in the cylinder to check Judgment Hour",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:691"
+  ]
+ },
+ {
+  "id": 1040,
+  "ko": "{0}  ×{1} · 사거리 {2}m",
+  "en": "{0}  ×{1} · Range {2}m",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:707"
+  ]
+ },
+ {
+  "id": 1041,
+  "ko": "<b>체력</b>  {0} / {1}",
+  "en": "<b>HP</b>  {0} / {1}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:710"
+  ]
+ },
+ {
+  "id": 1042,
+  "ko": "<b>공격력</b>  ×{0}",
+  "en": "<b>ATK</b>  ×{0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:711"
+  ]
+ },
+ {
+  "id": 1043,
+  "ko": "<b>장전</b>  {0}초   <b>대시</b>  {1}칸 · {2}초",
+  "en": "<b>Reload</b>  {0}s   <b>Dash</b>  {1} charges · {2}s",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:712"
+  ]
+ },
+ {
+  "id": 1044,
+  "ko": "<b>장전</b>  {0}초   <b>대시</b>  {1}칸",
+  "en": "<b>Reload</b>  {0}s   <b>Dash</b>  {1} charges",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:712"
+  ]
+ },
+ {
+  "id": 1045,
+  "ko": "<b>회피 확률</b>  {0}%   <b>열기</b>  1발 {1}칸",
+  "en": "<b>Dodge Chance</b>  {0}%   <b>Heat</b>  {1} bars per shot",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:713"
+  ]
+ },
+ {
+  "id": 1046,
+  "ko": "<b>오른손</b>  {0}",
+  "en": "<b>Right hand</b>  {0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:714"
+  ]
+ },
+ {
+  "id": 1047,
+  "ko": "<b>왼손</b>  {0}",
+  "en": "<b>Left hand</b>  {0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:715"
+  ]
+ },
+ {
+  "id": 1048,
+  "ko": "<b>활성화</b>  {0} / 12",
+  "en": "<b>Active</b>  {0} / 12",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:716"
+  ]
+ },
+ {
+  "id": 1049,
+  "ko": "활성화 없음 (기본 '탄환'은 늘 비활성화)",
+  "en": "None active (the basic 'Plain Round' is always Inactive)",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:721"
+  ]
+ },
+ {
+  "id": 1050,
+  "ko": "<b>{0} {1} · {2}단계</b>",
+  "en": "<b>{0} {1} · Tier {2}</b>",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:727"
+  ]
+ },
+ {
+  "id": 1051,
+  "ko": "{0} {1}  <size=16>(2개부터)</size>",
+  "en": "{0} {1}  <size=16>(needs 2)</size>",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:727"
+  ]
+ },
+ {
+  "id": 1052,
+  "ko": "팔기",
+  "en": "Sell",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:737"
+  ]
+ },
+ {
+  "id": 1053,
+  "ko": "탄 · 연산을 여기로 끌어 오면 절반 값에 판다. 총은 팔 수 없다 (주울 때 바꾸거나 버린다).",
+  "en": "Drag bullets · Operators here to sell them at half price. Guns can't be sold (swap or drop them when picking up a new one).",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:737"
+  ]
+ },
+ {
+  "id": 1054,
+  "ko": "오른손 총이 홀수 칸, 왼손 총이 짝수 칸을 쏜다. 발사 순서는 1 → 12.",
+  "en": "The right-hand gun fires odd slots, the left-hand gun even slots. Firing order is 1 → 12.",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:738"
+  ]
+ },
+ {
+  "id": 1055,
+  "ko": "탄은 판정 시각이 자리 조건에 맞으면 활성화되어 특성 · 고유 효과가 켜진다 (금빛 칸).",
+  "en": "When a bullet's Judgment Hour meets its hour condition, it activates and its Traits · Unique Effect turn on (gold slot).",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:738"
+  ]
+ },
+ {
+  "id": 1056,
+  "ko": "탄을 클릭하면 강화 창에서 연산을 끼워 판정 시각을 바꿀 수 있다.",
+  "en": "Click a bullet to fit Operators in the upgrade window and change its Judgment Hour.",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:738"
+  ]
+ },
+ {
+  "id": 1057,
+  "ko": "처음 든 '탄환'은 효과가 없는 기본 탄.",
+  "en": "The 'Plain Round' you start with is a basic bullet with no effect.",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:738"
+  ]
+ },
+ {
+  "id": 1058,
+  "ko": "판정 <b>{0}시</b> · {1}",
+  "en": "Judgment Hour <b>{0}</b> · {1}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:745"
+  ]
+ },
+ {
+  "id": 1059,
+  "ko": "판정 <b>{0}시</b>",
+  "en": "Judgment Hour <b>{0}</b>",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:745"
+  ]
+ },
+ {
+  "id": 1060,
+  "ko": "연산: {0}",
+  "en": "Operators: {0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:746"
+  ]
+ },
+ {
+  "id": 1061,
+  "ko": "{0} · 공격 {1} · 연산 칸 {2}",
+  "en": "{0} · ATK {1} · Operator Slots {2}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:748"
+  ]
+ },
+ {
+  "id": 1062,
+  "ko": "조건: <b>{0}</b>{1}{2}",
+  "en": "Condition: <b>{0}</b>{1}{2}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:748"
+  ]
+ },
+ {
+  "id": 1063,
+  "ko": "특성: {0}",
+  "en": "Traits: {0}",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:748"
+  ]
+ },
+ {
+  "id": 1064,
+  "ko": "<size=16>클릭: 탄 강화</size>",
+  "en": "<size=16>Click: Upgrade bullet</size>",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:748"
+  ]
+ },
+ {
+  "id": 1065,
+  "ko": "공격 ×{0} · 사거리 {1}m · 장전 {2}초",
+  "en": "ATK ×{0} · Range {1}m · Reload {2}s",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:753"
+  ]
+ },
+ {
+  "id": 1066,
+  "ko": "<size=16>왼손 · 오른손 칸끼리 끌면 좌우를 바꾼다</size>",
+  "en": "<size=16>Drag between left and right hand slots to swap sides</size>",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:753"
+  ]
+ },
+ {
+  "id": 1067,
+  "ko": "탄에 끼우면 판정 시각에 {0}.",
+  "en": "Fit into a bullet: Judgment Hour {0}.",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:756"
+  ]
+ },
+ {
+  "id": 1068,
+  "ko": "위 칸부터 계산한다. 12를 넘거나 0 이하가 되어도 값을 그대로 둔다.",
+  "en": "Applied from the top slot down. Values above 12 or at 0 and below are kept as is.",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:756"
+  ]
+ },
+ {
+  "id": 1069,
+  "ko": "비활성화",
+  "en": "Inactive",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:745"
+  ]
+ },
+ {
+  "id": 1070,
+  "ko": "효과 없음",
+  "en": "No effect",
+  "src": [
+   "Scripts/UI/InventoryScreen.cs:748",
+   "Scripts/UI/UIKit.cs:313"
+  ]
+ },
+ {
+  "id": 1071,
+  "ko": "키 칸을 누르고 새 키를 눌러요. 이미 쓰는 키면 서로 바뀌어요. (Esc 취소)",
+  "en": "Click a key slot, then press a new key. Keys already in use swap. (Esc to cancel)",
+  "src": [
+   "Scripts/UI/KeyBindsUI.cs:47"
+  ]
+ },
+ {
+  "id": 1072,
+  "ko": "기본값으로",
+  "en": "Reset to default",
+  "src": [
+   "Scripts/UI/KeyBindsUI.cs:49"
+  ]
+ },
+ {
+  "id": 1073,
+  "ko": "키를 누르세요",
+  "en": "Press a key",
+  "src": [
+   "Scripts/UI/KeyBindsUI.cs:103"
+  ]
+ },
+ {
+  "id": 1074,
+  "ko": "새로 시작",
+  "en": "New Game",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:117",
+   "Scripts/UI/LobbyScreen.cs:368"
+  ]
+ },
+ {
+  "id": 1075,
+  "ko": "이어하기",
+  "en": "Continue",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:118",
+   "Scripts/UI/LobbyScreen.cs:368"
+  ]
+ },
+ {
+  "id": 1076,
+  "ko": "설정",
+  "en": "Settings",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:119",
+   "Scripts/UI/LobbyScreen.cs:368"
+  ]
+ },
+ {
+  "id": 1077,
+  "ko": "게임 종료",
+  "en": "Quit Game",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:120"
+  ]
+ },
+ {
+  "id": 1078,
+  "ko": "뒤로",
+  "en": "Back",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:369"
+  ]
+ },
+ {
+  "id": 1079,
+  "ko": "기억 {0}",
+  "en": "Memory {0}",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:421"
+  ]
+ },
+ {
+  "id": 1080,
+  "ko": "시간의 조각 {0} · 판 {1}번",
+  "en": "Time Shards {0} · Runs {1}",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:425"
+  ]
+ },
+ {
+  "id": 1081,
+  "ko": "판 {0}번",
+  "en": "Runs {0}",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:425"
+  ]
+ },
+ {
+  "id": 1082,
+  "ko": "<color=#9C8F9C>비어 있는 기억</color>",
+  "en": "<color=#9C8F9C>Empty memory</color>",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:426"
+  ]
+ },
+ {
+  "id": 1083,
+  "ko": "여기서 시작",
+  "en": "Start here",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:429"
+  ]
+ },
+ {
+  "id": 1084,
+  "ko": "정말 덮어쓸까?",
+  "en": "Overwrite?",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:429"
+  ]
+ },
+ {
+  "id": 1085,
+  "ko": "덮어쓰기",
+  "en": "Overwrite",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:429"
+  ]
+ },
+ {
+  "id": 1086,
+  "ko": "지우기",
+  "en": "Delete",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:441"
+  ]
+ },
+ {
+  "id": 1087,
+  "ko": "한 번 더 = 지움",
+  "en": "Click again to delete",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:450"
+  ]
+ },
+ {
+  "id": 1088,
+  "ko": "정말 종료하시겠습니까?",
+  "en": "Are you sure you want to quit?",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:481"
+  ]
+ },
+ {
+  "id": 1089,
+  "ko": "11:59를 넘음",
+  "en": "Past 11:59",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:425"
+  ]
+ },
+ {
+  "id": 1090,
+  "ko": "아직 1장 앞",
+  "en": "Before Chapter 1",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:425"
+  ]
+ },
+ {
+  "id": 1091,
+  "ko": "{0}장까지 넘음",
+  "en": "Through Chapter {0}",
+  "src": [
+   "Scripts/UI/LobbyScreen.cs:425"
+  ]
+ },
+ {
+  "id": 1092,
+  "ko": "{0} · 닫기",
+  "en": "{0} · Close",
+  "src": [
+   "Scripts/UI/MapView.cs:61",
+   "Scripts/UI/MapView.cs:106"
+  ]
+ },
+ {
+  "id": 1093,
+  "ko": "닫기",
+  "en": "Close",
+  "src": [
+   "Scripts/UI/MapView.cs:61",
+   "Scripts/UI/MapView.cs:106"
+  ]
+ },
+ {
+  "id": 1094,
+  "ko": "{0}장 · 보스",
+  "en": "Chapter {0} · Boss",
+  "src": [
+   "Scripts/UI/MapView.cs:177"
+  ]
+ },
+ {
+  "id": 1095,
+  "ko": "{0}장 · 스테이지 {1}/{2}",
+  "en": "Chapter {0} · Stage {1}/{2}",
+  "src": [
+   "Scripts/UI/MapView.cs:177"
+  ]
+ },
+ {
+  "id": 1096,
+  "ko": "전체 음량",
+  "en": "Master Volume",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:113"
+  ]
+ },
+ {
+  "id": 1097,
+  "ko": "음악 음량",
+  "en": "Music Volume",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:114"
+  ]
+ },
+ {
+  "id": 1098,
+  "ko": "전체 화면",
+  "en": "Fullscreen",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:120"
+  ]
+ },
+ {
+  "id": 1099,
+  "ko": "언어",
+  "en": "Language",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:137"
+  ]
+ },
+ {
+  "id": 1100,
+  "ko": "E · 클릭  계속",
+  "en": "E · Click  Continue",
+  "src": [
+   "Scripts/UI/StoryOverlay.cs:57"
+  ]
+ },
+ {
+  "id": 1101,
+  "ko": "판정 시각",
+  "en": "Judgment Hour",
+  "src": [
+   "Scripts/UI/Terms.cs:23"
+  ]
+ },
+ {
+  "id": 1102,
+  "ko": "탄이 놓인 시각에 연산을 적용한 값. 이 값이 자리 조건에 맞으면 탄이 활성화된다.",
+  "en": "The bullet's slot hour with its Operators applied. If it meets the hour condition, the bullet activates.",
+  "src": [
+   "Scripts/UI/Terms.cs:23"
+  ]
+ },
+ {
+  "id": 1103,
+  "ko": "12를 넘거나 0 이하가 되어도 그대로 둔다 (-6시 · 14시 등).",
+  "en": "Values above 12 or at 0 and below are kept as is (-6 o'clock · 14 o'clock, etc.).",
+  "src": [
+   "Scripts/UI/Terms.cs:23"
+  ]
+ },
+ {
+  "id": 1104,
+  "ko": "{0}   <size=15>{1}   <color=#F3EDE2>활성화 {2}</color></size>",
+  "en": "{0}   <size=15>{1}   <color=#F3EDE2>Active {2}</color></size>",
+  "src": [
+   "Scripts/UI/Terms.cs:68"
+  ]
+ },
+ {
+  "id": 1105,
+  "ko": "<size=13><color={0}>다음 단계까지 {1}개</color></size>",
+  "en": "<size=13><color={0}>{1} more to next Tier</color></size>",
+  "src": [
+   "Scripts/UI/Terms.cs:76"
+  ]
+ },
+ {
+  "id": 1106,
+  "ko": "<size=13><color={0}>최고 단계</color></size>",
+  "en": "<size=13><color={0}>Max Tier</color></size>",
+  "src": [
+   "Scripts/UI/Terms.cs:76"
+  ]
+ },
+ {
+  "id": 1107,
+  "ko": "특성  <size=16><color=#C9C2D4>활성 {0} / {1}</color></size>",
+  "en": "Traits  <size=16><color=#C9C2D4>Active {0} / {1}</color></size>",
+  "src": [
+   "Scripts/UI/TraitHud.cs:77"
+  ]
+ },
+ {
+  "id": 1108,
+  "ko": "<b>{0}</b>   <size=18><color=#F3EDE2>{1}개 · {2}</color></size>",
+  "en": "<b>{0}</b>   <size=18><color=#F3EDE2>{1} · {2}</color></size>",
+  "src": [
+   "Scripts/UI/TraitHud.cs:152"
+  ]
+ },
+ {
+  "id": 1109,
+  "ko": "<color=#FFD54A><b>{0}개</b>  {1}</color>",
+  "en": "<color=#FFD54A><b>{0}</b>  {1}</color>",
+  "src": [
+   "Scripts/UI/TraitHud.cs:159"
+  ]
+ },
+ {
+  "id": 1110,
+  "ko": "<color=#8C8696><b>{0}개</b>  {1}</color>",
+  "en": "<color=#8C8696><b>{0}</b>  {1}</color>",
+  "src": [
+   "Scripts/UI/TraitHud.cs:159"
+  ]
+ },
+ {
+  "id": 1111,
+  "ko": "<size=17>다음 단계까지 {0}개</size>",
+  "en": "<size=17>{0} more to next Tier</size>",
+  "src": [
+   "Scripts/UI/TraitHud.cs:162"
+  ]
+ },
+ {
+  "id": 1112,
+  "ko": "<size=17><color=#FFD54A>최고 단계</color></size>",
+  "en": "<size=17><color=#FFD54A>Max Tier</color></size>",
+  "src": [
+   "Scripts/UI/TraitHud.cs:163"
+  ]
+ },
+ {
+  "id": 1113,
+  "ko": "{0}단계 활성",
+  "en": "Tier {0} Active",
+  "src": [
+   "Scripts/UI/TraitHud.cs:152"
+  ]
+ },
+ {
+  "id": 1114,
+  "ko": "비활성",
+  "en": "Inactive",
+  "src": [
+   "Scripts/UI/TraitHud.cs:152"
+  ]
+ },
+ {
+  "id": 1115,
+  "ko": "<color=#{0}>{1} 탄</color>  ·  공격 <b>{2}</b>",
+  "en": "<color=#{0}>{1} Bullet</color>  ·  ATK <b>{2}</b>",
+  "src": [
+   "Scripts/UI/UIKit.cs:199"
+  ]
+ },
+ {
+  "id": 1116,
+  "ko": "<color=#{0}>{1} 탄</color>",
+  "en": "<color=#{0}>{1} Bullet</color>",
+  "src": [
+   "Scripts/UI/UIKit.cs:199"
+  ]
+ },
+ {
+  "id": 1117,
+  "ko": "공격 <b>{0}</b>",
+  "en": "ATK <b>{0}</b>",
+  "src": [
+   "Scripts/UI/UIKit.cs:199"
+  ]
+ },
+ {
+  "id": 1118,
+  "ko": "<color={0}>활성화 조건</color>  {1}",
+  "en": "<color={0}>Activation condition</color>  {1}",
+  "src": [
+   "Scripts/UI/UIKit.cs:200"
+  ]
+ },
+ {
+  "id": 1119,
+  "ko": "<color={0}>연산 슬롯</color>  {1}개{2}",
+  "en": "<color={0}>Operator Slots</color>  {1}{2}",
+  "src": [
+   "Scripts/UI/UIKit.cs:201"
+  ]
+ },
+ {
+  "id": 1120,
+  "ko": "(끼움: {0})",
+  "en": "(fitted: {0})",
+  "src": [
+   "Scripts/UI/UIKit.cs:201"
+  ]
+ },
+ {
+  "id": 1121,
+  "ko": "<color=#FFD54A>고유 효과</color>  <size=16><color={0}>(활성화된 이 탄을 쏠 때)</color></size>",
+  "en": "<color=#FFD54A>Unique Effect</color>  <size=16><color={0}>(when firing this bullet while Active)</color></size>",
+  "src": [
+   "Scripts/UI/UIKit.cs:209"
+  ]
+ },
+ {
+  "id": 1122,
+  "ko": "<color=#{0}>{1} 총</color>  ·  공격 ×<b>{2}</b>",
+  "en": "<color=#{0}>{1} Gun</color>  ·  ATK ×<b>{2}</b>",
+  "src": [
+   "Scripts/UI/UIKit.cs:216"
+  ]
+ },
+ {
+  "id": 1123,
+  "ko": "<color=#{0}>{1} 총</color>",
+  "en": "<color=#{0}>{1} Gun</color>",
+  "src": [
+   "Scripts/UI/UIKit.cs:216"
+  ]
+ },
+ {
+  "id": 1124,
+  "ko": "공격 ×<b>{0}</b>",
+  "en": "ATK ×<b>{0}</b>",
+  "src": [
+   "Scripts/UI/UIKit.cs:216"
+  ]
+ },
+ {
+  "id": 1125,
+  "ko": "<color={0}>사거리</color> {1}m   <color={2}>장전</color> {3}초",
+  "en": "<color={0}>Range</color> {1}m   <color={2}>Reload</color> {3}s",
+  "src": [
+   "Scripts/UI/UIKit.cs:217"
+  ]
+ },
+ {
+  "id": 1126,
+  "ko": "치명타 확률 +{0}%",
+  "en": "Crit Chance +{0}%",
+  "src": [
+   "Scripts/UI/UIKit.cs:219"
+  ]
+ },
+ {
+  "id": 1127,
+  "ko": "치명타 피해 +{0}%",
+  "en": "Crit Damage +{0}%",
+  "src": [
+   "Scripts/UI/UIKit.cs:220"
+  ]
+ },
+ {
+  "id": 1128,
+  "ko": "<color=#FFD54A>오른손 (홀수 칸)</color>  {0}",
+  "en": "<color=#FFD54A>Right hand (odd slots)</color>  {0}",
+  "src": [
+   "Scripts/UI/UIKit.cs:223"
+  ]
+ },
+ {
+  "id": 1129,
+  "ko": "<color=#7FCBFF>왼손 (짝수 칸)</color>  {0}",
+  "en": "<color=#7FCBFF>Left hand (even slots)</color>  {0}",
+  "src": [
+   "Scripts/UI/UIKit.cs:224"
+  ]
+ },
+ {
+  "id": 1130,
+  "ko": "<color=#FFD54A>{0} · {1}</color>  <size=16><color={2}>재사용 {3}초</color></size>",
+  "en": "<color=#FFD54A>{0} · {1}</color>  <size=16><color={2}>Cooldown {3}s</color></size>",
+  "src": [
+   "Scripts/UI/UIKit.cs:227"
+  ]
+ },
+ {
+  "id": 1131,
+  "ko": "<size=16><color={0}>지금  오른손 {1}  ·  왼손 {2}</color></size>",
+  "en": "<size=16><color={0}>Equipped  Right {1}  ·  Left {2}</color></size>",
+  "src": [
+   "Scripts/UI/UIKit.cs:232"
+  ]
+ },
+ {
+  "id": 1132,
+  "ko": "탄의 연산 슬롯에 끼워 판정 시각을 바꿈",
+  "en": "Fit into a bullet's Operator Slot to change its Judgment Hour",
+  "src": [
+   "Scripts/UI/UIKit.cs:241"
+  ]
+ },
+ {
+  "id": 1133,
+  "ko": "<color={0}>슬롯 순서대로 적용 · 발사 순서는 그대로</color>",
+  "en": "<color={0}>Applied in slot order · firing order unchanged</color>",
+  "src": [
+   "Scripts/UI/UIKit.cs:241"
+  ]
+ },
+ {
+  "id": 1134,
+  "ko": "일반",
+  "en": "Common",
+  "src": [
+   "Scripts/UI/UIKit.cs:305",
+   "Data/Tables/Enum.csv:2 (Desc)"
+  ]
+ },
+ {
+  "id": 1135,
+  "ko": "희귀",
+  "en": "Rare",
+  "src": [
+   "Scripts/UI/UIKit.cs:305",
+   "Data/Tables/Enum.csv:3 (Desc)"
+  ]
+ },
+ {
+  "id": 1136,
+  "ko": "영웅",
+  "en": "Epic",
+  "src": [
+   "Scripts/UI/UIKit.cs:305",
+   "Data/Tables/Enum.csv:4 (Desc)"
+  ]
+ },
+ {
+  "id": 1137,
+  "ko": "전설",
+  "en": "Legendary",
+  "src": [
+   "Scripts/UI/UIKit.cs:305",
+   "Data/Tables/Enum.csv:5 (Desc)"
+  ]
+ },
+ {
+  "id": 1138,
+  "ko": "<b>오른손 (홀수 칸)</b>  {0}",
+  "en": "<b>Right hand (odd slots)</b>  {0}",
+  "src": [
+   "Scripts/UI/UIKit.cs:320"
+  ]
+ },
+ {
+  "id": 1139,
+  "ko": "<b>왼손 (짝수 칸)</b>  {0}",
+  "en": "<b>Left hand (even slots)</b>  {0}",
+  "src": [
+   "Scripts/UI/UIKit.cs:321"
+  ]
+ },
+ {
+  "id": 1140,
+  "ko": "홀수 시각",
+  "en": "Odd hour",
+  "src": [
+   "Scripts/UI/UIKit.cs:329"
+  ]
+ },
+ {
+  "id": 1141,
+  "ko": "짝수 시각",
+  "en": "Even hour",
+  "src": [
+   "Scripts/UI/UIKit.cs:329"
+  ]
+ },
+ {
+  "id": 1142,
+  "ko": "{0}시 초과",
+  "en": "Above {0}",
+  "src": [
+   "Scripts/UI/UIKit.cs:329"
+  ]
+ },
+ {
+  "id": 1143,
+  "ko": "{0}시 미만",
+  "en": "Below {0}",
+  "src": [
+   "Scripts/UI/UIKit.cs:330"
+  ]
+ },
+ {
+  "id": 1144,
+  "ko": "{0}의 배수",
+  "en": "Multiple of {0}",
+  "src": [
+   "Scripts/UI/UIKit.cs:330"
+  ]
+ },
+ {
+  "id": 1145,
+  "ko": "음수 시각",
+  "en": "Negative hour",
+  "src": [
+   "Scripts/UI/UIKit.cs:330"
+  ]
+ },
+ {
+  "id": 1146,
+  "ko": "0시",
+  "en": "Hour 0",
+  "src": [
+   "Scripts/UI/UIKit.cs:331",
+   "Data/Tables/Enum.csv:11 (Desc)"
+  ]
+ },
+ {
+  "id": 1147,
+  "ko": "소수 시각",
+  "en": "Prime hour",
+  "src": [
+   "Scripts/UI/UIKit.cs:331"
+  ]
+ },
+ {
+  "id": 1148,
+  "ko": "없음 (항상 활성)",
+  "en": "None (always Active)",
+  "src": [
+   "Scripts/UI/UIKit.cs:200"
+  ]
+ },
+ {
+  "id": 1149,
+  "ko": "마을",
+  "en": "Village",
+  "src": [
+   "Scripts/UI/VillageMap.cs:55"
+  ]
+ },
+ {
+  "id": 1150,
+  "ko": "<size=18>다음: {0}장</size>",
+  "en": "<size=18>Next: Chapter {0}</size>",
+  "src": [
+   "Scripts/UI/VillageMap.cs:163"
+  ]
+ },
+ {
+  "id": 1151,
+  "ko": "탄환",
+  "en": "Plain Round",
+  "src": [
+   "Data/Tables/Bullet.csv:2 (Name)"
+  ]
+ },
+ {
+  "id": 1152,
+  "ko": "아무 효과 없는 기본 탄",
+  "en": "A basic bullet with no effect",
+  "src": [
+   "Data/Tables/Bullet.csv:2 (Desc)"
+  ]
+ },
+ {
+  "id": 1153,
+  "ko": "티 타임",
+  "en": "Tea Time",
+  "src": [
+   "Data/Tables/Bullet.csv:3 (Name)"
+  ]
+ },
+ {
+  "id": 1154,
+  "ko": "오후의 찻잔에서 피어오른 한 발",
+  "en": "A shot risen from an afternoon teacup",
+  "src": [
+   "Data/Tables/Bullet.csv:3 (Desc)"
+  ]
+ },
+ {
+  "id": 1155,
+  "ko": "쌍둥이 초침",
+  "en": "Twin Second Hands",
+  "src": [
+   "Data/Tables/Bullet.csv:4 (Name)"
+  ]
+ },
+ {
+  "id": 1156,
+  "ko": "초침 두 개가 나란히 달린 탄",
+  "en": "A bullet with two second hands side by side",
+  "src": [
+   "Data/Tables/Bullet.csv:4 (Desc)"
+  ]
+ },
+ {
+  "id": 1157,
+  "ko": "모래바람",
+  "en": "Sandwind",
+  "src": [
+   "Data/Tables/Bullet.csv:5 (Name)"
+  ]
+ },
+ {
+  "id": 1158,
+  "ko": "쏠 때마다 모래가 흩날린다",
+  "en": "Sand scatters with every shot",
+  "src": [
+   "Data/Tables/Bullet.csv:5 (Desc)"
+  ]
+ },
+ {
+  "id": 1159,
+  "ko": "짙어진 그림자",
+  "en": "Deepened Shadow",
+  "src": [
+   "Data/Tables/Bullet.csv:6 (Name)"
+  ]
+ },
+ {
+  "id": 1160,
+  "ko": "저물수록 짙어지는 그림자",
+  "en": "A shadow that deepens as the day fades",
+  "src": [
+   "Data/Tables/Bullet.csv:6 (Desc)"
+  ]
+ },
+ {
+  "id": 1161,
+  "ko": "추억미화",
+  "en": "Rose-Tinted Memory",
+  "src": [
+   "Data/Tables/Bullet.csv:7 (Name)"
+  ]
+ },
+ {
+  "id": 1162,
+  "ko": "아름답게 덧칠된 기억",
+  "en": "A memory painted over in prettier colors",
+  "src": [
+   "Data/Tables/Bullet.csv:7 (Desc)"
+  ]
+ },
+ {
+  "id": 1163,
+  "ko": "부서진 맹세",
+  "en": "Broken Vow",
+  "src": [
+   "Data/Tables/Bullet.csv:8 (Name)"
+  ]
+ },
+ {
+  "id": 1164,
+  "ko": "지키지 못한 맹세의 조각",
+  "en": "A shard of a vow never kept",
+  "src": [
+   "Data/Tables/Bullet.csv:8 (Desc)"
+  ]
+ },
+ {
+  "id": 1165,
+  "ko": "꺼져 가는 등불",
+  "en": "Fading Lamp",
+  "src": [
+   "Data/Tables/Bullet.csv:9 (Name)"
+  ]
+ },
+ {
+  "id": 1166,
+  "ko": "꺼져 가는 등불의 마지막 빛",
+  "en": "The last light of a fading lamp",
+  "src": [
+   "Data/Tables/Bullet.csv:9 (Desc)"
+  ]
+ },
+ {
+  "id": 1167,
+  "ko": "받는 이를 비워 둔 편지",
+  "en": "A letter with the recipient left blank",
+  "src": [
+   "Data/Tables/Bullet.csv:10 (Desc)"
+  ]
+ },
+ {
+  "id": 1168,
+  "ko": "노스탤지어",
+  "en": "Nostalgia",
+  "src": [
+   "Data/Tables/Bullet.csv:11 (Name)"
+  ]
+ },
+ {
+  "id": 1169,
+  "ko": "돌아갈 수 없는 곳을 향한 그리움",
+  "en": "Longing for a place you can't return to",
+  "src": [
+   "Data/Tables/Bullet.csv:11 (Desc)"
+  ]
+ },
+ {
+  "id": 1170,
+  "ko": "녹슨 태엽",
+  "en": "Rusty Mainspring",
+  "src": [
+   "Data/Tables/Bullet.csv:12 (Name)"
+  ]
+ },
+ {
+  "id": 1171,
+  "ko": "태엽 열쇠가 꽂힌 녹슨 탄",
+  "en": "A rusty bullet with a winding key stuck in it",
+  "src": [
+   "Data/Tables/Bullet.csv:12 (Desc)"
+  ]
+ },
+ {
+  "id": 1172,
+  "ko": "드라이드 플라워",
+  "en": "Dried Flower",
+  "src": [
+   "Data/Tables/Bullet.csv:13 (Name)"
+  ]
+ },
+ {
+  "id": 1173,
+  "ko": "말려 둔 꽃, 멈춘 계절",
+  "en": "A dried flower, a stopped season",
+  "src": [
+   "Data/Tables/Bullet.csv:13 (Desc)"
+  ]
+ },
+ {
+  "id": 1174,
+  "ko": "모래시계",
+  "en": "Hourglass",
+  "src": [
+   "Data/Tables/Bullet.csv:14 (Name)"
+  ]
+ },
+ {
+  "id": 1175,
+  "ko": "작은 모래시계가 든 투명한 탄",
+  "en": "A clear bullet holding a tiny hourglass",
+  "src": [
+   "Data/Tables/Bullet.csv:14 (Desc)"
+  ]
+ },
+ {
+  "id": 1176,
+  "ko": "시계태엽 오르골",
+  "en": "Clockwork Music Box",
+  "src": [
+   "Data/Tables/Bullet.csv:15 (Name)"
+  ]
+ },
+ {
+  "id": 1177,
+  "ko": "쏘면 오르골 소리가 난다",
+  "en": "Plays a music box tune when fired",
+  "src": [
+   "Data/Tables/Bullet.csv:15 (Desc)"
+  ]
+ },
+ {
+  "id": 1178,
+  "ko": "얼어붙은 시간",
+  "en": "Frozen Time",
+  "src": [
+   "Data/Tables/Bullet.csv:16 (Name)"
+  ]
+ },
+ {
+  "id": 1179,
+  "ko": "서리 낀 시계판이 박힌 탄",
+  "en": "A bullet set with a frosted clock face",
+  "src": [
+   "Data/Tables/Bullet.csv:16 (Desc)"
+  ]
+ },
+ {
+  "id": 1180,
+  "ko": "평행세계",
+  "en": "Parallel World",
+  "src": [
+   "Data/Tables/Bullet.csv:17 (Name)"
+  ]
+ },
+ {
+  "id": 1181,
+  "ko": "거울 너머의 다른 어제",
+  "en": "Another yesterday beyond the mirror",
+  "src": [
+   "Data/Tables/Bullet.csv:17 (Desc)"
+  ]
+ },
+ {
+  "id": 1182,
+  "ko": "종탑의 메아리",
+  "en": "Echo of the Bell Tower",
+  "src": [
+   "Data/Tables/Bullet.csv:18 (Name)"
+  ]
+ },
+ {
+  "id": 1183,
+  "ko": "작은 종이 매달린 탄",
+  "en": "A bullet with a little bell hanging from it",
+  "src": [
+   "Data/Tables/Bullet.csv:18 (Desc)"
+  ]
+ },
+ {
+  "id": 1184,
+  "ko": "새벽여명",
+  "en": "Daybreak",
+  "src": [
+   "Data/Tables/Bullet.csv:19 (Name)"
+  ]
+ },
+ {
+  "id": 1185,
+  "ko": "새벽빛처럼 적을 꿰뚫고 지나간다",
+  "en": "Passes through enemies like the light of dawn",
+  "src": [
+   "Data/Tables/Bullet.csv:19 (Desc)"
+  ]
+ },
+ {
+  "id": 1186,
+  "ko": "개기일식",
+  "en": "Total Eclipse",
+  "src": [
+   "Data/Tables/Bullet.csv:20 (Name)"
+  ]
+ },
+ {
+  "id": 1187,
+  "ko": "해가 사라지는 순간에만 피어나는 불꽃",
+  "en": "A flame that blooms only as the sun vanishes",
+  "src": [
+   "Data/Tables/Bullet.csv:20 (Desc)"
+  ]
+ },
+ {
+  "id": 1188,
+  "ko": "빛바랜 사진",
+  "en": "Faded Photograph",
+  "src": [
+   "Data/Tables/Bullet.csv:21 (Name)"
+  ]
+ },
+ {
+  "id": 1189,
+  "ko": "흐릿한 사진 한 장이 감긴 탄",
+  "en": "A bullet wrapped in a single blurry photo",
+  "src": [
+   "Data/Tables/Bullet.csv:21 (Desc)"
+  ]
+ },
+ {
+  "id": 1190,
+  "ko": "고독",
+  "en": "Solitude",
+  "src": [
+   "Data/Tables/Bullet.csv:22 (Name)"
+  ]
+ },
+ {
+  "id": 1191,
+  "ko": "홀로 멈춘 초침",
+  "en": "A second hand stopped all alone",
+  "src": [
+   "Data/Tables/Bullet.csv:22 (Desc)"
+  ]
+ },
+ {
+  "id": 1192,
+  "ko": "아지랑이",
+  "en": "Heat Haze",
+  "src": [
+   "Data/Tables/Bullet.csv:23 (Name)"
+  ]
+ },
+ {
+  "id": 1193,
+  "ko": "쏘면 아지랑이처럼 흩어진다",
+  "en": "Scatters like heat haze when fired",
+  "src": [
+   "Data/Tables/Bullet.csv:23 (Desc)"
+  ]
+ },
+ {
+  "id": 1194,
+  "ko": "황혼",
+  "en": "Twilight",
+  "src": [
+   "Data/Tables/Bullet.csv:24 (Name)"
+  ]
+ },
+ {
+  "id": 1195,
+  "ko": "저무는 해의 마지막 빛",
+  "en": "The last light of the setting sun",
+  "src": [
+   "Data/Tables/Bullet.csv:24 (Desc)"
+  ]
+ },
+ {
+  "id": 1196,
+  "ko": "천문박명",
+  "en": "Astronomical Twilight",
+  "src": [
+   "Data/Tables/Bullet.csv:25 (Name)"
+  ]
+ },
+ {
+  "id": 1197,
+  "ko": "밤과 낮 사이, 별이 사라지는 시간",
+  "en": "Between night and day, the hour the stars fade",
+  "src": [
+   "Data/Tables/Bullet.csv:25 (Desc)"
+  ]
+ },
+ {
+  "id": 1198,
+  "ko": "여우비",
+  "en": "Sunshower",
+  "src": [
+   "Data/Tables/Bullet.csv:26 (Name)"
+  ]
+ },
+ {
+  "id": 1199,
+  "ko": "맑은 하늘의 비, 지나간 자리에 궤적이 남는다",
+  "en": "Rain from a clear sky; it leaves a trail where it passes",
+  "src": [
+   "Data/Tables/Bullet.csv:26 (Desc)"
+  ]
+ },
+ {
+  "id": 1200,
+  "ko": "타임 루프 엔딩",
+  "en": "Time Loop Ending",
+  "src": [
+   "Data/Tables/Bullet.csv:27 (Name)"
+  ]
+ },
+ {
+  "id": 1201,
+  "ko": "같은 순간을 몇 번이고 되풀이한다",
+  "en": "Repeats the same moment again and again",
+  "src": [
+   "Data/Tables/Bullet.csv:27 (Desc)"
+  ]
+ },
+ {
+  "id": 1202,
+  "ko": "세월",
+  "en": "Passing Years",
+  "src": [
+   "Data/Tables/Bullet.csv:28 (Name)"
+  ]
+ },
+ {
+  "id": 1203,
+  "ko": "꿰뚫을수록 깊어지는 세월",
+  "en": "Years that run deeper with every pierce",
+  "src": [
+   "Data/Tables/Bullet.csv:28 (Desc)"
+  ]
+ },
+ {
+  "id": 1204,
+  "ko": "오딘의 눈동자",
+  "en": "Eye of Odin",
+  "src": [
+   "Data/Tables/Bullet.csv:29 (Name)"
+  ]
+ },
+ {
+  "id": 1205,
+  "ko": "옆 칸의 시간을 꿰뚫어 본다",
+  "en": "Sees right through the time of the adjacent slots",
+  "src": [
+   "Data/Tables/Bullet.csv:29 (Desc)"
+  ]
+ },
+ {
+  "id": 1206,
+  "ko": "건망증",
+  "en": "Forgetfulness",
+  "src": [
+   "Data/Tables/Bullet.csv:30 (Name)"
+  ]
+ },
+ {
+  "id": 1207,
+  "ko": "쏜 것을 잊고 다시 장전한다",
+  "en": "Forgets it was fired and reloads again",
+  "src": [
+   "Data/Tables/Bullet.csv:30 (Desc)"
+  ]
+ },
+ {
+  "id": 1208,
+  "ko": "야행열차",
+  "en": "Night Train",
+  "src": [
+   "Data/Tables/Bullet.csv:31 (Name)"
+  ]
+ },
+ {
+  "id": 1209,
+  "ko": "밤을 달리는 열차의 늦은 기적 소리",
+  "en": "The late whistle of a train running through the night",
+  "src": [
+   "Data/Tables/Bullet.csv:31 (Desc)"
+  ]
+ },
+ {
+  "id": 1210,
+  "ko": "타임 패러독스",
+  "en": "Time Paradox",
+  "src": [
+   "Data/Tables/Bullet.csv:32 (Name)"
+  ]
+ },
+ {
+  "id": 1211,
+  "ko": "어긋난 시간이 서로를 붙잡는다",
+  "en": "Misaligned times hold on to each other",
+  "src": [
+   "Data/Tables/Bullet.csv:32 (Desc)"
+  ]
+ },
+ {
+  "id": 1212,
+  "ko": "열한 시 오십구 분",
+  "en": "Eleven Fifty-Nine",
+  "src": [
+   "Data/Tables/Bullet.csv:33 (Name)"
+  ]
+ },
+ {
+  "id": 1213,
+  "ko": "끝 직전에 멈춘 시간",
+  "en": "Time stopped just before the end",
+  "src": [
+   "Data/Tables/Bullet.csv:33 (Desc)"
+  ]
+ },
+ {
+  "id": 1214,
+  "ko": "그해 여름",
+  "en": "That Summer",
+  "src": [
+   "Data/Tables/Bullet.csv:34 (Name)"
+  ]
+ },
+ {
+  "id": 1215,
+  "ko": "장전할 때 시계의 모든 방향으로 여름이 쏟아진다",
+  "en": "On reload, summer pours out in every direction of the clock",
+  "src": [
+   "Data/Tables/Bullet.csv:34 (Desc)"
+  ]
+ },
+ {
+  "id": 1216,
+  "ko": "여름의 지속",
+  "en": "Lingering Summer",
+  "src": [
+   "Data/Tables/Bullet.csv:35 (Name)"
+  ]
+ },
+ {
+  "id": 1217,
+  "ko": "녹아 흘러내리는 시계의 여름",
+  "en": "The summer of a melting, dripping clock",
+  "src": [
+   "Data/Tables/Bullet.csv:35 (Desc)"
+  ]
+ },
+ {
+  "id": 1218,
+  "ko": "마지막 페이지",
+  "en": "The Last Page",
+  "src": [
+   "Data/Tables/Bullet.csv:36 (Name)"
+  ]
+ },
+ {
+  "id": 1219,
+  "ko": "이야기의 마지막 장",
+  "en": "The final chapter of the story",
+  "src": [
+   "Data/Tables/Bullet.csv:36 (Desc)"
+  ]
+ },
+ {
+  "id": 1220,
+  "ko": "변혁의 총탄",
+  "en": "Bullet of Upheaval",
+  "src": [
+   "Data/Tables/Bullet.csv:37 (Name)"
+  ]
+ },
+ {
+  "id": 1221,
+  "ko": "시간을 거꾸로 돌리는 한 발",
+  "en": "A shot that turns time backward",
+  "src": [
+   "Data/Tables/Bullet.csv:37 (Desc)"
+  ]
+ },
+ {
+  "id": 1222,
+  "ko": "레테의 물결",
+  "en": "Waters of Lethe",
+  "src": [
+   "Data/Tables/Bullet.csv:38 (Name)"
+  ]
+ },
+ {
+  "id": 1223,
+  "ko": "건너면 모든 것을 잊는 강",
+  "en": "The river that makes you forget everything once crossed",
+  "src": [
+   "Data/Tables/Bullet.csv:38 (Desc)"
+  ]
+ },
+ {
+  "id": 1224,
+  "ko": "회중시계의 눈금",
+  "en": "Pocket Watch Tick Marks",
+  "src": [
+   "Data/Tables/Bullet.csv:39 (Name)"
+  ]
+ },
+ {
+  "id": 1225,
+  "ko": "눈금 하나까지 놓치지 않는 눈",
+  "en": "An eye that misses not a single tick",
+  "src": [
+   "Data/Tables/Bullet.csv:39 (Desc)"
+  ]
+ },
+ {
+  "id": 1226,
+  "ko": "낡은 회색 코트",
+  "en": "Worn Gray Coat",
+  "src": [
+   "Data/Tables/Bullet.csv:40 (Name)"
+  ]
+ },
+ {
+  "id": 1227,
+  "ko": "수많은 겨울을 버틴 코트 자락",
+  "en": "The hem of a coat that outlasted many winters",
+  "src": [
+   "Data/Tables/Bullet.csv:40 (Desc)"
+  ]
+ },
+ {
+  "id": 1228,
+  "ko": "네잎클로버 책갈피",
+  "en": "Four-Leaf Clover Bookmark",
+  "src": [
+   "Data/Tables/Bullet.csv:41 (Name)"
+  ]
+ },
+ {
+  "id": 1229,
+  "ko": "책 사이에 끼워 둔 행운",
+  "en": "Luck tucked between the pages",
+  "src": [
+   "Data/Tables/Bullet.csv:41 (Desc)"
+  ]
+ },
+ {
+  "id": 1230,
+  "ko": "정오의 결투",
+  "en": "High Noon Duel",
+  "src": [
+   "Data/Tables/Bullet.csv:42 (Name)"
+  ]
+ },
+ {
+  "id": 1231,
+  "ko": "그림자가 사라지는 순간 먼저 뽑는 자",
+  "en": "Whoever draws first the moment the shadows vanish",
+  "src": [
+   "Data/Tables/Bullet.csv:42 (Desc)"
+  ]
+ },
+ {
+  "id": 1232,
+  "ko": "철길 위의 동전",
+  "en": "Coin on the Rails",
+  "src": [
+   "Data/Tables/Bullet.csv:43 (Name)"
+  ]
+ },
+ {
+  "id": 1233,
+  "ko": "기차가 지나간 뒤 납작해진 동전",
+  "en": "A coin flattened after the train went by",
+  "src": [
+   "Data/Tables/Bullet.csv:43 (Desc)"
+  ]
+ },
+ {
+  "id": 1234,
+  "ko": "바람개비",
+  "en": "Pinwheel",
+  "src": [
+   "Data/Tables/Bullet.csv:44 (Name)"
+  ]
+ },
+ {
+  "id": 1235,
+  "ko": "달리면 더 빨리 도는 종이 바람개비",
+  "en": "A paper pinwheel that spins faster as you run",
+  "src": [
+   "Data/Tables/Bullet.csv:44 (Desc)"
+  ]
+ },
+ {
+  "id": 1236,
+  "ko": "불꽃놀이 마지막 발",
+  "en": "Final Firework",
+  "src": [
+   "Data/Tables/Bullet.csv:45 (Name)"
+  ]
+ },
+ {
+  "id": 1237,
+  "ko": "축제가 끝나기 전 가장 큰 불꽃",
+  "en": "The biggest firework before the festival ends",
+  "src": [
+   "Data/Tables/Bullet.csv:45 (Desc)"
+  ]
+ },
+ {
+  "id": 1238,
+  "ko": "멈춘 맥박",
+  "en": "Stopped Pulse",
+  "src": [
+   "Data/Tables/Bullet.csv:46 (Name)"
+  ]
+ },
+ {
+  "id": 1239,
+  "ko": "멈춰 선 것들에게 더 깊이 박힌다",
+  "en": "Sinks deeper into things that have stopped",
+  "src": [
+   "Data/Tables/Bullet.csv:46 (Desc)"
+  ]
+ },
+ {
+  "id": 1240,
+  "ko": "운명의 동전 던지기",
+  "en": "Fateful Coin Toss",
+  "src": [
+   "Data/Tables/Bullet.csv:47 (Name)"
+  ]
+ },
+ {
+  "id": 1241,
+  "ko": "앞면이면 치명, 뒷면이어도 치명",
+  "en": "Heads, it's a Crit. Tails, still a Crit",
+  "src": [
+   "Data/Tables/Bullet.csv:47 (Desc)"
+  ]
+ },
+ {
+  "id": 1242,
+  "ko": "녹슬지 않는 갑주",
+  "en": "Rustless Armor",
+  "src": [
+   "Data/Tables/Bullet.csv:48 (Name)"
+  ]
+ },
+ {
+  "id": 1243,
+  "ko": "시간이 비켜 간 낡은 갑옷 조각",
+  "en": "A piece of old armor that time passed by",
+  "src": [
+   "Data/Tables/Bullet.csv:48 (Desc)"
+  ]
+ },
+ {
+  "id": 1244,
+  "ko": "연착",
+  "en": "Delayed Arrival",
+  "src": [
+   "Data/Tables/Bullet.csv:49 (Name)"
+  ]
+ },
+ {
+  "id": 1245,
+  "ko": "오지 않는 기차를 기다리며 젖어 가는 시간",
+  "en": "Time soaking through while waiting for a train that never comes",
+  "src": [
+   "Data/Tables/Bullet.csv:49 (Desc)"
+  ]
+ },
+ {
+  "id": 1246,
+  "ko": "환승역",
+  "en": "Transfer Station",
+  "src": [
+   "Data/Tables/Bullet.csv:50 (Name)"
+  ]
+ },
+ {
+  "id": 1247,
+  "ko": "갈아타는 곳마다 붙잡힌 시간이 옮겨 탄다",
+  "en": "At every transfer, captured time changes trains too",
+  "src": [
+   "Data/Tables/Bullet.csv:50 (Desc)"
+  ]
+ },
+ {
+  "id": 1248,
+  "ko": "끝나지 않는 여정",
+  "en": "Endless Journey",
+  "src": [
+   "Data/Tables/Bullet.csv:51 (Name)"
+  ]
+ },
+ {
+  "id": 1249,
+  "ko": "도착하지 않는 여행의 긴 여운",
+  "en": "The long echo of a journey with no arrival",
+  "src": [
+   "Data/Tables/Bullet.csv:51 (Desc)"
+  ]
+ }
+]

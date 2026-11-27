@@ -41,6 +41,7 @@ namespace CatTang
             // 긴 이름부터 (연산 슬롯 > 연산), 앞 글자가 한글이면 다른 낱말의 일부로 봄 (영어는 낱말 경계)
             var keys = map.Keys.OrderByDescending(k => k.Length).Select(Regex.Escape);
             re = Loc.Korean ? new Regex($"(?<![가-힣])(?:{string.Join("|", keys)})", RegexOptions.CultureInvariant)
+               : Loc.NoWordSpaces ? new Regex($"(?:{string.Join("|", keys)})", RegexOptions.CultureInvariant)     // 일본어 · 중국어: 낱말 경계 없음
                             : new Regex($@"\b(?:{string.Join("|", keys)})\b", RegexOptions.CultureInvariant);
         }
 
@@ -70,7 +71,7 @@ namespace CatTang
             foreach (var (trait, tr, effect) in Tables.TraitTiers.Where(x => x.trait == t.Id).OrderBy(x => x.tier))
             {
                 string d = Tables.Effects.TryGetValue(effect, out var e) ? e.Desc : "";
-                lines.Add($"<color={(tier >= tr ? On : Off)}><b>({tr - red})</b> {d}</color>");
+                lines.Add($"<color={(tier == tr ? On : Off)}><b>({tr - red})</b> {d}</color>");
             }
             int next = Tiers.Select(k => k - red).Where(k => k > n).DefaultIfEmpty(0).First();
             lines.Add(next > 0 ? $"<size=13><color={Off}>다음 단계까지 {next - n}개</color></size>" : $"<size=13><color={On}>최고 단계</color></size>");
@@ -126,7 +127,11 @@ namespace CatTang
         {
             if (!text || ReferenceEquals(text.text, lastSet)) return;
             var c = Terms.Colorize(text.text);
-            if (!ReferenceEquals(c, text.text)) text.text = c;
+            if (!ReferenceEquals(c, text.text))
+            {
+                if (text is LText lt) lt.SetShown(c);                    // 원문(번역 전 한국어)은 그대로 둠 — 언어를 바꾸면 원문에서 다시 번역
+                else text.text = c;
+            }
             lastSet = text.text;
         }
     }

@@ -1,0 +1,2029 @@
+[
+ {
+  "id": 0,
+  "ko": "위로 이동",
+  "en": "Move Up",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:76"
+  ]
+ },
+ {
+  "id": 1,
+  "ko": "아래로 이동",
+  "en": "Move Down",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:76"
+  ]
+ },
+ {
+  "id": 2,
+  "ko": "왼쪽으로 이동",
+  "en": "Move Left",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:76"
+  ]
+ },
+ {
+  "id": 3,
+  "ko": "오른쪽으로 이동",
+  "en": "Move Right",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:76"
+  ]
+ },
+ {
+  "id": 4,
+  "ko": "대시",
+  "en": "Dash",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:77"
+  ]
+ },
+ {
+  "id": 5,
+  "ko": "상호작용",
+  "en": "Interact",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:77"
+  ]
+ },
+ {
+  "id": 6,
+  "ko": "인벤토리",
+  "en": "Inventory",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:77",
+   "Scripts/UI/InventoryScreen.cs:130"
+  ]
+ },
+ {
+  "id": 7,
+  "ko": "지도",
+  "en": "Map",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:77"
+  ]
+ },
+ {
+  "id": 8,
+  "ko": "불릿 파티",
+  "en": "Bullet Party",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:78"
+  ]
+ },
+ {
+  "id": 9,
+  "ko": "총 스킬",
+  "en": "Gun Skill",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:78"
+  ]
+ },
+ {
+  "id": 10,
+  "ko": "우클릭",
+  "en": "Right Click",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:167"
+  ]
+ },
+ {
+  "id": 11,
+  "ko": "휠 클릭",
+  "en": "Middle Click",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:167"
+  ]
+ },
+ {
+  "id": 12,
+  "ko": "마우스 4",
+  "en": "Mouse 4",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:167"
+  ]
+ },
+ {
+  "id": 13,
+  "ko": "마우스 5",
+  "en": "Mouse 5",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:167"
+  ]
+ },
+ {
+  "id": 14,
+  "ko": "숫자패드 {0}",
+  "en": "Numpad {0}",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:173"
+  ]
+ },
+ {
+  "id": 15,
+  "ko": "없음",
+  "en": "None",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:176",
+   "Scripts/UI/InventoryScreen.cs:743"
+  ]
+ },
+ {
+  "id": 16,
+  "ko": "숫자패드 Enter",
+  "en": "Numpad Enter",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:180"
+  ]
+ },
+ {
+  "id": 17,
+  "ko": "왼쪽 Shift",
+  "en": "Left Shift",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:182"
+  ]
+ },
+ {
+  "id": 18,
+  "ko": "오른쪽 Shift",
+  "en": "Right Shift",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:183"
+  ]
+ },
+ {
+  "id": 19,
+  "ko": "왼쪽 Ctrl",
+  "en": "Left Ctrl",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:184"
+  ]
+ },
+ {
+  "id": 20,
+  "ko": "오른쪽 Ctrl",
+  "en": "Right Ctrl",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:185"
+  ]
+ },
+ {
+  "id": 21,
+  "ko": "왼쪽 Alt",
+  "en": "Left Alt",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:186"
+  ]
+ },
+ {
+  "id": 22,
+  "ko": "오른쪽 Alt",
+  "en": "Right Alt",
+  "src": [
+   "Scripts/Core/KeyBinds.cs:187"
+  ]
+ },
+ {
+  "id": 23,
+  "ko": "기억의 방",
+  "en": "Memory Room",
+  "src": [
+   "Scripts/Core/Meta.cs:125",
+   "Scripts/Game/VillageStory.cs:212"
+  ]
+ },
+ {
+  "id": 24,
+  "ko": "총포상",
+  "en": "Gunsmith",
+  "src": [
+   "Scripts/Core/Meta.cs:125"
+  ]
+ },
+ {
+  "id": 25,
+  "ko": "탄약 공방",
+  "en": "Ammo Workshop",
+  "src": [
+   "Scripts/Core/Meta.cs:125"
+  ]
+ },
+ {
+  "id": 26,
+  "ko": "의상실",
+  "en": "Wardrobe",
+  "src": [
+   "Scripts/Core/Meta.cs:125",
+   "Scripts/Game/VillageStory.cs:213"
+  ]
+ },
+ {
+  "id": 27,
+  "ko": "태엽 풀린 뻐꾸기",
+  "en": "Unwound Cuckoo",
+  "src": [
+   "Scripts/Core/Meta.cs:126",
+   "Scripts/Game/Ch3Quest.cs:24"
+  ]
+ },
+ {
+  "id": 28,
+  "ko": "빈 외투 보안관",
+  "en": "Empty-Coat Sheriff",
+  "src": [
+   "Scripts/Core/Meta.cs:126",
+   "Scripts/Game/Ch2Quest.cs:17"
+  ]
+ },
+ {
+  "id": 29,
+  "ko": "모래시계 대장장이",
+  "en": "Hourglass Smith",
+  "src": [
+   "Scripts/Core/Meta.cs:126",
+   "Scripts/Game/Ch2Quest.cs:17"
+  ]
+ },
+ {
+  "id": 30,
+  "ko": "실타래 재봉사",
+  "en": "Skein Tailor",
+  "src": [
+   "Scripts/Core/Meta.cs:126",
+   "Scripts/Game/Ch3Quest.cs:24"
+  ]
+ },
+ {
+  "id": 31,
+  "ko": "{0}장 첫 클리어",
+  "en": "First clear of Chapter {0}",
+  "src": [
+   "Scripts/Core/Meta.cs:195"
+  ]
+ },
+ {
+  "id": 32,
+  "ko": "{0}장 보스 처치",
+  "en": "Defeat the Chapter {0} Boss",
+  "src": [
+   "Scripts/Core/Meta.cs:196"
+  ]
+ },
+ {
+  "id": 33,
+  "ko": "누적 처형 {0}회",
+  "en": "{0} total Executes",
+  "src": [
+   "Scripts/Core/Meta.cs:197"
+  ]
+ },
+ {
+  "id": 34,
+  "ko": "누적 극한 회피 {0}회",
+  "en": "{0} total Perfect Dodges",
+  "src": [
+   "Scripts/Core/Meta.cs:198"
+  ]
+ },
+ {
+  "id": 35,
+  "ko": "특성 6단계 1번 달성",
+  "en": "Reach Trait Tier 6 once",
+  "src": [
+   "Scripts/Core/Meta.cs:199"
+  ]
+ },
+ {
+  "id": 36,
+  "ko": "판정 시각 0 이하 탄으로 처치 {0}회",
+  "en": "{0} kills with bullets at Judgment Hour 0 or below",
+  "src": [
+   "Scripts/Core/Meta.cs:200"
+  ]
+ },
+ {
+  "id": 37,
+  "ko": "특성 6단계 2개 이상으로 보스 처치 {0}회",
+  "en": "{0} Boss kills with 2+ Traits at Tier 6",
+  "src": [
+   "Scripts/Core/Meta.cs:201"
+  ]
+ },
+ {
+  "id": 38,
+  "ko": "처음부터",
+  "en": "From the start",
+  "src": [
+   "Scripts/Core/Meta.cs:202",
+   "Data/Tables/Enum.csv:128 (Desc)"
+  ]
+ },
+ {
+  "id": 39,
+  "ko": "보스",
+  "en": "Boss",
+  "src": [
+   "Scripts/Game/BossBrain.cs:60",
+   "Scripts/UI/GameUI.cs:259"
+  ]
+ },
+ {
+  "id": 40,
+  "ko": "황야의 무법자",
+  "en": "Outlaw of the Wasteland",
+  "src": [
+   "Scripts/Game/BossIntro.cs:59"
+  ]
+ },
+ {
+  "id": 41,
+  "ko": "와인더 잭",
+  "en": "Winder Jack",
+  "src": [
+   "Scripts/Game/BossIntro.cs:59",
+   "Scripts/Game/Ch1Bosses.cs:91"
+  ]
+ },
+ {
+  "id": 42,
+  "ko": "불타는 시계탑",
+  "en": "The Burning Clock Tower",
+  "src": [
+   "Scripts/Game/BossIntro.cs:81"
+  ]
+ },
+ {
+  "id": 43,
+  "ko": "달리오스",
+  "en": "Dalios",
+  "src": [
+   "Scripts/Game/BossIntro.cs:81",
+   "Scripts/Game/Ch1Bosses.cs:258"
+  ]
+ },
+ {
+  "id": 44,
+  "ko": "승강장의 지배자",
+  "en": "Ruler of the Platform",
+  "src": [
+   "Scripts/Game/BossIntro.cs:99"
+  ]
+ },
+ {
+  "id": 45,
+  "ko": "컨덕터 반",
+  "en": "Conductor Van",
+  "src": [
+   "Scripts/Game/BossIntro.cs:99",
+   "Scripts/Game/Ch2Bosses.cs:70"
+  ]
+ },
+ {
+  "id": 46,
+  "ko": "탈선한 종착역",
+  "en": "The Derailed Terminus",
+  "src": [
+   "Scripts/Game/BossIntro.cs:115"
+  ]
+ },
+ {
+  "id": 47,
+  "ko": "로코모스",
+  "en": "Locomos",
+  "src": [
+   "Scripts/Game/BossIntro.cs:115",
+   "Scripts/Game/Ch2Bosses.cs:469"
+  ]
+ },
+ {
+  "id": 48,
+  "ko": "반사의 연출가",
+  "en": "Director of Reflections",
+  "src": [
+   "Scripts/Game/BossIntro.cs:131"
+  ]
+ },
+ {
+  "id": 49,
+  "ko": "일루시오",
+  "en": "Illusio",
+  "src": [
+   "Scripts/Game/BossIntro.cs:131",
+   "Scripts/Game/Ch3Bosses.cs:328"
+  ]
+ },
+ {
+  "id": 50,
+  "ko": "호수의 기억",
+  "en": "Memory of the Lake",
+  "src": [
+   "Scripts/Game/BossIntro.cs:149"
+  ]
+ },
+ {
+  "id": 51,
+  "ko": "모비 글래스",
+  "en": "Moby Glass",
+  "src": [
+   "Scripts/Game/BossIntro.cs:149",
+   "Scripts/Game/Ch3Bosses.cs:705"
+  ]
+ },
+ {
+  "id": 52,
+  "ko": "시계탑의 단두대",
+  "en": "Guillotine of the Clock Tower",
+  "src": [
+   "Scripts/Game/BossIntro.cs:163"
+  ]
+ },
+ {
+  "id": 53,
+  "ko": "기로틴",
+  "en": "Guillotin",
+  "src": [
+   "Scripts/Game/BossIntro.cs:163",
+   "Scripts/Game/Ch4Bosses.cs:72"
+  ]
+ },
+ {
+  "id": 54,
+  "ko": "시간의 수문장",
+  "en": "Wardens of Time",
+  "src": [
+   "Scripts/Game/BossIntro.cs:180"
+  ]
+ },
+ {
+  "id": 55,
+  "ko": "크로노 & 템포",
+  "en": "Chrono & Tempo",
+  "src": [
+   "Scripts/Game/BossIntro.cs:180",
+   "Data/Tables/Chapter.csv:5 (BossName)"
+  ]
+ },
+ {
+  "id": 56,
+  "ko": "미지의 존재",
+  "en": "Unknown Being",
+  "src": [
+   "Scripts/Game/BossIntro.cs:220",
+   "Scripts/Game/Ch5MidBoss.cs:18"
+  ]
+ },
+ {
+  "id": 57,
+  "ko": "영원의 지배자",
+  "en": "Ruler of Eternity",
+  "src": [
+   "Scripts/Game/BossIntro.cs:252"
+  ]
+ },
+ {
+  "id": 58,
+  "ko": "시간의 주인",
+  "en": "Master of Time",
+  "src": [
+   "Scripts/Game/BossIntro.cs:252",
+   "Scripts/Game/Ch5Bosses.cs:20"
+  ]
+ },
+ {
+  "id": 59,
+  "ko": "건너뛰기  ▶▶",
+  "en": "Skip  ▶▶",
+  "src": [
+   "Scripts/Game/BossIntro.cs:1106"
+  ]
+ },
+ {
+  "id": 60,
+  "ko": "산탄 부채꼴",
+  "en": "Buckshot Fan",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:99"
+  ]
+ },
+ {
+  "id": 61,
+  "ko": "회전 난사",
+  "en": "Spinning Spray",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:100"
+  ]
+ },
+ {
+  "id": 62,
+  "ko": "수배 저격",
+  "en": "Wanted Snipe",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:101"
+  ]
+ },
+ {
+  "id": 63,
+  "ko": "돌진 태클",
+  "en": "Charging Tackle",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:102"
+  ]
+ },
+ {
+  "id": 64,
+  "ko": "하수인 호출",
+  "en": "Summon Henchmen",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:103"
+  ]
+ },
+ {
+  "id": 65,
+  "ko": "현상금 표식 {0} — 5초 뒤 발사 시각이 {1}의 배수면 피해",
+  "en": "Bounty Mark {0} — in 5 seconds, take damage if your Firing Hour is a multiple of {1}",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:125"
+  ]
+ },
+ {
+  "id": 66,
+  "ko": "{0}초",
+  "en": "{0}s",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:131",
+   "Scripts/Game/Ch2Bosses.cs:716"
+  ]
+ },
+ {
+  "id": 67,
+  "ko": "현상금 집행 — {0}시는 {1}의 배수",
+  "en": "Bounty Collected — {0} o'clock is a multiple of {1}",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:142"
+  ]
+ },
+ {
+  "id": 68,
+  "ko": "현상금 표식 회피",
+  "en": "Bounty Mark dodged",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:144"
+  ]
+ },
+ {
+  "id": 69,
+  "ko": "벽에 부딪혀 기절!",
+  "en": "Slammed into the wall, stunned!",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:223"
+  ]
+ },
+ {
+  "id": 70,
+  "ko": "시계 바늘 휘두르기",
+  "en": "Clock Hand Swing",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:270"
+  ]
+ },
+ {
+  "id": 71,
+  "ko": "녹은 웅덩이",
+  "en": "Molten Puddle",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:271"
+  ]
+ },
+ {
+  "id": 72,
+  "ko": "12방향 숫자 탄",
+  "en": "12-Way Numeral Shot",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:272"
+  ]
+ },
+ {
+  "id": 73,
+  "ko": "되감기 폭발",
+  "en": "Rewind Blast",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:273"
+  ]
+ },
+ {
+  "id": 74,
+  "ko": "시간 지연 구역",
+  "en": "Time Delay Zone",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:274"
+  ]
+ },
+ {
+  "id": 75,
+  "ko": "시각 패턴 — 안전 지대의 시각에 발사 시각을 맞춰라",
+  "en": "Hour Pattern — Match your Firing Hour to the safe zone's hour",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:334"
+  ]
+ },
+ {
+  "id": 76,
+  "ko": "시각 패턴 파훼!",
+  "en": "Hour Pattern broken!",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:347"
+  ]
+ },
+ {
+  "id": 77,
+  "ko": "안전 지대 밖 — 시각 패턴 실패",
+  "en": "Outside the safe zone — Hour Pattern failed",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:354"
+  ]
+ },
+ {
+  "id": 78,
+  "ko": "발사 시각 {0}시 ≠ {1}시 — 시각 패턴 실패",
+  "en": "Firing Hour {0} ≠ {1} — Hour Pattern failed",
+  "src": [
+   "Scripts/Game/Ch1Bosses.cs:354"
+  ]
+ },
+ {
+  "id": 79,
+  "ko": "신호봉 휘두르기",
+  "en": "Signal Baton Swing",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:78"
+  ]
+ },
+ {
+  "id": 80,
+  "ko": "개찰 펀치",
+  "en": "Ticket Punch",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:79"
+  ]
+ },
+ {
+  "id": 81,
+  "ko": "시간표 탄막",
+  "en": "Timetable Barrage",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:80"
+  ]
+ },
+ {
+  "id": 82,
+  "ko": "호루라기 열차",
+  "en": "Whistle Train",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:81"
+  ]
+ },
+ {
+  "id": 83,
+  "ko": "차장 호출",
+  "en": "Summon Guards",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:82"
+  ]
+ },
+ {
+  "id": 84,
+  "ko": "호루라기 — 노란불! 곧 빨간불, 멈춰서 표 탄을 쏴 떨어뜨려라",
+  "en": "Whistle — Yellow light! Red's coming, stop and shoot down the ticket bullets",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:101"
+  ]
+ },
+ {
+  "id": 85,
+  "ko": "빨간불 — 움직이지 마!",
+  "en": "Red light — Don't move!",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:107"
+  ]
+ },
+ {
+  "id": 86,
+  "ko": "빨간불에 움직였다!",
+  "en": "Moved on red!",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:132"
+  ]
+ },
+ {
+  "id": 87,
+  "ko": "초록불",
+  "en": "Green light",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:139"
+  ]
+ },
+ {
+  "id": 88,
+  "ko": "호루라기 — 열차가 지나간다",
+  "en": "Whistle — A train is passing",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:249"
+  ]
+ },
+ {
+  "id": 89,
+  "ko": "연결봉 휘두르기",
+  "en": "Coupling Rod Swing",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:495"
+  ]
+ },
+ {
+  "id": 90,
+  "ko": "증기 분출",
+  "en": "Steam Burst",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:496"
+  ]
+ },
+ {
+  "id": 91,
+  "ko": "레일 돌진",
+  "en": "Rail Charge",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:497"
+  ]
+ },
+ {
+  "id": 92,
+  "ko": "석탄 포격",
+  "en": "Coal Barrage",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:498"
+  ]
+ },
+ {
+  "id": 93,
+  "ko": "객차 회전",
+  "en": "Carriage Spin",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:499"
+  ]
+ },
+ {
+  "id": 94,
+  "ko": "객차를 떼어 냈다 — 경기장 둘레를 돈다!",
+  "en": "Carriages uncoupled — they're circling the arena!",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:565"
+  ]
+ },
+ {
+  "id": 95,
+  "ko": "객차가 경기장 둘레를 돈다 — 안쪽으로!",
+  "en": "Carriages circling the arena — Get inside!",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:674"
+  ]
+ },
+ {
+  "id": 96,
+  "ko": "출발 준비 — 헤드라이트 시계 {0}시! 바늘이 {1}시일 때 쏜 탄을 헤드라이트에 맞혀라",
+  "en": "Ready to depart — Headlight clock at {0}! Hit the headlight with a bullet fired when the hand is at {1}",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:706"
+  ]
+ },
+ {
+  "id": 97,
+  "ko": "출발 저지! 로코모스 기절",
+  "en": "Departure halted! Locomos stunned",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:726"
+  ]
+ },
+ {
+  "id": 98,
+  "ko": "출발 — 전속 돌진!",
+  "en": "Departure — Full-speed charge!",
+  "src": [
+   "Scripts/Game/Ch2Bosses.cs:734"
+  ]
+ },
+ {
+  "id": 99,
+  "ko": "뿌우 — 열차가 지나간다!",
+  "en": "Toooot — A train is passing!",
+  "src": [
+   "Scripts/Game/Ch2Kit.cs:468"
+  ]
+ },
+ {
+  "id": 100,
+  "ko": "흐르는 모래",
+  "en": "Flowing Sand",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:18"
+  ]
+ },
+ {
+  "id": 101,
+  "ko": "...모래가 다 새기 전에 왔군.",
+  "en": "...You came before the sand ran out.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:76"
+  ]
+ },
+ {
+  "id": 102,
+  "ko": "고양이",
+  "en": "Cat",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:77",
+   "Scripts/Game/Ch2Quest.cs:240"
+  ]
+ },
+ {
+  "id": 103,
+  "ko": "광장 시계가 또 멈췄어.",
+  "en": "Plaza Clock's stopped again.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:77"
+  ]
+ },
+ {
+  "id": 104,
+  "ko": "알고 있다. 시계 속 모래가 말라 버렸어.",
+  "en": "I know. The sand inside has dried up.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:78"
+  ]
+ },
+ {
+  "id": 105,
+  "ko": "흐르는 모래가 있어야 바늘이 다시 간다.",
+  "en": "The hands need Flowing Sand to move again.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:79"
+  ]
+ },
+ {
+  "id": 106,
+  "ko": "시간의 문 너머, 처음 길을 막아서는 큰 놈이 그걸 품고 있지.",
+  "en": "Past the Time Gate, the first big one to block your path... it carries some.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:80"
+  ]
+ },
+ {
+  "id": 107,
+  "ko": "가져오면 바늘을 채워 주마. 남는 모래로는 탄도 부어 주고.",
+  "en": "Bring it, and I'll fill the hands. What's left, I'll cast into bullets.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:81"
+  ]
+ },
+ {
+  "id": 108,
+  "ko": "흐르는 모래는?",
+  "en": "The Flowing Sand?",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:84"
+  ]
+ },
+ {
+  "id": 109,
+  "ko": "시간의 문 너머, 처음 길을 막아서는 큰 놈이다.",
+  "en": "Past the Time Gate. The first big one in your path.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:85"
+  ]
+ },
+ {
+  "id": 110,
+  "ko": "<color=#FFD54A>다음 판 첫 중간 보스에게서 {0}를 얻어 오자</color>",
+  "en": "<color=#FFD54A>Get {0} from the first Mid-Boss next run</color>",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:88"
+  ]
+ },
+ {
+  "id": 111,
+  "ko": "가져왔군.",
+  "en": "You brought it.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:93"
+  ]
+ },
+ {
+  "id": 112,
+  "ko": "...그래, 이 모래다.",
+  "en": "...Yes. This is the sand.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:97"
+  ]
+ },
+ {
+  "id": 113,
+  "ko": "아직 따뜻하군. 누군가 오래 쥐고 있던 모래야.",
+  "en": "Still warm. Someone held this sand for a long time.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:98"
+  ]
+ },
+ {
+  "id": 114,
+  "ko": "바늘 한쪽은 채웠다. 나머지는 내 손으론 안 돼.",
+  "en": "One hand is filled. The rest is beyond me.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:107"
+  ]
+ },
+ {
+  "id": 115,
+  "ko": "서쪽 섬의 보안관을 찾아가.",
+  "en": "Go find the Sheriff on the west island.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:108"
+  ]
+ },
+ {
+  "id": 116,
+  "ko": "그 친구는 말보다 총으로 이야기하지.",
+  "en": "That one talks with a gun, not words.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:109"
+  ]
+ },
+ {
+  "id": 117,
+  "ko": "공방도 다시 열었다. 새 탄을 부으려면 조각을 가져와.",
+  "en": "The workshop's open again. Bring Time Shards, and I'll cast new bullets.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:110"
+  ]
+ },
+ {
+  "id": 118,
+  "ko": "보안관",
+  "en": "Sheriff",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:117"
+  ]
+ },
+ {
+  "id": 119,
+  "ko": "새 총",
+  "en": "New Gun",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:127",
+   "Scripts/UI/GameUI.cs:980"
+  ]
+ },
+ {
+  "id": 120,
+  "ko": "새 총탄",
+  "en": "new bullets",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:127"
+  ]
+ },
+ {
+  "id": 121,
+  "ko": "<color=#FFD54A>{0} 해금</color> — 시간의 조각으로 {1} 묶음을 살 수 있다",
+  "en": "<color=#FFD54A>{0} Unlocked</color> — Buy bundles of {1} with Time Shards",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:128"
+  ]
+ },
+ {
+  "id": 122,
+  "ko": "대장장이가 보냈나.",
+  "en": "The Smith sent you, did he.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:148"
+  ]
+ },
+ {
+  "id": 123,
+  "ko": "내 얼굴은 필름과 함께 바랬어. 하지만 총은 아직 기억하지.",
+  "en": "My face faded along with the film. But the gun... it still remembers.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:149"
+  ]
+ },
+ {
+  "id": 124,
+  "ko": "바늘을 움직이고 싶다면, 한 번 겨뤄 보세.",
+  "en": "If you want the hands to move, let's have ourselves a duel.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:150"
+  ]
+ },
+ {
+  "id": 125,
+  "ko": "종이 울리면 뽑게. 먼저 뽑으면 처음부터야.",
+  "en": "Draw when the bell rings. Draw early, and we start over.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:151"
+  ]
+ },
+ {
+  "id": 126,
+  "ko": "종이 울리면  <color=#FFD54A>좌클릭</color>",
+  "en": "When the bell rings  <color=#FFD54A>Left Click</color>",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:175"
+  ]
+ },
+ {
+  "id": 127,
+  "ko": "...성급하군. 다시.",
+  "en": "...Too eager. Again.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:192"
+  ]
+ },
+ {
+  "id": 128,
+  "ko": "느려. 한 번 더.",
+  "en": "Too slow. Once more.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:215"
+  ]
+ },
+ {
+  "id": 129,
+  "ko": "......좋은 손이야.",
+  "en": "......Good hands.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:238"
+  ]
+ },
+ {
+  "id": 130,
+  "ko": "떠나는 기차를 붙잡으려던 그 손이군.",
+  "en": "The same hands that tried to hold back a departing train.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:239"
+  ]
+ },
+ {
+  "id": 131,
+  "ko": "......어떻게 그걸.",
+  "en": "......How'd you know that.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:240"
+  ]
+ },
+ {
+  "id": 132,
+  "ko": "총포상을 다시 열지. 바늘도 이제 돌 거야.",
+  "en": "I'll open the Gunsmith again. The hands will turn now, too.",
+  "src": [
+   "Scripts/Game/Ch2Quest.cs:241"
+  ]
+ },
+ {
+  "id": 133,
+  "ko": "카드 부채",
+  "en": "Card Fan",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:341"
+  ]
+ },
+ {
+  "id": 134,
+  "ko": "칼 꽂기 상자",
+  "en": "Sword Box",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:342"
+  ]
+ },
+ {
+  "id": 135,
+  "ko": "모자 속 비둘기",
+  "en": "Doves from the Hat",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:343"
+  ]
+ },
+ {
+  "id": 136,
+  "ko": "거울 상자",
+  "en": "Mirror Box",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:344"
+  ]
+ },
+ {
+  "id": 137,
+  "ko": "분신술사 호출",
+  "en": "Summon Doppelgangers",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:345"
+  ]
+ },
+ {
+  "id": 138,
+  "ko": "거울 상자 — 열린 쪽으로!",
+  "en": "Mirror Box — Go to the open side!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:475"
+  ]
+ },
+ {
+  "id": 139,
+  "ko": "진짜 찾기 — 거울에 비친 시계에서 지금 발사 시각 자리에 선 마술사를 쏴라!",
+  "en": "Find the Real One — On the mirrored clock, shoot the magician standing at your current Firing Hour!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:534"
+  ]
+ },
+ {
+  "id": 140,
+  "ko": "{0}시 자리 — 진짜를 찾았다, 마술사 기절!",
+  "en": "{0} o'clock — Found the real one, magician stunned!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:612"
+  ]
+ },
+ {
+  "id": 141,
+  "ko": "시간 초과 — 진짜는 {0}시 자리, 분신들의 반격!",
+  "en": "Time's up — The real one was at {0} o'clock, the doubles strike back!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:618"
+  ]
+ },
+ {
+  "id": 142,
+  "ko": "거울 시계 — 시계가 홀수면 시계 위에, 짝수면 모든 시계 밖에 서라!",
+  "en": "Mirror Clocks — Odd number of clocks: stand on one. Even: stand outside them all!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:646"
+  ]
+ },
+ {
+  "id": 143,
+  "ko": "시계 {0}개 — 통과!",
+  "en": "{0} clocks — Cleared!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:682"
+  ]
+ },
+ {
+  "id": 144,
+  "ko": "시계 {0}개 — 실패!",
+  "en": "{0} clocks — Failed!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:685"
+  ]
+ },
+ {
+  "id": 145,
+  "ko": "꼬리 내려치기",
+  "en": "Tail Slam",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:730"
+  ]
+ },
+ {
+  "id": 146,
+  "ko": "소용돌이",
+  "en": "Whirlpool",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:731"
+  ]
+ },
+ {
+  "id": 147,
+  "ko": "잠수 돌진",
+  "en": "Dive Charge",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:732"
+  ]
+ },
+ {
+  "id": 148,
+  "ko": "거울 파편 뿌리기",
+  "en": "Mirror Shard Scatter",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:733"
+  ]
+ },
+ {
+  "id": 149,
+  "ko": "지느러미 휩쓸기",
+  "en": "Fin Sweep",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:734"
+  ]
+ },
+ {
+  "id": 150,
+  "ko": "빛 브레스",
+  "en": "Light Breath",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:735"
+  ]
+ },
+ {
+  "id": 151,
+  "ko": "급강하",
+  "en": "Nosedive",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:736"
+  ]
+ },
+ {
+  "id": 152,
+  "ko": "하늘 가르기",
+  "en": "Sky Splitter",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:737"
+  ]
+ },
+ {
+  "id": 153,
+  "ko": "거울이 깨졌다 — 고래가 하늘을 난다!",
+  "en": "The mirror shattered — The whale takes to the sky!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:865"
+  ]
+ },
+ {
+  "id": 154,
+  "ko": "거울에 비친 시각 — 바닥 시계는 좌우가 뒤집혀 있다. 실제 시각 탄을 원 가운데에!",
+  "en": "Mirrored Hour — The floor clock is flipped left to right. Shoot the circle's center with the true-hour bullet!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:951"
+  ]
+ },
+ {
+  "id": 155,
+  "ko": "저지 — 고래가 걸렸다!",
+  "en": "Halted — The whale is caught!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:968"
+  ]
+ },
+ {
+  "id": 156,
+  "ko": "시간 초과 — 파도!",
+  "en": "Time's up — Wave!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:971"
+  ]
+ },
+ {
+  "id": 157,
+  "ko": "고래의 노래 — 울음 수를 세라",
+  "en": "Whale Song — Count the calls",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:987"
+  ]
+ },
+ {
+  "id": 158,
+  "ko": "머리가 빛난다 — 울음 수 시각 탄을 머리에!",
+  "en": "Its head glows — Shoot it with the bullet whose hour matches the calls!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1001"
+  ]
+ },
+ {
+  "id": 159,
+  "ko": "{0}번 — 맞췄다! 고래 기절",
+  "en": "{0} calls — Correct! Whale stunned",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1011"
+  ]
+ },
+ {
+  "id": 160,
+  "ko": "{0}번이었다 — 노래 충격파!",
+  "en": "It was {0} — Song shockwave!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1014"
+  ]
+ },
+ {
+  "id": 161,
+  "ko": "흩어진 기억 조각 — 조각 숫자와 같은 시각 탄으로만 깨진다!",
+  "en": "Scattered Memory Fragments — Only bullets matching each fragment's number can break them!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1028"
+  ]
+ },
+ {
+  "id": 162,
+  "ko": "기억 조각을 다 깼다 — 고래 기절!",
+  "en": "All Memory Fragments broken — Whale stunned!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1056"
+  ]
+ },
+ {
+  "id": 163,
+  "ko": "남은 조각 {0}개 — 고래가 삼키며 돌진!",
+  "en": "{0} fragments left — The whale swallows them and charges!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1066"
+  ]
+ },
+ {
+  "id": 164,
+  "ko": "기억 삼키기 — 대시로 빠져나와라!",
+  "en": "Memory Swallow — Dash out!",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1090"
+  ]
+ },
+ {
+  "id": 165,
+  "ko": "삼켜졌다 — 실린더 {0}칸이 사라졌다! 옆구리 빛나는 곳을 2발씩 쏴서 되찾아라",
+  "en": "Swallowed — {0} cylinder slots are gone! Shoot each glowing spot on its side twice to get them back",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1110"
+  ]
+ },
+ {
+  "id": 166,
+  "ko": "{0}칸을 되찾았다",
+  "en": "Recovered {0} slots",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1139"
+  ]
+ },
+ {
+  "id": 167,
+  "ko": "삼켜진 칸이 돌아왔다",
+  "en": "Swallowed slots are back",
+  "src": [
+   "Scripts/Game/Ch3Bosses.cs:1145"
+  ]
+ },
+ {
+  "id": 168,
+  "ko": "거울 속 고양이",
+  "en": "Mirror Cat",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:23"
+  ]
+ },
+ {
+  "id": 169,
+  "ko": "...방금, 내 목소리였나?",
+  "en": "...Was that my voice, just now?",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:37"
+  ]
+ },
+ {
+  "id": 170,
+  "ko": "노래를 잊은 줄 알았는데.",
+  "en": "I thought I'd forgotten the song.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:37"
+  ]
+ },
+ {
+  "id": 171,
+  "ko": "누군가 날 뒤집어 주던 손이 있었지.",
+  "en": "There was a hand that used to turn me over.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:39"
+  ]
+ },
+ {
+  "id": 172,
+  "ko": "그 손이 없으니 모래가 새기만 하는군.",
+  "en": "Without it, the sand only runs out.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:39"
+  ]
+ },
+ {
+  "id": 173,
+  "ko": "이 외투, 누가 입었더라.",
+  "en": "This coat... who wore it, again.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:41"
+  ]
+ },
+ {
+  "id": 174,
+  "ko": "영웅은 늘 화면 속에만 있었지.",
+  "en": "Heroes only ever lived on the screen.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:41"
+  ]
+ },
+ {
+  "id": 175,
+  "ko": "이 소리... 저녁마다 들리던 소리야.",
+  "en": "This sound... I heard it every evening.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:43"
+  ]
+ },
+ {
+  "id": 176,
+  "ko": "누군가의 옷을 짓고 있었는데.",
+  "en": "I was sewing clothes for someone.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:43"
+  ]
+ },
+ {
+  "id": 177,
+  "ko": "오늘은 몇 번 쓰러졌어?",
+  "en": "How many times did you fall today?",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:49"
+  ]
+ },
+ {
+  "id": 178,
+  "ko": "총이 무거워 보이네.",
+  "en": "Your guns look heavy.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:50"
+  ]
+ },
+ {
+  "id": 179,
+  "ko": "서두를 거 없어. 시계는 어차피 갈 테니까.",
+  "en": "No need to hurry. The clock moves on anyway.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:51"
+  ]
+ },
+ {
+  "id": 180,
+  "ko": "넌 싸우고, 난 기다리고. 그게 우리 몫이야.",
+  "en": "You fight, I wait. That's our part.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:52"
+  ]
+ },
+ {
+  "id": 181,
+  "ko": "광장의 큰 거울",
+  "en": "Great Plaza Mirror",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:172"
+  ]
+ },
+ {
+  "id": 182,
+  "ko": "거울",
+  "en": "Mirror",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:173"
+  ]
+ },
+ {
+  "id": 183,
+  "ko": "늦었군.",
+  "en": "You're late.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:207"
+  ]
+ },
+ {
+  "id": 184,
+  "ko": "...내가 말을 하는 건가?",
+  "en": "...Am I the one talkin'?",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:208"
+  ]
+ },
+ {
+  "id": 185,
+  "ko": "난 네가 아니야. 정확히는... 반만.",
+  "en": "I'm not you. Well... only half.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:209"
+  ]
+ },
+ {
+  "id": 186,
+  "ko": "여긴 뒤집힌 쪽이야.",
+  "en": "This is the flipped side.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:210"
+  ]
+ },
+ {
+  "id": 187,
+  "ko": "거울 속엔 원래 있던 것들이 비쳐.",
+  "en": "The mirror shows things as they used to be.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:211"
+  ]
+ },
+ {
+  "id": 188,
+  "ko": "비친 자리 말고, 그게 진짜 있어야 할 자리를 쏴.",
+  "en": "Not where it's reflected. Shoot where it truly belongs.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:212",
+   "Scripts/Game/Ch3Quest.cs:247"
+  ]
+ },
+ {
+  "id": 189,
+  "ko": "<color=#FFD54A>거울 속 물건이 원래 있어야 할 자리를 찾아 쏘세요</color>",
+  "en": "<color=#FFD54A>Find where each mirrored object truly belongs and shoot that spot</color>",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:225"
+  ]
+ },
+ {
+  "id": 190,
+  "ko": "이제 광장이야. 마지막은 네 몫이야.",
+  "en": "Now the Plaza. The last one's yours.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:247",
+   "Scripts/Game/Ch3Quest.cs:385"
+  ]
+ },
+ {
+  "id": 191,
+  "ko": "<color=#FFD54A>거울이 깨졌다 ({0}/{1})</color>",
+  "en": "<color=#FFD54A>Mirror shattered ({0}/{1})</color>",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:380"
+  ]
+ },
+ {
+  "id": 192,
+  "ko": "<color=#FFD54A>광장의 큰 거울로</color>",
+  "en": "<color=#FFD54A>To the Great Plaza Mirror</color>",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:395"
+  ]
+ },
+ {
+  "id": 193,
+  "ko": "...이건 내가 아니야.",
+  "en": "...That ain't me.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:462"
+  ]
+ },
+ {
+  "id": 194,
+  "ko": "정말 그래?",
+  "en": "Are you sure?",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:476"
+  ]
+ },
+ {
+  "id": 195,
+  "ko": "...내가 아니라고.",
+  "en": "...I said it ain't me.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:476"
+  ]
+ },
+ {
+  "id": 196,
+  "ko": "<color=#FFD54A>거울 속 모습을 쏘세요</color>",
+  "en": "<color=#FFD54A>Shoot the reflection</color>",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:479"
+  ]
+ },
+ {
+  "id": 197,
+  "ko": "깨도 비치는 건 그대로야.",
+  "en": "Break it, and the reflection stays the same.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:524"
+  ]
+ },
+ {
+  "id": 198,
+  "ko": "난 여기 있을게. 언제든 들여다봐.",
+  "en": "I'll be here. Look in anytime.",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:524"
+  ]
+ },
+ {
+  "id": 199,
+  "ko": "<color=#FFD54A>마을이 원래대로 돌아왔다</color>",
+  "en": "<color=#FFD54A>The Village is back to normal</color>",
+  "src": [
+   "Scripts/Game/Ch3Quest.cs:526"
+  ]
+ },
+ {
+  "id": 200,
+  "ko": "진자 십자 베기",
+  "en": "Pendulum Cross Slash",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:104"
+  ]
+ },
+ {
+  "id": 201,
+  "ko": "단두대 내려찍기",
+  "en": "Guillotine Drop",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:105"
+  ]
+ },
+ {
+  "id": 202,
+  "ko": "톱니 원반 던지기",
+  "en": "Gear Disc Throw",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:106"
+  ]
+ },
+ {
+  "id": 203,
+  "ko": "초침 자객 호출",
+  "en": "Summon Assassins of the Second Hand",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:107"
+  ]
+ },
+ {
+  "id": 204,
+  "ko": "진자 운동 — 진자가 쓸고 가는 반대쪽으로!",
+  "en": "Pendulum Swing — Move away from the pendulum's sweep!",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:341"
+  ]
+ },
+ {
+  "id": 205,
+  "ko": "판결의 수 — 0이 될 때 발사 시각을 {0}시로 맞춰라!",
+  "en": "Verdict Count — Set your Firing Hour to {0} when it hits 0!",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:369"
+  ]
+ },
+ {
+  "id": 206,
+  "ko": "무죄 — 단두대가 집행관에게!",
+  "en": "Not guilty — The blade falls on the executioner!",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:389"
+  ]
+ },
+ {
+  "id": 207,
+  "ko": "유죄 — 발사 시각 {0}시",
+  "en": "Guilty — Firing Hour {0}",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:390"
+  ]
+ },
+ {
+  "id": 208,
+  "ko": "끊어진 추 — 추의 숫자와 같은 시각 탄으로 멈춰라!",
+  "en": "Snapped Weights — Stop them with bullets matching each weight's number!",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:398"
+  ]
+ },
+ {
+  "id": 209,
+  "ko": "추가 다 멈췄다 — 집행관 기절!",
+  "en": "All weights stopped — Executioner stunned!",
+  "src": [
+   "Scripts/Game/Ch4Bosses.cs:436"
+  ]
+ },
+ {
+  "id": 210,
+  "ko": "분명 누군가가 이 시계를 붙잡고 있었는데....",
+  "en": "Someone was holding this clock, I'm sure of it....",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:40"
+  ]
+ },
+ {
+  "id": 211,
+  "ko": "모래가 다시 떨어지는군.",
+  "en": "The sand is falling again.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:42"
+  ]
+ },
+ {
+  "id": 212,
+  "ko": ".....이 모래엔 무슨 비밀이 있는거지..??",
+  "en": ".....What secret does this sand hold..??",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:42"
+  ]
+ },
+ {
+  "id": 213,
+  "ko": "시간이 멈추면 영웅도 늙지 않지.",
+  "en": "When time stops, heroes don't grow old.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:44"
+  ]
+ },
+ {
+  "id": 214,
+  "ko": "그게 좋은 건지는 모르겠지만.",
+  "en": "Whether that's good, I can't say.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:44"
+  ]
+ },
+ {
+  "id": 215,
+  "ko": "멈춘 바늘로는 아무것도 지을 수 없어.",
+  "en": "You can't sew a thing with a stopped needle.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:46"
+  ]
+ },
+ {
+  "id": 216,
+  "ko": "바느질을 할때는 시작만큼이나 끝맺음도 중요한 법이야.",
+  "en": "In sewing, the final knot matters as much as the first stitch.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:46"
+  ]
+ },
+ {
+  "id": 217,
+  "ko": "광장 시계",
+  "en": "Plaza Clock",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:238"
+  ]
+ },
+ {
+  "id": 218,
+  "ko": "멈춘 시계",
+  "en": "Stopped Clock",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:239"
+  ]
+ },
+ {
+  "id": 219,
+  "ko": "이번엔 섬마다 시계가 멈췄어.",
+  "en": "This time, a clock has stopped on every island.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:265"
+  ]
+ },
+ {
+  "id": 220,
+  "ko": "시계에 적힌 시각대로 다시 감아 줘.",
+  "en": "Wind them again to the hours written on them.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:265",
+   "Scripts/Game/Ch4Quest.cs:292"
+  ]
+ },
+ {
+  "id": 221,
+  "ko": "<color=#FFD54A>섬마다 멈춘 시계를 찾아 톱니 숫자 시각 탄으로 쏘세요</color>",
+  "en": "<color=#FFD54A>Find each island's stopped clock and shoot it with bullets matching the gear numbers</color>",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:278"
+  ]
+ },
+ {
+  "id": 222,
+  "ko": "<color=#FFD54A>시간이 다시 흐른다 ({0}/{1})</color>",
+  "en": "<color=#FFD54A>Time flows again ({0}/{1})</color>",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:474"
+  ]
+ },
+ {
+  "id": 223,
+  "ko": "그건 네가 감을 수 있는 시계가 아니야.",
+  "en": "That's not a clock you can wind.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:528"
+  ]
+ },
+ {
+  "id": 224,
+  "ko": "그 바늘은... 누가 붙잡고 있으니까.",
+  "en": "Those hands... someone's holding them.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:529"
+  ]
+ },
+ {
+  "id": 225,
+  "ko": "...누가?",
+  "en": "...Who?",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:530"
+  ]
+ },
+ {
+  "id": 226,
+  "ko": "알잖아.",
+  "en": "You know.",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:531"
+  ]
+ },
+ {
+  "id": 227,
+  "ko": "<color=#FFD54A>마을이 다시 움직인다</color>",
+  "en": "<color=#FFD54A>The Village moves again</color>",
+  "src": [
+   "Scripts/Game/Ch4Quest.cs:549"
+  ]
+ },
+ {
+  "id": 228,
+  "ko": "순서대로 연속 명중 — 빛난 순서대로, 그 숫자 시각 탄으로!",
+  "en": "Chain Hits in Order — Hit them in the order they glowed, with bullets matching their numbers!",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:161"
+  ]
+ },
+ {
+  "id": 229,
+  "ko": "성공 — 크로노 & 템포 기절!",
+  "en": "Success — Chrono & Tempo stunned!",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:188"
+  ]
+ },
+ {
+  "id": 230,
+  "ko": "뒤섞인 문자판 — 내 발사 시각 숫자 칸 위에 서 있어라!",
+  "en": "Scrambled Dial — Stand on the slot showing your Firing Hour!",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:207"
+  ]
+ },
+ {
+  "id": 231,
+  "ko": "안전!",
+  "en": "Safe!",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:266",
+   "Scripts/Game/StoryWorkshop.cs:517"
+  ]
+ },
+ {
+  "id": 232,
+  "ko": "실패 — {0}시 칸 (발사 시각 {1}시)",
+  "en": "Failed — Slot {0} (Firing Hour {1})",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:267"
+  ]
+ },
+ {
+  "id": 233,
+  "ko": "멈춘 톱니 — 톱니 숫자와 같은 시각 탄으로 돌려라!",
+  "en": "Stopped Gears — Turn them with bullets matching the gear numbers!",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:278"
+  ]
+ },
+ {
+  "id": 234,
+  "ko": "문자판이 멈췄다 — 크로노 & 템포 기절!",
+  "en": "The dial stopped — Chrono & Tempo stunned!",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:314"
+  ]
+ },
+ {
+  "id": 235,
+  "ko": "크로노",
+  "en": "Chrono",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:337"
+  ]
+ },
+ {
+  "id": 236,
+  "ko": "템포",
+  "en": "Tempo",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:337"
+  ]
+ },
+ {
+  "id": 237,
+  "ko": "시침 내려찍기",
+  "en": "Hour Hand Slam",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:353"
+  ]
+ },
+ {
+  "id": 238,
+  "ko": "대검 회전",
+  "en": "Greatsword Spin",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:354"
+  ]
+ },
+ {
+  "id": 239,
+  "ko": "시각 낙인",
+  "en": "Hour Brand",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:355"
+  ]
+ },
+ {
+  "id": 240,
+  "ko": "분침 돌진 (물려받음)",
+  "en": "Minute Hand Rush (Inherited)",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:356"
+  ]
+ },
+ {
+  "id": 241,
+  "ko": "60초 찌르기",
+  "en": "60-Second Thrust",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:360"
+  ]
+ },
+ {
+  "id": 242,
+  "ko": "분침 돌진",
+  "en": "Minute Hand Rush",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:361"
+  ]
+ },
+ {
+  "id": 243,
+  "ko": "바늘 부채",
+  "en": "Clock-Hand Fan",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:362"
+  ]
+ },
+ {
+  "id": 244,
+  "ko": "시각 낙인 (물려받음)",
+  "en": "Hour Brand (Inherited)",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:363"
+  ]
+ },
+ {
+  "id": 245,
+  "ko": "열두 시 협공",
+  "en": "Twelve O'Clock Pincer",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:365"
+  ]
+ },
+ {
+  "id": 246,
+  "ko": "{0} — 쓰러진 바늘을 흡수했다!",
+  "en": "{0} — Absorbed the fallen hand!",
+  "src": [
+   "Scripts/Game/Ch4Twins.cs:373"
+  ]
+ },
+ {
+  "id": 247,
+  "ko": "시간의 주인 · 12:00",
+  "en": "Master of Time · 12:00",
+  "src": [
+   "Scripts/Game/Ch5Bosses.cs:20"
+  ]
+ },
+ {
+  "id": 248,
+  "ko": "시간의 주인 · 11:59:{0}",
+  "en": "Master of Time · 11:59:{0}",
+  "src": [
+   "Scripts/Game/Ch5Bosses.cs:20"
+  ]
+ },
+ {
+  "id": 249,
+  "ko": "시간의 주인 · 남은 시간 {0}:{1}",
+  "en": "Master of Time · Time Left {0}:{1}",
+  "src": [
+   "Scripts/Game/Ch5Bosses.cs:21"
+  ]
+ }
+]

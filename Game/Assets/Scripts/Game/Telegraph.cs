@@ -191,6 +191,8 @@ namespace CatTang
         }
         /// <summary>끝나기 직전 예고 섬광을 띄우지 않음 (공격이 아닌 표시: 폭탄병 착지 조준 등)</summary>
         public Telegraph NoGlint() { glint = false; return this; }
+        /// <summary>주황 십자 예고 섬광이 뜬 순간 (자리)</summary>
+        public static event System.Action<Vector3> Glinted;
         /// <summary>원 자체가 작게 시작해 끝날 때 반경까지 커짐 (폭탄병 점멸: 다 커지는 순간 폭발). 깜빡임도 점점 빨라짐</summary>
         public Telegraph Grow() { grow = true; Redraw(0); return this; }
 
@@ -235,6 +237,7 @@ namespace CatTang
             {
                 glinted = true;
                 GunkataFx.WarnGlint(transform.position + Vector3.up * 1.6f);
+                Glinted?.Invoke(transform.position);                              // 극한 회피 안내 (DodgeHints)
             }
             if (Time.time - born >= life)
             {

@@ -16,5 +16,11 @@ namespace CatTang.EditorTools
 
         [MenuItem("CatTang/번역/언어: 한국어")] static void Ko() => Loc.Lang = "ko";
         [MenuItem("CatTang/번역/언어: English")] static void En() => Loc.Lang = "en";
+        [MenuItem("CatTang/번역/언어: 日本語")] static void Ja() => Loc.Lang = "ja";
+        [MenuItem("CatTang/번역/언어: 简体中文")] static void Zh() => Loc.Lang = "zh";
+        [MenuItem("CatTang/번역/언어: Français")] static void Fr() => Loc.Lang = "fr";
+        [MenuItem("CatTang/번역/언어: Deutsch")] static void De() => Loc.Lang = "de";
+        [MenuItem("CatTang/번역/언어: Русский")] static void Ru() => Loc.Lang = "ru";
+        [MenuItem("CatTang/번역/언어: العربية")] static void Ar() => Loc.Lang = "ar";
     }
 }

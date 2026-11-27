@@ -137,6 +137,16 @@ namespace CatTang
             StoryRun.PendingWake = null;
             bool anyBeat = false;
             foreach (var b in Beats) if (Ready(b)) anyBeat = true;
+            // 판 도중 쓰러져 돌아옴: 이어질 이야기가 없으면 뻐꾸기가 쓰러진 곳에 반응하는 한 줄 (뻐꾸기를 만난 뒤부터)
+            var death = StoryRun.PendingDeath;
+            StoryRun.PendingDeath = null;
+            if (death != null && wake == null && !anyBeat && Meta.StorySeen(Beats[0].key))
+            {
+                p.InputLocked = true;
+                bool said = false;
+                ui.Talk(Cuckoo, new[] { StoryRun.DeathLine(death.Value) }, () => said = true);
+                while (!said) yield return null;
+            }
             if (wake != null && !anyBeat)
             {
                 p.InputLocked = true;
@@ -241,10 +251,10 @@ namespace CatTang
             bool done = false;
             ui.Talk(Tailor, new[]
             {
-                "아 어서와.",
+                "실타래 재봉사#다정::아 어서와.",
                 "이번이 몇번째 만남인지는 모르겠지만....",
                 "고양이#의문::....난 그런 기억이 없는데",
-                "아 그런 모양이군.",
+                "실타래 재봉사#의미심장::아 그런 모양이군.",
                 "하지만 그런건 이 곳에선 중요하지 않지.",
                 "아무튼 골라봐.",
                 "무법자에게도 패션은 언제나 중요한 법이지.",

@@ -40,7 +40,7 @@ namespace CatTang
             new Def { id = "gun", spot = "NpcSpot_GunShop", isle = "Isle_Gun", speaker = Sheriff, sound = "q3_projector",
                       lines = new[] { "이 외투, 누가 입었더라.", "영웅은 늘 화면 속에만 있었지." } },
             new Def { id = "ward", spot = "NpcSpot_Wardrobe", isle = "Isle_Wardrobe", speaker = Tailor, sound = "q3_sewing",
-                      lines = new[] { "이 소리... 저녁마다 들리던 소리야.", "누군가의 옷을 짓고 있었는데." } },
+                      lines = new[] { "실타래 재봉사#놀람::이 소리... 저녁마다 들리던 소리야.", "실타래 재봉사#쓸쓸::누군가의 옷을 짓고 있었는데." } },
         };
 
         // 물웅덩이 E (2026-11-25 사용자 컨펌, 판마다 하나)

@@ -43,7 +43,7 @@ namespace CatTang
             new Def { id = "gun", isle = "Isle_Gun", spot = "NpcSpot_GunShop", speaker = Sheriff, hours = new[] { 10, 5 },
                       lines = new[] { "시간이 멈추면 영웅도 늙지 않지.", "그게 좋은 건지는 모르겠지만." } },
             new Def { id = "ward", isle = "Isle_Wardrobe", spot = "NpcSpot_Wardrobe", speaker = Tailor, hours = new[] { 3, 8, 12 },
-                      lines = new[] { "멈춘 바늘로는 아무것도 지을 수 없어.", "바느질을 할때는 시작만큼이나 끝맺음도 중요한 법이야." } },
+                      lines = new[] { "실타래 재봉사#쓸쓸::멈춘 바늘로는 아무것도 지을 수 없어.", "실타래 재봉사#엄숙::바느질을 할때는 시작만큼이나 끝맺음도 중요한 법이야." } },
         };
 
         public static bool IsleDone(string id) => Meta.StorySeen("q4_i_" + id);

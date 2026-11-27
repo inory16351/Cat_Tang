@@ -25,7 +25,7 @@ namespace CatTang
             var tm = go.AddComponent<TextMesh>();
             tm.font = UIKit.Title;
             go.GetComponent<MeshRenderer>().sharedMaterial = UIKit.Title.material;
-            tm.text = Loc.T(text);                                  // 다국어 (Loc)
+            tm.text = Loc.Shown(text);                              // 다국어 (Loc, 아랍어 = 글자 잇기 · 오른쪽→왼쪽)
             tm.fontSize = 64;
             tm.characterSize = size;
             tm.anchor = TextAnchor.MiddleCenter;

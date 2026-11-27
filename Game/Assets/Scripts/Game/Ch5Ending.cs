@@ -37,11 +37,11 @@ namespace CatTang
             new Isle { isle = "Isle_Ammo", spot = "NpcSpot_AmmoWorkshop", bridge = "Bridge_Ammo", hour = 4, speaker = Smith, obj = "Kit/Ch3Quest/HourglassBench", sfx = "e5b_hourglass", collapse = true,
                        lines = new[] { Smith + "::모래는 다 떨어졌군.", Smith + "::이번엔 뒤집지 마라." } },
             new Isle { isle = "Isle_Wardrobe", spot = "NpcSpot_Wardrobe", bridge = "Bridge_Wardrobe", hour = 8, speaker = Tailor, obj = "Kit/Ch3Quest/SewingWindow", sfx = "q3_sewing", collapse = true,
-                       lines = new[] { Tailor + "::마지막 단추까지 달았어.", Tailor + "::...이제 입고 가." } },
+                       lines = new[] { "실타래 재봉사#다정::마지막 단추까지 달았어.", "실타래 재봉사#쓸쓸::...이제 입고 가." } },
             new Isle { isle = "Isle_Center", spot = "NpcSpot_MemoryRoom", bridge = null, hour = 10, speaker = Cuckoo, obj = "Kit/Ch3Quest/CuckooBench", sfx = "q3_cuckoo", collapse = false,
                        lines = new[] { Cuckoo + "::노래, 기억났어.", Cuckoo + "::...한 번만 더 울어 줄게." } },
             new Isle { isle = "Isle_Gate", spot = "NpcSpot_Gatekeeper", bridge = "Bridge_Gate", hour = 12, speaker = Keeper, obj = "Kit/Story/W_GrandClock", sfx = "e4_bell", collapse = true,
-                       lines = new[] { Keeper + "::문은 이제 하나뿐이야.", Keeper + "::그건 내가 지키는 문이 아니야." } },
+                       lines = new[] { "괘종시계 문지기#엄숙::문은 이제 하나뿐이야.", "괘종시계 문지기#쓸쓸::그건 내가 지키는 문이 아니야." } },
         };
 
         /// <summary>마을 씬에서 이름으로 (2026-11-26 사용자: 작별은 실제 마을 섬에서 — '자정의 시계판' 맵은 안 씀)</summary>
@@ -411,7 +411,7 @@ namespace CatTang
         {
             var spot = Find("NpcSpot_Gatekeeper");
             if (spot) CameraFollow.FocusOn(spot.position + Vector3.back * 1.5f, 0.8f);
-            yield return Talk(ui, Keeper, Keeper + "::...또 왔군.", Keeper + "::한 번 더 들여다볼 텐가?");
+            yield return Talk(ui, Keeper, Keeper + "::...또 왔군.", "괘종시계 문지기#의미심장::한 번 더 들여다볼 텐가?");
             CameraFollow.FocusOn(null, 0f);
             Meta.MarkStory(KeyAscend);
             ui.Toast("<color=#FFD54A>승천 모드가 열렸다</color> — 시간의 문 (준비 중)");

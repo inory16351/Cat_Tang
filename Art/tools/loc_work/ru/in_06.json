@@ -1,0 +1,1878 @@
+[
+ {
+  "id": 1500,
+  "ko": "추억 표식 1개, 표식당 그 적에게 주는 피해 +{0} (최대 Value2개)",
+  "en": "1 Nostalgia Mark; damage to that enemy +{0} per Mark (max Value2)",
+  "src": [
+   "Data/Tables/Enum.csv:72 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1501,
+  "ko": "표식을 터뜨려 피해 Value",
+  "en": "Detonate Marks for Value damage",
+  "src": [
+   "Data/Tables/Enum.csv:73 (Desc)"
+  ]
+ },
+ {
+  "id": 1502,
+  "ko": "표식을 터뜨려 피해 {0}",
+  "en": "Detonate Marks for {0} damage",
+  "src": [
+   "Data/Tables/Enum.csv:73 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1503,
+  "ko": "피해를 Value 확률로 회피 (지속 Duration, 0이면 상시)",
+  "en": "Value chance to dodge damage (lasts Duration, 0 = always)",
+  "src": [
+   "Data/Tables/Enum.csv:74 (Desc)"
+  ]
+ },
+ {
+  "id": 1504,
+  "ko": "피해를 {0} 확률로 회피 (지속 {1}, 0이면 상시)",
+  "en": "{0} chance to dodge damage (lasts {1}, 0 = always)",
+  "src": [
+   "Data/Tables/Enum.csv:74 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1505,
+  "ko": "이 칸의 탄을 다시 장전 (Value발)",
+  "en": "Reload this slot's bullet (Value shots)",
+  "src": [
+   "Data/Tables/Enum.csv:75 (Desc)"
+  ]
+ },
+ {
+  "id": 1506,
+  "ko": "일반 적 처형, 보스는 피해 +Value",
+  "en": "Execute normal enemies; Bosses take +Value damage",
+  "src": [
+   "Data/Tables/Enum.csv:76 (Desc)"
+  ]
+ },
+ {
+  "id": 1507,
+  "ko": "일반 적 처형, 보스는 피해 +{0}",
+  "en": "Execute normal enemies; Bosses take +{0} damage",
+  "src": [
+   "Data/Tables/Enum.csv:76 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1508,
+  "ko": "열기 +Value칸",
+  "en": "Heat +Value bars",
+  "src": [
+   "Data/Tables/Enum.csv:77 (Desc)"
+  ]
+ },
+ {
+  "id": 1509,
+  "ko": "저스트 회피 판정 +Value",
+  "en": "Perfect Dodge window +Value",
+  "src": [
+   "Data/Tables/Enum.csv:78 (Desc)"
+  ]
+ },
+ {
+  "id": 1510,
+  "ko": "저스트 회피 판정 +{0}",
+  "en": "Perfect Dodge window +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:78 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1511,
+  "ko": "다음 Value발 치명타",
+  "en": "Next Value shots Crit",
+  "src": [
+   "Data/Tables/Enum.csv:79 (Desc)"
+  ]
+ },
+ {
+  "id": 1512,
+  "ko": "치명타 확률 +Value",
+  "en": "Crit Chance +Value",
+  "src": [
+   "Data/Tables/Enum.csv:80 (Desc)"
+  ]
+ },
+ {
+  "id": 1513,
+  "ko": "치명타 확률 +{0}",
+  "en": "Crit Chance +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:80 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1514,
+  "ko": "[능력치] 치명타 확률 +Value",
+  "en": "[Stat] Crit Chance +Value",
+  "src": [
+   "Data/Tables/Enum.csv:81 (Desc)"
+  ]
+ },
+ {
+  "id": 1515,
+  "ko": "[능력치] 치명타 확률 +{0}",
+  "en": "[Stat] Crit Chance +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:81 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1516,
+  "ko": "[능력치] 치명타 피해 +Value",
+  "en": "[Stat] Crit Damage +Value",
+  "src": [
+   "Data/Tables/Enum.csv:82 (Desc)"
+  ]
+ },
+ {
+  "id": 1517,
+  "ko": "[능력치] 치명타 피해 +{0}",
+  "en": "[Stat] Crit Damage +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:82 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1518,
+  "ko": "[능력치] 방어력 +Value",
+  "en": "[Stat] DEF +Value",
+  "src": [
+   "Data/Tables/Enum.csv:83 (Desc)"
+  ]
+ },
+ {
+  "id": 1519,
+  "ko": "[능력치] 방어력 +{0}",
+  "en": "[Stat] DEF +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:83 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1520,
+  "ko": "[능력치] 효과 발동 확률 +Value (배율)",
+  "en": "[Stat] Effect proc chance +Value (multiplier)",
+  "src": [
+   "Data/Tables/Enum.csv:84 (Desc)"
+  ]
+ },
+ {
+  "id": 1521,
+  "ko": "[능력치] 효과 발동 확률 +{0} (배율)",
+  "en": "[Stat] Effect proc chance +{0} (multiplier)",
+  "src": [
+   "Data/Tables/Enum.csv:84 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1522,
+  "ko": "[능력치] 이동 속도 +Value",
+  "en": "[Stat] Move speed +Value",
+  "src": [
+   "Data/Tables/Enum.csv:85 (Desc)"
+  ]
+ },
+ {
+  "id": 1523,
+  "ko": "[능력치] 이동 속도 +{0}",
+  "en": "[Stat] Move speed +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:85 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1524,
+  "ko": "보스에게 주는 피해 +Value",
+  "en": "Damage to Bosses +Value",
+  "src": [
+   "Data/Tables/Enum.csv:86 (Desc)"
+  ]
+ },
+ {
+  "id": 1525,
+  "ko": "보스에게 주는 피해 +{0}",
+  "en": "Damage to Bosses +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:86 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1526,
+  "ko": "폭발 · 범위 피해 +Value",
+  "en": "Explosion · area damage +Value",
+  "src": [
+   "Data/Tables/Enum.csv:87 (Desc)"
+  ]
+ },
+ {
+  "id": 1527,
+  "ko": "폭발 · 범위 피해 +{0}",
+  "en": "Explosion · area damage +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:87 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1528,
+  "ko": "상태 이상(정지 · 둔화 · 가둠 · 화상 · 표식) 적에게 주는 피해 +Value",
+  "en": "Damage to afflicted enemies (Stop · Slow · Time Lock · Burn · Mark) +Value",
+  "src": [
+   "Data/Tables/Enum.csv:88 (Desc)"
+  ]
+ },
+ {
+  "id": 1529,
+  "ko": "상태 이상(정지 · 둔화 · 가둠 · 화상 · 표식) 적에게 주는 피해 +{0}",
+  "en": "Damage to afflicted enemies (Stop · Slow · Time Lock · Burn · Mark) +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:88 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1530,
+  "ko": "정지 · 둔화 지속 +Value",
+  "en": "Stop · Slow duration +Value",
+  "src": [
+   "Data/Tables/Enum.csv:89 (Desc)"
+  ]
+ },
+ {
+  "id": 1531,
+  "ko": "정지 · 둔화 지속 +{0}",
+  "en": "Stop · Slow duration +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:89 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1532,
+  "ko": "정지된 적에게 피해 +Value",
+  "en": "Damage to Stopped enemies +Value",
+  "src": [
+   "Data/Tables/Enum.csv:90 (Desc)"
+  ]
+ },
+ {
+  "id": 1533,
+  "ko": "정지된 적에게 피해 +{0}",
+  "en": "Damage to Stopped enemies +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:90 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1534,
+  "ko": "비활성화 공격력 +Value",
+  "en": "Inactive ATK +Value",
+  "src": [
+   "Data/Tables/Enum.csv:91 (Desc)"
+  ]
+ },
+ {
+  "id": 1535,
+  "ko": "비활성화 공격력 +{0}",
+  "en": "Inactive ATK +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:91 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1536,
+  "ko": "활성화 공격력 +Value",
+  "en": "Active ATK +Value",
+  "src": [
+   "Data/Tables/Enum.csv:92 (Desc)"
+  ]
+ },
+ {
+  "id": 1537,
+  "ko": "활성화 공격력 +{0}",
+  "en": "Active ATK +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:92 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1538,
+  "ko": "비활성화도 특성 Value개 켜짐",
+  "en": "Inactive bullets also enable Value Traits",
+  "src": [
+   "Data/Tables/Enum.csv:93 (Desc)"
+  ]
+ },
+ {
+  "id": 1539,
+  "ko": "다음 탄 연사 속도 +Value",
+  "en": "Next bullet Fire Rate +Value",
+  "src": [
+   "Data/Tables/Enum.csv:94 (Desc)"
+  ]
+ },
+ {
+  "id": 1540,
+  "ko": "다음 탄 연사 속도 +{0}",
+  "en": "Next bullet Fire Rate +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:94 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1541,
+  "ko": "맞은 자리에 궤적이 남고 Duration초 뒤 실루엣이 그 궤적으로 1발 (피해 Value)",
+  "en": "Leaves a trail where it hits; after Duration seconds the Silhouette fires 1 shot along it (damage Value)",
+  "src": [
+   "Data/Tables/Enum.csv:95 (Desc)"
+  ]
+ },
+ {
+  "id": 1542,
+  "ko": "맞은 자리에 궤적이 남고 Duration초 뒤 실루엣이 그 궤적으로 1발 (피해 {0})",
+  "en": "Leaves a trail where it hits; after Duration seconds the Silhouette fires 1 shot along it (damage {0})",
+  "src": [
+   "Data/Tables/Enum.csv:95 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1543,
+  "ko": "특성 Value2를 Value개 더 셈",
+  "en": "Counts Trait Value2 as Value more",
+  "src": [
+   "Data/Tables/Enum.csv:96 (Desc)"
+  ]
+ },
+ {
+  "id": 1544,
+  "ko": "판정 시각 +Value",
+  "en": "Judgment Hour +Value",
+  "src": [
+   "Data/Tables/Enum.csv:97 (Desc)"
+  ]
+ },
+ {
+  "id": 1545,
+  "ko": "판정 시각 +{0}",
+  "en": "Judgment Hour +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:97 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1546,
+  "ko": "즉시 장전",
+  "en": "Instant reload",
+  "src": [
+   "Data/Tables/Enum.csv:98 (Desc)"
+  ]
+ },
+ {
+  "id": 1547,
+  "ko": "주변 시간 감속 Value (반경 Value2, 지속 Duration)",
+  "en": "Slow time nearby by Value (radius Value2, lasts Duration)",
+  "src": [
+   "Data/Tables/Enum.csv:99 (Desc)"
+  ]
+ },
+ {
+  "id": 1548,
+  "ko": "주변 시간 감속 {0} (반경 {1}, 지속 {2})",
+  "en": "Slow time nearby by {0} (radius {1}, lasts {2})",
+  "src": [
+   "Data/Tables/Enum.csv:99 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1549,
+  "ko": "모든 적 정지 Duration초 (재사용 대기 Value2초)",
+  "en": "Stop all enemies for Duration seconds (Cooldown Value2 seconds)",
+  "src": [
+   "Data/Tables/Enum.csv:100 (Desc)"
+  ]
+ },
+ {
+  "id": 1550,
+  "ko": "시계 12방향으로 1발씩, 각 방향은 그 시각 칸의 탄 (피해 Value)",
+  "en": "1 shot in each of the clock's 12 directions, each using that hour's slot bullet (damage Value)",
+  "src": [
+   "Data/Tables/Enum.csv:101 (Desc)"
+  ]
+ },
+ {
+  "id": 1551,
+  "ko": "시계 12방향으로 1발씩, 각 방향은 그 시각 칸의 탄 (피해 {0})",
+  "en": "1 shot in each of the clock's 12 directions, each using that hour's slot bullet (damage {0})",
+  "src": [
+   "Data/Tables/Enum.csv:101 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1552,
+  "ko": "판정 시각이 0보다 1 낮을 때마다 피해 +Value",
+  "en": "Damage +Value for each 1 the Judgment Hour is below 0",
+  "src": [
+   "Data/Tables/Enum.csv:102 (Desc)"
+  ]
+ },
+ {
+  "id": 1553,
+  "ko": "판정 시각이 0보다 1 낮을 때마다 피해 +{0}",
+  "en": "Damage +{0} for each 1 the Judgment Hour is below 0",
+  "src": [
+   "Data/Tables/Enum.csv:102 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1554,
+  "ko": "비활성화 1개당 피해 +Value",
+  "en": "Damage +Value per Inactive bullet",
+  "src": [
+   "Data/Tables/Enum.csv:103 (Desc)"
+  ]
+ },
+ {
+  "id": 1555,
+  "ko": "비활성화 1개당 피해 +{0}",
+  "en": "Damage +{0} per Inactive bullet",
+  "src": [
+   "Data/Tables/Enum.csv:103 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1556,
+  "ko": "다음 장전은 12 → 1 역순 발사",
+  "en": "Next reload fires in reverse, 12 → 1",
+  "src": [
+   "Data/Tables/Enum.csv:104 (Desc)"
+  ]
+ },
+ {
+  "id": 1557,
+  "ko": "런 동안 이 탄 공격력 +Value (최대 Value2), 소수는 쌓아 두고 정수만 반영",
+  "en": "This bullet's ATK +Value for the run (max Value2); fractions build up, only whole numbers apply",
+  "src": [
+   "Data/Tables/Enum.csv:105 (Desc)"
+  ]
+ },
+ {
+  "id": 1558,
+  "ko": "런 동안 이 탄 공격력 +{0} (최대 {1}), 소수는 쌓아 두고 정수만 반영",
+  "en": "This bullet's ATK +{0} for the run (max {1}); fractions build up, only whole numbers apply",
+  "src": [
+   "Data/Tables/Enum.csv:105 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1559,
+  "ko": "거리 1m당 피해 +Value (최대 Value2)",
+  "en": "Damage +Value per 1m of distance (max Value2)",
+  "src": [
+   "Data/Tables/Enum.csv:106 (Desc)"
+  ]
+ },
+ {
+  "id": 1560,
+  "ko": "거리 1m당 피해 +{0} (최대 {1})",
+  "en": "Damage +{0} per 1m of distance (max {1})",
+  "src": [
+   "Data/Tables/Enum.csv:106 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1561,
+  "ko": "누적될 때마다 피해 +Value",
+  "en": "Damage +Value per stack",
+  "src": [
+   "Data/Tables/Enum.csv:107 (Desc)"
+  ]
+ },
+ {
+  "id": 1562,
+  "ko": "누적될 때마다 피해 +{0}",
+  "en": "Damage +{0} per stack",
+  "src": [
+   "Data/Tables/Enum.csv:107 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1563,
+  "ko": "받는 피해 +Value",
+  "en": "Damage taken +Value",
+  "src": [
+   "Data/Tables/Enum.csv:108 (Desc)"
+  ]
+ },
+ {
+  "id": 1564,
+  "ko": "받는 피해 +{0}",
+  "en": "Damage taken +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:108 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1565,
+  "ko": "최대 체력 +Value (비율)",
+  "en": "Max HP +Value (ratio)",
+  "src": [
+   "Data/Tables/Enum.csv:109 (Desc)"
+  ]
+ },
+ {
+  "id": 1566,
+  "ko": "최대 체력 +{0} (비율)",
+  "en": "Max HP +{0} (ratio)",
+  "src": [
+   "Data/Tables/Enum.csv:109 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1567,
+  "ko": "무작위 연산 Value개 지급",
+  "en": "Gain Value random Operators",
+  "src": [
+   "Data/Tables/Enum.csv:110 (Desc)"
+  ]
+ },
+ {
+  "id": 1568,
+  "ko": "탄 Value(Id) 지급",
+  "en": "Gain bullet Value (Id)",
+  "src": [
+   "Data/Tables/Enum.csv:111 (Desc)"
+  ]
+ },
+ {
+  "id": 1569,
+  "ko": "탄 {0}(Id) 지급",
+  "en": "Gain bullet {0} (Id)",
+  "src": [
+   "Data/Tables/Enum.csv:111 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1570,
+  "ko": "연산 드랍 +Value",
+  "en": "Operator drops +Value",
+  "src": [
+   "Data/Tables/Enum.csv:112 (Desc)"
+  ]
+ },
+ {
+  "id": 1571,
+  "ko": "연산 드랍 +{0}",
+  "en": "Operator drops +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:112 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1572,
+  "ko": "특성 6단계 필요 수 -Value",
+  "en": "Trait Tier 6 requirement -Value",
+  "src": [
+   "Data/Tables/Enum.csv:113 (Desc)"
+  ]
+ },
+ {
+  "id": 1573,
+  "ko": "특성 6단계 필요 수 -{0}",
+  "en": "Trait Tier 6 requirement -{0}",
+  "src": [
+   "Data/Tables/Enum.csv:113 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1574,
+  "ko": "시간의 조각 획득 +Value",
+  "en": "Time Shards gained +Value",
+  "src": [
+   "Data/Tables/Enum.csv:114 (Desc)"
+  ]
+ },
+ {
+  "id": 1575,
+  "ko": "시간의 조각 획득 +{0}",
+  "en": "Time Shards gained +{0}",
+  "src": [
+   "Data/Tables/Enum.csv:114 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1576,
+  "ko": "대시 충전 시간 +Value (비율, 음수 = 빨라짐)",
+  "en": "Dash recharge time +Value (ratio, negative = faster)",
+  "src": [
+   "Data/Tables/Enum.csv:115 (Desc)"
+  ]
+ },
+ {
+  "id": 1577,
+  "ko": "대시 충전 시간 +{0} (비율, 음수 = 빨라짐)",
+  "en": "Dash recharge time +{0} (ratio, negative = faster)",
+  "src": [
+   "Data/Tables/Enum.csv:115 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1578,
+  "ko": "더하기",
+  "en": "Add",
+  "src": [
+   "Data/Tables/Enum.csv:116 (Desc)"
+  ]
+ },
+ {
+  "id": 1579,
+  "ko": "빼기",
+  "en": "Subtract",
+  "src": [
+   "Data/Tables/Enum.csv:117 (Desc)"
+  ]
+ },
+ {
+  "id": 1580,
+  "ko": "곱하기",
+  "en": "Multiply",
+  "src": [
+   "Data/Tables/Enum.csv:118 (Desc)"
+  ]
+ },
+ {
+  "id": 1581,
+  "ko": "나누기 (반올림, 음수는 절대값으로 처리)",
+  "en": "Divide (rounded; negatives use absolute value)",
+  "src": [
+   "Data/Tables/Enum.csv:119 (Desc)"
+  ]
+ },
+ {
+  "id": 1582,
+  "ko": "뒤로 도약하며 조준 방향으로 사격",
+  "en": "Leap back while firing where you're aiming",
+  "src": [
+   "Data/Tables/Enum.csv:120 (Desc)"
+  ]
+ },
+ {
+  "id": 1583,
+  "ko": "앞을 쏘고 홱 돌아 뒤를 쏨",
+  "en": "Fire ahead, then whip around and fire behind",
+  "src": [
+   "Data/Tables/Enum.csv:121 (Desc)"
+  ]
+ },
+ {
+  "id": 1584,
+  "ko": "적을 뛰어넘으며 아래로 사격",
+  "en": "Vault over enemies, firing downward",
+  "src": [
+   "Data/Tables/Enum.csv:122 (Desc)"
+  ]
+ },
+ {
+  "id": 1585,
+  "ko": "적 투사체를 쏴서 튕겨 냄",
+  "en": "Shoot enemy projectiles to deflect them",
+  "src": [
+   "Data/Tables/Enum.csv:123 (Desc)"
+  ]
+ },
+ {
+  "id": 1586,
+  "ko": "모래 장판",
+  "en": "Sand Field",
+  "src": [
+   "Data/Tables/Enum.csv:124 (Desc)",
+   "Data/Tables/Skill.csv:6 (Name)"
+  ]
+ },
+ {
+  "id": 1587,
+  "ko": "모아서 관통 1발",
+  "en": "Charged piercing shot",
+  "src": [
+   "Data/Tables/Enum.csv:125 (Desc)"
+  ]
+ },
+ {
+  "id": 1588,
+  "ko": "실루엣 소환",
+  "en": "Summon Silhouette",
+  "src": [
+   "Data/Tables/Enum.csv:126 (Desc)"
+  ]
+ },
+ {
+  "id": 1589,
+  "ko": "범위 시간 정지",
+  "en": "Area Time Stop",
+  "src": [
+   "Data/Tables/Enum.csv:127 (Desc)"
+  ]
+ },
+ {
+  "id": 1590,
+  "ko": "구역 CondValue 첫 클리어",
+  "en": "First clear of Zone CondValue",
+  "src": [
+   "Data/Tables/Enum.csv:129 (Desc)"
+  ]
+ },
+ {
+  "id": 1591,
+  "ko": "구역 {0} 첫 클리어",
+  "en": "First clear of Zone {0}",
+  "src": [
+   "Data/Tables/Enum.csv:129 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1592,
+  "ko": "누적 처형 수",
+  "en": "Total Executes",
+  "src": [
+   "Data/Tables/Enum.csv:130 (Desc)"
+  ]
+ },
+ {
+  "id": 1593,
+  "ko": "누적 극한 회피 수",
+  "en": "Total Perfect Dodges",
+  "src": [
+   "Data/Tables/Enum.csv:131 (Desc)"
+  ]
+ },
+ {
+  "id": 1594,
+  "ko": "구역 Value 보스 처치",
+  "en": "Defeat the Zone Value Boss",
+  "src": [
+   "Data/Tables/Enum.csv:132 (Desc)"
+  ]
+ },
+ {
+  "id": 1595,
+  "ko": "구역 {0} 보스 처치",
+  "en": "Defeat the Zone {0} Boss",
+  "src": [
+   "Data/Tables/Enum.csv:132 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1596,
+  "ko": "특성 6단계 달성 횟수",
+  "en": "Times Trait Tier 6 reached",
+  "src": [
+   "Data/Tables/Enum.csv:133 (Desc)"
+  ]
+ },
+ {
+  "id": 1597,
+  "ko": "판정 시각 0 이하 탄으로 처치 수",
+  "en": "Kills with bullets at Judgment Hour 0 or lower",
+  "src": [
+   "Data/Tables/Enum.csv:134 (Desc)"
+  ]
+ },
+ {
+  "id": 1598,
+  "ko": "특성 6단계 2개 이상으로 보스 처치 수",
+  "en": "Bosses defeated with 2+ Traits at Tier 6",
+  "src": [
+   "Data/Tables/Enum.csv:135 (Desc)"
+  ]
+ },
+ {
+  "id": 1599,
+  "ko": "체력 Value 회복",
+  "en": "Restore Value HP",
+  "src": [
+   "Data/Tables/Enum.csv:136 (Desc)"
+  ]
+ },
+ {
+  "id": 1600,
+  "ko": "처형 체력 기준 +Value (비율)",
+  "en": "Execute HP threshold +Value (ratio)",
+  "src": [
+   "Data/Tables/Enum.csv:137 (Desc)"
+  ]
+ },
+ {
+  "id": 1601,
+  "ko": "처형 체력 기준 +{0} (비율)",
+  "en": "Execute HP threshold +{0} (ratio)",
+  "src": [
+   "Data/Tables/Enum.csv:137 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1602,
+  "ko": "장전 시간 +Value (비율)",
+  "en": "Reload time +Value (ratio)",
+  "src": [
+   "Data/Tables/Enum.csv:138 (Desc)"
+  ]
+ },
+ {
+  "id": 1603,
+  "ko": "장전 시간 +{0} (비율)",
+  "en": "Reload time +{0} (ratio)",
+  "src": [
+   "Data/Tables/Enum.csv:138 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1604,
+  "ko": "그림자 잔상이 무작위 적에게 날아가 피해 (다음 탄 피해 × Value)",
+  "en": "A shadow afterimage flies at a random enemy (next bullet damage × Value)",
+  "src": [
+   "Data/Tables/Enum.csv:139 (Desc)"
+  ]
+ },
+ {
+  "id": 1605,
+  "ko": "그림자 잔상이 무작위 적에게 날아가 피해 (다음 탄 피해 × {0})",
+  "en": "A shadow afterimage flies at a random enemy (next bullet damage × {0})",
+  "src": [
+   "Data/Tables/Enum.csv:139 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1606,
+  "ko": "맞힌 자리에 모래 소용돌이 (초당 피해 = 탄 피해 × Value",
+  "en": "Sand vortex where it hits (damage per second = bullet damage × Value",
+  "src": [
+   "Data/Tables/Enum.csv:140 (Desc)"
+  ]
+ },
+ {
+  "id": 1607,
+  "ko": "맞힌 자리에 모래 소용돌이 (초당 피해 = 탄 피해 × {0}",
+  "en": "Sand vortex where it hits (damage per second = bullet damage × {0}",
+  "src": [
+   "Data/Tables/Enum.csv:140 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1608,
+  "ko": "둔화 Value2",
+  "en": "Slow Value2",
+  "src": [
+   "Data/Tables/Enum.csv:140 (?)"
+  ]
+ },
+ {
+  "id": 1609,
+  "ko": "둔화 {0}",
+  "en": "Slow {0}",
+  "src": [
+   "Data/Tables/Enum.csv:140 (?) 자리 표시"
+  ]
+ },
+ {
+  "id": 1610,
+  "ko": "Duration초)",
+  "en": "Duration s)",
+  "src": [
+   "Data/Tables/Enum.csv:140 (?)"
+  ]
+ },
+ {
+  "id": 1611,
+  "ko": "체력이 CondValue% 미만이면 공격력 +Value",
+  "en": "ATK +Value while HP is below CondValue%",
+  "src": [
+   "Data/Tables/Enum.csv:141 (Desc)"
+  ]
+ },
+ {
+  "id": 1612,
+  "ko": "체력이 {0}% 미만이면 공격력 +{1}",
+  "en": "ATK +{1} while HP is below {0}%",
+  "src": [
+   "Data/Tables/Enum.csv:141 (Desc) 자리 표시"
+  ]
+ },
+ {
+  "id": 1613,
+  "ko": "보안관의 리볼버",
+  "en": "Sheriff's Revolver",
+  "src": [
+   "Data/Tables/Gun.csv:2 (Name)"
+  ]
+ },
+ {
+  "id": 1614,
+  "ko": "영웅이 처음 쥔 기본 총",
+  "en": "The first gun the hero ever held",
+  "src": [
+   "Data/Tables/Gun.csv:2 (Desc)"
+  ]
+ },
+ {
+  "id": 1615,
+  "ko": "녹슨 콜트",
+  "en": "Rusty Colt",
+  "src": [
+   "Data/Tables/Gun.csv:3 (Name)"
+  ]
+ },
+ {
+  "id": 1616,
+  "ko": "무겁고 짧지만 묵직한 한 발",
+  "en": "Short and heavy, yet every shot packs a punch",
+  "src": [
+   "Data/Tables/Gun.csv:3 (Desc)"
+  ]
+ },
+ {
+  "id": 1617,
+  "ko": "쌍둥이 데린저",
+  "en": "Twin Derringers",
+  "src": [
+   "Data/Tables/Gun.csv:4 (Name)"
+  ]
+ },
+ {
+  "id": 1618,
+  "ko": "가까이서 매섭게 쏘아붙이는 작은 쌍둥이 권총",
+  "en": "Small twin pistols that bark fiercely up close",
+  "src": [
+   "Data/Tables/Gun.csv:4 (Desc)"
+  ]
+ },
+ {
+  "id": 1619,
+  "ko": "은빛 메아리",
+  "en": "Silver Echo",
+  "src": [
+   "Data/Tables/Gun.csv:5 (Name)"
+  ]
+ },
+ {
+  "id": 1620,
+  "ko": "꿰뚫은 자리마다 은빛 메아리가 터진다",
+  "en": "A silver echo bursts wherever it pierces",
+  "src": [
+   "Data/Tables/Gun.csv:5 (Desc)"
+  ]
+ },
+ {
+  "id": 1621,
+  "ko": "백투더 퓨처",
+  "en": "Back to the Future",
+  "src": [
+   "Data/Tables/Gun.csv:6 (Name)"
+  ]
+ },
+ {
+  "id": 1622,
+  "ko": "손잡이 속 모래가 거꾸로 흐른다",
+  "en": "The sand in its grip flows backward",
+  "src": [
+   "Data/Tables/Gun.csv:6 (Desc)"
+  ]
+ },
+ {
+  "id": 1623,
+  "ko": "지평선",
+  "en": "Horizon",
+  "src": [
+   "Data/Tables/Gun.csv:7 (Name)"
+  ]
+ },
+ {
+  "id": 1624,
+  "ko": "지평선 끝까지 닿는 긴 총신",
+  "en": "A long barrel that reaches the horizon",
+  "src": [
+   "Data/Tables/Gun.csv:7 (Desc)"
+  ]
+ },
+ {
+  "id": 1625,
+  "ko": "동경",
+  "en": "Longing",
+  "src": [
+   "Data/Tables/Gun.csv:8 (Name)"
+  ]
+ },
+ {
+  "id": 1626,
+  "ko": "노인이 동경한 영웅의 그림자가 따라 쏜다",
+  "en": "The shadow of the hero the old man admired fires alongside",
+  "src": [
+   "Data/Tables/Gun.csv:8 (Desc)"
+  ]
+ },
+ {
+  "id": 1627,
+  "ko": "마지막 종소리",
+  "en": "The Last Bell",
+  "src": [
+   "Data/Tables/Gun.csv:9 (Name)"
+  ]
+ },
+ {
+  "id": 1628,
+  "ko": "당기면 마지막 종이 울리고 시간이 멈춘다",
+  "en": "Pull the trigger, the last bell tolls, and time stops",
+  "src": [
+   "Data/Tables/Gun.csv:9 (Desc)"
+  ]
+ },
+ {
+  "id": 1629,
+  "ko": "가스등 랜턴",
+  "en": "Gaslight Lantern",
+  "src": [
+   "Data/Tables/Gun.csv:10 (Name)",
+   "Data/Tables/Unlock.csv:4 (Name)"
+  ]
+ },
+ {
+  "id": 1630,
+  "ko": "비 오는 승강장을 밝히던 가스등을 총에 매달았다",
+  "en": "The gaslight that lit the rainy platform, hung on a gun",
+  "src": [
+   "Data/Tables/Gun.csv:10 (Desc)"
+  ]
+ },
+ {
+  "id": 1631,
+  "ko": "기관차",
+  "en": "Locomotive",
+  "src": [
+   "Data/Tables/Gun.csv:11 (Name)",
+   "Data/Tables/Unlock.csv:5 (Name)"
+  ]
+ },
+ {
+  "id": 1632,
+  "ko": "보일러처럼 달아오르는 대구경 총신",
+  "en": "A large-bore barrel that heats up like a boiler",
+  "src": [
+   "Data/Tables/Gun.csv:11 (Desc)"
+  ]
+ },
+ {
+  "id": 1633,
+  "ko": "날카로운 눈",
+  "en": "Sharp Eye",
+  "src": [
+   "Data/Tables/Memory.csv:2 (Name)"
+  ]
+ },
+ {
+  "id": 1634,
+  "ko": "공격력 +3%",
+  "en": "ATK +3%",
+  "src": [
+   "Data/Tables/Memory.csv:2 (Desc)"
+  ]
+ },
+ {
+  "id": 1635,
+  "ko": "매의 눈",
+  "en": "Hawk Eye",
+  "src": [
+   "Data/Tables/Memory.csv:3 (Name)"
+  ]
+ },
+ {
+  "id": 1636,
+  "ko": "치명타 확률 +2%",
+  "en": "Crit Chance +2%",
+  "src": [
+   "Data/Tables/Memory.csv:3 (Desc)"
+  ]
+ },
+ {
+  "id": 1637,
+  "ko": "뜨거운 심장",
+  "en": "Burning Heart",
+  "src": [
+   "Data/Tables/Memory.csv:4 (Name)"
+  ]
+ },
+ {
+  "id": 1638,
+  "ko": "열기 획득 +8%",
+  "en": "Heat gain +8%",
+  "src": [
+   "Data/Tables/Memory.csv:4 (Desc)"
+  ]
+ },
+ {
+  "id": 1639,
+  "ko": "날 선 기억",
+  "en": "Honed Memory",
+  "src": [
+   "Data/Tables/Memory.csv:5 (Name)"
+  ]
+ },
+ {
+  "id": 1640,
+  "ko": "공격력 +2%",
+  "en": "ATK +2%",
+  "src": [
+   "Data/Tables/Memory.csv:5 (Desc)"
+  ]
+ },
+ {
+  "id": 1641,
+  "ko": "깊은 상처",
+  "en": "Deep Wound",
+  "src": [
+   "Data/Tables/Memory.csv:6 (Name)"
+  ]
+ },
+ {
+  "id": 1642,
+  "ko": "치명타 피해 +10%",
+  "en": "Crit Damage +10%",
+  "src": [
+   "Data/Tables/Memory.csv:6 (Desc)"
+  ]
+ },
+ {
+  "id": 1643,
+  "ko": "넓어진 선택",
+  "en": "Wider Choices",
+  "src": [
+   "Data/Tables/Memory.csv:7 (Name)"
+  ]
+ },
+ {
+  "id": 1644,
+  "ko": "레벨 업 선택지 +1",
+  "en": "Level Up choices +1",
+  "src": [
+   "Data/Tables/Memory.csv:7 (Desc)"
+  ]
+ },
+ {
+  "id": 1645,
+  "ko": "단단한 몸",
+  "en": "Sturdy Body",
+  "src": [
+   "Data/Tables/Memory.csv:8 (Name)"
+  ]
+ },
+ {
+  "id": 1646,
+  "ko": "최대 체력 +10",
+  "en": "Max HP +10",
+  "src": [
+   "Data/Tables/Memory.csv:8 (Desc)",
+   "Data/Tables/Memory.csv:9 (Desc)"
+  ]
+ },
+ {
+  "id": 1647,
+  "ko": "질긴 숨",
+  "en": "Tenacious Breath",
+  "src": [
+   "Data/Tables/Memory.csv:9 (Name)"
+  ]
+ },
+ {
+  "id": 1648,
+  "ko": "가벼운 발",
+  "en": "Light Feet",
+  "src": [
+   "Data/Tables/Memory.csv:10 (Name)"
+  ]
+ },
+ {
+  "id": 1649,
+  "ko": "회피 재사용 -5%",
+  "en": "Dodge Cooldown -5%",
+  "src": [
+   "Data/Tables/Memory.csv:10 (Desc)"
+  ]
+ },
+ {
+  "id": 1650,
+  "ko": "굳은 살",
+  "en": "Callused Skin",
+  "src": [
+   "Data/Tables/Memory.csv:11 (Name)"
+  ]
+ },
+ {
+  "id": 1651,
+  "ko": "방어 +2",
+  "en": "DEF +2",
+  "src": [
+   "Data/Tables/Memory.csv:11 (Desc)"
+  ]
+ },
+ {
+  "id": 1652,
+  "ko": "바람의 장화",
+  "en": "Boots of the Wind",
+  "src": [
+   "Data/Tables/Memory.csv:12 (Name)"
+  ]
+ },
+ {
+  "id": 1653,
+  "ko": "이동 속도 +3%",
+  "en": "Move speed +3%",
+  "src": [
+   "Data/Tables/Memory.csv:12 (Desc)"
+  ]
+ },
+ {
+  "id": 1654,
+  "ko": "한 번 더",
+  "en": "One More Time",
+  "src": [
+   "Data/Tables/Memory.csv:13 (Name)"
+  ]
+ },
+ {
+  "id": 1655,
+  "ko": "1회에 한해 쓰러지면 체력 30% 부활",
+  "en": "Revive once with 30% HP when you fall",
+  "src": [
+   "Data/Tables/Memory.csv:13 (Desc)"
+  ]
+ },
+ {
+  "id": 1656,
+  "ko": "추억 수집",
+  "en": "Collecting Memories",
+  "src": [
+   "Data/Tables/Memory.csv:14 (Name)"
+  ]
+ },
+ {
+  "id": 1657,
+  "ko": "시간의 조각 획득 +10%",
+  "en": "Time Shards gained +10%",
+  "src": [
+   "Data/Tables/Memory.csv:14 (Desc)"
+  ]
+ },
+ {
+  "id": 1658,
+  "ko": "빠른 손",
+  "en": "Quick Hands",
+  "src": [
+   "Data/Tables/Memory.csv:15 (Name)"
+  ]
+ },
+ {
+  "id": 1659,
+  "ko": "장전 시간 -6%",
+  "en": "Reload time -6%",
+  "src": [
+   "Data/Tables/Memory.csv:15 (Desc)"
+  ]
+ },
+ {
+  "id": 1660,
+  "ko": "행운의 동전",
+  "en": "Lucky Coin",
+  "src": [
+   "Data/Tables/Memory.csv:16 (Name)"
+  ]
+ },
+ {
+  "id": 1661,
+  "ko": "효과 발동 확률 +5%",
+  "en": "Effect proc chance +5%",
+  "src": [
+   "Data/Tables/Memory.csv:16 (Desc)"
+  ]
+ },
+ {
+  "id": 1662,
+  "ko": "다시 뽑기",
+  "en": "Reroll",
+  "src": [
+   "Data/Tables/Memory.csv:17 (Name)"
+  ]
+ },
+ {
+  "id": 1663,
+  "ko": "1회에 한해 보상 다시 뽑기",
+  "en": "Reroll a Reward once",
+  "src": [
+   "Data/Tables/Memory.csv:17 (Desc)"
+  ]
+ },
+ {
+  "id": 1664,
+  "ko": "보스의 선물",
+  "en": "Boss's Gift",
+  "src": [
+   "Data/Tables/Memory.csv:18 (Name)"
+  ]
+ },
+ {
+  "id": 1665,
+  "ko": "보스 보상 +1",
+  "en": "Boss Rewards +1",
+  "src": [
+   "Data/Tables/Memory.csv:18 (Desc)"
+  ]
+ },
+ {
+  "id": 1666,
+  "ko": "조준 반대쪽으로 4m 도약하며 2발",
+  "en": "Leap 4m away from your aim, firing 2 shots",
+  "src": [
+   "Data/Tables/Skill.csv:2 (Desc)"
+  ]
+ },
+ {
+  "id": 1667,
+  "ko": "앞뒤 네 발",
+  "en": "Four-Way Turn",
+  "src": [
+   "Data/Tables/Skill.csv:3 (Name)"
+  ]
+ },
+ {
+  "id": 1668,
+  "ko": "앞을 2발 쏘고 홱 돌아 뒤로 2발",
+  "en": "Fire 2 shots ahead, whip around, 2 shots behind",
+  "src": [
+   "Data/Tables/Skill.csv:3 (Desc)"
+  ]
+ },
+ {
+  "id": 1669,
+  "ko": "넘어가며 쏘기",
+  "en": "Vault Shot",
+  "src": [
+   "Data/Tables/Skill.csv:4 (Name)"
+  ]
+ },
+ {
+  "id": 1670,
+  "ko": "적을 뛰어넘으며 아래로 3발, 쏠 때마다 반동으로 더 뜸",
+  "en": "Vault over enemies firing 3 shots down; each shot's recoil lifts you higher",
+  "src": [
+   "Data/Tables/Skill.csv:4 (Desc)"
+  ]
+ },
+ {
+  "id": 1671,
+  "ko": "반사탄 패링",
+  "en": "Parry Shot",
+  "src": [
+   "Data/Tables/Skill.csv:5 (Name)"
+  ]
+ },
+ {
+  "id": 1672,
+  "ko": "0.3초 안에 적 투사체를 쏘면 피해 150%로 되돌려 보냄",
+  "en": "Shoot an enemy projectile within 0.3s to send it back at 150% damage",
+  "src": [
+   "Data/Tables/Skill.csv:5 (Desc)"
+  ]
+ },
+ {
+  "id": 1673,
+  "ko": "반경 4 모래 장판, 적 둔화 40%, 4초",
+  "en": "Radius 4 Sand Field, enemy Slow 40%, 4s",
+  "src": [
+   "Data/Tables/Skill.csv:6 (Desc)"
+  ]
+ },
+ {
+  "id": 1674,
+  "ko": "모아서 모든 적을 관통하는 1발 (피해 400%)",
+  "en": "Charge 1 shot that pierces all enemies (400% damage)",
+  "src": [
+   "Data/Tables/Skill.csv:7 (Desc)"
+  ]
+ },
+ {
+  "id": 1675,
+  "ko": "회상의 실루엣",
+  "en": "Silhouette of Recall",
+  "src": [
+   "Data/Tables/Skill.csv:8 (Name)"
+  ]
+ },
+ {
+  "id": 1676,
+  "ko": "고양이 실루엣을 불러 4초 동안 함께 사격 (피해 60%)",
+  "en": "Call a Cat Silhouette to fire alongside you for 4s (60% damage)",
+  "src": [
+   "Data/Tables/Skill.csv:8 (Desc)"
+  ]
+ },
+ {
+  "id": 1677,
+  "ko": "시간 정지",
+  "en": "Time Stop",
+  "src": [
+   "Data/Tables/Skill.csv:9 (Name)"
+  ]
+ },
+ {
+  "id": 1678,
+  "ko": "반경 8 적의 시간을 2초 동안 멈춤",
+  "en": "Stop time for enemies in radius 8 for 2s",
+  "src": [
+   "Data/Tables/Skill.csv:9 (Desc)"
+  ]
+ },
+ {
+  "id": 1679,
+  "ko": "랜턴 던지기",
+  "en": "Lantern Toss",
+  "src": [
+   "Data/Tables/Skill.csv:10 (Name)"
+  ]
+ },
+ {
+  "id": 1680,
+  "ko": "조준한 곳에 랜턴을 던져 반경 4 빛 장판 4초: 안의 적 둔화 30%, 그 안에서 터지는 공명 반경 +1",
+  "en": "Throw a lantern where you aim to create a radius 4 light field for 4s: enemies inside are Slowed 30%, and Resonance bursting inside gains +1 radius",
+  "src": [
+   "Data/Tables/Skill.csv:10 (Desc)"
+  ]
+ },
+ {
+  "id": 1681,
+  "ko": "증기 돌진",
+  "en": "Steam Rush",
+  "src": [
+   "Data/Tables/Skill.csv:11 (Name)"
+  ]
+ },
+ {
+  "id": 1682,
+  "ko": "조준 방향으로 8m 돌진하며 경로의 적을 관통 사격, 끝에서 증기 폭발 (반경 3, 피해 150%), 돌진 중 무적",
+  "en": "Rush 8m toward your aim, firing piercing shots through enemies in your path; steam blast at the end (radius 3, 150% damage); invincible while rushing",
+  "src": [
+   "Data/Tables/Skill.csv:11 (Desc)"
+  ]
+ },
+ {
+  "id": 1683,
+  "ko": "회상",
+  "en": "Recall",
+  "src": [
+   "Data/Tables/Trait.csv:2 (Name)"
+  ]
+ },
+ {
+  "id": 1684,
+  "ko": "고양이 실루엣이 나타나 함께 쏜다",
+  "en": "A Cat Silhouette appears and fires alongside you",
+  "src": [
+   "Data/Tables/Trait.csv:2 (Desc)"
+  ]
+ },
+ {
+  "id": 1685,
+  "ko": "추억",
+  "en": "Nostalgia",
+  "src": [
+   "Data/Tables/Trait.csv:3 (Name)"
+  ]
+ },
+ {
+  "id": 1686,
+  "ko": "같은 적을 계속 맞히면 추억 표식이 새겨진다",
+  "en": "Keep hitting the same enemy to engrave Nostalgia Marks",
+  "src": [
+   "Data/Tables/Trait.csv:3 (Desc)"
+  ]
+ },
+ {
+  "id": 1687,
+  "ko": "망각",
+  "en": "Oblivion",
+  "src": [
+   "Data/Tables/Trait.csv:4 (Name)"
+  ]
+ },
+ {
+  "id": 1688,
+  "ko": "적을 시간 속에 가둬 멈추고 더 아프게 한다",
+  "en": "Lock enemies in time, stopping them and making them take more damage",
+  "src": [
+   "Data/Tables/Trait.csv:4 (Desc)"
+  ]
+ },
+ {
+  "id": 1689,
+  "ko": "되감기",
+  "en": "Rewind",
+  "src": [
+   "Data/Tables/Trait.csv:5 (Name)"
+  ]
+ },
+ {
+  "id": 1690,
+  "ko": "피해를 맞기 직전의 순간으로 되감는다 (회피)",
+  "en": "Rewinds to the moment just before a hit (dodge)",
+  "src": [
+   "Data/Tables/Trait.csv:5 (Desc)"
+  ]
+ },
+ {
+  "id": 1691,
+  "ko": "종말",
+  "en": "Doom",
+  "src": [
+   "Data/Tables/Trait.csv:6 (Name)"
+  ]
+ },
+ {
+  "id": 1692,
+  "ko": "끝이 가까운 적을 처형하고 보스에게 강한 피해",
+  "en": "Executes enemies near their end, heavy damage to Bosses",
+  "src": [
+   "Data/Tables/Trait.csv:6 (Desc)"
+  ]
+ },
+ {
+  "id": 1693,
+  "ko": "지연",
+  "en": "Delay",
+  "src": [
+   "Data/Tables/Trait.csv:7 (Name)"
+  ]
+ },
+ {
+  "id": 1694,
+  "ko": "일정 시간 후 추가 피해가 들어간다",
+  "en": "Extra damage lands after a delay",
+  "src": [
+   "Data/Tables/Trait.csv:7 (Desc)"
+  ]
+ },
+ {
+  "id": 1695,
+  "ko": "예지",
+  "en": "Foresight",
+  "src": [
+   "Data/Tables/Trait.csv:8 (Name)"
+  ]
+ },
+ {
+  "id": 1696,
+  "ko": "대시 회피 판정이 늘어난다",
+  "en": "Widens the Dash dodge window",
+  "src": [
+   "Data/Tables/Trait.csv:8 (Desc)"
+  ]
+ },
+ {
+  "id": 1697,
+  "ko": "영원",
+  "en": "Eternity",
+  "src": [
+   "Data/Tables/Trait.csv:9 (Name)"
+  ]
+ },
+ {
+  "id": 1698,
+  "ko": "멈춘 시간이 더 오래 이어진다",
+  "en": "Stopped time lasts longer",
+  "src": [
+   "Data/Tables/Trait.csv:9 (Desc)"
+  ]
+ },
+ {
+  "id": 1699,
+  "ko": "미련",
+  "en": "Lingering",
+  "src": [
+   "Data/Tables/Trait.csv:10 (Name)"
+  ]
+ },
+ {
+  "id": 1700,
+  "ko": "활성화된 탄의 공명 사격이 더 세고 넓어지며, 끝내 원혼이 울린다",
+  "en": "Active bullets' Resonance Shots grow stronger and wider, and eventually a Restless Spirit wails",
+  "src": [
+   "Data/Tables/Trait.csv:10 (Desc)"
+  ]
+ },
+ {
+  "id": 1701,
+  "ko": "여정",
+  "en": "Journey",
+  "src": [
+   "Data/Tables/Unlock.csv:2 (Name)"
+  ]
+ },
+ {
+  "id": 1702,
+  "ko": "둔화 · 가둠으로 오래 붙잡아 두는 제어 탄",
+  "en": "Control bullets that hold enemies with Slow · Time Lock",
+  "src": [
+   "Data/Tables/Unlock.csv:2 (Desc)"
+  ]
+ },
+ {
+  "id": 1703,
+  "ko": "마무리",
+  "en": "Finale",
+  "src": [
+   "Data/Tables/Unlock.csv:3 (Name)"
+  ]
+ },
+ {
+  "id": 1704,
+  "ko": "관통 · 폭발로 끝을 내는 화력 탄",
+  "en": "Firepower bullets that finish enemies off with Pierce · explosions",
+  "src": [
+   "Data/Tables/Unlock.csv:3 (Desc)"
+  ]
+ },
+ {
+  "id": 1705,
+  "ko": "빛 장판으로 적을 묶는 영웅 총",
+  "en": "Epic gun that binds enemies in a light field",
+  "src": [
+   "Data/Tables/Unlock.csv:4 (Desc)"
+  ]
+ },
+ {
+  "id": 1706,
+  "ko": "증기 돌진으로 꿰뚫는 전설 총",
+  "en": "Legendary gun that pierces with a Steam Rush",
+  "src": [
+   "Data/Tables/Unlock.csv:5 (Desc)"
+  ]
+ },
+ {
+  "id": 1707,
+  "ko": "소리",
+  "en": "Sound",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:19"
+  ]
+ },
+ {
+  "id": 1708,
+  "ko": "화면",
+  "en": "Display",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:19"
+  ]
+ },
+ {
+  "id": 1709,
+  "ko": "게임",
+  "en": "Game",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:19"
+  ]
+ },
+ {
+  "id": 1710,
+  "ko": "조작",
+  "en": "Controls",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:19"
+  ]
+ },
+ {
+  "id": 1711,
+  "ko": "효과음 음량",
+  "en": "SFX Volume",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:115"
+  ]
+ },
+ {
+  "id": 1712,
+  "ko": "창 밖에서 소리 끄기",
+  "en": "Mute When Unfocused",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:116"
+  ]
+ },
+ {
+  "id": 1713,
+  "ko": "창 모드",
+  "en": "Window Mode",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:120"
+  ]
+ },
+ {
+  "id": 1714,
+  "ko": "창",
+  "en": "Windowed",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:120"
+  ]
+ },
+ {
+  "id": 1715,
+  "ko": "테두리 없는 창",
+  "en": "Borderless",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:120"
+  ]
+ },
+ {
+  "id": 1716,
+  "ko": "모니터 그대로",
+  "en": "Native",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:123"
+  ]
+ },
+ {
+  "id": 1717,
+  "ko": "해상도",
+  "en": "Resolution",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:124"
+  ]
+ },
+ {
+  "id": 1718,
+  "ko": "수직 동기화",
+  "en": "V-Sync",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:125"
+  ]
+ },
+ {
+  "id": 1719,
+  "ko": "화면 흔들림",
+  "en": "Screen Shake",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:126"
+  ]
+ },
+ {
+  "id": 1720,
+  "ko": "번쩍임 · 화면 효과 줄이기",
+  "en": "Reduce Flashes · Screen Effects",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:127"
+  ]
+ },
+ {
+  "id": 1721,
+  "ko": "UI 크기",
+  "en": "UI Scale",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:130"
+  ]
+ },
+ {
+  "id": 1722,
+  "ko": "대사 자동 넘김",
+  "en": "Auto-Advance Dialogue",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:138"
+  ]
+ },
+ {
+  "id": 1723,
+  "ko": "글자 속도",
+  "en": "Text Speed",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:139"
+  ]
+ },
+ {
+  "id": 1724,
+  "ko": "느림",
+  "en": "Slow",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:139"
+  ]
+ },
+ {
+  "id": 1725,
+  "ko": "보통",
+  "en": "Normal",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:139"
+  ]
+ },
+ {
+  "id": 1726,
+  "ko": "빠름",
+  "en": "Fast",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:139"
+  ]
+ },
+ {
+  "id": 1727,
+  "ko": "바로",
+  "en": "Instant",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:139"
+  ]
+ },
+ {
+  "id": 1728,
+  "ko": "조준선 모양",
+  "en": "Crosshair Style",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:140"
+  ]
+ },
+ {
+  "id": 1729,
+  "ko": "십자",
+  "en": "Cross",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:140"
+  ]
+ },
+ {
+  "id": 1730,
+  "ko": "점",
+  "en": "Dot",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:140"
+  ]
+ },
+ {
+  "id": 1731,
+  "ko": "조준선 크기",
+  "en": "Crosshair Size",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:141"
+  ]
+ },
+ {
+  "id": 1732,
+  "ko": "보스 패턴 연습 (장별)",
+  "en": "Boss Pattern Practice (by Chapter)",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:266"
+  ]
+ },
+ {
+  "id": 1733,
+  "ko": "기본형",
+  "en": "Default",
+  "src": [
+   "Scripts/UI/SettingsUI.cs:140"
+  ]
+ }
+]

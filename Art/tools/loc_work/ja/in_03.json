@@ -1,0 +1,2021 @@
+[
+ {
+  "id": 750,
+  "ko": "12를 넘거나 0 이하가 되어도 그대로 둬요. 예) 9시 칸 ×2 → 18시 · 1시 칸 −2 → −1시",
+  "en": "Results above 12 or at 0 and below stay as they are. e.g. Slot 9 ×2 → 18 o'clock · Slot 1 −2 → −1 o'clock",
+  "src": [
+   "Scripts/Game/StoryRun.cs:771"
+  ]
+ },
+ {
+  "id": 751,
+  "ko": "그래서 '음수 시각' 같은 조건도 맞출 수 있어요.",
+  "en": "So you can even meet conditions like 'negative hour'.",
+  "src": [
+   "Scripts/Game/StoryRun.cs:771"
+  ]
+ },
+ {
+  "id": 752,
+  "ko": "미리 보기 · 5/6",
+  "en": "Preview · 5/6",
+  "src": [
+   "Scripts/Game/StoryRun.cs:772"
+  ]
+ },
+ {
+  "id": 753,
+  "ko": "이 줄은 지금 끼운 연산으로 이 탄이 활성화되는 칸을 보여 줘요.",
+  "en": "This row shows which slots activate this bullet with its current Operators.",
+  "src": [
+   "Scripts/Game/StoryRun.cs:773"
+  ]
+ },
+ {
+  "id": 754,
+  "ko": "금빛 칸에 놓으면 활성화돼요.",
+  "en": "Place it in a gold slot to activate it.",
+  "src": [
+   "Scripts/Game/StoryRun.cs:773"
+  ]
+ },
+ {
+  "id": 755,
+  "ko": "연산은 판정 시각만 바꿔요. 쏘는 순서는 그대로 1시부터 12시예요.",
+  "en": "Operators only change the Judgment Hour. Firing order stays 1 to 12 o'clock.",
+  "src": [
+   "Scripts/Game/StoryRun.cs:773"
+  ]
+ },
+ {
+  "id": 756,
+  "ko": "직접 해 보기 · 6/6",
+  "en": "Try It · 6/6",
+  "src": [
+   "Scripts/Game/StoryRun.cs:774"
+  ]
+ },
+ {
+  "id": 757,
+  "ko": "연산을 끼워 이 탄을 활성화해 보세요.",
+  "en": "Slot an Operator to activate this bullet.",
+  "src": [
+   "Scripts/Game/StoryRun.cs:775"
+  ]
+ },
+ {
+  "id": 758,
+  "ko": "활성화됐어요!",
+  "en": "Activated!",
+  "src": [
+   "Scripts/Game/StoryRun.cs:776"
+  ]
+ },
+ {
+  "id": 759,
+  "ko": "...여긴...",
+  "en": "...This place...",
+  "src": [
+   "Scripts/Game/StoryWard.cs:94"
+  ]
+ },
+ {
+  "id": 760,
+  "ko": "약 냄새... 낯익어.",
+  "en": "Smell of medicine... I know it.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:94"
+  ]
+ },
+ {
+  "id": 761,
+  "ko": "침대 쪽으로",
+  "en": "Toward the bed",
+  "src": [
+   "Scripts/Game/StoryWard.cs:101"
+  ]
+ },
+ {
+  "id": 762,
+  "ko": "...누구지.",
+  "en": "...Who's that.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:105"
+  ]
+ },
+ {
+  "id": 763,
+  "ko": "...저건 처음부터 날 보고 있었어.",
+  "en": "...That thing's been watchin' me from the start.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:108"
+  ]
+ },
+ {
+  "id": 764,
+  "ko": "...몇 시... 지...",
+  "en": "...What time... is it...",
+  "src": [
+   "Scripts/Game/StoryWard.cs:120"
+  ]
+ },
+ {
+  "id": 765,
+  "ko": "...아직... 아니야.",
+  "en": "...Not... yet.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:131"
+  ]
+ },
+ {
+  "id": 766,
+  "ko": "...조금만... 더.",
+  "en": "...Just a little... longer.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:131"
+  ]
+ },
+ {
+  "id": 767,
+  "ko": "...시간이... 새고 있어.",
+  "en": "...Time is... leaking away.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:143"
+  ]
+ },
+ {
+  "id": 768,
+  "ko": "(새는 걸 막으면 돼.)",
+  "en": "(Just gotta plug the leak.)",
+  "src": [
+   "Scripts/Game/StoryWard.cs:143"
+  ]
+ },
+ {
+  "id": 769,
+  "ko": "...버텼다.",
+  "en": "...Held on.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:158"
+  ]
+ },
+ {
+  "id": 770,
+  "ko": "...그림자들이 침대로 몰려든다.",
+  "en": "...The shadows are closin' in on the bed.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:167"
+  ]
+ },
+ {
+  "id": 771,
+  "ko": "벽시계가 가리킨 시각의 탄으로 시계 앞 표적을 맞히세요",
+  "en": "Hit the target by the wall clock with a bullet matching the hour it shows",
+  "src": [
+   "Scripts/Game/StoryWard.cs:251"
+  ]
+ },
+ {
+  "id": 772,
+  "ko": "시각이 지나갔어요 — 다시",
+  "en": "The hour passed — try again",
+  "src": [
+   "Scripts/Game/StoryWard.cs:264"
+  ]
+ },
+ {
+  "id": 773,
+  "ko": "링거가 떨어질 때마다 시간이 새요 — 모래시계를 주워 버티세요",
+  "en": "Time leaks with every IV drip — grab hourglasses to hold on",
+  "src": [
+   "Scripts/Game/StoryWard.cs:278"
+  ]
+ },
+ {
+  "id": 774,
+  "ko": "시간이 다 샜어요 — 다시",
+  "en": "Time ran out — try again",
+  "src": [
+   "Scripts/Game/StoryWard.cs:326"
+  ]
+ },
+ {
+  "id": 775,
+  "ko": "숫자 인장 — 그 시각 탄을 쏘고 인장 위에 서세요 (순서대로)",
+  "en": "Number Seals — fire that hour's bullet, then stand on the seal (in order)",
+  "src": [
+   "Scripts/Game/StoryWard.cs:420"
+  ]
+ },
+ {
+  "id": 776,
+  "ko": "봉인 — 그림자가 움츠러든다",
+  "en": "Sealed — the shadows shrink back",
+  "src": [
+   "Scripts/Game/StoryWard.cs:439"
+  ]
+ },
+ {
+  "id": 777,
+  "ko": "...안 돼.",
+  "en": "...No.",
+  "src": [
+   "Scripts/Game/StoryWard.cs:471"
+  ]
+ },
+ {
+  "id": 778,
+  "ko": "...시끄럽군.",
+  "en": "...Noisy.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:132"
+  ]
+ },
+ {
+  "id": 779,
+  "ko": "시계가 이렇게나 많았나.",
+  "en": "Were there always this many clocks?",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:132"
+  ]
+ },
+ {
+  "id": 780,
+  "ko": "괘종시계 앞으로",
+  "en": "To the grandfather clock",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:138"
+  ]
+ },
+ {
+  "id": 781,
+  "ko": "멈춰야 해.",
+  "en": "They have to stop.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:145"
+  ]
+ },
+ {
+  "id": 782,
+  "ko": "그 사람이 간 시각에.",
+  "en": "At the hour she left.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:145"
+  ]
+ },
+ {
+  "id": 783,
+  "ko": "하나씩... 순서대로.",
+  "en": "One by one... in order.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:158"
+  ]
+ },
+ {
+  "id": 784,
+  "ko": "(시계를... 멈추는 건가?)",
+  "en": "(Stoppin'... the clocks?)",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:159"
+  ]
+ },
+ {
+  "id": 785,
+  "ko": "이건... 그 사람 거였지.",
+  "en": "This... was hers.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:171"
+  ]
+ },
+ {
+  "id": 786,
+  "ko": "한 번만 더 듣고 싶어.",
+  "en": "I want to hear it just once more.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:171"
+  ]
+ },
+ {
+  "id": 787,
+  "ko": "...이 노래, 어디서 들었더라.",
+  "en": "...Where've I heard this song.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:187"
+  ]
+ },
+ {
+  "id": 788,
+  "ko": "...시계 그림자가 떨어져 나온다.",
+  "en": "...The clock's shadow is tearin' loose.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:196"
+  ]
+ },
+ {
+  "id": 789,
+  "ko": "빛난 순서대로, 그 시계 숫자와 같은 시각 탄으로 맞히세요",
+  "en": "In the order they glowed, hit each clock with a bullet whose hour matches its number",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:328"
+  ]
+ },
+ {
+  "id": 790,
+  "ko": "순서가 틀렸어요 — 처음부터",
+  "en": "Wrong order — from the start",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:349"
+  ]
+ },
+ {
+  "id": 791,
+  "ko": "톱니 숫자와 같은 시각 탄으로 쏘면 돌아가요",
+  "en": "Shoot a gear with a bullet whose hour matches its number to turn it",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:393"
+  ]
+ },
+ {
+  "id": 792,
+  "ko": "톱니가 다시 멈췄어요 — 다시",
+  "en": "The gear stopped again — try again",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:399"
+  ]
+ },
+ {
+  "id": 793,
+  "ko": "문자판이 뒤섞여요 — 내 발사 시각 숫자 칸에 서세요",
+  "en": "The dial shuffles — stand on the number of your Firing Hour",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:488"
+  ]
+ },
+ {
+  "id": 794,
+  "ko": "{0}시 칸 — 발사 시각은 {1}시",
+  "en": "Slot {0} — Firing Hour is {1} o'clock",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:524"
+  ]
+ },
+ {
+  "id": 795,
+  "ko": "여기서 멈추자.",
+  "en": "Let's stop here.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:575"
+  ]
+ },
+ {
+  "id": 796,
+  "ko": "더 가면... 그 사람이 정말 가 버리니까.",
+  "en": "Any further... and she's truly gone.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:575"
+  ]
+ },
+ {
+  "id": 797,
+  "ko": "...11시 59분.",
+  "en": "...11:59.",
+  "src": [
+   "Scripts/Game/StoryWorkshop.cs:584"
+  ]
+ },
+ {
+  "id": 798,
+  "ko": "재봉사에게 건네기",
+  "en": "Give to the Tailor",
+  "src": [
+   "Scripts/Game/TailorDelivery.cs:10"
+  ]
+ },
+ {
+  "id": 799,
+  "ko": "시간의 문",
+  "en": "Time Gate",
+  "src": [
+   "Scripts/Game/VillageManager.cs:25",
+   "Scripts/Game/VillageStory.cs:192"
+  ]
+ },
+ {
+  "id": 800,
+  "ko": "<size=40>다음: {0}장</size>{1}",
+  "en": "<size=40>Next: Chapter {0}</size>{1}",
+  "src": [
+   "Scripts/Game/VillageManager.cs:25"
+  ]
+ },
+ {
+  "id": 801,
+  "ko": "<size=34>승천 (준비 중)</size>",
+  "en": "<size=34>Ascension (Coming Soon)</size>",
+  "src": [
+   "Scripts/Game/VillageManager.cs:25"
+  ]
+ },
+ {
+  "id": 802,
+  "ko": "{0}의 부탁",
+  "en": "{0}'s Request",
+  "src": [
+   "Scripts/Game/VillageManager.cs:40"
+  ]
+ },
+ {
+  "id": 803,
+  "ko": "챕터 {0} 보스를 넘으면",
+  "en": "Beat the Chapter {0} Boss",
+  "src": [
+   "Scripts/Game/VillageManager.cs:41"
+  ]
+ },
+ {
+  "id": 804,
+  "ko": "......어떻게 된 거지.",
+  "en": "......What happened.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:23"
+  ]
+ },
+ {
+  "id": 805,
+  "ko": "분명 쓰러졌는데.",
+  "en": "I went down. I'm sure of it.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:24"
+  ]
+ },
+ {
+  "id": 806,
+  "ko": "...뻐꾹. 아니, 뻐... 꾹?",
+  "en": "...Cuckoo. No, cuck... oo?",
+  "src": [
+   "Scripts/Game/VillageStory.cs:25"
+  ]
+ },
+ {
+  "id": 807,
+  "ko": "노래가 생각나지 않아.",
+  "en": "I can't remember the song.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:26"
+  ]
+ },
+ {
+  "id": 808,
+  "ko": "또 왔구나.",
+  "en": "You're back again.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:27"
+  ]
+ },
+ {
+  "id": 809,
+  "ko": "넌 늘 같은 시간에 돌아와.",
+  "en": "You always come back at the same hour.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:28"
+  ]
+ },
+ {
+  "id": 810,
+  "ko": "여긴 바늘이 열두 시에 닿지 않는 곳이야.",
+  "en": "Here, the hands never reach twelve.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:29"
+  ]
+ },
+ {
+  "id": 811,
+  "ko": "그러니 몇 번을 쓰러져도 다시 일어나지.",
+  "en": "So no matter how often you fall, you rise again.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:30"
+  ]
+ },
+ {
+  "id": 812,
+  "ko": "......하지만 언젠가는 종이 울려야 해.",
+  "en": "......But someday, the bell must ring.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:31"
+  ]
+ },
+ {
+  "id": 813,
+  "ko": "시계는 원래 그런 거니까.",
+  "en": "That's simply what clocks do.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:32"
+  ]
+ },
+ {
+  "id": 814,
+  "ko": "난... 이 마을을 벗어나야 해...",
+  "en": "I... gotta get outta this village...",
+  "src": [
+   "Scripts/Game/VillageStory.cs:34"
+  ]
+ },
+ {
+  "id": 815,
+  "ko": "...어째서? 같은 짓을 반복하는 거지?",
+  "en": "...Why? Why do the same thing over and over?",
+  "src": [
+   "Scripts/Game/VillageStory.cs:35"
+  ]
+ },
+ {
+  "id": 816,
+  "ko": "정 그렇다면 저쪽으로 나가 봐.",
+  "en": "If you must, then go out that way.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:36"
+  ]
+ },
+ {
+  "id": 817,
+  "ko": "하고 나서 후회하는 게 아무것도 하지 않는 것보단 나을 테니...",
+  "en": "Regretting what you did is better than doing nothing at all...",
+  "src": [
+   "Scripts/Game/VillageStory.cs:37"
+  ]
+ },
+ {
+  "id": 818,
+  "ko": "......바늘이 멈췄군.",
+  "en": "......The hands stopped.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:42"
+  ]
+ },
+ {
+  "id": 819,
+  "ko": "어디까지 갔었던 거야?",
+  "en": "How far did you wander?",
+  "src": [
+   "Scripts/Game/VillageStory.cs:43"
+  ]
+ },
+ {
+  "id": 820,
+  "ko": "한참 찾았다고...",
+  "en": "I looked for you so long...",
+  "src": [
+   "Scripts/Game/VillageStory.cs:44"
+  ]
+ },
+ {
+  "id": 821,
+  "ko": "네가 쓰러진 뒤로 저렇게 멈춰 버렸어...",
+  "en": "Ever since you fell, they've stood still like that...",
+  "src": [
+   "Scripts/Game/VillageStory.cs:45"
+  ]
+ },
+ {
+  "id": 822,
+  "ko": "다른 사람들을 만나서 방법을 알아봐.",
+  "en": "Go find the others. Ask them how to fix it.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:46"
+  ]
+ },
+ {
+  "id": 823,
+  "ko": "그리고 널 위해 방을 하나 마련해 두었으니 올라가 봐.",
+  "en": "And I made up a room for you. Go on up.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:47"
+  ]
+ },
+ {
+  "id": 824,
+  "ko": "난 분명... 그 기차역에 있었는데...",
+  "en": "I was... at that train station, I swear...",
+  "src": [
+   "Scripts/Game/VillageStory.cs:51"
+  ]
+ },
+ {
+  "id": 825,
+  "ko": "일어났구나...멀리까지 간 모양이던데...",
+  "en": "You're awake...you must have gone far...",
+  "src": [
+   "Scripts/Game/VillageStory.cs:52"
+  ]
+ },
+ {
+  "id": 826,
+  "ko": "그나저나 또 새로운 손님들이 찾아왔어.",
+  "en": "Anyway, more new guests have come.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:53"
+  ]
+ },
+ {
+  "id": 827,
+  "ko": "시계를 고칠 수 있을지도 몰라.",
+  "en": "Maybe they can fix the clock.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:54"
+  ]
+ },
+ {
+  "id": 828,
+  "ko": "(또 고장이 난건가? 무슨일인지 영문을 모르겠군)",
+  "en": "(Broke again? Can't make heads or tails of this)",
+  "src": [
+   "Scripts/Game/VillageStory.cs:55"
+  ]
+ },
+ {
+  "id": 829,
+  "ko": "그렇게 의심스런 눈초리로 쳐다보진마",
+  "en": "Don't look at me with those doubting eyes",
+  "src": [
+   "Scripts/Game/VillageStory.cs:56"
+  ]
+ },
+ {
+  "id": 830,
+  "ko": "결국 이 시계가 멈추는 이유는...",
+  "en": "In the end, the reason this clock stops is...",
+  "src": [
+   "Scripts/Game/VillageStory.cs:57"
+  ]
+ },
+ {
+  "id": 831,
+  "ko": "아니야.. 차차 알게 되겠지",
+  "en": "Never mind.. you'll learn in time",
+  "src": [
+   "Scripts/Game/VillageStory.cs:58"
+  ]
+ },
+ {
+  "id": 832,
+  "ko": "여관이... 왼쪽에 있었던가?",
+  "en": "Was the Inn... always on the left?",
+  "src": [
+   "Scripts/Game/VillageStory.cs:63"
+  ]
+ },
+ {
+  "id": 833,
+  "ko": "...아무것도 안 움직여.",
+  "en": "...Nothin's movin'.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:67"
+  ]
+ },
+ {
+  "id": 834,
+  "ko": "<color=#FFD54A>{0} 해금</color>",
+  "en": "<color=#FFD54A>{0} Unlocked</color>",
+  "src": [
+   "Scripts/Game/VillageStory.cs:101",
+   "Scripts/UI/GameUI.cs:1005"
+  ]
+ },
+ {
+  "id": 835,
+  "ko": "아 그러고보니 손님이 온 모양이던데.....",
+  "en": "Ah, come to think of it, a guest seems to have arrived.....",
+  "src": [
+   "Scripts/Game/VillageStory.cs:203"
+  ]
+ },
+ {
+  "id": 836,
+  "ko": "한번 찾아가봐.",
+  "en": "Why not pay them a visit.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:203"
+  ]
+ },
+ {
+  "id": 837,
+  "ko": "대장장이",
+  "en": "Smith",
+  "src": [
+   "Scripts/Game/VillageStory.cs:225"
+  ]
+ },
+ {
+  "id": 838,
+  "ko": "아 어서와.",
+  "en": "Ah, welcome.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:244"
+  ]
+ },
+ {
+  "id": 839,
+  "ko": "이번이 몇번째 만남인지는 모르겠지만....",
+  "en": "I've lost count of how many times we've met....",
+  "src": [
+   "Scripts/Game/VillageStory.cs:245"
+  ]
+ },
+ {
+  "id": 840,
+  "ko": "....난 그런 기억이 없는데",
+  "en": "....I don't remember any of that",
+  "src": [
+   "Scripts/Game/VillageStory.cs:246"
+  ]
+ },
+ {
+  "id": 841,
+  "ko": "아 그런 모양이군.",
+  "en": "Ah, so it seems.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:247"
+  ]
+ },
+ {
+  "id": 842,
+  "ko": "하지만 그런건 이 곳에선 중요하지 않지.",
+  "en": "But such things hardly matter here.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:248"
+  ]
+ },
+ {
+  "id": 843,
+  "ko": "아무튼 골라봐.",
+  "en": "Anyway, take your pick.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:249"
+  ]
+ },
+ {
+  "id": 844,
+  "ko": "무법자에게도 패션은 언제나 중요한 법이지.",
+  "en": "Fashion always matters, even for an outlaw.",
+  "src": [
+   "Scripts/Game/VillageStory.cs:250"
+  ]
+ },
+ {
+  "id": 845,
+  "ko": "WASD 이동 · Space 대시 · E 들어가기{0} · M 지도",
+  "en": "WASD Move · Space Dash · E Enter{0} · M Map",
+  "src": [
+   "Scripts/UI/GameUI.cs:178"
+  ]
+ },
+ {
+  "id": 846,
+  "ko": "WASD 이동",
+  "en": "WASD Move",
+  "src": [
+   "Scripts/UI/GameUI.cs:178",
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 847,
+  "ko": "Space 대시",
+  "en": "Space Dash",
+  "src": [
+   "Scripts/UI/GameUI.cs:178",
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 848,
+  "ko": "E 들어가기{0}",
+  "en": "E Enter{0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:178"
+  ]
+ },
+ {
+  "id": 849,
+  "ko": "M 지도",
+  "en": "M Map",
+  "src": [
+   "Scripts/UI/GameUI.cs:178"
+  ]
+ },
+ {
+  "id": 850,
+  "ko": "Tab 인벤토리",
+  "en": "Tab Inventory",
+  "src": [
+   "Scripts/UI/GameUI.cs:178",
+   "Scripts/UI/GameUI.cs:183"
+  ]
+ },
+ {
+  "id": 851,
+  "ko": "우클릭 총 스킬",
+  "en": "Right Click Gun Skill",
+  "src": [
+   "Scripts/UI/GameUI.cs:180"
+  ]
+ },
+ {
+  "id": 852,
+  "ko": "Q 불릿 파티",
+  "en": "Q Bullet Party",
+  "src": [
+   "Scripts/UI/GameUI.cs:181"
+  ]
+ },
+ {
+  "id": 853,
+  "ko": "WASD 이동 · 마우스 조준 · 좌클릭 사격 · Space 대시",
+  "en": "WASD Move · Mouse Aim · Left Click Fire · Space Dash",
+  "src": [
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 854,
+  "ko": "마우스 조준",
+  "en": "Mouse Aim",
+  "src": [
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 855,
+  "ko": "좌클릭 사격",
+  "en": "Left Click Fire",
+  "src": [
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 856,
+  "ko": "{0}E 상호작용{1} · Esc 포기",
+  "en": "{0}E Interact{1} · Esc Give Up",
+  "src": [
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 857,
+  "ko": "{0}E 상호작용{1}",
+  "en": "{0}E Interact{1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 858,
+  "ko": "Esc 포기",
+  "en": "Esc Give Up",
+  "src": [
+   "Scripts/UI/GameUI.cs:182"
+  ]
+ },
+ {
+  "id": 859,
+  "ko": "닷지!  치명타 ×{0}  <size=20>{1}초</size>",
+  "en": "Dodge!  Crit ×{0}  <size=20>{1}s</size>",
+  "src": [
+   "Scripts/UI/GameUI.cs:238"
+  ]
+ },
+ {
+  "id": 860,
+  "ko": "{0}장 · {1}",
+  "en": "Ch. {0} · {1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:436",
+   "Scripts/UI/GameUI.cs:1111"
+  ]
+ },
+ {
+  "id": 861,
+  "ko": "{0}장 · 중간 보스",
+  "en": "Ch. {0} · Mid-Boss",
+  "src": [
+   "Scripts/UI/GameUI.cs:436"
+  ]
+ },
+ {
+  "id": 862,
+  "ko": "{0}장 · 스테이지 {1}/{2} · 방 {3}/{4}",
+  "en": "Ch. {0} · Stage {1}/{2} · Room {3}/{4}",
+  "src": [
+   "Scripts/UI/GameUI.cs:436"
+  ]
+ },
+ {
+  "id": 863,
+  "ko": "스테이지 {0}/{1}",
+  "en": "Stage {0}/{1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:436",
+   "Scripts/UI/MapView.cs:177"
+  ]
+ },
+ {
+  "id": 864,
+  "ko": "방 {0}/{1}",
+  "en": "Room {0}/{1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:436"
+  ]
+ },
+ {
+  "id": 865,
+  "ko": "<color=#FFD54A>· 다음 방 · 문으로</color>",
+  "en": "<color=#FFD54A>· Next room · Go to a door</color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:436"
+  ]
+ },
+ {
+  "id": 866,
+  "ko": "여관 앞 마을",
+  "en": "Village by the Inn",
+  "src": [
+   "Scripts/UI/GameUI.cs:437"
+  ]
+ },
+ {
+  "id": 867,
+  "ko": "장전 중…",
+  "en": "Reloading…",
+  "src": [
+   "Scripts/UI/GameUI.cs:442"
+  ]
+ },
+ {
+  "id": 868,
+  "ko": "다음 {0}시 · 빈 칸",
+  "en": "Next Slot {0} · Empty",
+  "src": [
+   "Scripts/UI/GameUI.cs:447"
+  ]
+ },
+ {
+  "id": 869,
+  "ko": "다음 {0}시",
+  "en": "Next Slot {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:447",
+   "Scripts/UI/GameUI.cs:448"
+  ]
+ },
+ {
+  "id": 870,
+  "ko": "빈 칸",
+  "en": "Empty",
+  "src": [
+   "Scripts/UI/GameUI.cs:447",
+   "Scripts/UI/InventoryScreen.cs:389"
+  ]
+ },
+ {
+  "id": 871,
+  "ko": "다음 {0}시 · {1} · 판정 {2}시 · {3}",
+  "en": "Next Slot {0} · {1} · Judgment Hour {2} · {3}",
+  "src": [
+   "Scripts/UI/GameUI.cs:448"
+  ]
+ },
+ {
+  "id": 872,
+  "ko": "판정 {0}시",
+  "en": "Judgment Hour {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:448"
+  ]
+ },
+ {
+  "id": 873,
+  "ko": "<color=#FFD54A>Q 불릿 파티!</color>",
+  "en": "<color=#FFD54A>Q Bullet Party!</color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:450"
+  ]
+ },
+ {
+  "id": 874,
+  "ko": "열기 {0}/3",
+  "en": "Heat {0}/3",
+  "src": [
+   "Scripts/UI/GameUI.cs:450"
+  ]
+ },
+ {
+  "id": 875,
+  "ko": "총 스킬 {0}",
+  "en": "Gun Skill {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:451"
+  ]
+ },
+ {
+  "id": 876,
+  "ko": "E · 클릭",
+  "en": "E · Click",
+  "src": [
+   "Scripts/UI/GameUI.cs:565"
+  ]
+ },
+ {
+  "id": 877,
+  "ko": "떠돌이 상인",
+  "en": "Wandering Merchant",
+  "src": [
+   "Scripts/UI/GameUI.cs:809"
+  ]
+ },
+ {
+  "id": 878,
+  "ko": "골드 {0}  ·  보관함 {1}/{2}",
+  "en": "Gold {0}  ·  Storage {1}/{2}",
+  "src": [
+   "Scripts/UI/GameUI.cs:816"
+  ]
+ },
+ {
+  "id": 879,
+  "ko": "골드 {0}",
+  "en": "Gold {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:816"
+  ]
+ },
+ {
+  "id": 880,
+  "ko": "보관함 {0}/{1}",
+  "en": "Storage {0}/{1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:816"
+  ]
+ },
+ {
+  "id": 881,
+  "ko": "{0} · 공격 {1}",
+  "en": "{0} · ATK {1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:836"
+  ]
+ },
+ {
+  "id": 882,
+  "ko": "탄에 끼워 판정 시각을 바꿈",
+  "en": "Slots into a bullet to change its Judgment Hour",
+  "src": [
+   "Scripts/UI/GameUI.cs:838"
+  ]
+ },
+ {
+  "id": 883,
+  "ko": "판매됨",
+  "en": "Sold",
+  "src": [
+   "Scripts/UI/GameUI.cs:841"
+  ]
+ },
+ {
+  "id": 884,
+  "ko": "{0} 골드",
+  "en": "{0} Gold",
+  "src": [
+   "Scripts/UI/GameUI.cs:841"
+  ]
+ },
+ {
+  "id": 885,
+  "ko": "하트 · 체력 {0}%  ({1} 골드 · {2}개)",
+  "en": "Heart · HP {0}%  ({1} Gold · {2} left)",
+  "src": [
+   "Scripts/UI/GameUI.cs:856"
+  ]
+ },
+ {
+  "id": 886,
+  "ko": "하트 · 다 팔림",
+  "en": "Heart · Sold Out",
+  "src": [
+   "Scripts/UI/GameUI.cs:856"
+  ]
+ },
+ {
+  "id": 887,
+  "ko": "새로고침  ({0} 골드)",
+  "en": "Refresh  ({0} Gold)",
+  "src": [
+   "Scripts/UI/GameUI.cs:865"
+  ]
+ },
+ {
+  "id": 888,
+  "ko": "다시 뽑기 (1회)",
+  "en": "Reroll (1x)",
+  "src": [
+   "Scripts/UI/GameUI.cs:891"
+  ]
+ },
+ {
+  "id": 889,
+  "ko": "고르기",
+  "en": "Pick",
+  "src": [
+   "Scripts/UI/GameUI.cs:922"
+  ]
+ },
+ {
+  "id": 890,
+  "ko": "총을 주웠다 — {0}",
+  "en": "Picked up a gun — {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:944"
+  ]
+ },
+ {
+  "id": 891,
+  "ko": "{0}  <size=18>{1} · ×{2} · 사거리 {3}m</size>",
+  "en": "{0}  <size=18>{1} · ×{2} · Range {3}m</size>",
+  "src": [
+   "Scripts/UI/GameUI.cs:966"
+  ]
+ },
+ {
+  "id": 892,
+  "ko": "<b>지금</b>  {0}",
+  "en": "<b>Now</b>  {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:976"
+  ]
+ },
+ {
+  "id": 893,
+  "ko": "<color=#B8862B><b>바꾸면</b>  {0}</color>",
+  "en": "<color=#B8862B><b>If swapped</b>  {0}</color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:976"
+  ]
+ },
+ {
+  "id": 894,
+  "ko": "왼손 · 짝수 칸",
+  "en": "Left Hand · Even Slots",
+  "src": [
+   "Scripts/UI/GameUI.cs:979"
+  ]
+ },
+ {
+  "id": 895,
+  "ko": "오른손 · 홀수 칸",
+  "en": "Right Hand · Odd Slots",
+  "src": [
+   "Scripts/UI/GameUI.cs:981"
+  ]
+ },
+ {
+  "id": 896,
+  "ko": "왼손에 쥐기",
+  "en": "Take in Left Hand",
+  "src": [
+   "Scripts/UI/GameUI.cs:983"
+  ]
+ },
+ {
+  "id": 897,
+  "ko": "{0}을(를) 바닥에 내려놓음",
+  "en": "Dropped {0} on the floor",
+  "src": [
+   "Scripts/UI/GameUI.cs:984",
+   "Scripts/UI/GameUI.cs:986"
+  ]
+ },
+ {
+  "id": 898,
+  "ko": "{0} — 왼손",
+  "en": "{0} — Left Hand",
+  "src": [
+   "Scripts/UI/GameUI.cs:984"
+  ]
+ },
+ {
+  "id": 899,
+  "ko": "오른손에 쥐기",
+  "en": "Take in Right Hand",
+  "src": [
+   "Scripts/UI/GameUI.cs:985"
+  ]
+ },
+ {
+  "id": 900,
+  "ko": "{0} — 오른손",
+  "en": "{0} — Right Hand",
+  "src": [
+   "Scripts/UI/GameUI.cs:986"
+  ]
+ },
+ {
+  "id": 901,
+  "ko": "버리기 (바닥에 둠)",
+  "en": "Discard (Leave on Floor)",
+  "src": [
+   "Scripts/UI/GameUI.cs:987"
+  ]
+ },
+ {
+  "id": 902,
+  "ko": "{0}을(를) 바닥에 둠 — 다시 주울 수 있음",
+  "en": "Left {0} on the floor — you can pick it up again",
+  "src": [
+   "Scripts/UI/GameUI.cs:988"
+  ]
+ },
+ {
+  "id": 903,
+  "ko": "11:59를 넘었다",
+  "en": "Past 11:59",
+  "src": [
+   "Scripts/UI/GameUI.cs:1001"
+  ]
+ },
+ {
+  "id": 904,
+  "ko": "{0}장 돌파",
+  "en": "Chapter {0} Cleared",
+  "src": [
+   "Scripts/UI/GameUI.cs:1001"
+  ]
+ },
+ {
+  "id": 905,
+  "ko": "시간에 삼켜졌다",
+  "en": "Swallowed by Time",
+  "src": [
+   "Scripts/UI/GameUI.cs:1001"
+  ]
+ },
+ {
+  "id": 906,
+  "ko": "다음 판은 {0}장까지 갈 수 있다.",
+  "en": "Next run, you can reach Chapter {0}.",
+  "src": [
+   "Scripts/UI/GameUI.cs:1007"
+  ]
+ },
+ {
+  "id": 907,
+  "ko": "최종 보상: <color=#FFD54A>{0}</color>",
+  "en": "Final Reward: <color=#FFD54A>{0}</color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1008"
+  ]
+ },
+ {
+  "id": 908,
+  "ko": "{0}을(를) 넘었다.{1}{2}",
+  "en": "Got past {0}.{1}{2}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1009"
+  ]
+ },
+ {
+  "id": 909,
+  "ko": "{0}장에서 쓰러졌다. 다시 여관 2층에서 눈을 뜬다.",
+  "en": "Fell in Chapter {0}. You wake again upstairs at the Inn.",
+  "src": [
+   "Scripts/UI/GameUI.cs:1009"
+  ]
+ },
+ {
+  "id": 910,
+  "ko": "시간의 조각 +{0}  (보유 {1})",
+  "en": "Time Shards +{0}  (Owned {1})",
+  "src": [
+   "Scripts/UI/GameUI.cs:1010"
+  ]
+ },
+ {
+  "id": 911,
+  "ko": "골드는 사라진다.{0}",
+  "en": "Your Gold fades away.{0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1010"
+  ]
+ },
+ {
+  "id": 912,
+  "ko": "마을로",
+  "en": "To Village",
+  "src": [
+   "Scripts/UI/GameUI.cs:1011"
+  ]
+ },
+ {
+  "id": 913,
+  "ko": "잠시 멈춤",
+  "en": "Paused",
+  "src": [
+   "Scripts/UI/GameUI.cs:1031",
+   "Scripts/UI/GameUI.cs:1052"
+  ]
+ },
+ {
+  "id": 914,
+  "ko": "환경설정",
+  "en": "Settings",
+  "src": [
+   "Scripts/UI/GameUI.cs:1034"
+  ]
+ },
+ {
+  "id": 915,
+  "ko": "슬롯 {0}  ·  넘은 장 {1}  ·  시간의 조각 {2}",
+  "en": "Save {0}  ·  Chapters Cleared {1}  ·  Time Shards {2}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1039"
+  ]
+ },
+ {
+  "id": 916,
+  "ko": "슬롯 {0}",
+  "en": "Save {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1039"
+  ]
+ },
+ {
+  "id": 917,
+  "ko": "넘은 장 {0}",
+  "en": "Chapters Cleared {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1039"
+  ]
+ },
+ {
+  "id": 918,
+  "ko": "시간의 조각 {0}",
+  "en": "Time Shards {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1039",
+   "Scripts/UI/GameUI.cs:1147"
+  ]
+ },
+ {
+  "id": 919,
+  "ko": "계속하기",
+  "en": "Resume",
+  "src": [
+   "Scripts/UI/GameUI.cs:1040"
+  ]
+ },
+ {
+  "id": 920,
+  "ko": "메인 로비로",
+  "en": "Main Lobby",
+  "src": [
+   "Scripts/UI/GameUI.cs:1041"
+  ]
+ },
+ {
+  "id": 921,
+  "ko": "전투 포기",
+  "en": "Abandon Battle",
+  "src": [
+   "Scripts/UI/GameUI.cs:1042"
+  ]
+ },
+ {
+  "id": 922,
+  "ko": "전투를 포기하고 마을로 이동하시겠습니까?",
+  "en": "Abandon the battle and return to the Village?",
+  "src": [
+   "Scripts/UI/GameUI.cs:1055"
+  ]
+ },
+ {
+  "id": 923,
+  "ko": "이번 판에서 얻은 시간의 조각 {0}개만 가져갑니다",
+  "en": "You keep only the {0} Time Shards earned this run",
+  "src": [
+   "Scripts/UI/GameUI.cs:1058"
+  ]
+ },
+ {
+  "id": 924,
+  "ko": "예",
+  "en": "Yes",
+  "src": [
+   "Scripts/UI/GameUI.cs:1059",
+   "Scripts/UI/LobbyScreen.cs:482"
+  ]
+ },
+ {
+  "id": 925,
+  "ko": "아니오",
+  "en": "No",
+  "src": [
+   "Scripts/UI/GameUI.cs:1066",
+   "Scripts/UI/LobbyScreen.cs:483"
+  ]
+ },
+ {
+  "id": 926,
+  "ko": "모든 장을 넘었다 · 1장부터 5장까지 한 목숨으로",
+  "en": "All chapters cleared · Chapters 1 to 5 on one life",
+  "src": [
+   "Scripts/UI/GameUI.cs:1102"
+  ]
+ },
+ {
+  "id": 927,
+  "ko": "1장부터 한 목숨으로 · 이번 판은 <color=#FFD54A>{0}장</color>까지",
+  "en": "From Chapter 1 on one life · This run: up to <color=#FFD54A>Chapter {0}</color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1102"
+  ]
+ },
+ {
+  "id": 928,
+  "ko": "1장부터 한 목숨으로",
+  "en": "From Chapter 1 on one life",
+  "src": [
+   "Scripts/UI/GameUI.cs:1102"
+  ]
+ },
+ {
+  "id": 929,
+  "ko": "이번 판은 <color=#FFD54A>{0}장</color>까지",
+  "en": "This run: up to <color=#FFD54A>Chapter {0}</color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1102"
+  ]
+ },
+ {
+  "id": 930,
+  "ko": "{0}장을 넘으면 다음 판부터 갈 수 있음",
+  "en": "Clear Chapter {0} to reach it next run",
+  "src": [
+   "Scripts/UI/GameUI.cs:1114"
+  ]
+ },
+ {
+  "id": 931,
+  "ko": "{0} · 보스: {1}",
+  "en": "{0} · Boss: {1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1114"
+  ]
+ },
+ {
+  "id": 932,
+  "ko": "보스: {0}",
+  "en": "Boss: {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1114"
+  ]
+ },
+ {
+  "id": 933,
+  "ko": "넘음 ✓",
+  "en": "Cleared ✓",
+  "src": [
+   "Scripts/UI/GameUI.cs:1118"
+  ]
+ },
+ {
+  "id": 934,
+  "ko": "이번 목표",
+  "en": "Current Goal",
+  "src": [
+   "Scripts/UI/GameUI.cs:1118"
+  ]
+ },
+ {
+  "id": 935,
+  "ko": "잠김",
+  "en": "Locked",
+  "src": [
+   "Scripts/UI/GameUI.cs:1118",
+   "Scripts/UI/GameUI.cs:1373"
+  ]
+ },
+ {
+  "id": 936,
+  "ko": "출발 — 1장부터",
+  "en": "Depart — From Chapter 1",
+  "src": [
+   "Scripts/UI/GameUI.cs:1121"
+  ]
+ },
+ {
+  "id": 937,
+  "ko": "{0}  ·  시간의 조각 {1}",
+  "en": "{0}  ·  Time Shards {1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1147"
+  ]
+ },
+ {
+  "id": 938,
+  "ko": "시간의 조각으로 능력 강화",
+  "en": "Grow stronger with Time Shards",
+  "src": [
+   "Scripts/UI/GameUI.cs:1176"
+  ]
+ },
+ {
+  "id": 939,
+  "ko": "더 강해진 기억으로 재도전",
+  "en": "Try again with stronger memories",
+  "src": [
+   "Scripts/UI/GameUI.cs:1176"
+  ]
+ },
+ {
+  "id": 940,
+  "ko": "코스튬은 캐릭터에게 특별한 능력을 더해줍니다.",
+  "en": "Costumes grant your character special abilities.",
+  "src": [
+   "Scripts/UI/GameUI.cs:1180"
+  ]
+ },
+ {
+  "id": 941,
+  "ko": "새로운 의상을 통해 당신의 매력을 뽐내세요.",
+  "en": "Show off your charm in a new outfit.",
+  "src": [
+   "Scripts/UI/GameUI.cs:1180"
+  ]
+ },
+ {
+  "id": 942,
+  "ko": "화력",
+  "en": "Firepower",
+  "src": [
+   "Scripts/UI/GameUI.cs:1261",
+   "Data/Tables/Memory.csv:2 (Branch)"
+  ]
+ },
+ {
+  "id": 943,
+  "ko": "생존",
+  "en": "Survival",
+  "src": [
+   "Scripts/UI/GameUI.cs:1261",
+   "Data/Tables/Memory.csv:8 (Branch)"
+  ]
+ },
+ {
+  "id": 944,
+  "ko": "손재주",
+  "en": "Dexterity",
+  "src": [
+   "Scripts/UI/GameUI.cs:1261",
+   "Data/Tables/Memory.csv:14 (Branch)"
+  ]
+ },
+ {
+  "id": 945,
+  "ko": "{0}층",
+  "en": "Floor {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1277"
+  ]
+ },
+ {
+  "id": 946,
+  "ko": "<size=13>{0}장 클리어</size>",
+  "en": "<size=13>Clear Ch. {0}</size>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1277"
+  ]
+ },
+ {
+  "id": 947,
+  "ko": "{0} · {1}층{2}",
+  "en": "{0} · Floor {1}{2}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1356"
+  ]
+ },
+ {
+  "id": 948,
+  "ko": "{0}층{1}",
+  "en": "Floor {0}{1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1356"
+  ]
+ },
+ {
+  "id": 949,
+  "ko": "기술",
+  "en": "Technique",
+  "src": [
+   "Scripts/UI/GameUI.cs:1356"
+  ]
+ },
+ {
+  "id": 950,
+  "ko": "<b>해금 완료</b>",
+  "en": "<b>Unlocked</b>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1362"
+  ]
+ },
+ {
+  "id": 951,
+  "ko": "<b>현재 Lv {0}</b> <size=15>/ {1}</size>",
+  "en": "<b>Current Lv {0}</b> <size=15>/ {1}</size>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1367"
+  ]
+ },
+ {
+  "id": 952,
+  "ko": "<color=#2E7D32><b>다음 Lv {0}</b>   {1} <b>{2}</b></color>",
+  "en": "<color=#2E7D32><b>Next Lv {0}</b>   {1} <b>{2}</b></color>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1369"
+  ]
+ },
+ {
+  "id": 953,
+  "ko": "{0}장 클리어 시 해금",
+  "en": "Unlocks on clearing Chapter {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1371"
+  ]
+ },
+ {
+  "id": 954,
+  "ko": "선행: {0}",
+  "en": "Requires: {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1371"
+  ]
+ },
+ {
+  "id": 955,
+  "ko": "해금 완료",
+  "en": "Unlocked",
+  "src": [
+   "Scripts/UI/GameUI.cs:1373"
+  ]
+ },
+ {
+  "id": 956,
+  "ko": "해금  ({0} 조각)",
+  "en": "Unlock  ({0} Shards)",
+  "src": [
+   "Scripts/UI/GameUI.cs:1373"
+  ]
+ },
+ {
+  "id": 957,
+  "ko": "강화  ({0} 조각)",
+  "en": "Upgrade  ({0} Shards)",
+  "src": [
+   "Scripts/UI/GameUI.cs:1373"
+  ]
+ },
+ {
+  "id": 958,
+  "ko": "공격 +{0}% · 치명 +{1}% · 치명피해 +{2}% · 열기 +{3}%",
+  "en": "ATK +{0}% · Crit +{1}% · Crit DMG +{2}% · Heat +{3}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 959,
+  "ko": "공격 +{0}%",
+  "en": "ATK +{0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 960,
+  "ko": "치명 +{0}%",
+  "en": "Crit +{0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 961,
+  "ko": "치명피해 +{0}%",
+  "en": "Crit DMG +{0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 962,
+  "ko": "열기 +{0}%",
+  "en": "Heat +{0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 963,
+  "ko": "체력 +{0} · 방어 +{1} · 회피 {2}% · 이동 +{3}% · 장전 {4}% · 발동 +{5}% · 조각 +{6}%",
+  "en": "HP +{0} · DEF +{1} · Dodge {2}% · Move +{3}% · Reload {4}% · Proc +{5}% · Shards +{6}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 964,
+  "ko": "방어 +{0}",
+  "en": "DEF +{0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 965,
+  "ko": "회피 {0}%",
+  "en": "Dodge {0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 966,
+  "ko": "이동 +{0}%",
+  "en": "Move +{0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 967,
+  "ko": "장전 {0}%",
+  "en": "Reload {0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 968,
+  "ko": "발동 +{0}%",
+  "en": "Proc +{0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 969,
+  "ko": "조각 +{0}%",
+  "en": "Shards +{0}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1382"
+  ]
+ },
+ {
+  "id": 970,
+  "ko": "공격력",
+  "en": "Attack",
+  "src": [
+   "Scripts/UI/GameUI.cs:1388"
+  ]
+ },
+ {
+  "id": 971,
+  "ko": "치명타 확률",
+  "en": "Crit Chance",
+  "src": [
+   "Scripts/UI/GameUI.cs:1388"
+  ]
+ },
+ {
+  "id": 972,
+  "ko": "치명타 피해",
+  "en": "Crit Damage",
+  "src": [
+   "Scripts/UI/GameUI.cs:1388"
+  ]
+ },
+ {
+  "id": 973,
+  "ko": "열기 획득",
+  "en": "Heat Gain",
+  "src": [
+   "Scripts/UI/GameUI.cs:1388"
+  ]
+ },
+ {
+  "id": 974,
+  "ko": "최대 체력",
+  "en": "Max HP",
+  "src": [
+   "Scripts/UI/GameUI.cs:1389"
+  ]
+ },
+ {
+  "id": 975,
+  "ko": "회피 재사용",
+  "en": "Dodge Cooldown",
+  "src": [
+   "Scripts/UI/GameUI.cs:1389"
+  ]
+ },
+ {
+  "id": 976,
+  "ko": "방어",
+  "en": "Defense",
+  "src": [
+   "Scripts/UI/GameUI.cs:1389"
+  ]
+ },
+ {
+  "id": 977,
+  "ko": "이동 속도",
+  "en": "Move Speed",
+  "src": [
+   "Scripts/UI/GameUI.cs:1389"
+  ]
+ },
+ {
+  "id": 978,
+  "ko": "시간의 조각 획득",
+  "en": "Time Shard Gain",
+  "src": [
+   "Scripts/UI/GameUI.cs:1390"
+  ]
+ },
+ {
+  "id": 979,
+  "ko": "장전 시간",
+  "en": "Reload Time",
+  "src": [
+   "Scripts/UI/GameUI.cs:1390"
+  ]
+ },
+ {
+  "id": 980,
+  "ko": "효과 발동 확률",
+  "en": "Effect Proc Chance",
+  "src": [
+   "Scripts/UI/GameUI.cs:1390"
+  ]
+ },
+ {
+  "id": 981,
+  "ko": "하위 노드",
+  "en": "Previous Node",
+  "src": [
+   "Scripts/UI/GameUI.cs:1395"
+  ]
+ },
+ {
+  "id": 982,
+  "ko": "{0} {1}층 노드 1개",
+  "en": "1 node on {0} Floor {1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1396"
+  ]
+ },
+ {
+  "id": 983,
+  "ko": "지금 있는 총은 모두 손에 익었다 · 새 총은 아직 만드는 중",
+  "en": "Every gun here is already yours · New guns are still being made",
+  "src": [
+   "Scripts/UI/GameUI.cs:1415"
+  ]
+ },
+ {
+  "id": 984,
+  "ko": "지금 있는 탄은 모두 손에 익었다 · 새 탄은 아직 빚는 중",
+  "en": "Every bullet here is already yours · New bullets are still being cast",
+  "src": [
+   "Scripts/UI/GameUI.cs:1415"
+  ]
+ },
+ {
+  "id": 985,
+  "ko": "해금 완료 · 이제 판에서 나온다",
+  "en": "Unlocked · Now appears in runs",
+  "src": [
+   "Scripts/UI/GameUI.cs:1450"
+  ]
+ },
+ {
+  "id": 986,
+  "ko": "{0}장 클리어 시",
+  "en": "On clearing Ch. {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1455"
+  ]
+ },
+ {
+  "id": 987,
+  "ko": "해금  ·  시간의 조각 {0}",
+  "en": "Unlock  ·  Time Shards {0}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1455"
+  ]
+ },
+ {
+  "id": 988,
+  "ko": "해금",
+  "en": "Unlock",
+  "src": [
+   "Scripts/UI/GameUI.cs:1455"
+  ]
+ },
+ {
+  "id": 989,
+  "ko": "'{0}' 해금 — 이제 판에서 나온다",
+  "en": "'{0}' unlocked — now appears in runs",
+  "src": [
+   "Scripts/UI/GameUI.cs:1457"
+  ]
+ },
+ {
+  "id": 990,
+  "ko": "조각이 {0}개 모자람",
+  "en": "{0} Shards short",
+  "src": [
+   "Scripts/UI/GameUI.cs:1460"
+  ]
+ },
+ {
+  "id": 991,
+  "ko": "<color=#{0}>{1}</color>  <size=15><color=#{2}>{3} · 공격 {4} · {5} · 연산 {6}칸</color></size>",
+  "en": "<color=#{0}>{1}</color>  <size=15><color=#{2}>{3} · ATK {4} · {5} · {6} Operator Slots</color></size>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1515"
+  ]
+ },
+ {
+  "id": 992,
+  "ko": "<b>우클릭 · {0}</b> (재사용 {1}초)",
+  "en": "<b>Right Click · {0}</b> (Cooldown {1}s)",
+  "src": [
+   "Scripts/UI/GameUI.cs:1527"
+  ]
+ },
+ {
+  "id": 993,
+  "ko": "우클릭 · 백스텝 샷",
+  "en": "Right Click · Backstep Shot",
+  "src": [
+   "Scripts/UI/GameUI.cs:1527"
+  ]
+ },
+ {
+  "id": 994,
+  "ko": "공격 ×{0} · 연사 {1}발/초 · 장전 {2}초 · 사거리 {3}m{4}",
+  "en": "ATK ×{0} · Fire Rate {1} shots/s · Reload {2}s · Range {3}m{4}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1529"
+  ]
+ },
+ {
+  "id": 995,
+  "ko": "연사 {0}발/초",
+  "en": "Fire Rate {0} shots/s",
+  "src": [
+   "Scripts/UI/GameUI.cs:1529"
+  ]
+ },
+ {
+  "id": 996,
+  "ko": "장전 {0}초",
+  "en": "Reload {0}s",
+  "src": [
+   "Scripts/UI/GameUI.cs:1529",
+   "Scripts/UI/InventoryScreen.cs:753"
+  ]
+ },
+ {
+  "id": 997,
+  "ko": "사거리 {0}m{1}",
+  "en": "Range {0}m{1}",
+  "src": [
+   "Scripts/UI/GameUI.cs:1529"
+  ]
+ },
+ {
+  "id": 998,
+  "ko": "치명 +{0}% / 피해 +{1}%",
+  "en": "Crit +{0}% / Crit DMG +{1}%",
+  "src": [
+   "Scripts/UI/GameUI.cs:1530"
+  ]
+ },
+ {
+  "id": 999,
+  "ko": "<color=#{0}>{1}</color>  <size=15><color=#{2}>{3} 총</color></size>",
+  "en": "<color=#{0}>{1}</color>  <size=15><color=#{2}>{3} Gun</color></size>",
+  "src": [
+   "Scripts/UI/GameUI.cs:1538"
+  ]
+ }
+]

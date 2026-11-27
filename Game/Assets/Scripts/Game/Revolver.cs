@@ -152,11 +152,13 @@ namespace CatTang
             return count >= 6 - r ? 6 : count >= 4 - r ? 4 : count >= 2 - r ? 2 : 0;
         }
 
+        // 단계 효과는 '교체' (2026-11-27 사용자 · 총탄 기획서): 닿은 가장 높은 단계의 줄만 켬.
+        //   TraitTier 표의 6단계 줄에 4단계 값(확률 · 수치)을 다시 적어 두었으므로 6단계 = 4단계 값 + 새 효과
         IEnumerable<EffectDef> TierEffects(Dictionary<int, int> counts)
         {
             foreach (var (trait, tier, effect) in Tables.TraitTiers)
             {
-                if (!counts.TryGetValue(trait, out var c) || TierOf(c) < tier) continue;
+                if (!counts.TryGetValue(trait, out var c) || TierOf(c) != tier) continue;
                 if (Tables.Effects.TryGetValue(effect, out var e)) yield return e;
             }
         }

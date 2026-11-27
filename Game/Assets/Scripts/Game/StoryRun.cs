@@ -34,6 +34,20 @@ namespace CatTang
         public static string PendingToast;
         /// <summary>꿈을 보고 마을에서 깨어남 → 그 장의 혼잣말(WakeLines) 뒤 NPC 대화 · 해금으로 이어짐 (VillageStory). 빈 문자열 = 깨어남 없음</summary>
         public static string PendingWake;
+
+        // 판 도중 쓰러짐 → 마을에서 깨어나면 쓰러진 곳에 반응하는 뻐꾸기 한 줄 (스토리 기획서 02 · 05, 2026-11-27 구현 · 대사 사용자 확정)
+        //   [장 - 1, 자리] 자리 0 = 스테이지 방 · 1 = 중간 보스 · 2 = 보스
+        public static (int chapter, int place)? PendingDeath;
+        public static readonly string[,] DeathLines =
+        {
+            { "태엽 풀린 뻐꾸기#다정::일어났구나... 황야 먼지가 아직 털에 붙어 있네.", "태엽 풀린 뻐꾸기#쓸쓸::술집 문을 넘어갔었구나... 거긴 총소리가 오래 남아.", "태엽 풀린 뻐꾸기#엄숙::광장까지 갔었구나... 녹아내린 시계탑은 아직 거기 있어?" },
+            { "태엽 풀린 뻐꾸기#다정::역에서 돌아왔구나... 기적 소리가 아직 귀에 남아 있지?", "태엽 풀린 뻐꾸기#쓸쓸::승강장에서 쓰러졌구나... 호루라기 소리가 나면 조심해.", "태엽 풀린 뻐꾸기#엄숙::종착역까지 갔었구나... 그 기차는 아직 아무 데도 못 가." },
+            { "태엽 풀린 뻐꾸기#의미심장::거울 속에서 넘어졌구나... 어느 쪽이 진짜였는지 헷갈리지?", "태엽 풀린 뻐꾸기#쓸쓸::무대 위에서 쓰러졌구나... 박수 소리는 안 났지?", "태엽 풀린 뻐꾸기#엄숙::호수까지 갔었구나... 물이 너무 잔잔해서 무서웠을 거야." },
+            { "태엽 풀린 뻐꾸기#다정::톱니 사이에서 돌아왔구나... 째깍 소리가 아직 들려?", "태엽 풀린 뻐꾸기#쓸쓸::단두대 아래까지 갔었구나... 진자는 늘 같은 자리로 돌아와.", "태엽 풀린 뻐꾸기#엄숙::두 바늘을 만났구나... 그 둘은 늘 함께 돌아." },
+            { "태엽 풀린 뻐꾸기#쓸쓸::거기까지 갔었구나... 끝에 가까울수록 다 부서져 있지?", "태엽 풀린 뻐꾸기#의미심장::낯선 그림자를 만났구나... 너랑 많이 닮았지?", "태엽 풀린 뻐꾸기#엄숙::시간의 주인을 봤구나... 아직은 아니야. 아직은." },
+        };
+        public static string DeathLine((int chapter, int place) d) =>
+            DeathLines[Mathf.Clamp(d.chapter, 1, 5) - 1, Mathf.Clamp(d.place, 0, 2)];
         // 장마다 다른 기절 · 깨어남 대사 (2026-11-24 사용자: 1장은 지금 대사, 2~5장은 사용자가 만들 때 적어 줌 → 그때까지 비워 둠 = 대사 없이 연출만)
         public static readonly string[] FaintLines = { "......또, 이 소리......", "", "", "......멈춰야... 해......", "" };   // 4장 (2026-11-26 사용자 확정)
         // 2장 (2026-11-25 사용자): 기절 대사 없음 · 깨어남 첫 줄 — 이어지는 대화는 VillageStory "ch2"
@@ -45,7 +59,8 @@ namespace CatTang
         {
             if (Run1) rm.gameObject.AddComponent<StoryRun1>();
             else if (Run2 || (Meta.StorySeen(KeyTut1) && !Meta.StorySeen(KeySynergy))) rm.gameObject.AddComponent<StoryHints>();   // 시너지는 켜질 때까지 판마다 기다림
-            if (!Run1 && !Meta.StorySeen(OpHints.Key)) rm.gameObject.AddComponent<OpHints>();                                        // 연산은 처음 얻을 때까지 판마다 기다림 (튜토리얼이 끝난 저장도)
+            if (!Run1 && !Meta.StorySeen(OpHints.Key)) rm.gameObject.AddComponent<OpHints>();
+            if (!Run1 && !Meta.StorySeen(DodgeHints.Key)) rm.gameObject.AddComponent<DodgeHints>();                                   // 극한 회피: 판 2 후반부터 강한 적과 함께                                        // 연산은 처음 얻을 때까지 판마다 기다림 (튜토리얼이 끝난 저장도)
         }
 
         /// <summary>판 1에선 쓰러져도 결과 창 없이 기절 연출 → 마을</summary>
@@ -406,8 +421,53 @@ namespace CatTang
             Time.timeScale = 0f;
             yield return Talk("고양이#결의::......지금은 잠자리 같은 걸 신경 쓸 때가 아니다.", "고양이#결의::우선 급한 불부터 해결하자고.");
             Time.timeScale = 1f;
+            if (p) yield return DrawTwirl(p);                // 총을 돌려 뽑는 1초 (스토리 기획서 03 깨어남 → 첫 전투)
             if (p) p.InputLocked = false;
             ov.SetCaption(controls);
+        }
+
+        // 총 돌려 뽑기 (2026-11-27, 스토리 기획서 '총을 돌려 뽑는 셀 애니메이션 1초 → 조작 가능'):
+        //   두 총을 허리 옆에서 세 바퀴 돌림 — 1초에 12장씩 뚝뚝 끊어 돌려 셀 애니메이션처럼 → 철컥 + 총구 번쩍 → 조준 자세로
+        static readonly KataPose DrawLow = new KataPose { rArm = new Vector3(0.45f, -0.3f, 0.75f).normalized, lArm = new Vector3(-0.45f, -0.3f, 0.75f).normalized, lean = -4 };
+        static readonly KataPose DrawSnap = new KataPose { rArm = new Vector3(-0.12f, 0.1f, 1f).normalized, lArm = new Vector3(0.12f, 0.1f, 1f).normalized, lean = -2 };
+        public const float DrawTime = 1f;
+
+        static IEnumerator DrawTwirl(PlayerController p)
+        {
+            var poser = p.poser;
+            if (!poser) yield break;
+            poser.Pose(DrawLow, 0.08f);
+            Sfx.Play("dash", 0.35f, 0.1f);
+            float t = 0, spinEnd = DrawTime * 0.72f;
+            bool clacked = false;
+            while (t < DrawTime)
+            {
+                t += Time.unscaledDeltaTime;
+                if (t < spinEnd)
+                {
+                    float cel = Mathf.Floor(t * 12f) / 12f;                               // 12fps로 끊어 셀 느낌
+                    float k = Mathf.Clamp01(cel / spinEnd);
+                    float ang = -1080f * (1 - (1 - k) * (1 - k));
+                    poser.gunExtraR = Quaternion.Euler(ang, 0, 0);
+                    poser.gunExtraL = Quaternion.Euler(ang + 40f, 0, 0);                   // 왼총은 살짝 엇박
+                }
+                else
+                {
+                    if (!clacked)
+                    {
+                        clacked = true;
+                        poser.gunExtraR = poser.gunExtraL = Quaternion.identity;
+                        poser.Pose(DrawSnap, 0.05f);
+                        Sfx.Play("reload", 0.8f, 0.05f);
+                        foreach (var (g, m) in new[] { (poser.gunR, poser.muzzleR), (poser.gunL, poser.muzzleL) })
+                            if (g && m) GunkataFx.Flash(m.position, g.forward, 0.7f, 0.1f);
+                        CameraFollow.Shake(0.06f);
+                    }
+                }
+                yield return null;
+            }
+            poser.gunExtraR = poser.gunExtraL = Quaternion.identity;
+            poser.Release(0.12f);
         }
 
         static IEnumerator Talk(params string[] lines)
@@ -883,6 +943,78 @@ namespace CatTang
         {
             foreach (var d in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) if (d && d.reward == RewardKind.Op && d.isActiveAndEnabled) return true;
             return false;
+        }
+    }
+}
+
+namespace CatTang
+{
+    /// <summary>극한 회피 안내 (2026-11-27, 스토리 기획서 04 '극한 회피(주황 십자 예고)는 판 2 후반 / 판 3의 강한 적과 함께 짧게 안내').
+    /// 판 2에선 중간 보스부터(강화형 · 중간 보스 · 보스), 판 3부터는 처음 보는 주황 십자에서: 십자가 뜬 순간 멈추고 짧게 설명 →
+    /// 느린 시간 1.2초 동안 대시 유도 → 성공하면 한 줄. 본 기록 tut_justdodge (튜토리얼이 끝난 저장도 처음 한 번)</summary>
+    public class DodgeHints : MonoBehaviour
+    {
+        public const string Key = "tut_justdodge";
+        // 문구 (2026-11-27 사용자 확정)
+        public const string Title = "극한 회피";
+        public const string Body = "공격 직전에 주황 십자가 번쩍여요.\n그 순간 대시로 피하면 극한 회피가 발동해요.\n잠깐 시간이 느려지고, 그동안 쏘는 탄은 치명타가 잘 터져요.";
+        public static string Prompt => $"주황 십자가 번쩍이는 지금 {KeyBinds.Gold(Act.Dash)}!";
+        public const string Success = "극한 회피!";
+
+        RunManager rm;
+        bool queued, running;
+        Vector3 at;
+
+        void Start()
+        {
+            rm = GetComponent<RunManager>();
+            Telegraph.Glinted += OnGlint;
+        }
+
+        void OnDestroy() => Telegraph.Glinted -= OnGlint;
+
+        bool Ready()
+        {
+            if (Meta.StorySeen(Key) || running || !rm) return false;
+            if (StoryRun.Run2 && !(rm.IsMidBossRoom || rm.stageIndex >= 2)) return false;   // 판 2는 후반(중간 보스부터)만
+            var p = PlayerController.Instance;
+            return p && !p.InputLocked && !StoryHints.busy && !StoryPractice.Active && Time.timeScale > 0.5f;
+        }
+
+        void OnGlint(Vector3 pos)
+        {
+            if (queued || !Ready()) return;
+            var p = PlayerController.Instance;
+            if (Vector3.Distance(Effects.Flat(pos), Effects.Flat(p.transform.position)) > 9f) return;   // 고양이를 노린 공격만
+            queued = true; at = pos;
+            StartCoroutine(Teach());
+        }
+
+        IEnumerator Teach()
+        {
+            running = true;
+            StoryHints.busy = true;
+            var ov = StoryOverlay.I;
+            var p = PlayerController.Instance;
+            if (ov && p)
+            {
+                Meta.MarkStory(Key);
+                yield return ov.Hint(Title, Body);                     // 멈춘 채 설명 (닫히면 시간 원래대로)
+                bool done = false;
+                void Hit(float _) => done = true;
+                p.OnDodgeAction += Hit;
+                ov.SetCaption(Prompt);
+                float t = 0, was = Time.timeScale;
+                Time.timeScale = 0.25f;                                // 느린 시간에서 대시를 눌러 볼 틈
+                while (t < 1.2f && !done) { t += Time.unscaledDeltaTime; yield return null; }
+                if (Time.timeScale > 0f && Mathf.Approximately(Time.timeScale, 0.25f)) Time.timeScale = was <= 0 ? 1f : was;
+                ov.SetCaption(done ? Success : "");
+                p.OnDodgeAction -= Hit;
+                if (done) { yield return new WaitForSecondsRealtime(1.6f); ov.SetCaption(""); }
+            }
+            StoryHints.busy = false;
+            running = false;
+            Destroy(this);
         }
     }
 }

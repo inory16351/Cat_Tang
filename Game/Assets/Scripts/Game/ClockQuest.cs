@@ -37,7 +37,7 @@ namespace CatTang
             {
                 id = "band", name = "이름 지워진 팔찌",
                 pickupLine = "고양이#의문::팔찌...... 이름이 적힌 자리가 번져서 읽을 수가 없어.",
-                tailorLines = new[] { Tailor + "::이건...... 차가운 냄새가 나. 하얀 방의 냄새.", Tailor + "::이름이 지워졌다고 사람이 지워지는 건 아니란다." },
+                tailorLines = new[] { "실타래 재봉사#쓸쓸::이건...... 차가운 냄새가 나. 하얀 방의 냄새.", "실타래 재봉사#다정::이름이 지워졌다고 사람이 지워지는 건 아니란다." },
                 memories = new[] { "mem_band_a", "mem_band_b" },
                 memoryDesc = "링거 줄과 침대 난간 — 손목에 감긴 팔찌",
             },
@@ -45,7 +45,7 @@ namespace CatTang
             {
                 id = "note", name = "삐뚤빼뚤한 쪽지",
                 pickupLine = "고양이#의문::크레용 글씨...... '시계 고쳐 주세요'?",
-                tailorLines = new[] { Tailor + "::아이 글씨구나.", Tailor + "::꾹꾹 눌러 썼어.", Tailor + "::누군가는 이 부탁을 아주 오래 기억하고 있었던 거야." },
+                tailorLines = new[] { "실타래 재봉사#다정::아이 글씨구나.", Tailor + "::꾹꾹 눌러 썼어.", Tailor + "::누군가는 이 부탁을 아주 오래 기억하고 있었던 거야." },
                 memories = new[] { "mem_note_a" },   // 둘째 컷(창밖의 멈춘 시계탑)은 ChatGPT 생성 한도로 아직 없음 (2026-11-25)
                 memoryDesc = "어린 손이 크레용으로 쓰는 쪽지 — 창밖의 멈춘 시계탑",
             },
@@ -148,7 +148,7 @@ namespace CatTang
             ui.Talk(Tailor, new[]
             {
                 Tailor + "::그리고...... 광장의 바늘 말이야.",
-                Tailor + "::멈춰 버렸지?",
+                "실타래 재봉사#쓸쓸::멈춰 버렸지?",
                 Tailor + "::실로 꿰매 줄 수는 있어.",
                 Tailor + "::다만 바늘을 붙들어 둘 '매듭'이 필요해.",
                 Tailor + "::이 꿈 바깥에서 흘러든 물건들.",
@@ -268,7 +268,7 @@ namespace CatTang
                 Tailor + "::자, 매듭은 다 지었어.",
                 Tailor + "::다시 돌기 시작했지?",
                 "고양이#의문::......저 바늘이 다 돌면, 어떻게 되는 거지.",
-                Tailor + "::글쎄. 그건 네가 제일 잘 알지 않을까.",
+                "실타래 재봉사#의미심장::글쎄. 그건 네가 제일 잘 알지 않을까.",
             }, () => d = true);
             while (!d) yield return null;
             CameraFollow.FocusOn(null, 0f);

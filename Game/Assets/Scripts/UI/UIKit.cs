@@ -16,7 +16,11 @@ namespace CatTang
 
     public static class UIKit
     {
-        public static Font Title, Body, BodyBold;
+        // 글꼴: 지금 언어에 맞는 것 (LangFonts — 프랑스어 · 독일어 · 러시아어 제목 = Gothic A1 Bold, 일본어 · 중국어 · 아랍어 = 그 언어 글꼴)
+        static Font baseTitle, baseBody, baseBodyBold;
+        public static Font Title => LangFonts.Get(LangFonts.Title);
+        public static Font Body => LangFonts.Get(LangFonts.Body);
+        public static Font BodyBold => LangFonts.Get(LangFonts.Bold);
         static readonly Dictionary<string, Sprite> sprites = new();
         static SkinJson skin;
 
@@ -29,12 +33,18 @@ namespace CatTang
 
         public static void Init()
         {
-            if (Title != null && skin != null) return;
-            Title = Resources.Load<Font>("Fonts/BlackHanSans-Regular");
-            Body = Resources.Load<Font>("Fonts/GothicA1-Regular");
-            BodyBold = Resources.Load<Font>("Fonts/GothicA1-Bold");
-            var fallback = Font.CreateDynamicFontFromOSFont(new[] { "Malgun Gothic", "Arial" }, 28);
-            Title ??= fallback; Body ??= fallback; BodyBold ??= Body;
+            if (baseTitle != null && skin != null) return;
+            baseTitle = Resources.Load<Font>("Fonts/BlackHanSans-Regular");
+            baseBody = Resources.Load<Font>("Fonts/GothicA1-Regular");
+            baseBodyBold = Resources.Load<Font>("Fonts/GothicA1-Bold");
+            if (!baseTitle || !baseBody)
+            {
+                var fallback = Font.CreateDynamicFontFromOSFont(new[] { "Malgun Gothic", "Arial" }, 28);
+                if (!baseTitle) baseTitle = fallback;
+                if (!baseBody) baseBody = fallback;
+            }
+            if (!baseBodyBold) baseBodyBold = baseBody;
+            LangFonts.SetBase(baseTitle, baseBody, baseBodyBold);
             var js = Resources.Load<TextAsset>("UI/ui_skin");
             skin = js ? JsonUtility.FromJson<SkinJson>(js.text) : new SkinJson();
         }

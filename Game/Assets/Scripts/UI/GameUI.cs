@@ -518,6 +518,7 @@ namespace CatTang
         {
             public RectTransform holder; public Image front, back; public bool left; public Vector2 home;
             public float fade = 1f, hop, shake, push, squash, enter;
+            public TalkEmote emote;        // 얼굴 없는 NPC의 사물 감정 표현 (뻐꾸기 깃털 · 문지기 랜턴 · 재봉사 실)
         }
 
         static float EaseOutBack(float t) { const float c = 1.6f; t -= 1; return 1 + (c + 1) * t * t * t + c * t * t; }
@@ -542,6 +543,7 @@ namespace CatTang
                 Image Make(string n) { var rt = UIKit.MakeRect(n, sl.holder, new Vector2(0.5f, 0), Vector2.zero, new Vector2(600, 820), new Vector2(0.5f, 0)); var im = rt.gameObject.AddComponent<Image>(); im.raycastTarget = false; im.preserveAspect = true; return im; }
                 sl.back = Make("Back"); sl.front = Make("Front");
                 SetSprite(sl.front, Portrait(who[i])); sl.back.color = new Color(1, 1, 1, 0);
+                sl.emote = TalkEmote.Attach(sl.holder, sl.front, who[i]);
                 stage[who[i]] = sl;
             }
             // 2026-11-25 사용자: 아래 장식 없앰 · 이름 명찰은 말하는 캐릭터 발밑(창 윗변)에 붙임
@@ -660,6 +662,7 @@ namespace CatTang
                     if (expr == "두통") { sl.shake = 1f; flash = 0.8f * GameSettings.FlashScale; }   // 번쩍임 줄이기 (2026-11-26)
                     else if (expr == "놀람") { sl.push = 1f; sl.shake = 0.4f; }
                     else if (expr == "결의") sl.push = 1f;
+                    if (sl.emote) sl.emote.Cue(expr);
                 }
                 // 글자가 흘러나옴 (줄 처음엔 살짝 비었다가 들어옴)
                 body.color = new Color(UIKit.Cream.r, UIKit.Cream.g, UIKit.Cream.b, 0);

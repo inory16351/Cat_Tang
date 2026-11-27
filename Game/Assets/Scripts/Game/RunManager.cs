@@ -717,6 +717,15 @@ namespace CatTang
                 StoryWard.Play(this, () => BuildStage(stageIndex + 1, RewardKind.Gold));
                 return;
             }
+            // 보스 패턴 연습 (환경설정 게임 탭, 장별 체크): 그 장 스토리 맵을 이미 봤으면 판마다 그 장 보스 문 첫 진입 때 한 번,
+            //   스토리 맵을 연습 모드로 → 끝나면 바로 보스 방 (2026-11-27, StoryPractice)
+            if (d.reward == RewardKind.Boss && (practicedMask & (1 << chapter)) == 0 && StoryPractice.Pending(chapter))
+            {
+                practicedMask |= 1 << chapter;
+                foreach (var other in FindObjectsByType<RoomDoor>(FindObjectsSortMode.None)) Destroy(other.gameObject);
+                StoryPractice.Play(this, chapter, () => BuildStage(stageIndex + 1, RewardKind.Gold));
+                return;
+            }
             BuildStage(stageIndex + 1, d.reward == RewardKind.Boss ? RewardKind.Gold : d.reward);
         }
 
@@ -764,6 +773,7 @@ namespace CatTang
         }
 
         bool lastStandLeft;
+        int practicedMask;   // 이번 판에 보스 패턴 연습을 이미 한 장 (비트 = 장 번호)
         /// <summary>기억의 방 '다시 뽑기' (판마다 1번) — GameUI 보상 창이 확인하고 씀</summary>
         public bool RerollLeft;
 
@@ -797,6 +807,7 @@ namespace CatTang
         {
             if (runOver) return;
             runOver = true;
+            if (!win) StoryRun.PendingDeath = (chapter, IsBossRoom ? 2 : IsMidBossRoom ? 1 : 0);   // 마을에서 뻐꾸기가 쓰러진 곳에 한 줄
             int gain = ShardGainPreview;
             shardsThisRun = gain;
             Meta.Shards += gain;
